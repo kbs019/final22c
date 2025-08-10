@@ -1,5 +1,5 @@
 package com.ex.final22c.repository;
 
-public interface PerfumnRepository {
+public interface PerfumeRepository {
 
 }
