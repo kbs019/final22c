@@ -23,7 +23,7 @@ public class SecurityConfig {
             .formLogin((form) -> form
                 .loginPage("/user/login")
                 // 로그인 성공 후 이동할 URL 설정
-                .defaultSuccessUrl("/")
+                .defaultSuccessUrl("/main/list")
             )
             .logout((logout) -> logout
                 .logoutUrl("/user/logout")
