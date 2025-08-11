@@ -3,13 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" th:href="@{/bootstrap.min.css}" >
     <title>22°C</title>
 </head>
 <body>
-    <!--  -->
+    <!-- 내비게이션 바 설정 -->
+    <nav th:replace="~{navbar :: navbarFragment}"></nav>
 
     <!-- 각 템플릿이 가지는 내용 시작 -->
     <th:block layout:fragment="content"></th:block>
     <!-- 각 템플릿이 가지는 내용 끝 -->
+
+    <!-- ajax 를 사용하기 위한 CDN -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- Bootstrap 의 JavaScript 기능을 동작시키는 라이브러리 -->
+    <script th:src="@{/bootstrap.min.js}"></script>
+
+    <!-- 자바스크립트 시작 -->
+    <th:block layout:fragment="script"></th:block>
 </body>
 </html>
