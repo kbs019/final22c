@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-Final22cApplication<final22c>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.ex.final22c.Final22cApplication",
+            "projectName": "final22c",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
