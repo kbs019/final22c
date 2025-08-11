@@ -15,11 +15,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests((auth) -> auth
-                .requestMatchers("/user/create", "/user/login").permitAll()
-                // 모든 접근 요청에 대해 인증을 요구
-                .anyRequest().authenticated()
-            )
+            // .authorizeHttpRequests((auth) -> auth
+            //     .requestMatchers("/user/create", "/user/login").permitAll()
+            //     // 모든 접근 요청에 대해 인증을 요구
+            //     .anyRequest().authenticated()
+            // )
             .formLogin((form) -> form
                 .loginPage("/user/login")
                 // 로그인 성공 후 이동할 URL 설정

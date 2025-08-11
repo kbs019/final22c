@@ -17,13 +17,13 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/main/*")
 public class PerfumeController {
 
-    private PerfumeService perfumeService;
+    private final PerfumeService perfumeService;
 
     @GetMapping("list")
     public String home( Model model ){
         List<Perfume> list = perfumeService.showList();
 
         model.addAttribute("list", list);
-        return "list";
+        return "main/list";
     }
 }
