@@ -93,7 +93,7 @@ public class Users {
             this.role = "user";
         }
         if(this.status == null) {
-        	this.status = "active";
+            this.status = "active";
         }
     }
     

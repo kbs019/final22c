@@ -1,0 +1,144 @@
+<!-- <html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <h2>배송지 등록</h2>
+
+    <!-- 등록 폼: 엔티티 필드명과 name을 1:1 매핑 -->
+    <form th:action="@{/addresses}" method="post" th:object="${addressForm}">
+        <div>
+            <label>배송지명</label>
+            <input type="text" name="addrName" placeholder="예: 집 / 회사" required>
+        </div>
+        <div>
+            <label>수령인</label>
+            <input type="text" name="recipient" placeholder="수령인" required>
+        </div>
+
+        <div>
+            <label>우편번호</label>
+            <input type="text" id="sample2_postcode" name="zonecode" placeholder="우편번호" required>
+            <input type="button" onclick="sample2_execDaumPostcode()" value="우편번호 찾기"><br>
+        </div>
+
+        <div>
+            <label>도로명주소</label>
+            <input type="text" id="sample2_address" name="roadAddress" placeholder="주소" required><br>
+        </div>
+
+        <div>
+            <label>상세주소</label>
+            <input type="text" id="sample2_detailAddress" name="detailAddress" placeholder="상세주소" required>
+        </div>
+
+        <!-- 참고항목은 DB 컬럼이 없으므로 전송 제외(원하면 name 추가해서 컬럼 늘리면 됨) -->
+        <input type="text" id="sample2_extraAddress" placeholder="참고항목" readonly>
+
+        <!-- 체크 안 하면 값이 안 넘어오니 hidden으로 기본값 N 먼저 보냄 -->
+        <input type="hidden" name="isDefault" value="N">
+        <label style="display:block;margin-top:6px;">
+            <input type="checkbox" name="isDefault" value="Y"> 기본배송지로 설정
+        </label>
+
+        <button type="submit" style="margin-top:8px;">등록</button>
+
+        <!-- 다음 우편번호 레이어 -->
+        <div id="layer" style="display:none;position:fixed;overflow:hidden;z-index:1;-webkit-overflow-scrolling:touch;">
+            <img src="//t1.daumcdn.net/postcode/resource/images/close.png" id="btnCloseLayer"
+                style="cursor:pointer;position:absolute;right:-3px;top:-3px;z-index:1"
+                onclick="closeDaumPostcode()" alt="닫기 버튼">
+        </div>
+    </form>
+
+    <hr/>
+
+    <h2>내 배송지 목록</h2>
+    <table border="1" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th>배송지명</th>
+                <th>수령인</th>
+                <th>우편번호</th>
+                <th>도로명주소</th>
+                <th>상세주소</th>
+                <th>기본여부</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:if="${#lists.isEmpty(addresses)}">
+                <td colspan="6">등록된 배송지가 없습니다.</td>
+            </tr>
+            <tr th:each="a : ${addresses}">
+                <td th:text="${a.addrName}"></td>
+                <td th:text="${a.recipient}"></td>
+                <td th:text="${a.zonecode}"></td>
+                <td th:text="${a.roadAddress}"></td>
+                <td th:text="${a.detailAddress}"></td>
+                <td th:text="${a.isDefault}"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ====== 다음 우편번호 스크립트 ====== -->
+    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script>
+        var element_layer = document.getElementById('layer');
+
+        function closeDaumPostcode() {
+            element_layer.style.display = 'none';
+        }
+
+        function sample2_execDaumPostcode() {
+            new daum.Postcode({
+                oncomplete: function(data) {
+                    var addr = '';
+                    var extraAddr = '';
+
+                    if (data.userSelectedType === 'R') {
+                        addr = data.roadAddress;
+                    } else {
+                        addr = data.jibunAddress;
+                    }
+
+                    if(data.userSelectedType === 'R'){
+                        if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
+                            extraAddr += data.bname;
+                        }
+                        if(data.buildingName !== '' && data.apartment === 'Y'){
+                            extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                        }
+                        if(extraAddr !== ''){
+                            extraAddr = ' (' + extraAddr + ')';
+                        }
+                        document.getElementById("sample2_extraAddress").value = extraAddr;
+                    } else {
+                        document.getElementById("sample2_extraAddress").value = '';
+                    }
+
+                    document.getElementById('sample2_postcode').value = data.zonecode; // name="zonecode"
+                    document.getElementById("sample2_address").value = addr;          // name="roadAddress"
+                    document.getElementById("sample2_detailAddress").focus();
+
+                    element_layer.style.display = 'none';
+                },
+                width : '100%',
+                height : '100%',
+                maxSuggestItems : 5
+            }).embed(element_layer);
+
+            element_layer.style.display = 'block';
+            initLayerPosition();
+        }
+
+        function initLayerPosition(){
+            var width = 300;
+            var height = 400;
+            var borderWidth = 5;
+
+            element_layer.style.width = width + 'px';
+            element_layer.style.height = height + 'px';
+            element_layer.style.border = borderWidth + 'px solid';
+            element_layer.style.left = (((window.innerWidth || document.documentElement.clientWidth) - width)/2 - borderWidth) + 'px';
+            element_layer.style.top = (((window.innerHeight || document.documentElement.clientHeight) - height)/2 - borderWidth) + 'px';
+        }
+    </script>
+</body>
+</html> -->
