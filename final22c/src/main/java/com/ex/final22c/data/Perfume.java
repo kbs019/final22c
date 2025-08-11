@@ -33,7 +33,7 @@ public class Perfume {
     @Column(name="imgPath", length = 500)        // columnDefinition 은 이미 DB 에서 default 를 설정해주었기 때문에 사용하지 않아도 된다.
     private String imgPath;
 
-    @Column(name="perrfumeName", length = 100, nullable=false)
+    @Column(name="perfumeName", length = 100, nullable=false)
     private String perfumeName;
 
     @Column(name="brand", length = 100, nullable=false)
