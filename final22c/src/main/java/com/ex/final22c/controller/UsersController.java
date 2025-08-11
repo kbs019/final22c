@@ -53,7 +53,7 @@ public class UsersController {
     }
 
     @GetMapping("/login")
-    public String loginForm() {
+    public String login() {
         return "loginForm";
     }
 }

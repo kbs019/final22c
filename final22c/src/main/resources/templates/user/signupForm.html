@@ -1,0 +1,55 @@
+<html layout:decorate="~{layout}">
+<div layout:fragment="content">
+    <h1>회원 가입</h1>
+    <form th:action="@{/user/create}" method="post" th:object="${userForm}">
+        <div>
+            <label for="username">아이디:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div>
+            <label for="password">비밀번호:</label>
+            <input type="password" id="password1" name="password1" required>
+        </div>
+        <div>
+            <label for="password2">비밀번호 확인:</label>
+            <input type="password" id="password2" name="password2" required>
+        </div>
+        <div>
+            <label for="email">이메일:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div>
+            <label for="name">이름:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div>
+            <label for="birth">생년월일:</label>
+            <input type="date" id="birth" name="birth" required>
+        </div>
+        <div>
+            <label for="gender">성별</label>
+            <input type="radio" id="gender1" name="gender" required /><label for="radio1">남성</label>
+            <input type="radio" id="gender2" name="gender" required /><label for="radio2">여성</label>
+        </div>
+        <div>
+            <label for="telecom">통신사</label>
+            <select id="telecom" name="telecom" required>
+                <option value="" disabled selected>통신사를 선택하세요</option>
+                <option value="SKT">SKT</option>
+                <option value="KT">KT</option>
+                <option value="LGU">LG U+</option>
+                <optgroup label="알뜰폰(MVNO)">
+                    <option value="MVNO_SKT">SKT 망 알뜰폰</option>
+                    <option value="MVNO_KT">KT 망 알뜰폰</option>
+                    <option value="MVNO_LGU">LGU+ 망 알뜰폰</option>
+                </optgroup>
+            </select>
+        </div>
+        <div>
+            <label for="phone">휴대폰 번호:</label>
+            <input type="tel" id="phone" name="phone" pattern="[0-9]{3}-[0-9]{4}-[0-9]{4}" placeholder="010-1234-5678" maxlength="13" required>
+        </div>
+        <button type="submit">가입하기</button>
+    </form>
+</div>
+</html>
