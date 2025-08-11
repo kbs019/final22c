@@ -1,5 +1,7 @@
-<htm layout:decorate="~{layout}">
-<div layout:fragment="content">
+<!-- <htm layout:decorate="~{layout}">
+<div layout:fragment="content"> -->
+<html>
+<div>
     <h1>로그인</h1>
     <form th:action="@{/user/login}" method="post">
         <div>
@@ -11,6 +13,7 @@
             <input type="password" id="password" name="password" required>
         </div>
         <button type="submit">로그인</button>
+        <a th:href="@{/user/create}">회원가입</a>
     </form>
 </div>
-</htm>
+</html>

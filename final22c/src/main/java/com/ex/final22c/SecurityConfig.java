@@ -27,7 +27,7 @@ public class SecurityConfig {
             .logout((logout) -> logout
                 .logoutUrl("/user/logout")
                 // 로그아웃 성공 후 이동할 URL 설정
-                .logoutSuccessUrl("/")
+                .logoutSuccessUrl("/main/list")
             );
         return http.build();
     }
