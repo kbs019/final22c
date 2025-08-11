@@ -6,42 +6,42 @@
     <form th:action="@{/user/create}" method="post" th:object="${usersForm}">
         <div>
             <label for="username">아이디:</label>
-            <input type="text" id="username" name="username" required>
+            <input type="text" th:field="*{userName}" required>
         </div>
         <div>
-            <label for="password">비밀번호:</label>
-            <input type="password" id="password1" name="password1" required>
+            <label for="password1">비밀번호:</label>
+            <input type="password" th:field="*{password1}" required>
         </div>
         <div>
             <label for="password2">비밀번호 확인:</label>
-            <input type="password" id="password2" name="password2" required>
+            <input type="password" th:field="*{password2}" required>
         </div>
         <div>
             <label for="email">이메일:</label>
-            <input type="email" id="email" name="email" required>
+            <input type="email" th:field="*{email}" required>
         </div>
         <div>
             <label for="name">이름:</label>
-            <input type="text" id="name" name="name" required>
+            <input type="text" th:field="*{name}" required>
         </div>
         <div>
             <label for="birth">생년월일:</label>
-            <input type="date" id="birth" name="birth" required>
+            <input type="date" th:field="*{birth}" required>
         </div>
         <div>
             <fieldset>
                 <legend>성별</legend>
                 <label>
-                    <input type="radio" id="gender1" name="gender" value="M" required> 남성
+                    <input type="radio" th:field="*{gender}" value="M" required> 남성
                 </label>
                 <label>
-                    <input type="radio" id="gender2" name="gender" value="F"> 여성
+                    <input type="radio" th:field="*{gender}" value="F"> 여성
                 </label>
             </fieldset>
         </div>
         <div>
             <label for="telecom">통신사</label>
-            <select id="telecom" name="telecom" required>
+            <select th:field="*{telecom}" required>
                 <option value="" disabled selected>통신사를 선택하세요</option>
                 <option value="SKT">SKT</option>
                 <option value="KT">KT</option>
@@ -55,7 +55,7 @@
         </div>
         <div>
             <label for="phone">휴대폰 번호:</label>
-            <input type="tel" id="phone" name="phone" pattern="[0-9]{3}-[0-9]{3, 4}-[0-9]{4}" placeholder="010-1234-5678" maxlength="13" required>
+            <input type="tel" th:field="*{phone}" pattern="[0-9]{3}-[0-9]{3, 4}-[0-9]{4}" placeholder="010-1234-5678" maxlength="13" required>
         </div>
         <button type="submit">가입하기</button>
     </form>

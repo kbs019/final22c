@@ -23,16 +23,17 @@ public class Users {
 
     // 유저 번호 PK
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_seq_gen")
+    @SequenceGenerator(name = "users_seq_gen", sequenceName = "users_seq", allocationSize = 1)
     @Column(name = "userNo", nullable = false)
     private Long userNo;
 
     // 아이디 : jpa라서 userName 이라는 이름으로 사용 UK / not null
-    @Column(name = "userName", length = 30, nullable = false)
+    @Column(name = "userName", length = 50, nullable = false)
     private String userName; // UK
 
     // 비밀번호 : 20자 이하로 설정 / not null
-    @Column(name = "password", length = 20, nullable = false)
+    @Column(name = "password", length = 150, nullable = false)
     private String password;
 
     // 이메일 : 50자 이하로 설정 / UK / not null 
@@ -56,7 +57,7 @@ public class Users {
     private String telecom; // skt, kt, lgu+ 등
     
     // 전화번호 : 11자리로 설정 / UK
-    @Column(name = "phone", length = 11, unique = true)
+    @Column(name = "phone", length = 30, unique = true)
     private String phone;
 
     // 가입일 : sysdate로 설정 / not null
@@ -78,4 +79,8 @@ public class Users {
     // 로그인 타입
     @Column(name = "loginType", length = 10)
     private String loginType;
+    
+    // 카카오 UID( 로그인시 db 확인용 )
+    @Column(name = "kakaoId", length = 50, unique = true)
+    private String kakaoId;
 }

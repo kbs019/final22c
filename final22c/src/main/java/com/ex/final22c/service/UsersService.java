@@ -6,6 +6,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.ex.final22c.data.Users;
+import com.ex.final22c.form.UsersForm;
 import com.ex.final22c.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -16,14 +17,20 @@ public class UsersService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-        public Users create(String username, String password, String email) {
+        public Users create(UsersForm usersForm) {
             Users user = Users.builder()
-                .userName(username)
-                .password(passwordEncoder.encode(password))
-                .email(email)
+                .userName(usersForm.getUserName())
+                .password(passwordEncoder.encode(usersForm.getPassword1()))
+                .email(usersForm.getEmail())
+                .name(usersForm.getName())
+                .birth(usersForm.getBirth())
+                .telecom(usersForm.getTelecom())
+                .phone(usersForm.getPhone())
+                .gender(usersForm.getGender())
                 .reg(LocalDate.now())
                 .status("active")
                 .role("user")
+                .loginType("local")
                 .build();
             this.userRepository.save(user);
             return user;

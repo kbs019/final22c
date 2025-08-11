@@ -19,6 +19,7 @@ public class SecurityConfig {
                 // 모든 요청 허용.
                 .anyRequest().permitAll()
             )
+            .csrf(csrf -> csrf.disable())
             .formLogin((form) -> form
                 .loginPage("/user/login")
                 // 로그인 성공 후 이동할 URL 설정
