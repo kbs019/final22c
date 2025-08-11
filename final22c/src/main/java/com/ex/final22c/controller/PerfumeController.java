@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.ex.final22c.data.Perfume;
@@ -24,6 +25,16 @@ public class PerfumeController {
         List<Perfume> list = perfumeService.showList();
 
         model.addAttribute("list", list);
-        return "main/list";
+        return "main/list1";
+    }
+
+    // 상세 페이지로 이동
+    @GetMapping("content/{perfumeNo}")  // perfumeNo 를 URI 에 포함시켜 전송
+    public String perfumeContent( @PathVariable("perfumeNo") int perfumeNo, Model model ){
+        Perfume perfume = this.perfumeService.getPerfume(perfumeNo);
+
+        model.addAttribute("perfume", perfume);
+
+        return "main/content";
     }
 }

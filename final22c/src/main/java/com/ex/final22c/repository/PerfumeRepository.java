@@ -7,5 +7,5 @@ import com.ex.final22c.data.Perfume;
 
 @Repository
 public interface PerfumeRepository extends JpaRepository<Perfume, Integer> {
-
+    
 }

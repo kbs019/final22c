@@ -1,0 +1,20 @@
+.productInfoWrap {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    margin: 48px 0 40px;
+}
+.productInfoWrap .slideWrap {
+    position: relative;
+    width: 50%;
+    flex-shrink: 0;
+    flex-basis: 50%;
+}
+.productInfoWrap .productInfo {
+    width: calc(50% - 40px);
+    flex-shrink: 1;
+    border-left: 1px solid #ebebeb;
+    padding: 0 0 40px 40px;
+    box-sizing: border-box;
+    flex-basis: 50%;
+}
