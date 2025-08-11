@@ -24,49 +24,55 @@ public class Perfume {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="perfume_seq_gen")
     @SequenceGenerator(name = "perfume_seq_gen", sequenceName="perfume_seq", allocationSize = 1)
+    @Column(name = "perfumeNo")
     private int perfumeNo;
 
-    @Column(length = 500)
+    @Column(name="imgName", length = 500, nullable=false)
     private String imgName;
 
-    @Column(length = 500)        // columnDefinition 은 이미 DB 에서 default 를 설정해주었기 때문에 사용하지 않아도 된다.
+    @Column(name="imgPath", length = 500)        // columnDefinition 은 이미 DB 에서 default 를 설정해주었기 때문에 사용하지 않아도 된다.
     private String imgPath;
 
-    @Column(length = 100)
+    @Column(name="perfumeName", length = 100, nullable=false)
     private String perfumeName;
 
-    @Column(length = 100)
+    @Column(name="brand", length = 100, nullable=false)
     private String brand;
 
+    @Column(name="price")
     private int price;
 
+    @Column(name="count")
     private int count;
 
-    @Column(length = 4000)
+    @Column(name="description", length = 4000)
     private String description;
 
-    @Column(length = 500)
+    @Column(name="grade", length = 500, nullable=false)
     private String grade;
 
-    @Column(length = 500)
+    @Column(name="mainNote", length = 500, nullable=false)
     private String mainNote;
 
-    @Column(length = 500)
+    @Column(name="singleNote", length = 500)
     private String singleNote;
 
-    @Column(length = 500)
+    @Column(name="topNote", length = 500)
     private String topNote;
 
-    @Column(length = 500)
+    @Column(name="middleNote", length = 500)
     private String middleNote;
 
-    @Column(length = 500)
+    @Column(name="baseNote", length = 500)
     private String baseNote;
 
-    @Column(length = 1)
+    @Column(name="isPicked", length = 1)
     private String isPicked;
 
+    @Column(name="sellPrice")
     private int sellPrice;
+
+    @Column(name="buyPrice")
     private int buyPrice;
 
     // 기본값 및 파생값 계산

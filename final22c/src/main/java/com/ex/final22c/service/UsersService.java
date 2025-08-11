@@ -17,7 +17,7 @@ public class UsersService {
     private final PasswordEncoder passwordEncoder;
 
         public Users create(String username, String password, String email) {
-        Users user = Users.builder()
+            Users user = Users.builder()
                 .userName(username)
                 .password(passwordEncoder.encode(password))
                 .email(email)
@@ -25,6 +25,7 @@ public class UsersService {
                 .status("active")
                 .role("user")
                 .build();
-        return userRepository.save(user);
-    }
+            this.userRepository.save(user);
+            return user;
+        }
 }

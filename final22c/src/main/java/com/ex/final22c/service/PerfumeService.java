@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PerfumeService {
 
-    private PerfumeRepository perfumeRepository;
+    private final PerfumeRepository perfumeRepository;
 
     public List<Perfume> showList(){
         return perfumeRepository.findAll();
