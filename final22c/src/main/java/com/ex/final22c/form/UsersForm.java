@@ -43,5 +43,5 @@ public class UsersForm {
     
     @NotBlank(message = "전화번호는 필수 입력 항목입니다.")
     private String phone;
-    // 추가 적인 유효성 검사 진행 할 수 있음.
+
 }

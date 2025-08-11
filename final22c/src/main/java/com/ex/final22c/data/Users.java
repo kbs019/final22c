@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity
 // @Table(
 //     name = "USER",
@@ -62,19 +64,20 @@ public class Users {
 
     // 가입일 : sysdate로 설정 / not null
     @Column(name = "reg", nullable = false)
+    @CreationTimestamp
     private LocalDate reg; // sysdate
 
     // 상태 : active, inactive, banned 등
-    @Column(name = "status", length = 20)
-    private String status = "active";
+    @Column(name = "status",length=20)
+    private String status;
 
     // 차단일 : sysdate로 설정
     @Column(name = "banReg")
     private LocalDate banReg;
 
     // 역할 : user, admin 등
-    @Column(name = "role", length = 20)
-    private String role = "user";
+    @Column(name = "role", length=20)
+    private String role;
 
     // 로그인 타입
     @Column(name = "loginType", length = 10)
@@ -83,4 +86,16 @@ public class Users {
     // 카카오 UID( 로그인시 db 확인용 )
     @Column(name = "kakaoId", length = 50, unique = true)
     private String kakaoId;
+    
+    @PrePersist
+    public void prePersist() {
+        if (this.role == null) {
+            this.role = "user";
+        }
+        if(this.status == null) {
+        	this.status = "active";
+        }
+    }
+    
+    
 }
