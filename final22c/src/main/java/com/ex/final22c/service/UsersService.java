@@ -27,9 +27,6 @@ public class UsersService {
                 .telecom(usersForm.getTelecom())
                 .phone(usersForm.getPhone())
                 .gender(usersForm.getGender())
-                .reg(LocalDate.now())
-                .status("active")
-                .role("user")
                 .loginType("local")
                 .build();
             this.userRepository.save(user);
