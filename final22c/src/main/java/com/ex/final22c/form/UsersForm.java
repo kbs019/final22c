@@ -1,5 +1,7 @@
 package com.ex.final22c.form;
 
+import java.time.LocalDate;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -23,5 +25,19 @@ public class UsersForm {
     @Email
     private String email;
 
+    @NotBlank(message = "이름은 필수 입력 항목입니다.")
+    private String name;
+    
+    @NotBlank(message = "생년월일은 필수 입력 항목입니다.")
+    private LocalDate birth;
+    
+    @NotBlank(message = "성별은 필수 입력 항목입니다.")
+    private String gender;
+    
+    @NotBlank(message = "통신사는 필수 입력 항목입니다.")
+    private String telecom;
+    
+    @NotBlank(message = "전화번호는 필수 입력 항목입니다.")
+    private String phone;
     // 추가 적인 유효성 검사 진행 할 수 있음.
 }
