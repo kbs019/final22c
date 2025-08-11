@@ -1,0 +1,71 @@
+<html layout:decorate="~{layout/layout}">
+    <head>
+        <link layout:fragment="css" rel="stylesheet" href="/css/content.css">
+    </head>
+    <div layout:fragment="content">
+        <div class="productInfoWrap">
+            <!-- 좌측의 향수 이미지 -->
+            <div class="slideWrap">
+                <img th:src="@{|${perfume.imgPath}${perfume.imgName}|}">
+            </div>
+            <!-- 우측의 상단에 존재하는  판매 / 구매 페이지 선택 버튼 -->
+            <div class="productInfo">
+                <div th:text="${perfume.price}"></div>
+
+            </div>
+        </div>
+        <!-- 하단의 향 소개 부분 시작 -->
+        <div class="productDescription">
+            <h2>향 소개</h2>
+            <div>
+                <span>부향률</span>
+                <div>
+                    - <span th:text="${perfume.grade}"></span>
+                </div>
+            </div>
+            <div>
+                <span>메인 어코드</span>
+                <div>
+                    - <span th:text="${perfume.mainNote}"></span>
+                </div>
+            </div>
+            <div>
+                <span>메인 노트</span>
+                <div th:if="${perfume.singleNote != null}">
+                    - <span>싱글 노트 : </span>
+                    <span th:text="${perfume.singleNote}"></span>
+                </div>
+                <div th:if="${perfume.singleNote == null}">
+                    <div>
+                        - <span>탑 노트 : </span>
+                        <span th:text="${perfume.topNote}"></span>
+                    </div>
+                    <div>
+                        - <span>미들 노트 : </span>
+                        <span th:text="${perfume.middleNote}"></span>
+                    </div>
+                    <div>
+                        - <span>베이스 노트 : </span>
+                        <span th:text="${perfume.baseNote}"></span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <span>향 설명</span>
+                <div>
+                    - <span th:text="${perfume.description}"></span>
+                </div>
+            </div>
+        </div>
+        <!-- 하단의 향 소개 부분 끝 -->
+        
+        <!-- 리뷰 통계 부분 시작 -->
+        <!-- 리뷰 통계 부분 끝 -->
+
+
+        <!-- 리뷰 리스트 시작 -->
+        <!-- 리뷰 리스트 끝 -->
+
+        <!-- ajax 부분 설정 추가  -->
+    </div>
+</html>

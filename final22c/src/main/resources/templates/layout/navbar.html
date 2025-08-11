@@ -1,0 +1,16 @@
+<nav th:fragment="navbarFragment">
+    <div>
+        <ul class="navbar-nav mb-2 mb-lg-0">
+            <li class="nav-item">
+                <a sec:authorize="isAnonymous()" class="nav-link" th:href="@{/user/login}">로그인</a>
+                <a sec:authorize="isAuthenticated()" class="nav-link" th:href="@{/user/logout}">로그아웃</a>
+            </li>
+            <li class="nav-item">
+                <a sec:authorize="isAnonymous()" class="nav-link" th:href="@{/user/create}">회원가입</a>
+            </li>
+        </ul>
+    </div>
+    <div>
+        <a class="navbar-brand" href="/main/home">22°C</a>
+    </div>
+</nav>
