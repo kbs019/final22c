@@ -1,12 +1,12 @@
-<html layout:decorate="~{layout}">
+<html layout:decorate="~{layout/layout}">
     <div layout:fragment="content">
         <h5>전체 리스트 뽑기</h5>
-        <div th:each="perfume : ${list}">
-            <div th:text="${perfume.perfumeNo}"></div>
+        <div th:each="perfume, loop : ${list}">
+            <div th:text="${loop.index + 1}"></div>
             <div th:text="${perfume.perfumeName}"></div>
             <div th:text="${perfume.brand}"></div>
             <div>
-                <img src="${perfume.imgPath + perfume.imgName}">
+                <img th:src="@{|${perfume.imgPath}${perfume.imgName}|}">
             </div>
         </div>
     </div>
