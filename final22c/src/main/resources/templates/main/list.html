@@ -1,0 +1,13 @@
+<html layout:decorate="~{layout}">
+    <div layout:fragment="content">
+        <h5>전체 리스트 뽑기</h5>
+        <div th:each="${list}">
+            <div th:text="${list.perfumeNo}"></div>
+            <div th:text="${list.perfumeName}"></div>
+            <div th:text="${brand}"></div>
+            <div>
+                <img src="${}">
+            </div>
+        </div>
+    </div>
+</html>
