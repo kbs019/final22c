@@ -1,7 +1,7 @@
 <html layout:decorate="~{layout/layout}">
-    <head>
-        <link layout:fragment="css" rel="stylesheet" href="/css/content.css">
-    </head>
+    <th:block layout:fragment="css">
+        <link rel="stylesheet" href="/css/content.css">
+    </th:block>
     <div layout:fragment="content">
         <div class="productInfoWrap">
             <!-- 좌측의 향수 이미지 -->
@@ -67,5 +67,10 @@
         <!-- 리뷰 리스트 끝 -->
 
         <!-- ajax 부분 설정 추가  -->
+        <th:block layout:fragment="script">
+            <script type="text/javascript">
+
+            </script>
+        </th:block>
     </div>
 </html>

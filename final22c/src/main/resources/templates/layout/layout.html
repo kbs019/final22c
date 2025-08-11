@@ -11,7 +11,7 @@
 </head>
 <body>
     <!-- 내비게이션 바 설정 -->
-    <nav th:replace="~{layout/navbar :: navbarFragment}"></nav>
+    <nav th:replace="~{fragments/header :: header}"></nav>
 
     <!-- 각 템플릿이 가지는 내용 시작 -->
     <th:block layout:fragment="content"></th:block>
