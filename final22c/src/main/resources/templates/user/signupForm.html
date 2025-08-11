@@ -1,7 +1,9 @@
-<html layout:decorate="~{layout}">
-<div layout:fragment="content">
+<!-- <html layout:decorate="~{layout}">
+<div layout:fragment="content"> -->
+<html>
+<div>
     <h1>회원 가입</h1>
-    <form th:action="@{/user/create}" method="post" th:object="${userForm}">
+    <form th:action="@{/user/create}" method="post" th:object="${usersForm}">
         <div>
             <label for="username">아이디:</label>
             <input type="text" id="username" name="username" required>
@@ -27,9 +29,15 @@
             <input type="date" id="birth" name="birth" required>
         </div>
         <div>
-            <label for="gender">성별</label>
-            <input type="radio" id="gender1" name="gender" required /><label for="radio1">남성</label>
-            <input type="radio" id="gender2" name="gender" required /><label for="radio2">여성</label>
+            <fieldset>
+                <legend>성별</legend>
+                <label>
+                    <input type="radio" id="gender1" name="gender" value="M" required> 남성
+                </label>
+                <label>
+                    <input type="radio" id="gender2" name="gender" value="F"> 여성
+                </label>
+            </fieldset>
         </div>
         <div>
             <label for="telecom">통신사</label>
@@ -47,7 +55,7 @@
         </div>
         <div>
             <label for="phone">휴대폰 번호:</label>
-            <input type="tel" id="phone" name="phone" pattern="[0-9]{3}-[0-9]{4}-[0-9]{4}" placeholder="010-1234-5678" maxlength="13" required>
+            <input type="tel" id="phone" name="phone" pattern="[0-9]{3}-[0-9]{3, 4}-[0-9]{4}" placeholder="010-1234-5678" maxlength="13" required>
         </div>
         <button type="submit">가입하기</button>
     </form>
