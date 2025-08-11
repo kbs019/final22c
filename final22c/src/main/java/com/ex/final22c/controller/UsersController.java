@@ -46,4 +46,8 @@ public class UsersController {
     public String login() {
         return "user/loginForm";
     }
+    @GetMapping("/login/kakao")
+    public String login1() {
+    	return "user/loginForm";
+    }
 }
