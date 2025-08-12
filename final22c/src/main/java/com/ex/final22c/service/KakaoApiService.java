@@ -38,34 +38,5 @@ public class KakaoApiService {
         ResponseEntity<Map> response = template.postForEntity(url, request, Map.class);
         return response.getBody(); // 응답 JSON 그대로 반환
     }
-    public KakaoPayApproveVO kakaoPayApprove(String pgToken) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "KakaoAK {adminkey}"); // 발급받은 adminkey
-        headers.set("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
-
-        MultiValueMap<String, Object> payParams = new LinkedMultiValueMap<>();
-
-        /*
-         * 결제번호는 결제준비 api와 일치해야 한다.
-         * tid 불러오는 로직 추가
-         */
-        String tid = "";
-        payParams.add("cid", "TC0ONETIME");
-        payParams.add("tid", tid);
-        payParams.add("partner_order_id", "KA20230318001");
-        payParams.add("partner_user_id", "kakaopayTest");
-        payParams.add("pg_token", pgToken);
-
-        // 카카오페이 결제승인 api 요청
-        HttpEntity<Map> request = new HttpEntity<Map>(payParams, headers);
-
-        RestTemplate template = new RestTemplate();
-        String url = "https://kapi.kakao.com/v1/payment/approve";
-
-        // 요청결과
-        KakaoPayApproveVO res = template.postForObject(url, request, KakaoPayApproveVO.class);
-
-        return res;
-    }
 
 }

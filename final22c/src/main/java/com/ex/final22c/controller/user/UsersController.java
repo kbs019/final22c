@@ -1,15 +1,17 @@
 package com.ex.final22c.controller.user;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
 import com.ex.final22c.form.UsersForm;
 import com.ex.final22c.service.user.UsersService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.stereotype.Controller;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -34,8 +36,7 @@ public class UsersController {
             bindingResult.rejectValue("password2", "passwordInCorrect", "2개의 비밀번호가 일치하지 않습니다.");
             return "user/signupForm";
         }
-
-        
+     
         // 사용자 생성 성공
         usersService.create(usersForm);
         
@@ -47,8 +48,16 @@ public class UsersController {
     public String login() {
         return "user/loginForm";
     }
-    @GetMapping("/login/kakao")
-    public String login1() {
-    	return "user/loginForm";
+    
+    @GetMapping("/redirectByRole")
+    public String redirectByRole(Authentication authentication) {
+        // 현재 로그인 사용자의 첫 번째(그리고 유일한) 권한 가져오기
+        String role = authentication.getAuthorities().iterator().next().getAuthority();
+
+        if ("ROLE_ADMIN".equals(role)) {
+            return "redirect:/admin/userList";
+        }
+        return "redirect:/main/list";
+
     }
 }
