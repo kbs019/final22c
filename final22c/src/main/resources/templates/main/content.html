@@ -13,7 +13,25 @@
         </div>
         <!-- 우측의 상단에 존재하는  판매 / 구매 페이지 선택 버튼 -->
         <div class="productInfo">
-            <div th:text="${perfume.price}"></div>
+            <div class="d-flex justify-content-center gap-2 mb-3">
+                <button id="btn-buy" class="btn btn-outline-secondary active">구매</button>
+                <button id="btn-sell" class="btn btn-outline-secondary">판매</button>
+            </div>
+
+            <!-- 내용 영역: 두 블록을 미리 렌더링해둠 -->
+            <div id="perfume-detail">
+
+                <!-- 구매 섹션: 기본 표시 -->
+                <div id="section-buy">
+                    <th:block th:replace="~{main/content-buy :: buyFragment}"></th:block>
+                </div>
+
+                <!-- 판매 섹션: 기본은 숨김 -->
+                <div id="section-sell" style="display:none;">
+                    <th:block th:replace="~{main/content-sell :: sellFragment}"></th:block>
+                </div>
+
+            </div>
 
         </div>
     </div>
@@ -59,22 +77,157 @@
                 - <span th:text="${perfume.description}"></span>
             </div>
         </div>
+        <!-- 하단의 향 소개 부분 끝 -->
+
+        <!-- 리뷰 통계 부분 시작 -->
+        <!-- 리뷰 통계 부분 끝 -->
+
+        <!-- 리뷰 리스트 시작 -->
+        <div>
+            <h2>리뷰 리스트</h2>
+            <div th:if="${#lists.isEmpty(perfume.reviewList)}">
+                <h3>작성된 리뷰가 없습니다.</h3>
+            </div>
+            <div th:unless="${#lists.isEmpty(perfume.reviewList)}">
+                <div th:each="review : ${perfume.reviewList}">
+                    <div th:text="${review.gradePoint}"></div>
+                    <div th:text="${review.content}"></div>
+                    <div th:text="${review.user.username}"></div>
+                    <span th:text="${#temporals.format( review.createDate, 'yy-MM-dd HH:mm' )}"></span>
+                    <span th:text="${#lists.size(review.recs)}"></span>
+                </div>
+            </div>
+        </div>
+        <!-- 리뷰 리스트 끝 -->
     </div>
-    <!-- 하단의 향 소개 부분 끝 -->
 
-    <!-- 리뷰 통계 부분 시작 -->
-    <!-- 리뷰 통계 부분 끝 -->
-
-
-    <!-- 리뷰 리스트 시작 -->
-    <!-- 리뷰 리스트 끝 -->
-
-    <!-- ajax 부분 설정 추가  -->
-    <th:block layout:fragment="script">
-        <script type="text/javascript">
-
-        </script>
-    </th:block>
 </div>
+<!-- ajax 부분 설정 추가  -->
+<th:block layout:fragment="script">
+    <!-- 상단의 구매 / 판매 버튼 클릭하여 뷰 변경 -->
+    <script>
+        const btnBuy = document.getElementById('btn-buy');
+        const btnSell = document.getElementById('btn-sell');
+        const secBuy = document.getElementById('section-buy');
+        const secSell = document.getElementById('section-sell');
+
+        function show(type) {
+            const isBuy = type === 'buy';
+            secBuy.style.display = isBuy ? '' : 'none';
+            secSell.style.display = isBuy ? 'none' : '';
+            btnBuy.classList.toggle('active', isBuy);
+            btnSell.classList.toggle('active', !isBuy);
+        }
+
+        btnBuy.addEventListener('click', () => show('buy'));
+        btnSell.addEventListener('click', () => show('sell'));
+
+        // URL로 진입 시 ?view=sell 지원하고 싶으면:
+        (function initFromURL() {
+            const v = new URL(location.href).searchParams.get('view');
+            if (v === 'sell') show('sell');
+        })();
+    </script>
+
+    <style>
+        /* Chrome, Edge, Safari(웹킷 계열)에서 공통 스피너 제거 */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+
+    <script th:inline="javascript">
+        document.querySelectorAll('#buy-qty-wrap, #sell-qty-wrap').forEach(container => {
+            // 컨테이너별 DOM 잡기
+            const minusBtn = container.querySelector('.btn-minus');
+            const plusBtn = container.querySelector('.btn-plus');
+            const input = container.querySelector('.qty-input');
+            const totalEl = container.querySelector('.total-amount');
+            const rewardEl = container.querySelector('.reward-amount');
+
+            // 컨테이너별 상수 (min/max는 인풋 속성에서, price는 구매/판매에 따라)
+            const MIN = parseInt(input.getAttribute('min')) || 1;
+            const MAX = parseInt(input.getAttribute('max')) || 0;
+            const PRICE = container.id === 'buy-qty-wrap'
+                ? /*[[${perfume.sellPrice}]]*/ 0
+                : /*[[${perfume.buyPrice}]]*/  0;
+            const RATE = 0.05; // 구매/판매 공통 5% 
+
+            // 숫자 포맷
+            const fmt = n => Number(n || 0).toLocaleString('ko-KR');
+
+            // 값 범위 강제
+            function clamp(v) {
+                if (isNaN(v)) v = MIN;
+                v = Math.floor(v);
+                if (v < MIN) v = MIN;
+                if (v > MAX) v = MAX;
+                return v;
+            }
+
+            // 합계/적립 계산 + UI 반영
+            function recalcAndRender(qty) {
+                const total = PRICE * qty;
+                // 금액/포인트 반올림 규칙: 금액은 정수, 포인트는 내림(원단위 포인트 가정)
+                const point = Math.floor(total * RATE);
+                totalEl.textContent = fmt(total);
+                rewardEl.textContent = fmt(point);
+            }
+
+            function updateUI() {
+                const v = parseInt(input.value, 10);
+
+                // 재고 0이면 모두 비활성화 + 값 0 고정
+                if (MAX < 1) {
+                    input.value = 0;
+                    input.disabled = true;
+                    minusBtn.disabled = true;
+                    plusBtn.disabled = true;
+                    recalcAndRender(0);
+                    return;
+                }
+
+                // 정상 재고
+                input.value = clamp(v);
+                minusBtn.disabled = (parseInt(input.value, 10) <= MIN);
+                plusBtn.disabled = (parseInt(input.value, 10) >= MAX);
+                // input 요소의 max 속성도 동기화(옵션)
+                input.max = String(MAX);
+
+                recalcAndRender(parseInt(input.value, 10));
+            }
+
+            // 초기 상태
+            updateUI();
+
+            // 버튼 이벤트
+            minusBtn.addEventListener('click', function () {
+                if (this.disabled) return;
+                input.value = clamp(parseInt(input.value, 10) - 1);
+                updateUI();
+            });
+
+            plusBtn.addEventListener('click', function () {
+                if (this.disabled) return;
+                input.value = clamp(parseInt(input.value, 10) + 1);
+                updateUI();
+            });
+
+            // 직접 입력 시(붙여넣기 포함)도 범위 강제
+            input.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, ''); // 숫자만
+                updateUI();
+            });
+
+            // 포커스 아웃 시 최종 보정
+            input.addEventListener('blur', function () {
+                this.value = clamp(parseInt(this.value, 10));
+                updateUI();
+            });
+        })();
+    </script>
+</th:block>
 
 </html>
