@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.ex.final22c.data.perfume.Perfume;
-import com.ex.final22c.repository.perfume.PerfumeRepository;
 import com.ex.final22c.service.perfume.PerfumeService;
 
 import lombok.RequiredArgsConstructor;

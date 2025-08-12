@@ -19,26 +19,19 @@ import java.util.Map;
 @RequestMapping("/pay")
 public class PayController {
 
+    private final OrderService orderService;
     private final KakaoApiService kakaoApiService;
     private final PaymentService paymentService;
-    private final OrderService orderService;
 
-    /**
-     * 결제 준비(Ready)
-     * 프런트는 perfumeNo, qty만 보냄.
-     * 1) PENDING 주문 생성 → 2) 카카오 Ready 호출 → 3) Payment(READY) 저장
-     */
     @PostMapping("/ready")
-    @ResponseBody
-    public Map<String, Object> ready(@RequestParam int perfumeNo,
-                                     @RequestParam int qty,
-                                     Principal principal) {
+    public Map<String, Object> ready(
+            @RequestParam(name = "perfumeNo") int perfumeNo, // ← 이름 반드시 명시
+            @RequestParam(name = "qty")       int qty,        // ← 이름 반드시 명시
+            Principal principal
+    ) {
         String userId = (principal != null ? principal.getName() : "GUEST");
-
-        // 1) 주문 먼저 생성(PENDING)
         Order order = orderService.createPendingOrder(userId, perfumeNo, qty);
-
-        // 2) Ready + 3) Payment READY 저장(JPA)
+        int usedPoint = 0; // 더미
         return kakaoApiService.readySingle(perfumeNo, qty, userId, order);
     }
 
