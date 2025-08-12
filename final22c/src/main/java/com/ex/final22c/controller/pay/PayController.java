@@ -7,14 +7,17 @@ import com.ex.final22c.service.KakaoApiService;
 import com.ex.final22c.service.order.OrderService;
 import com.ex.final22c.service.payment.PaymentService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Principal;
 import java.util.Map;
 
-@Controller
+@RestController
 @RequiredArgsConstructor
 @RequestMapping("/pay")
 public class PayController {
@@ -25,13 +28,20 @@ public class PayController {
 
     @PostMapping("/ready")
     public Map<String, Object> ready(
-            @RequestParam(name = "perfumeNo") int perfumeNo, // ← 이름 반드시 명시
-            @RequestParam(name = "qty")       int qty,        // ← 이름 반드시 명시
+            @RequestParam(name = "perfumeNo") int perfumeNo, // 이름 명시
+            @RequestParam(name = "qty")       int qty,
             Principal principal
-    ) {
-        String userId = (principal != null ? principal.getName() : "GUEST");
+    ) {  // ★ 여기: 닫는 괄호 한 번만, 그리고 중괄호 열기
+
+        if (principal == null) {
+            // 테스트만 급하면 아래 두 줄 사용해도 됨
+            // Order order = orderService.createPendingOrderForTest(1L, perfumeNo, qty);
+            // return kakaoApiService.readySingle(perfumeNo, qty, "TEST_USER", order, 0);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        String userId = principal.getName();
         Order order = orderService.createPendingOrder(userId, perfumeNo, qty);
-        int usedPoint = 0; // 더미
         return kakaoApiService.readySingle(perfumeNo, qty, userId, order);
     }
 

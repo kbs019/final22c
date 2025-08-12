@@ -41,33 +41,43 @@ public class KakaoApiService {
         Perfume p = perfumeService.getPerfume(perfumeNo);
         if (p == null) throw new IllegalArgumentException("상품 없음: " + perfumeNo);
 
-        int stock = Math.max(p.getCount(), 0);
+        int stock   = Math.max(p.getCount(), 0);
         int safeQty = Math.min(Math.max(qty, 1), Math.max(stock, 1));
         if (stock == 0) throw new IllegalStateException("품절 상품입니다.");
 
         long unit  = p.getSellPrice();
         long total = unit * safeQty;
 
-        // 주문 PK를 partner_order_id로 사용 (권장)
+        // ★ 총액 0 이하 방어 (카카오 total_amount는 1 이상이어야 함)
+        if (total <= 0) {
+            throw new IllegalStateException("결제 총액이 0원 이하입니다. unit=" + unit + ", qty=" + safeQty);
+        }
+
         String partnerOrderId = String.valueOf(order.getOrderId());
         String partnerUserId  = (userId != null ? userId : "GUEST");
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "SECRET_KEY " + secretKey); // Open API(DEV) 방식
+        headers.set("Authorization", "SECRET_KEY " + secretKey); // DEV Open API
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("cid", "TC0ONETIME"); // 테스트 CID
+        body.put("cid", "TC0ONETIME");                       // 테스트 CID
         body.put("partner_order_id", partnerOrderId);
         body.put("partner_user_id", partnerUserId);
         body.put("item_name", p.getPerfumeName());
         body.put("quantity", safeQty);
         body.put("total_amount", total);
+        body.put("tax_free_amount", 0);                      // ★ 비과세 없음 → 0 고정
+        // body.put("vat_amount", ...);                      // 보내지 않음(자동계산)
 
-        // 성공 페이지에 orderId만 쿼리로 싣는다(권장). tid는 서버가 DB에서 찾는다.
         body.put("approval_url", "http://localhost:8080/pay/success?orderId=" + partnerOrderId);
         body.put("cancel_url",   "http://localhost:8080/pay/cancel");
         body.put("fail_url",     "http://localhost:8080/pay/fail");
+
+        // ★ 디버그 로그 (최종 값 확인)
+        System.out.printf("[KAKAO READY] total=%d, taxFree=%d, qty=%d, unit=%d, orderId=%s, user=%s%n",
+                total, 0, safeQty, unit, partnerOrderId, partnerUserId);
 
         RestTemplate rt = new RestTemplateBuilder()
                 .setConnectTimeout(Duration.ofSeconds(5))
@@ -81,12 +91,12 @@ public class KakaoApiService {
             Map<String, Object> result = res.getBody();
             String tid = (result != null) ? String.valueOf(result.get("tid")) : null;
 
-            // ✅ JPA로 READY 저장 (Order FK 연결)
-            paymentService.saveReady(order, (int) total, tid);
-
+            paymentService.saveReady(order, (int) total, tid); // READY 저장
             return result;
 
         } catch (HttpStatusCodeException e) {
+            // 서버 로그에 바디 찍어보기
+            System.err.println("[KAKAO READY ERROR] " + e.getResponseBodyAsString());
             throw new IllegalStateException("KakaoPay READY 실패: " + e.getResponseBodyAsString(), e);
         }
     }
