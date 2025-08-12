@@ -102,8 +102,8 @@ public class Perfume {
     // price 컬럼에 값이 들어오는 동시에 판매가와 매입가를 설정
     private void recalcPrices() {
         if (this.price != 0) {
-            this.sellPrice = (int)Math.floor(this.price * 0.9);     // 팔 때, 10% 할인             (관리자 입장)
-            this.buyPrice  = (int)Math.floor(this.price * 0.7);     // 살 때, 30% 싼 가격에 구매    (관리자 입장)
+            this.sellPrice = (int)Math.floor(this.price * 0.7);     // 팔 때, 30% 할인             (관리자 입장)
+            this.buyPrice  = (int)Math.floor(this.price * 0.5);     // 살 때, 50% 싼 가격에 구매    (관리자 입장)
         }
     }
 }
