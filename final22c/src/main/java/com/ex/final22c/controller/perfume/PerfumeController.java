@@ -1,40 +1,43 @@
 package com.ex.final22c.controller.perfume;
 
-import java.util.List;
-
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-
 import com.ex.final22c.data.perfume.Perfume;
 import com.ex.final22c.service.perfume.PerfumeService;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/main/*")
+@RequestMapping("/main")
 public class PerfumeController {
 
     private final PerfumeService perfumeService;
 
-    @GetMapping("list")
-    public String home( Model model ){
-        List<Perfume> list = perfumeService.showList();
+    // 목록 페이지: /main/list?q=&grades=...&accords=...
+    @GetMapping("/list")
+    public String list(@RequestParam(name = "q", required = false) String q,
+                       @RequestParam(name = "grades", required = false) List<String> grades,
+                       @RequestParam(name = "accords", required = false) List<String> accords,
+                       Model model) {
 
+        List<Perfume> list = perfumeService.search(q, grades, accords);
         model.addAttribute("list", list);
+        model.addAttribute("q", q);
+        model.addAttribute("grades", grades);
+        model.addAttribute("accords", accords);
+
         return "main/list";
     }
 
-    // 상세 페이지로 이동
-    @GetMapping("content/{perfumeNo}")  // perfumeNo 를 URI 에 포함시켜 전송
-    public String perfumeContent( @PathVariable("perfumeNo") int perfumeNo, Model model ){
-        Perfume perfume = this.perfumeService.getPerfume(perfumeNo);
-
+    // 상세 페이지: /main/content/{perfumeNo}
+    @GetMapping("/content/{perfumeNo}")
+    public String perfumeContent(@PathVariable("perfumeNo") int perfumeNo,
+                                 Model model) {
+        Perfume perfume = perfumeService.getPerfume(perfumeNo);
         model.addAttribute("perfume", perfume);
-
         return "main/content";
     }
 }
