@@ -138,6 +138,14 @@
         }
     </style>
 
+    <script>
+        document.getElementById('buy-form').addEventListener('submit', (e) => {
+            const btn = e.submitter;    // 눌린 버튼
+            btn.disabled = true;        // 클릭 시 disabled 로 변경됨 - 더블클릭 방지
+            setTimeout(() => btn.disabled = false, 2000);       // 2 초 뒤에 비활성화 해제
+        });
+    </script>
+
     <script th:inline="javascript">
         document.querySelectorAll('#buy-qty-wrap, #sell-qty-wrap').forEach(container => {
             // 컨테이너별 DOM 잡기
@@ -185,6 +193,8 @@
                     input.disabled = true;
                     minusBtn.disabled = true;
                     plusBtn.disabled = true;
+                    // 재고 0 일 때, 장바구니 / 바로결제 버튼 불가능
+                    document.querySelectorAll('#btn-add-cart, #btn-buy-now').forEach(b => b.disabled = true);
                     recalcAndRender(0);
                     return;
                 }
@@ -197,6 +207,7 @@
                 input.max = String(MAX);
 
                 recalcAndRender(parseInt(input.value, 10));
+                document.querySelectorAll('#btn-add-cart, #btn-buy-now').forEach(b => b.disabled = false);
             }
 
             // 초기 상태

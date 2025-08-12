@@ -11,19 +11,32 @@
     </div>
     <div class="my-3 py-3 border-bottom">
         <div>정산 완료 시, 정산금액의 5% 적립</div>
-        <div class="d-flex align-items-center gap-2" id="sell-qty-wrap">
-            <button type="button" class="btn btn-outline-secondary btn-sm btn-minus">-</button>
-
-            <!-- 수량 입력: min=1, max=재고 -->
-            <input type="number" class="form-control text-center qty-input" style="width:80px;"
-                th:attr="max=${perfume.count}" min="1" value="1">
-
-            <button type="button" class="btn btn-outline-secondary btn-sm btn-plus">+</button>
-
-            <div class="ms-3">
-                <div class="fw-semibold">합계: <span class="total-amount">0</span> 원</div>
-                <div class="text-muted small">적립 예정(5%): <span class="reward-amount">0</span> P</div>
+        <form id="sell-form" method="post">
+            <!-- 상품번호 -->
+            <input type="hidden" name="perfumeNo" th:value="${perfume.perfumeNo}">
+            
+            <!-- CSRF 를 사용하면 히든으로 토큰을 넘겨준다. -->
+            <!-- <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"> -->
+            
+            <div class="d-flex align-items-center gap-2" id="sell-qty-wrap">
+                <button type="button" class="btn btn-outline-secondary btn-sm btn-minus">-</button>
+    
+                <!-- 수량 입력: min=1, max=재고 -->
+                <input type="number" class="form-control text-center qty-input" style="width:80px;"
+                    name="quantity" th:attr="max=${(100 - perfume.count) > 0 ? (100 - perfume.count) : 0}" min="1" value="1">       <!-- T(java.lang.Math).max(0, …)로 음수 방지(이미 100 이상이면 0). -->
+    
+                <button type="button" class="btn btn-outline-secondary btn-sm btn-plus">+</button>
+    
+                <div class="ms-3">
+                    <div class="fw-semibold">합계: <span class="total-amount">0</span> 원</div>
+                    <div class="text-muted small">적립 예정(5%): <span class="reward-amount">0</span> P</div>
+                </div>
             </div>
-        </div>
+
+            <!-- 제출버튼 -->
+            <div class="mt-3">
+                <button type="submit" class="btn btn-secondary" formaction="/main/sell" formmethod="post" id="btn-sell">판매하기</button>
+            </div>
+        </form>
     </div>
 </div>
