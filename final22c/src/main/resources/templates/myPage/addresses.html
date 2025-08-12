@@ -3,39 +3,36 @@
     <h2>배송지 등록</h2>
 
     <!-- 등록 폼: 엔티티 필드명과 name을 1:1 매핑 -->
-    <form th:action="@{/addresses}" method="post" th:object="${addressForm}">
+    <form th:action="@{/addresses}" method="post" th:object="${UsersAddressForm}">
         <div>
             <label>배송지명</label>
-            <input type="text" name="addrName" placeholder="예: 집 / 회사" required>
+            <input type="text" th:field="*{addressName}" placeholder="예: 집 / 회사" required>
         </div>
         <div>
             <label>수령인</label>
-            <input type="text" name="recipient" placeholder="수령인" required>
-        </div>
+            <input type="text" th:field="*{recipient}" placeholder="수령인" required>
+        </div>th:field="*{}"
 
         <div>
             <label>우편번호</label>
-            <input type="text" id="sample2_postcode" name="zonecode" placeholder="우편번호" required>
+            <input type="text" th:field="*{zonecode}" placeholder="우편번호" required>
             <input type="button" onclick="sample2_execDaumPostcode()" value="우편번호 찾기"><br>
         </div>
 
         <div>
             <label>도로명주소</label>
-            <input type="text" id="sample2_address" name="roadAddress" placeholder="주소" required><br>
+            <input type="text" th:field="*{roadAddress}" placeholder="주소" required><br>
         </div>
 
         <div>
             <label>상세주소</label>
-            <input type="text" id="sample2_detailAddress" name="detailAddress" placeholder="상세주소" required>
+            <input type="text" th:field="*{detailAddress}" placeholder="상세주소" required>
         </div>
 
-        <!-- 참고항목은 DB 컬럼이 없으므로 전송 제외(원하면 name 추가해서 컬럼 늘리면 됨) -->
-        <input type="text" id="sample2_extraAddress" placeholder="참고항목" readonly>
-
         <!-- 체크 안 하면 값이 안 넘어오니 hidden으로 기본값 N 먼저 보냄 -->
-        <input type="hidden" name="isDefault" value="N">
+        <input type="hidden" th:field="*{isDefault}" value="N">
         <label style="display:block;margin-top:6px;">
-            <input type="checkbox" name="isDefault" value="Y"> 기본배송지로 설정
+            <input type="checkbox" th:field="*{isDefault}" value="Y"> 기본배송지로 설정
         </label>
 
         <button type="submit" style="margin-top:8px;">등록</button>
@@ -108,14 +105,11 @@
                         if(extraAddr !== ''){
                             extraAddr = ' (' + extraAddr + ')';
                         }
-                        document.getElementById("sample2_extraAddress").value = extraAddr;
-                    } else {
-                        document.getElementById("sample2_extraAddress").value = '';
-                    }
 
-                    document.getElementById('sample2_postcode').value = data.zonecode; // name="zonecode"
-                    document.getElementById("sample2_address").value = addr;          // name="roadAddress"
-                    document.getElementById("sample2_detailAddress").focus();
+                    }
+                    document.getElementById('zonecode').value = data.zonecode; // name="zonecode"
+                    document.getElementById('roadAddress').value = addr;          // name="roadAddress"
+                    document.getElementById('detailAddress').focus();
 
                     element_layer.style.display = 'none';
                 },

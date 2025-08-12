@@ -96,6 +96,4 @@ public class Users {
         	this.status = "active";
         }
     }
-    
-    
 }

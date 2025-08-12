@@ -7,20 +7,27 @@ import lombok.*;
 @Table(name = "user_address")
 @Getter @Setter
 @Builder
-@NoArgsConstructor @AllArgsConstructor
+@NoArgsConstructor 
+@AllArgsConstructor
 public class UserAddress {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="userAddress_seq_gen")
     @SequenceGenerator(name = "userAddress_seq_gen", sequenceName="userAddress_seq", allocationSize = 1)
+    @Column(name = "addressNo", nullable = false)
+    private Long addressNo;         // 배송지 번호 PK
+
     @Column(nullable = false)
     private Long userNo;             // FK
 
     @Column(length = 30, nullable = false)
-    private String addrName;         // 배송지명 (예: 집, 회사)
+    private String addressName;         // 배송지명 (예: 집, 회사)
 
     @Column(length = 30, nullable = false)
     private String recipient;        // 수령인
+
+    @Column(name = "phone", length = 30, unique = true)
+    private String phone;
 
     @Column(length = 10, nullable = false)
     private String zonecode;         // 다음API: zonecode (새 우편번호)
@@ -32,9 +39,8 @@ public class UserAddress {
     private String detailAddress;    // 상세주소
 
     @Column(length = 1, nullable = false)
-    @Builder.Default
     private String isDefault;
-        @PrePersist
+    @PrePersist
     public void prePersist() {
         if (this.isDefault == null) {
             this.isDefault = "N";     // 'Y' 기본배송지, 기본값 'N'
