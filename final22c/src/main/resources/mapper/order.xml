@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ex.repository.OrderMapper">
+  <insert id="insertOrder" parameterType="map">
+    INSERT INTO orders (order_id, user_id, order_status, order_date, total_price)
+    VALUES (order_seq.NEXTVAL, #{userId}, 'CREATED', SYSTIMESTAMP, #{totalPrice})
+  </insert>
+
+  <select id="selectCurrOrderId" resultType="long" parameterType="string">
+    SELECT MAX(order_id) FROM orders
+    WHERE user_id = #{userId}
+      AND order_status = 'CREATED'
+      AND order_date > SYSTIMESTAMP - INTERVAL '5' MINUTE
+  </select>
+
+  <insert id="insertOrderDetail" parameterType="map">
+    INSERT INTO order_detail (order_detail_id, order_id, item_no, quantity, price, total_price)
+    VALUES (order_detail_seq.NEXTVAL, #{orderId}, #{itemNo}, #{quantity}, #{price}, #{totalPrice})
+  </insert>
+
+  <insert id="insertPayment" parameterType="map">
+    INSERT INTO payment (payment_id, order_id, method, amount, status, approved_at)
+    VALUES (payment_seq.NEXTVAL, #{orderId}, #{method}, #{amount}, #{status}, #{approvedAt})
+  </insert>
+
+  <update id="decreaseStockAndIncreaseSellCount" parameterType="map">
+    UPDATE perfume
+       SET stock = stock - #{quantity},
+           sell_count = sell_count + #{quantity}
+     WHERE item_no = #{itemNo}
+       AND stock >= #{quantity}
+  </update>
+
+  <select id="selectPerfumePrice" parameterType="string" resultType="int">
+    SELECT price_sales FROM perfume WHERE item_no = #{itemNo}
+  </select>
+</mapper>
