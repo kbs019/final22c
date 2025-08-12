@@ -33,5 +33,11 @@ public class UserAddress {
 
     @Column(length = 1, nullable = false)
     @Builder.Default
-    private String isDefault = "N";  // 'Y' 기본배송지, 기본값 'N'
+    private String isDefault;
+        @PrePersist
+    public void prePersist() {
+        if (this.isDefault == null) {
+            this.isDefault = "N";     // 'Y' 기본배송지, 기본값 'N'
+        }
+    }
 }
