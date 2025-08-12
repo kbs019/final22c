@@ -36,6 +36,7 @@ public class UsersController {
             bindingResult.rejectValue("password2", "passwordInCorrect", "2개의 비밀번호가 일치하지 않습니다.");
             return "user/signupForm";
         }
+        
      
         // 사용자 생성 성공
         usersService.create(usersForm);
