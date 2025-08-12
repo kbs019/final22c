@@ -25,7 +25,7 @@ public class PerfumeController {
         List<Perfume> list = perfumeService.showList();
 
         model.addAttribute("list", list);
-        return "main/list1";
+        return "main/list";
     }
 
     // 상세 페이지로 이동
