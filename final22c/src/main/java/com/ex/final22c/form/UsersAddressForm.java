@@ -27,5 +27,5 @@ public class UsersAddressForm {
     @NotBlank(message = "상세주소는 필수 입력 항목입니다.")
     private String detailAddress;   // 상세주소
 
-    private boolean isDefault; // 기본 배송지 여부
+    private Boolean isDefault; // 기본 배송지 여부
 }

@@ -29,30 +29,29 @@ public class UserAddress {
     private Long addressNo;         // 배송지 번호 PK
 
     @Column(nullable = false)
-    private Long userNo;             // FK
+    private Long userNo;            // FK
+
+    @Column(name = "addressName", length = 30, nullable = false)
+    private String addressName;     // 배송지명 (예: 집, 회사)
 
     @Column(length = 30, nullable = false)
-    private String addressName;         // 배송지명 (예: 집, 회사)
+    private String recipient;       // 수령인
 
-    @Column(length = 30, nullable = false)
-    private String recipient;        // 수령인
-
-    @Column(name = "phone", length = 30, unique = true)
+    @Column(name = "phone", length = 30, nullable = false)
     private String phone;
 
     @Column(length = 10, nullable = false)
-    private String zonecode;         // 다음API: zonecode (새 우편번호)
+    private String zonecode;        // 다음API: zonecode (새 우편번호)
 
     @Column(length = 100, nullable = false)
-    private String roadAddress;      // 다음API: roadAddress
+    private String roadAddress;     // 다음API: roadAddress
 
     @Column(length = 100, nullable = false)
-    private String detailAddress;    // 상세주소
+    private String detailAddress;   // 상세주소
 
     @Column(length = 1, nullable = false)
 
     private String isDefault;
-
 
     @PrePersist
     public void prePersist() {
