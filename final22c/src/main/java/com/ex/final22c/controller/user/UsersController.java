@@ -1,7 +1,8 @@
-package com.ex.final22c.controller;
+package com.ex.final22c.controller.user;
 
 import com.ex.final22c.form.UsersForm;
-import com.ex.final22c.service.UsersService;
+import com.ex.final22c.service.user.UsersService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 

@@ -1,13 +1,13 @@
-package com.ex.final22c.service;
+package com.ex.final22c.service.user;
 
 import java.time.LocalDate;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.ex.final22c.data.Users;
+import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersForm;
-import com.ex.final22c.repository.UserRepository;
+import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,9 +27,6 @@ public class UsersService {
                 .telecom(usersForm.getTelecom())
                 .phone(usersForm.getPhone())
                 .gender(usersForm.getGender())
-                .reg(LocalDate.now())
-                .status("active")
-                .role("user")
                 .loginType("local")
                 .build();
             this.userRepository.save(user);

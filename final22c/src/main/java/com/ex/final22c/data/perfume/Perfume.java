@@ -1,4 +1,4 @@
-package com.ex.final22c.data;
+package com.ex.final22c.data.perfume;
 
 import org.hibernate.annotations.DynamicInsert;
 
@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+// import jakarta.persistence.ManyToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
@@ -74,6 +75,8 @@ public class Perfume {
 
     @Column(name="buyPrice")
     private int buyPrice;
+
+
 
     // 기본값 및 파생값 계산
     // insert 시 매번 실행되는 메서드 실행 ( count 가 0 이라면, count 에 10 대입 (default) / isPicked 가 null 이라면, 기본값 "N" 을 대입 / 이후, 가격 계산해주기 )
