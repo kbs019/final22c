@@ -1,0 +1,21 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<h1>결제테스트</h1>
+<button id="test">카카오페이</button>
+<script>
+$("#test").click(function (){
+	$.ajax({
+		type:'get',
+		url:'/pay/ready',
+		data:{
+			item_name : "홍석범부",
+			quantity : "1",
+			total_amount : "100000",
+			tax_free_amount : "0"
+		},
+		success:function(res){
+			location.href=res.next_redirect_pc_url;
+		}
+	})
+})
+
+</script>
