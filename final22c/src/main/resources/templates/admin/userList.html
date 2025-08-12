@@ -40,7 +40,7 @@
 	            	<td>영구정지</td>
 	            </span>
 	            <td>
-	                <select class="statusSelect form-select form-select-sm" data-username="${list.userName}">
+	                <select class="statusSelect form-select form-select-sm" th:data-username="${list.userName}">
 					    <option selected disabled>선택하세요</option>
 					    <option value="normal">정상</option>
 					    <option value="7d">7일 정지</option>
@@ -78,25 +78,28 @@
 		<input type="hidden" id="kw" name="kw" th:value="${kw}" />
 		<input type="hidden" id="page" name="page" th:value="${user.number}" />
 	</form>
+	<!-- 상태 변경 성공 모달 -->
+	<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+	  <div class="modal-dialog modal-dialog-centered">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <h5 class="modal-title" id="successModalLabel">알림</h5>
+	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+	      </div>
+	      <div class="modal-body">
+	        회원 상태가 성공적으로 변경되었습니다.
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">확인</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
 </div>
-<!-- 상태 변경 성공 모달 -->
-<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="successModalLabel">알림</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-      </div>
-      <div class="modal-body">
-        회원 상태가 성공적으로 변경되었습니다.
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">확인</button>
-      </div>
-    </div>
-  </div>
-</div>
+
+
 <script layout:fragment="script" type="text/javascript">
+	// 검색
 	const page_elements = document.getElementsByClassName("page-link");
 	Array.from(page_elements).forEach(function(element){
 		element.addEventListener('click',function(){
@@ -112,28 +115,52 @@
 		document.getElementById('searchForm').submit();
 	});
 	
-	$(".statusSelect").change(function(){
-		  $.ajax({
-		    url: "/admin/changeStatus",
-		    type: "POST",  
-		    contentType: "application/x-www-form-urlencoded; charset=UTF-8",
-		    data: {
-		      username: $(this).data("username"),
-		      status: $(this).val()
-		    },
-		    success: function(response) {
-		    	var successModal = new bootstrap.Modal(document.getElementById('successModal'));
-		    	  successModal.show();
+	// 정지 ajax
+	$(document).ready(function() {
+		$(".statusSelect").change(function(){
+			  $.ajax({
+			    url: "/admin/changeStatus",
+			    type: "POST",  
+			    contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+			    data: {
+			      username: $(this).data("username"),
+			      status: $(this).val()
+			    },
+			    success: function(response) {
+					
+			    	var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+			    	  successModal.show();
+	
+			    	  // 모달 닫히면 새로고침
+			    	  document.getElementById('successModal').addEventListener('hidden.bs.modal', function () {
+			    	    location.reload();
+			    	  },{ once: true });
+			    },
+			    error: function(xhr){
+			      alert("상태 변경에 실패했습니다.");
+			    }
+			  });
+			});
+		});
+		
+		// 정지 체크박스
+		document.getElementById('filterActive').addEventListener('change', function() {
+		  const checked = this.checked;
+		  const rows = document.querySelectorAll('#userTable tbody tr'); // 회원 리스트가 테이블이라면
 
-		    	  // 모달 닫히면 새로고침
-		    	  document.getElementById('successModal').addEventListener('hidden.bs.modal', function () {
-		    	    location.reload();
-		    	  });
-		    },
-		    error: function(xhr){
-		      alert("상태 변경에 실패했습니다.");
+		  rows.forEach(row => {
+		    const status = row.dataset.status; // 예: <tr data-status="suspended">
+		    if (checked) {
+		      if (status === 'suspended' || status === 'banned') {
+		        row.style.display = '';  // 보여줌
+		      } else {
+		        row.style.display = 'none'; // 숨김
+		      }
+		    } else {
+		      row.style.display = ''; // 필터 해제 시 모두 보여줌
 		    }
 		  });
 		});
 </script>
+
 </html>
