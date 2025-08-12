@@ -1,13 +1,18 @@
 package com.ex.final22c.data.perfume;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import org.hibernate.annotations.DynamicInsert;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-// import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
@@ -76,6 +81,14 @@ public class Perfume {
     @Column(name="buyPrice")
     private int buyPrice;
 
+    @Column(name="sellCount")
+    private int sellCount;
+
+    @OneToMany(mappedBy = "perfume", cascade = CascadeType.REMOVE)
+    private List<Review> reviewList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "perfume", cascade = CascadeType.REMOVE)
+    private List<Mark> marks = new ArrayList<>();
 
 
     // 기본값 및 파생값 계산

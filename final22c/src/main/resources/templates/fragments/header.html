@@ -19,7 +19,6 @@
                 <li class="nav-item"><a class="nav-link" href="#">통계</a></li>
                 <li class="nav-item"><a class="nav-link" href="#">돋보기</a></li>
 			</ul>
-			
 			<!-- 일반 사용자 메뉴 -->
 			<ul class="navbar-nav" sec:authorize="!hasRole('ADMIN')">
 			    <li class="nav-item"><a class="nav-link" href="#">HOME</a></li>
@@ -33,8 +32,9 @@
             <div class="navbar-icons">
                 <i class="fas fa-bell icon"></i>
                 <i class="fas fa-shopping-cart icon"></i>
-                <span>로그인</span>
-                <span>마이페이지</span>
+				<a sec:authorize="isAnonymous()" class="nav-link" href="/user/login">로그인</a>
+				<a sec:authorize="hasRole('USER')" class="nav-link" href="/myPage/myPage">마이페이지</a>
+				<a sec:authorize="isAuthenticated()" class="nav-link" href="/user/logout">로그아웃</a>
             </div>
         </div>
     </nav>

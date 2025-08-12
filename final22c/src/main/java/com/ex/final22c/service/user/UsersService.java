@@ -1,9 +1,9 @@
 package com.ex.final22c.service.user;
 
-import java.time.LocalDate;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersForm;
@@ -16,7 +16,8 @@ import lombok.RequiredArgsConstructor;
 public class UsersService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
+    	
+    	// 회원가입
         public Users create(UsersForm usersForm) {
             Users user = Users.builder()
                 .userName(usersForm.getUserName())
@@ -32,4 +33,5 @@ public class UsersService {
             this.userRepository.save(user);
             return user;
         }
+        
 }
