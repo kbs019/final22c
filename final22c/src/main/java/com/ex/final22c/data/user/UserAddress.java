@@ -32,9 +32,9 @@ public class UserAddress {
     private String detailAddress;    // 상세주소
 
     @Column(length = 1, nullable = false)
-    @Builder.Default
     private String isDefault;
-        @PrePersist
+
+    @PrePersist
     public void prePersist() {
         if (this.isDefault == null) {
             this.isDefault = "N";     // 'Y' 기본배송지, 기본값 'N'
