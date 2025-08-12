@@ -1,4 +1,4 @@
-package com.ex.final22c.service;
+package com.ex.final22c.service.user;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +12,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.ex.final22c.data.UserRole;
-import com.ex.final22c.data.Users;
-import com.ex.final22c.repository.UserRepository;
+import com.ex.final22c.data.user.UserRole;
+import com.ex.final22c.data.user.Users;
+import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 

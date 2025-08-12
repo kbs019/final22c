@@ -1,4 +1,4 @@
-package com.ex.final22c.data;
+package com.ex.final22c.data.user;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -93,7 +93,7 @@ public class Users {
             this.role = "user";
         }
         if(this.status == null) {
-            this.status = "active";
+        	this.status = "active";
         }
     }
     

@@ -1,4 +1,4 @@
-package com.ex.final22c.controller;
+package com.ex.final22c.controller.myPage;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -6,9 +6,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import com.ex.final22c.data.Users;
-import com.ex.final22c.service.UserAddressService;
-import com.ex.final22c.service.UsersService;
+import com.ex.final22c.data.user.Users;
+import com.ex.final22c.service.user.UserAddressService;
+import com.ex.final22c.service.user.UsersService;
 
 import lombok.RequiredArgsConstructor;
 

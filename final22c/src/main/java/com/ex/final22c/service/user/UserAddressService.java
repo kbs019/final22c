@@ -1,11 +1,11 @@
-package com.ex.final22c.service;
+package com.ex.final22c.service.user;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.ex.final22c.data.UserAddress;
-import com.ex.final22c.repository.UserAddressRepository;
+import com.ex.final22c.data.user.UserAddress;
+import com.ex.final22c.repository.user.UserAddressRepository;
 
 import lombok.RequiredArgsConstructor;
 

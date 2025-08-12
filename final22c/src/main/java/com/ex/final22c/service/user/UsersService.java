@@ -1,13 +1,13 @@
-package com.ex.final22c.service;
+package com.ex.final22c.service.user;
 
 import java.time.LocalDate;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.ex.final22c.data.Users;
+import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersForm;
-import com.ex.final22c.repository.UserRepository;
+import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 

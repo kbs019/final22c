@@ -1,4 +1,4 @@
-package com.ex.final22c.service;
+package com.ex.final22c.service.perfume;
 
 import java.util.List;
 import java.util.Optional;
@@ -6,8 +6,8 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.ex.final22c.DataNotFoundException;
-import com.ex.final22c.data.Perfume;
-import com.ex.final22c.repository.PerfumeRepository;
+import com.ex.final22c.data.perfume.Perfume;
+import com.ex.final22c.repository.perfume.PerfumeRepository;
 
 import lombok.RequiredArgsConstructor;
 

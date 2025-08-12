@@ -1,16 +1,15 @@
-package com.ex.final22c.controller;
-
-import org.springframework.stereotype.Controller;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+package com.ex.final22c.controller.user;
 
 import com.ex.final22c.form.UsersForm;
-import com.ex.final22c.service.UsersService;
+import com.ex.final22c.service.user.UsersService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -36,6 +35,7 @@ public class UsersController {
             return "user/signupForm";
         }
 
+        
         // 사용자 생성 성공
         usersService.create(usersForm);
         

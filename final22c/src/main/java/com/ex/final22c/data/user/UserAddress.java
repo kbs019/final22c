@@ -1,4 +1,4 @@
-package com.ex.final22c.data;
+package com.ex.final22c.data.user;
 
 import jakarta.persistence.*;
 import lombok.*;
