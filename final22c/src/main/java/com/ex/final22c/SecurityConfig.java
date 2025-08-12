@@ -16,14 +16,16 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests((auth) -> auth
-                // 모든 요청 허용.
+               	   .requestMatchers("/admin/**").hasRole("ADMIN")   // admin 권한만 접근 가능
+            	   .requestMatchers("/mypage/**").hasRole("USER")     // user 권한만 접근 가능
+            	// 모든 요청 허용.
                 .anyRequest().permitAll()
             )
             .csrf(csrf -> csrf.disable())
             .formLogin((form) -> form
                 .loginPage("/user/login")
                 // 로그인 성공 후 이동할 URL 설정
-                .defaultSuccessUrl("/main/list")
+                .defaultSuccessUrl("/user/redirectByRole", true)
             )
             .logout((logout) -> logout
                 .logoutUrl("/user/logout")

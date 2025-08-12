@@ -32,7 +32,7 @@ public class UsersSecurityService implements UserDetailsService {
 		Users users = _users.get();
 		// 사용자 권한 객체
 		List<GrantedAuthority> authorities = new ArrayList<>();
-		if("amdin".equals(username)) {
+		if("admin".equals(username)) {
 			// 아이디가 admin 이면 admin권한
 			authorities.add(new SimpleGrantedAuthority(UserRole.ADMIN.getValue()));
 		}else {

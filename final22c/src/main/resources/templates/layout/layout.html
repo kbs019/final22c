@@ -1,28 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" >
-    <!-- 개인적으로 넣을 CSS 파일 -->
-    <th:block layout:fragment="css"></th:block>
     <title>22°C</title>
+    <!-- 제이쿼리 -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <!-- 페이지별 추가 CSS -->
+    <th:block layout:fragment="css"></th:block>
 </head>
-<body>
-    <!-- 내비게이션 바 설정 -->
-    <nav th:replace="~{fragments/header :: header}"></nav>
+<body class="bg-body-tertiary">
+    <!-- 고정 상단 내비게이션 -->
+    <header class="sticky-top shadow-sm">
+        <nav th:replace="~{fragments/header :: header}"></nav>
+    </header>
 
-    <!-- 각 템플릿이 가지는 내용 시작 -->
-    <th:block layout:fragment="content"></th:block>
-    <!-- 각 템플릿이 가지는 내용 끝 -->
+    <!-- 메인 콘텐츠 래퍼: 여백/가독성 향상 -->
+    <main id="content" class="container py-4 py-md-5">
+        <!-- 각 템플릿의 내용 -->
+        <th:block layout:fragment="content"></th:block>
+    </main>
 
-    <!-- ajax 를 사용하기 위한 CDN -->
+    <!-- 하단 여백 및 푸터(선택) -->
+    <!-- <footer th:replace="~{fragments/footer :: footer}"></footer> -->
+
+    <!-- jQuery (Ajax) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <!-- Bootstrap 의 JavaScript 기능을 동작시키는 라이브러리 -->
+    <!-- Bootstrap JS -->
     <script th:src="@{/js/bootstrap.min.js}"></script>
 
-    <!-- 자바스크립트 시작 -->
+    <!-- 페이지별 스크립트 -->
     <th:block layout:fragment="script"></th:block>
+
+    <!-- 상단으로 버튼 -->
+    <button type="button" class="btn btn-light border shadow-sm to-top" aria-label="상단으로 이동" title="상단으로">
+        ↑
+    </button>
+    <script>
+        (function () {
+            const btn = document.querySelector('.to-top');
+            const toggle = () => btn.classList.toggle('show', window.scrollY > 200);
+            window.addEventListener('scroll', toggle);
+            btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            toggle();
+        })();
+    </script>
 </body>
 </html>
