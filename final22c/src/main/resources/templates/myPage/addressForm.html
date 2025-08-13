@@ -1,85 +1,221 @@
 <html layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
- <th:block layout:fragment="css">
-   <style>
-    .to-top { display: none !important; }
-   </style>
- </th:block>
-  <!-- 레이아웃 적용시 우편번호 api 작동을 안함 -->
-  <h5>배송지 등록</h5>
+<style>
+  .to-top { display: none !important; }
 
-  <form th:action="@{/mypage}" method="post" th:object="${usersAddressForm}">
-    <div>
-      <label for="addressName">배송지명</label>
-      <input type="text" th:field="*{addressName}" required />
+  /* ===== Modal 기본 스타일 ===== */
+  .modal-backdrop{  position:fixed;
+                    inset:0;
+                    background:rgba(0,0,0,.45);
+                    display:none;
+                    z-index:9998;
+                  }
+  .modal{
+    position:fixed;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    background:#fff;
+    border-radius:14px;
+    min-width:420px;
+    max-width:580px;
+    padding: 28px 20px 20px;
+    display:none;
+    z-index:9999;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);
+    height: auto !important;
+    max-height: 90vh; /* 화면 기준 최대 높이 */
+    overflow-y: auto; /* 내용 스크롤 */
+    box-sizing: border-box; /* 패딩 포함 계산 */
+  }
+
+  .modal > form{
+    height: auto !important;
+    max-height: inherit;
+  }
+
+  .modal.open,.modal-backdrop.open{display:block}
+
+  .row{ display:flex;
+        gap:8px;
+        align-items:center
+      }
+  .btn{ padding:8px 12px;
+        border-radius:8px;
+        border:1px solid #ddd;
+        cursor:pointer
+      }
+  .btn.primary{ background:#111;
+                color:#fff;
+                border-color:#111
+              }
+  .field{ margin:10px 0}
+  .field > label{ display:block;
+                  margin-bottom:6px;
+                  font-weight:600
+                }
+  .field > input{ width:100%;
+                  padding:10px;
+                  border:1px solid #ddd;
+                  border-radius:10px
+                }
+
+  /* X버튼 1시 방향 */
+  .x-close{
+    position:absolute; 
+    top:0px; 
+    right:0px;
+    width:36px; 
+    height:36px; 
+    border-radius:50%;
+    border:none; 
+    background:transparent; 
+    color:#000; 
+    cursor:pointer;
+    display:flex; 
+    align-items:center; 
+    justify-content:center;
+    font-size:20px; 
+  }
+
+  /* 주소 카드 */
+  .addr-card{ border:1px solid #ddd;
+              border-radius:12px;
+              padding:12px;
+              margin:10px 0;
+              display:flex;
+              justify-content:space-between;
+              gap:12px}
+  .badge{ font-size:12px;
+          padding:2px 6px;
+          border-radius:6px;
+          background:#222;
+          color:#fff;
+          margin-left:6px}
+</style>
+
+<h5>배송지 등록</h5>
+<button class="btn primary" id="btnOpenModal">주소지 등록</button>
+
+<div id="modalBackdrop" class="modal-backdrop"></div>
+<div id="addressModal" class="modal" aria-modal="true" role="dialog">
+  <button class="x-close" id="btnCloseModal">×</button>
+  <form th:action="@{/mypage}" method="post" th:object="${usersAddressForm}" id="addressForm">
+    <div class="field"><input type="text" th:field="*{addressName}" placeholder="배송지명" required /></div>
+    <div class="field"><input type="text" th:field="*{recipient}" placeholder="받는 사람" required /></div>
+    <div class="field"><input type="text" th:field="*{phone}" placeholder="전화번호" /></div>
+    <div class="field row">
+      <button type="button" class="btn" id="btnFindZip">주소 찾기</button>
+      <input style="flex:1" type="text" th:field="*{zonecode}" placeholder="우편번호" readonly required />
     </div>
-
-    <div>
-      <label for="recipient">받는 사람 이름</label>
-      <input type="text" th:field="*{recipient}" required />
+    <div class="field"><input type="text" th:field="*{roadAddress}" placeholder="도로명" readonly required /></div>
+    <div class="field"><input type="text" th:field="*{detailAddress}" placeholder="상세주소" required /></div>
+    <div class="row" style="justify-content:flex-end;gap:8px">
+      <button type="button" class="btn" id="btnCancel">취소</button>
+      <button type="submit" class="btn primary">등록</button>
     </div>
-
-    <div>
-      <label for="phone">전화번호</label>
-      <input type="text" th:field="*{phone}" required />
-    </div>
-
-    <!-- 우편번호 + 버튼 -->
-    <div>
-      <label for="zonecode">우편번호</label>
-      <div style="display: flex; gap: 8px; align-items: center">
-        <input type="text" th:field="*{zonecode}" placeholder="우편번호" readonly required />
-        <button type="button" onclick="execDaumPostcode()">
-          우편번호 찾기
-        </button>
-      </div>
-    </div>
-
-    <div>
-      <label for="roadAddress">도로명 주소</label>
-      <input type="text" th:field="*{roadAddress}" placeholder="도로명 주소" readonly required />
-    </div>
-
-    <div>
-      <label for="detailAddress">상세주소</label>
-      <input type="text" th:field="*{detailAddress}" placeholder="상세주소" required />
-    </div>
-
-    <div>
-      <label>
-        <input type="checkbox" th:field="*{isDefault}" /> 기본배송지로 설정
-      </label>
-    </div>
-
-    <button type="submit">등록</button>
-    <button type="reset">초기화</button>
+    <div id="postcodeLayer" style="display:none;position:relative;height:400px;margin-top:10px;border:1px solid #eee;border-radius:10px;"></div>
   </form>
-  
-  <!-- Daum 우편번호 API -->
-  <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script>
-    function execDaumPostcode() {
-      new daum.Postcode({
-        oncomplete: function (data) {
-          // 도로명/지번 선택값에 따라 주소 선택
-          var addr =
-            data.userSelectedType === "R"
-              ? data.roadAddress
-              : data.jibunAddress;
-              
-              // 폼 필드 채우기 (th:field가 만든 id = 필드명)
-          document.getElementById("zonecode").value = data.zonecode;
-          document.getElementById("roadAddress").value = addr;
+</div>
 
-          // 상세주소로 포커스
-          var detail = document.getElementById("detailAddress");
-          if (detail) {
-            detail.value = "";
-            detail.focus();
-          }
-        },
-      }).open(); // 팝업 방식
-    }
-    </script>
+<!-- 주소 리스트 -->
+<section class="addr-list">
+  <div class="addr-item" th:each="a : ${addresses}">
+    <!-- 왼쪽: 선택 라디오 -->
+    <label class="addr-left">
+      <input  type="radio" name="defaultAddress"
+              class="addr-radio"
+              th:value="${a.addressNo}"
+              th:checked="${a.isDefault == 'Y'}"
+              th:attr="data-addrname=${a.addressName},
+                        data-recipient=${a.recipient},
+                        data-phone=${a.phone},
+                        data-zonecode=${a.zonecode},
+                        data-road=${a.roadAddress},
+                        data-detail=${a.detailAddress}">
+      <span class="dot"></span>
+    </label>
+
+    <!-- 가운데: 내용 -->
+    <div class="addr-body">
+      <div class="addr-title">
+        <span class="addr-name" th:text="${a.addressName}">우리집</span>
+        <span th:if="${a.isDefault == 'Y'}" class="badge">기본</span>
+      </div>
+      <div class="addr-line"><span th:text="${a.recipient}">name</span> / <span th:text="${a.phone}">phone</span></div>
+      <div class="addr-line"><span th:text="${a.zonecode}">zipcode</span> / <span th:text="${a.roadAddress}">address1</span> + <span th:text="${a.detailAddress}">address2</span></div>
+    </div>
+
+    <!-- 오른쪽: 액션(원하면 버튼/아이콘 배치) -->
+    <div class="addr-right">
+      <!-- 필요 없으면 이 버튼은 삭제 -->
+      <button type="button" class="btn tiny">수정</button>
+    </div>
+  </div>
+</section>
+
+
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+  const modal = document.getElementById('addressModal');
+  const backdrop = document.getElementById('modalBackdrop');
+  function openModal(){ modal.classList.add('open'); backdrop.classList.add('open'); }
+  function closeModal(){ modal.classList.remove('open'); backdrop.classList.remove('open'); }
+  document.getElementById('btnOpenModal')?.addEventListener('click', openModal);
+  document.getElementById('btnCloseModal')?.addEventListener('click', closeModal);
+  document.getElementById('btnCancel')?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', closeModal);
+
+  const chkDefault = document.getElementById('chkDefault');
+  const hiddenDefault = document.querySelector('input[name="isDefault"]');
+  chkDefault?.addEventListener('change', e=>{
+    hiddenDefault.value = e.target.checked ? 'Y' : 'N';
+  });
+
+  const layer = document.getElementById('postcodeLayer');
+  function openDaumLayer(){
+    new daum.Postcode({
+      oncomplete: function(data) {
+        var addr = (data.userSelectedType === "R") ? data.roadAddress : data.jibunAddress;
+        document.getElementById("zonecode").value = data.zonecode;
+        document.getElementById("roadAddress").value = addr;
+        layer.style.display='none';
+        document.getElementById("detailAddress").focus();
+      }, width:'100%', height:'100%'
+    }).embed(layer);
+    layer.style.display='block';
+  }
+  document.getElementById('btnFindZip').addEventListener('click', openDaumLayer);
+
+  // 기본배송지 출력란 채우기
+  const out = {
+    addrName : document.getElementById('outAddrName'),
+    recipient: document.getElementById('outRecipient'),
+    phone    : document.getElementById('outPhone'),
+    zonecode : document.getElementById('outZonecode'),
+    road     : document.getElementById('outRoadAddress'),
+    detail   : document.getElementById('outDetailAddress')
+  };
+  const boxes = document.querySelectorAll('.pick-default');
+  function uncheckOthers(except){ boxes.forEach(b => { if(b !== except) b.checked = false; }); }
+  function fillOutputFrom(el){
+    out.addrName.textContent = el.dataset.addrname  || '-';
+    out.recipient.textContent= el.dataset.recipient || '-';
+    out.phone.textContent    = el.dataset.phone     || '-';
+    out.zonecode.textContent = el.dataset.zonecode  || '-';
+    out.road.textContent     = el.dataset.road      || '-';
+    out.detail.textContent   = el.dataset.detail    || '-';
+  }
+  boxes.forEach(box=>{
+    box.addEventListener('change', e=>{
+      const chk = e.currentTarget;
+      if(chk.checked){
+        uncheckOthers(chk);
+        fillOutputFrom(chk);
+      }else{
+        if(!Array.from(boxes).some(b=>b.checked)) fillOutputFrom({dataset:{}});
+      }
+    });
+  });
+</script>
 </div>
 </html>

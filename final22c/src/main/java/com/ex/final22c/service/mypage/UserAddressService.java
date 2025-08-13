@@ -1,6 +1,9 @@
 package com.ex.final22c.service.mypage;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.data.user.UserAddress;
 import com.ex.final22c.form.UsersAddressForm;
@@ -11,24 +14,32 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserAddressService {
+    private final UserAddressRepository repo;
 
-    private final UserAddressRepository userAddressRepository;
+    @Transactional(readOnly = true)
+    public List<UserAddress> list(Long userNo) {
+        return repo.findByUserNoOrderByIsDefaultDescAddressNoDesc(userNo);
+    }
 
-    // 단일 INSERT만 할 거면 @Transactional 없어도 무방 (붙여도 문제 없음)
+    @Transactional
     public void insertUserAddress(Long userNo, UsersAddressForm form) {
-        String yn = Boolean.TRUE.equals(form.getIsDefault()) ? "Y" : "N";
+        UserAddress ua = UserAddress.builder()
+            .userNo(userNo)
+            .addressName(form.getAddressName())
+            .recipient(form.getRecipient())
+            .phone(form.getPhone())
+            .zonecode(form.getZonecode())
+            .roadAddress(form.getRoadAddress())
+            .detailAddress(form.getDetailAddress())
+            // .isDefault(null) // <- 생략해도 됨. null이면 @PrePersist에서 'N'
+            .build();
 
-        UserAddress userAddress = UserAddress.builder()
-                .userNo(userNo)
-                .addressName(form.getAddressName())
-                .recipient(form.getRecipient())
-                .phone(form.getPhone())
-                .zonecode(form.getZonecode())
-                .roadAddress(form.getRoadAddress())
-                .detailAddress(form.getDetailAddress())
-                .isDefault(yn)
-                .build();
+        repo.save(ua);
+    }
 
-        userAddressRepository.save(userAddress);
+    @Transactional
+    public void setDefault(Long userNo, Long addressNo) {
+        repo.clearDefaultByUserNo(userNo);
+        repo.markDefault(userNo, addressNo);
     }
 }
