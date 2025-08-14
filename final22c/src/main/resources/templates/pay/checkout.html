@@ -18,21 +18,46 @@
       .point-box input{width:160px;max-width:40%;border:1px solid #ddd;border-radius:8px;padding:8px 10px}
       .point-badge{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px}
       .point-use{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb}
+
+      /* ===== 결제 모달 ===== */
+      .pay-modal {position:fixed; inset:0; z-index:9999; display:none;}
+      .pay-dim {position:absolute; inset:0; background:rgba(0,0,0,.5);}
+      .pay-dialog{
+        position:relative; width:min(960px, 92vw); height:min(720px, 88vh);
+        margin:4vh auto 0; background:#fff; border-radius:12px; overflow:hidden;
+        box-shadow:0 20px 60px rgba(0,0,0,.35);
+      }
+      .pay-dialog iframe{width:100%; height:100%; border:0; display:block;}
+      .pay-close{
+        position:absolute; right:8px; top:6px; width:40px; height:40px;
+        border:0; background:transparent; font-size:28px; line-height:40px; cursor:pointer;
+        z-index:2;
+      }
+      .pay-fallback{
+        position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        gap:12px; background:#fff; padding:16px; text-align:center;
+      }
+      .pay-fallback .btn{
+        display:inline-block; padding:10px 16px; border-radius:8px; background:#111; color:#fff; text-decoration:none; font-weight:700;
+        width:auto;
+      }
+      body.modal-open{overflow:hidden;}
     </style>
   </th:block>
 
   <!-- 본문 -->
   <div layout:fragment="content" th:with="shipping=${3000}, payTotal=${lineTotal + shipping}">
     <div class="checkout-wrap">
-  	  <!-- 주소지 -->
-  	  <div class="card">
+      <!-- 주소지 -->
+      <div class="card">
         <div class="summary-row">
           <strong>배송지 주소</strong>
         </div>
         <div>
-        
+          <!-- TODO: 배송지 표시/선택 UI -->
         </div>
-  	  </div>
+      </div>
+
       <!-- 1) 주문상품 카드 -->
       <div class="card">
         <div class="summary-row">
@@ -58,7 +83,8 @@
           <span class="point-badge">
             보유 <span id="ownedPoint" th:text="${#numbers.formatInteger(user.mileage,0)}"></span> 원
           </span>
-          <input id="usePoint" type="text" placeholder="사용할 포인트" value="0" min="0" th:attr="max=${user.mileage}">
+          <!-- 스피너 제거 & 숫자만 입력되도록 text + 필터 -->
+          <input id="usePoint" type="text" placeholder="사용할 포인트" value="0" th:attr="max=${user.mileage}">
           <button type="button" class="point-use" id="btnUseAllPoint">전액사용</button>
         </div>
       </div>
@@ -75,7 +101,7 @@
         </div>
         <div class="summary-row">
           <span class="muted">사용 마일리지</span>
-          <span id="usedPointLabel">0</span>
+          <span id="usedPointLabel">0원</span>
         </div>
         <hr style="border:none;border-top:1px solid #eee;margin:10px 0">
         <div class="summary-row" style="font-weight:800">
@@ -95,83 +121,136 @@
 
         <button id="payBtn" class="btn" type="button">결제하기</button>
       </div>
-
     </div>
 
-    <!-- ✅ jQuery를 먼저 로드(절대 defer 붙이지 말 것) -->
+    <!-- ===== 결제 모달 ===== -->
+    <div id="payModal" class="pay-modal" aria-hidden="true">
+      <div class="pay-dim"></div>
+      <div class="pay-dialog" role="dialog" aria-modal="true" aria-label="결제창">
+        <button type="button" class="pay-close" title="닫기">&times;</button>
+        <iframe id="payFrame" src="about:blank" title="KakaoPay" allow="clipboard-read; clipboard-write"></iframe>
+      </div>
+    </div>
+
+    <!-- ✅ jQuery 먼저 로드 -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-	<script th:inline="javascript">
-	$(function(){
-	  // 서버값
-	  const owned    = /*[[${user.mileage}]]*/ 0 || 0;
-	  const lineSum  = (/*[[${lineTotal}]]*/ 0) + (/*[[${shipping}]]*/ 0);
-	
-	  // 금액 포맷
-	  const fmt = n => (Math.max(0, Math.trunc(n))).toLocaleString() + '원';
-	
-	  // 공통 계산 함수
-	  function recalc(byUserPoint){
-	    // 1) 입력값 정규화: 음수/NaN 방지
-	    let use = Number(byUserPoint);
-	    if (!Number.isFinite(use) || use < 0) use = 0;
-	
-	    // 2) 보유치 초과 금지
-	    use = Math.min(use, owned);
-	
-	    // 3) 결제금액을 음수로 만들 수 없음
-	    use = Math.min(use, lineSum);
-	
-	    // DOM 반영
-	    $("#usePoint").val(use);
-	    $("#usedPoint").val(use);
-	    $("#usedPointLabel").text(use.toLocaleString()+'원');
-	
-	    const pay = Math.max(0, lineSum - use);
-	    $("#payTotal").val(pay);
-	    $("#payTotalLabel").text(fmt(pay));
-	
-	    const reward = Math.trunc(pay * 0.05);
-	    $("#rewardLabel").text(fmt(reward));
-	  }
-	
-	  // 최초 1회 초기화
-	  recalc(0);
-	
-	  // 전액사용
-	  $("#btnUseAllPoint").on("click", function(){
-	    recalc(Math.min(owned, lineSum));
-	  });
-	
-	  // 입력할 때마다 실시간 반영
-	  $("#usePoint").on("input change", function(){
-	    recalc(this.value);
-	  });
-	
-	  // 결제 버튼
-	  $("#payBtn").on("click", function(e){
-	    e.preventDefault();
-	    const perfumeNo = $("#perfume_no").val();
-	    const qty       = $("#qty").val();
-	    const usedPoint = $("#usedPoint").val();
-	
-	    const token  = $('meta[name="_csrf"]').attr('content');
-	    const header = $('meta[name="_csrf_header"]').attr('content');
-	
-	    $.ajax({
-	      type: "POST",
-	      url:  "/pay/ready",
-	      data: { perfumeNo, qty, usedPoint },
-	      beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
-	      success: function(res){
-	        if (res && res.next_redirect_pc_url) location.href = res.next_redirect_pc_url;
-	        else { alert("응답 형식이 올바르지 않습니다."); console.log(res); }
-	      },
-	      error: function(xhr){
-	        alert("결제 준비 실패 (" + xhr.status + ")\n" + (xhr.responseText||""));
-	      }
-	    });
-	  });
-	});
-	</script>
+
+    <!-- 페이지 스크립트 -->
+    <script th:inline="javascript">
+    $(function(){
+      // 서버값
+      const owned    = /*[[${user.mileage}]]*/ 0 || 0;
+      const lineSum  = (/*[[${lineTotal}]]*/ 0) + (/*[[${shipping}]]*/ 0);
+
+      // 금액 포맷
+      const fmt = n => (Math.max(0, Math.trunc(n))).toLocaleString() + '원';
+
+      // 숫자만 입력되도록 필터링
+      $("#usePoint").on("input", function(){
+        this.value = this.value.replace(/[^\d]/g, '');
+      });
+
+      // 공통 계산 함수
+      function recalc(byUserPoint){
+        // 1) 정규화
+        let use = Number(byUserPoint);
+        if (!Number.isFinite(use) || use < 0) use = 0;
+
+        // 2) 보유치 초과 금지
+        use = Math.min(use, owned);
+
+        // 3) 결제금액 음수 방지
+        use = Math.min(use, lineSum);
+
+        // DOM 반영
+        $("#usePoint").val(use);
+        $("#usedPoint").val(use);
+        $("#usedPointLabel").text(use.toLocaleString() + '원');
+
+        const pay = Math.max(0, lineSum - use);
+        $("#payTotal").val(pay);
+        $("#payTotalLabel").text(fmt(pay));
+
+        const reward = Math.trunc(pay * 0.05);
+        $("#rewardLabel").text(fmt(reward));
+      }
+
+      // 초기화
+      recalc(0);
+
+      // 전액사용
+      $("#btnUseAllPoint").on("click", function(){ recalc(Math.min(owned, lineSum)); });
+
+      // 입력시 실시간 반영
+      $("#usePoint").on("input change", function(){ recalc(this.value); });
+
+      // ===== 모달 제어 =====
+      function openPayModal(url){
+        const $modal = $("#payModal"),
+              $frame = $("#payFrame"),
+              $fallback = $("#payFallback"),
+              $openNew = $("#payOpenNew");
+
+        $fallback.hide();
+        $openNew.attr("href", url);
+        $frame.attr("src", "about:blank");
+        $modal.show().attr("aria-hidden","false");
+        $("body").addClass("modal-open");
+
+        // iframe 로드 시도
+        $frame.attr("src", url);
+
+        // 1.5초 내 차단 추정 시 폴백 노출
+        setTimeout(function(){
+          try {
+            void $frame[0].contentWindow.location.href;
+          } catch(e){
+            $fallback.show();
+          }
+        }, 1500);
+      }
+
+      function closePayModal(){
+        $("#payModal").hide().attr("aria-hidden","true");
+        $("#payFrame").attr("src", "about:blank");
+        $("body").removeClass("modal-open");
+      }
+
+      $(document).on("click", ".pay-close, .pay-dim", closePayModal);
+      $(document).on("keydown", function(e){ if(e.key === "Escape") closePayModal(); });
+
+      // 결제 버튼
+      $("#payBtn").on("click", function(e){
+        e.preventDefault();
+
+        const perfumeNo = $("#perfume_no").val();
+        const qty       = $("#qty").val();
+        const usedPoint = $("#usedPoint").val();
+
+        // Spring Security CSRF (layout head에 메타가 있다고 가정)
+        const token  = $('meta[name="_csrf"]').attr('content');
+        const header = $('meta[name="_csrf_header"]').attr('content');
+
+        $.ajax({
+          type: "POST",
+          url:  "/pay/ready",
+          data: { perfumeNo, qty, usedPoint },
+          beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
+          success: function(res){
+            if (res && res.next_redirect_pc_url) {
+              // 모달(iframe) 우선 시도, 차단 시 폴백 버튼 노출
+              openPayModal(res.next_redirect_pc_url);
+            } else {
+              alert("응답 형식이 올바르지 않습니다.");
+              console.log(res);
+            }
+          },
+          error: function(xhr){
+            alert("결제 준비 실패 (" + xhr.status + ")\n" + (xhr.responseText||""));
+          }
+        });
+      });
+    });
+    </script>
   </div>
 </html>
