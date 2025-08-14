@@ -16,10 +16,10 @@ import lombok.RequiredArgsConstructor;
 public class UserAddressService {
     private final UserAddressRepository repo;
 
-    @Transactional(readOnly = true)
-    public List<UserAddress> list(Long userNo) {
-        return repo.findByUserNoOrderByIsDefaultDescAddressNoDesc(userNo);
-    }
+    // @Transactional(readOnly = true)
+    // public List<UserAddress> list(Long userNo) {
+    //     return repo.findByUserNoOrderByIsDefaultDescAddressNoDesc(userNo);
+    // }
 
     @Transactional
     public void insertUserAddress(Long userNo, UsersAddressForm form) {
@@ -41,5 +41,9 @@ public class UserAddressService {
     public void setDefault(Long userNo, Long addressNo) {
         repo.clearDefaultByUserNo(userNo);
         repo.markDefault(userNo, addressNo);
+    }
+
+    public List<UserAddress> getUserAddressesList(Long userNo) {
+        return repo.findByUserNoOrderByAddressNoDesc(userNo);
     }
 }

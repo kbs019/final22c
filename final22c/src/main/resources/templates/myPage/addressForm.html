@@ -77,14 +77,26 @@
     font-size:20px; 
   }
 
-  /* 주소 카드 */
-  .addr-card{ border:1px solid #ddd;
-              border-radius:12px;
-              padding:12px;
-              margin:10px 0;
-              display:flex;
-              justify-content:space-between;
-              gap:12px}
+  .addr-card{
+    display:grid;
+    grid-template-columns: 28px 1fr auto; /* 라디오 | 본문 | 버튼 */
+    align-items:center;                    /* 세로 정렬 통일 */
+    gap:12px;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:12px;
+  }
+
+  .addr-radio-wrap{ width:28px; 
+                    display:flex; 
+                    justify-content:center; }
+
+  .addr-body{ min-width:0; }  /* 긴 텍스트 줄바꿈 허용 */
+
+  .addr-row{  display:flex; 
+              flex-wrap:wrap; 
+              gap:6px; }
+
   .badge{ font-size:12px;
           padding:2px 6px;
           border-radius:6px;
@@ -94,15 +106,17 @@
 </style>
 
 <h5>배송지 등록</h5>
-<button class="btn primary" id="btnOpenModal">주소지 등록</button>
+<!-- 주소 등록 모달 창 버튼 -->
+<button class="btn primary" id="btnOpenModal" >주소지 등록</button>
 
+<!-- 주소 등록 모달 창 구성 시작 -->
 <div id="modalBackdrop" class="modal-backdrop"></div>
 <div id="addressModal" class="modal" aria-modal="true" role="dialog">
   <button class="x-close" id="btnCloseModal">×</button>
   <form th:action="@{/mypage}" method="post" th:object="${usersAddressForm}" id="addressForm">
     <div class="field"><input type="text" th:field="*{addressName}" placeholder="배송지명" required /></div>
     <div class="field"><input type="text" th:field="*{recipient}" placeholder="받는 사람" required /></div>
-    <div class="field"><input type="text" th:field="*{phone}" placeholder="전화번호" /></div>
+    <div class="field"><input type="text" th:field="*{phone}" maxlength="11" placeholder="전화번호" /></div>
     <div class="field row">
       <button type="button" class="btn" id="btnFindZip">주소 찾기</button>
       <input style="flex:1" type="text" th:field="*{zonecode}" placeholder="우편번호" readonly required />
@@ -113,46 +127,60 @@
       <button type="button" class="btn" id="btnCancel">취소</button>
       <button type="submit" class="btn primary">등록</button>
     </div>
-    <div id="postcodeLayer" style="display:none;position:relative;height:400px;margin-top:10px;border:1px solid #eee;border-radius:10px;"></div>
+    <div id="postcodeLayer" style="display:none; position:relative; height:400px; margin-top:10px; border:1px solid #eee; border-radius:10px;"></div>
   </form>
 </div>
+<!-- 주소 등록 모달 창 구성 끝-->
 
-<!-- 주소 리스트 -->
 <section class="addr-list">
-  <div class="addr-item" th:each="a : ${addresses}">
-    <!-- 왼쪽: 선택 라디오 -->
-    <label class="addr-left">
-      <input  type="radio" name="defaultAddress"
-              class="addr-radio"
-              th:value="${a.addressNo}"
-              th:checked="${a.isDefault == 'Y'}"
-              th:attr="data-addrname=${a.addressName},
-                        data-recipient=${a.recipient},
-                        data-phone=${a.phone},
-                        data-zonecode=${a.zonecode},
-                        data-road=${a.roadAddress},
-                        data-detail=${a.detailAddress}">
+<!-- 주소 목록 -->
+<ul class="addr-list" th:if="${#lists.isEmpty(userAddresses) == false}">
+  <li class="addr-card" th:each="a : ${userAddresses}">
+
+    <label class="addr-radio-wrap">
+      <input type="radio" name="defaultAddress"
+             th:value="${a.addressNo}"
+             th:checked="${a.isDefault == 'Y'}">
       <span class="dot"></span>
     </label>
 
-    <!-- 가운데: 내용 -->
     <div class="addr-body">
-      <div class="addr-title">
-        <span class="addr-name" th:text="${a.addressName}">우리집</span>
-        <span th:if="${a.isDefault == 'Y'}" class="badge">기본</span>
+      <div class="addr-top">
+        <div class="addr-name-line">
+          <strong class="addr-name" th:text="${a.addressName}">주소</strong>
+          <span class="addr-chip" th:if="${a.isDefault == 'Y'}"></span>
+        </div>
       </div>
-      <div class="addr-line"><span th:text="${a.recipient}">name</span> / <span th:text="${a.phone}">phone</span></div>
-      <div class="addr-line"><span th:text="${a.zonecode}">zipcode</span> / <span th:text="${a.roadAddress}">address1</span> + <span th:text="${a.detailAddress}">address2</span></div>
+
+      <div class="addr-row">
+        <span class="label">수령인</span>
+        <span th:text="${a.recipient}"></span>
+        <span class="divider">/</span>
+        <span th:text="${a.phone}">전화번호</span>
+      </div>
+
+      <div class="addr-row">
+        <span class="label">주소</span>
+        <span class="zip" th:text="${a.zonecode}">우편번호</span>
+        <span class="slash">/</span>
+        <span th:text="${a.roadAddress}">도로명</span>
+        <span th:text="${a.detailAddress}">상세주소</span>
+      </div>
     </div>
 
-    <!-- 오른쪽: 액션(원하면 버튼/아이콘 배치) -->
-    <div class="addr-right">
-      <!-- 필요 없으면 이 버튼은 삭제 -->
-      <button type="button" class="btn tiny">수정</button>
+    <div class="addr-side">
+      <button type="button" class="btn-md"
+              th:if="${a.isDefault != 'Y'}"
+              th:attr="data-id=${a.addressNo}">
+        기본설정
+      </button>
+      <span class="addr-index" th:text="${aStat.index + 1}" th:if="${false}"></span>
     </div>
-  </div>
+  </li>
+</ul>
+
+<p th:if="${#lists.isEmpty(userAddresses)}">등록된 배송지가 없습니다.</p>
 </section>
-
 
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>

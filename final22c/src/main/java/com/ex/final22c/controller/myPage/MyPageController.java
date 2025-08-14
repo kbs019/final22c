@@ -1,13 +1,16 @@
 package com.ex.final22c.controller.myPage;
 
 import java.security.Principal;
+import java.util.List;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import com.ex.final22c.data.user.UserAddress;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersAddressForm;
 import com.ex.final22c.repository.user.UserRepository;
@@ -26,18 +29,20 @@ public class MyPageController {
     private final UserAddressService userAddressService;
     private final UserRepository usersRepository;
 
-    /* Principal -> userNo 가져오기 */
-    private Long currentUserNo(Principal principal) {
-        if (principal == null) throw new IllegalStateException("로그인 필요");
-        String username = principal.getName(); // Security에서 설정한 username
-        Users user = usersRepository.findByUserName(username)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 없음: " + username));
-        return user.getUserNo();
-    }
+
 
 
     @GetMapping({"", "/"})
-    public String myPageAddress( UsersAddressForm usersAddressForm ) {
+    public String myPageAddress( UsersAddressForm usersAddressForm,
+                                 Principal principal, Model model ) {
+
+        Users user = this.userService.getUser( principal.getName());
+        
+        Long userNo = user.getUserNo();
+
+        List<UserAddress> userAddresses = this.userAddressService.getUserAddressesList(userNo);
+        model.addAttribute("userAddresses", userAddresses);
+
         return "myPage/addressForm";
     }
 

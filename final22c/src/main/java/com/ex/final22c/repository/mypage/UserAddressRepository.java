@@ -11,8 +11,11 @@ import com.ex.final22c.data.user.UserAddress;
 
 public interface UserAddressRepository extends JpaRepository<UserAddress, Long> {
 
-    // 리스트: 기본(Y) 먼저, 최신순
-    List<UserAddress> findByUserNoOrderByIsDefaultDescAddressNoDesc(Long userNo);
+    // // 리스트: 기본(Y) 먼저, 최신순
+    // List<UserAddress> findByUserNoOrderByIsDefaultDescAddressNoDesc(Long userNo);
+
+    // 유저 번호로 주소 목록 조회
+    List<UserAddress> findByUserNoOrderByAddressNoDesc(Long userNo);
 
     // 기본 해제
     @Modifying
