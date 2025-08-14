@@ -54,7 +54,7 @@ public class MyPageController {
         }
         Users user = this.userService.getUser(principal.getName());
 
-        this.userAddressService.insertUserAddress( user.getUserNo(), usersAddressForm );
+        this.userAddressService.insertUserAddress( user, usersAddressForm );
 
         return "redirect:/mypage";  // 주소 목록 페이지로 리다이렉트
     }

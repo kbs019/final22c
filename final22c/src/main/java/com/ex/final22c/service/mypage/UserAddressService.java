@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.data.user.UserAddress;
+import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersAddressForm;
 import com.ex.final22c.repository.mypage.UserAddressRepository;
 
@@ -16,15 +17,10 @@ import lombok.RequiredArgsConstructor;
 public class UserAddressService {
     private final UserAddressRepository repo;
 
-    // @Transactional(readOnly = true)
-    // public List<UserAddress> list(Long userNo) {
-    //     return repo.findByUserNoOrderByIsDefaultDescAddressNoDesc(userNo);
-    // }
-
     @Transactional
-    public void insertUserAddress(Long userNo, UsersAddressForm form) {
+    public void insertUserAddress(Users user, UsersAddressForm form) {
         UserAddress ua = UserAddress.builder()
-            .userNo(userNo)
+            .user(user)
             .addressName(form.getAddressName())
             .recipient(form.getRecipient())
             .phone(form.getPhone())
