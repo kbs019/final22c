@@ -27,10 +27,10 @@ public class Brand {
     @Column(name = "brandName", length = 500, nullable = false)
     private String brandName;
 
-    @Column(name = "imgPath", length = 500)
+    @Column(name = "imgName", length = 500)
     private String imgName;
 
-    @Column(name = "imgPath", length = 500, columnDefinition = "varchar2(500) default '/img/brand/'")
+    @Column(name = "imgPath", length = 500)
     private String imgPath;
 
     @OneToMany(mappedBy = "brand")
