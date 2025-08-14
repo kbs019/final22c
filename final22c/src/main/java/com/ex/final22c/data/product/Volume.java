@@ -1,5 +1,8 @@
 package com.ex.final22c.data.product;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,5 +27,5 @@ public class Volume {
     private String volumeName;
 
     @OneToMany(mappedBy = "volume")
-    private Product product;
+    private List<Product> productList = new ArrayList<>();
 }

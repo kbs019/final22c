@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,7 +20,8 @@ import lombok.Setter;
 @Setter
 public class Review {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue( strategy = GenerationType.SEQUENCE, generator = "review_seq_gen" )
+    @SequenceGenerator( name = "review_seq_gen", sequenceName = "grade_seq", allocationSize = 1 )
     private Long id;
 
     // 상품에 대한 리뷰 - N:1 (FK : product_id)

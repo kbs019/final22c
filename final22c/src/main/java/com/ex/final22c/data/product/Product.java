@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
@@ -74,4 +75,16 @@ public class Product {
 
     @ManyToOne
     private MainNote mainNote;
+
+    @Column(name="isPicked", length = 1)
+    private String isPicked;
+
+    // 기본값 및 파생값 계산
+    // insert 시 매번 실행되는 메서드 실행 ( count 가 0 이라면, count 에 10 대입 (default) / isPicked 가 null 이라면, 기본값 "N" 을 대입 / 이후, 가격 계산해주기 )
+    @PrePersist         
+    public void prePersist() {
+        if (this.count == 0) { this.count = 100; }       // DB DEFAULT 대신 자바에서 보장
+        if (this.isPicked == null) { this.isPicked = "N"; } // DB DEFAULT 대신 자바에서 보장
+        if ( this.imgPath == null ) { this.imgPath = "/img/"; }
+    }
 }
