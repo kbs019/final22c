@@ -24,7 +24,15 @@
   <!-- 본문 -->
   <div layout:fragment="content" th:with="shipping=${3000}, payTotal=${lineTotal + shipping}">
     <div class="checkout-wrap">
-
+  	  <!-- 주소지 -->
+  	  <div class="card">
+        <div class="summary-row">
+          <strong>배송지 주소</strong>
+        </div>
+        <div>
+        
+        </div>
+  	  </div>
       <!-- 1) 주문상품 카드 -->
       <div class="card">
         <div class="summary-row">
@@ -39,7 +47,7 @@
             <div class="muted" th:text="${'수량 ' + qty}">수량</div>
             <div th:text="${perfume.perfumeName}">상품명</div>
           </div>
-          <div style="font-weight:800" th:text="${#numbers.formatInteger(lineTotal,0)}">0</div>
+          <div style="font-weight:800" th:text="${#numbers.formatInteger(lineTotal,0)}+'원'">0</div>
         </div>
       </div>
 
@@ -48,7 +56,7 @@
         <div class="point-box">
           <strong>포인트</strong>
           <span class="point-badge">
-            보유 <span th:text="${#numbers.formatInteger(userPoint != null ? userPoint : 0, 0)}">0</span> 원
+            보유 <span th:text="${user.mileage}"></span> 원
           </span>
           <input id="usePoint" type="number" placeholder="사용할 포인트" value="0" min="0">
           <button type="button" class="point-use" id="btnUseAllPoint">전액사용</button>
@@ -59,27 +67,31 @@
       <div class="card">
         <div class="summary-row">
           <span class="muted">상품금액</span>
-          <span th:text="${#numbers.formatInteger(lineTotal,0)}">0</span>
+          <span th:text="${#numbers.formatInteger(lineTotal,0)}+'원'">0</span>
         </div>
         <div class="summary-row">
           <span class="muted">배송비</span>
-          <span th:text="${#numbers.formatInteger(shipping,0)}">3,000</span>
+          <span th:text="${#numbers.formatInteger(shipping,0)}+'원'">3,000</span>
         </div>
         <div class="summary-row">
           <span class="muted">사용 마일리지</span>
-          <span id="usedPointLabel">—</span>
+          <span id="usedPointLabel"></span>
         </div>
         <hr style="border:none;border-top:1px solid #eee;margin:10px 0">
         <div class="summary-row" style="font-weight:800">
           <span>결제금액</span>
-          <span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotal,0)}">0</span>
+          <span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotal,0)}+'원'"></span>
+        </div>
+        <div class="summary-row" style="font-weight:800">
+          <span>적립마일리지</span>
+          <span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotal*0.05,0)}+'원'"></span>
         </div>
 
         <!-- 서버에 보낼 값 -->
         <input type="hidden" id="perfume_no" th:value="${perfume.perfumeNo}">
         <input type="hidden" id="qty"        th:value="${qty}">
         <input type="hidden" id="payTotal"   th:value="${payTotal}">
-        <input type="hidden" id="usedPoint"  value="0">
+        <input type="hidden" id="usedPoint"  th:value="${user.mileage}">
 
         <button id="payBtn" class="btn" type="button">결제하기</button>
       </div>

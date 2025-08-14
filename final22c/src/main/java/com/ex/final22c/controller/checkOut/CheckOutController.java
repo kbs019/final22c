@@ -1,5 +1,7 @@
 package com.ex.final22c.controller.checkOut;
 
+import java.security.Principal;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,7 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.ex.final22c.data.perfume.Perfume;
+import com.ex.final22c.data.user.Users;
 import com.ex.final22c.service.perfume.PerfumeService;
+import com.ex.final22c.service.user.UsersService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,48 +21,38 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/checkout")
 public class CheckOutController {
-
+	private final UsersService userService;
     private final PerfumeService perfumeService;
+    @PostMapping("/order")
+    public String orderOne(@RequestParam("perfumeNo") int perfumeNo, @RequestParam("quantity") int quantity) {
+    	return "redirect:/checkout/order/"+perfumeNo+"?qty="+quantity;
+    }
 
-    
-/*   
+
     // 예: /checkout/order/5?qty=2 로 호출~
     @GetMapping("/order/{perfumeNo}")
     public String orderOne(@PathVariable("perfumeNo") int perfumeNo,
-    					   @RequestParam(name="qty", defaultValue="1") int qty,
+    					   @RequestParam(name="qty", defaultValue="1") int qty, Principal principal,
                            Model model) {
 
         Perfume perfume = perfumeService.getPerfume(perfumeNo);
         int unitPrice  = perfume.getSellPrice();
         int lineTotal  = unitPrice * qty;
-
+        Users user = this.userService.getUser(principal.getName());
+        
         // 뷰에서 바로 쓰도록 기본 값들 세팅, 주문페이지에선 order에 넣을필요없음
         model.addAttribute("perfume", perfume);   // 기존 템플릿이 쓰는 객체
         model.addAttribute("qty", qty);
         model.addAttribute("unitPrice", unitPrice);
         model.addAttribute("lineTotal", lineTotal);
+        model.addAttribute("user",user);
 
 		/*
 		 * // (선택) 카카오 Ready에 쓸 대표값 model.addAttribute("pgItemName",
 		 * perfume.getPerfumeName()); model.addAttribute("pgTotalQty", qty);
 		 * model.addAttribute("pgTotalAmount", lineTotal);
-		 
+	     */
 
-        return "pay/checkout";
-    }
-*/	
-    @PostMapping("/order/{perfumeNo}")
-    public String orderOne(@RequestParam("perfumeNo") int perfumeNo, @RequestParam("quantity") int quantity, Model model) {
-    	Perfume perfume = perfumeService.getPerfume(perfumeNo);
-    	int unitPrice = perfume.getSellPrice();
-    	int lineTotal = unitPrice * quantity;
-    	
-    	 // 뷰에서 바로 쓰도록 기본 값들 세팅, 주문페이지에선 order에 넣을필요없음
-        model.addAttribute("perfume", perfume);   // 기존 템플릿이 쓰는 객체
-        model.addAttribute("qty", quantity);
-        model.addAttribute("unitPrice", unitPrice);
-        model.addAttribute("lineTotal", lineTotal);
-        
         return "pay/checkout";
     }
     
