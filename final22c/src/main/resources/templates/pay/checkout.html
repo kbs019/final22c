@@ -24,7 +24,15 @@
   <!-- 본문 -->
   <div layout:fragment="content" th:with="shipping=${3000}, payTotal=${lineTotal + shipping}">
     <div class="checkout-wrap">
-
+  	  <!-- 주소지 -->
+  	  <div class="card">
+        <div class="summary-row">
+          <strong>배송지 주소</strong>
+        </div>
+        <div>
+        
+        </div>
+  	  </div>
       <!-- 1) 주문상품 카드 -->
       <div class="card">
         <div class="summary-row">
@@ -39,7 +47,7 @@
             <div class="muted" th:text="${'수량 ' + qty}">수량</div>
             <div th:text="${perfume.perfumeName}">상품명</div>
           </div>
-          <div style="font-weight:800" th:text="${#numbers.formatInteger(lineTotal,0)}">0</div>
+          <div style="font-weight:800" th:text="${#numbers.formatInteger(lineTotal,0)}+'원'">0</div>
         </div>
       </div>
 
@@ -48,9 +56,9 @@
         <div class="point-box">
           <strong>포인트</strong>
           <span class="point-badge">
-            보유 <span th:text="${#numbers.formatInteger(userPoint != null ? userPoint : 0, 0)}">0</span> 원
+            보유 <span id="ownedPoint" th:text="${#numbers.formatInteger(user.mileage,0)}"></span> 원
           </span>
-          <input id="usePoint" type="number" placeholder="사용할 포인트" value="0" min="0">
+          <input id="usePoint" type="text" placeholder="사용할 포인트" value="0" min="0" th:attr="max=${user.mileage}">
           <button type="button" class="point-use" id="btnUseAllPoint">전액사용</button>
         </div>
       </div>
@@ -59,20 +67,24 @@
       <div class="card">
         <div class="summary-row">
           <span class="muted">상품금액</span>
-          <span th:text="${#numbers.formatInteger(lineTotal,0)}">0</span>
+          <span th:text="${#numbers.formatInteger(lineTotal,0)}+'원'">0</span>
         </div>
         <div class="summary-row">
           <span class="muted">배송비</span>
-          <span th:text="${#numbers.formatInteger(shipping,0)}">3,000</span>
+          <span th:text="${#numbers.formatInteger(shipping,0)}+'원'">3,000</span>
         </div>
         <div class="summary-row">
           <span class="muted">사용 마일리지</span>
-          <span id="usedPointLabel">—</span>
+          <span id="usedPointLabel">0</span>
         </div>
         <hr style="border:none;border-top:1px solid #eee;margin:10px 0">
         <div class="summary-row" style="font-weight:800">
           <span>결제금액</span>
-          <span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotal,0)}">0</span>
+          <span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotal,0)}+'원'"></span>
+        </div>
+        <div class="summary-row" style="font-weight:800">
+          <span>적립마일리지</span>
+          <span id="rewardLabel" th:text="${#numbers.formatInteger(payTotal*0.05,0)}+'원'"></span>
         </div>
 
         <!-- 서버에 보낼 값 -->
@@ -88,57 +100,78 @@
 
     <!-- ✅ jQuery를 먼저 로드(절대 defer 붙이지 말 것) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <!-- ✅ jQuery 로드 이후 실행 -->
-    <script th:inline="javascript">
-    $(function(){
-      // 전액사용 버튼(더미 계산)
-      $("#btnUseAllPoint").on("click", function(){
-        var owned = /*[[${userPoint}]]*/ 0 || 0;
-        $("#usePoint").val(owned);
-        $("#usedPoint").val(owned);
-        $("#usedPointLabel").text(owned.toLocaleString());
-
-        var lineTotal = /*[[${lineTotal}]]*/ 0;
-        var shipping  = /*[[${shipping}]]*/ 0;
-        var payTotal  = Math.max(0, (lineTotal + shipping) - owned);
-        $("#payTotalLabel").text(payTotal.toLocaleString());
-        $("#payTotal").val(payTotal);
-      });
-
-      $("#payBtn").on("click", function(e){
-        e.preventDefault();
-
-        const perfumeNo = $("#perfume_no").val();
-        const qty       = $("#qty").val();
-        const usedPoint = $("#usedPoint").val();
-
-        // Spring Security CSRF (레이아웃 head에 메타가 있다고 가정)
-        const token  = $('meta[name="_csrf"]').attr('content');
-        const header = $('meta[name="_csrf_header"]').attr('content');
-
-        $.ajax({
-          type: "POST",
-          url:  "/pay/ready",
-          data: { perfumeNo, qty, usedPoint },
-          beforeSend: function(xhr){
-            if (token && header) xhr.setRequestHeader(header, token);
-          },
-          success: function(res){
-            if (res && res.next_redirect_pc_url) {
-              location.href = res.next_redirect_pc_url;
-            } else {
-              alert("응답 형식이 올바르지 않습니다.");
-              console.log(res);
-            }
-          },
-          error: function(xhr){
-            alert("결제 준비 실패 (" + xhr.status + ")");
-            console.log(xhr.responseText);
-          }
-        });
-      });
-    });
-    </script>
+	<script th:inline="javascript">
+	$(function(){
+	  // 서버값
+	  const owned    = /*[[${user.mileage}]]*/ 0 || 0;
+	  const lineSum  = (/*[[${lineTotal}]]*/ 0) + (/*[[${shipping}]]*/ 0);
+	
+	  // 금액 포맷
+	  const fmt = n => (Math.max(0, Math.trunc(n))).toLocaleString() + '원';
+	
+	  // 공통 계산 함수
+	  function recalc(byUserPoint){
+	    // 1) 입력값 정규화: 음수/NaN 방지
+	    let use = Number(byUserPoint);
+	    if (!Number.isFinite(use) || use < 0) use = 0;
+	
+	    // 2) 보유치 초과 금지
+	    use = Math.min(use, owned);
+	
+	    // 3) 결제금액을 음수로 만들 수 없음
+	    use = Math.min(use, lineSum);
+	
+	    // DOM 반영
+	    $("#usePoint").val(use);
+	    $("#usedPoint").val(use);
+	    $("#usedPointLabel").text(use.toLocaleString()+'원');
+	
+	    const pay = Math.max(0, lineSum - use);
+	    $("#payTotal").val(pay);
+	    $("#payTotalLabel").text(fmt(pay));
+	
+	    const reward = Math.trunc(pay * 0.05);
+	    $("#rewardLabel").text(fmt(reward));
+	  }
+	
+	  // 최초 1회 초기화
+	  recalc(0);
+	
+	  // 전액사용
+	  $("#btnUseAllPoint").on("click", function(){
+	    recalc(Math.min(owned, lineSum));
+	  });
+	
+	  // 입력할 때마다 실시간 반영
+	  $("#usePoint").on("input change", function(){
+	    recalc(this.value);
+	  });
+	
+	  // 결제 버튼
+	  $("#payBtn").on("click", function(e){
+	    e.preventDefault();
+	    const perfumeNo = $("#perfume_no").val();
+	    const qty       = $("#qty").val();
+	    const usedPoint = $("#usedPoint").val();
+	
+	    const token  = $('meta[name="_csrf"]').attr('content');
+	    const header = $('meta[name="_csrf_header"]').attr('content');
+	
+	    $.ajax({
+	      type: "POST",
+	      url:  "/pay/ready",
+	      data: { perfumeNo, qty, usedPoint },
+	      beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
+	      success: function(res){
+	        if (res && res.next_redirect_pc_url) location.href = res.next_redirect_pc_url;
+	        else { alert("응답 형식이 올바르지 않습니다."); console.log(res); }
+	      },
+	      error: function(xhr){
+	        alert("결제 준비 실패 (" + xhr.status + ")\n" + (xhr.responseText||""));
+	      }
+	    });
+	  });
+	});
+	</script>
   </div>
 </html>
