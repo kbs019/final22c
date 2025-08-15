@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.repository.productMapper.ProductMapper;
-import com.ex.final22c.repository.productRepsotory.ProductRepository;
+import com.ex.final22c.repository.productRepository.ProductRepository;
 
 import lombok.RequiredArgsConstructor;
 

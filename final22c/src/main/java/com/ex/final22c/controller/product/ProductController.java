@@ -46,7 +46,7 @@ public class ProductController {
 
     // 상세 페이지: /main/content/{id}
     @GetMapping("/content/{id}")
-    public String perfumeContent(@PathVariable("id") long id,
+    public String productContent(@PathVariable("id") long id,
                                     Model model) {
         Product product = productService.getProduct(id);
         model.addAttribute("product", product);

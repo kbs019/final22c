@@ -1,4 +1,4 @@
-package com.ex.final22c.repository.productRepsotory;
+package com.ex.final22c.repository.productRepository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 // import org.springframework.stereotype.Repository;
