@@ -1,6 +1,8 @@
 package com.ex.final22c.service.product;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,18 +31,21 @@ public class ProductService {
                 .orElseThrow(() -> new DataNotFoundException("해당하는 상품 정보를 찾을 수 없습니다."));
     }
 
-    public List<Product> search(String q,
-                                List<String> grades,
-                                List<String> accords,
-                                List<String> brands,
-                                List<String> volumes) {
+    public List<Map<String, Object>> getBrandOptions()    { return productMapper.selectBrandOptions(); }
+    public List<Map<String, Object>> getGradeOptions()    { return productMapper.selectGradeOptions(); }
+    public List<Map<String, Object>> getMainNoteOptions() { return productMapper.selectMainNoteOptions(); }
+    public List<Map<String, Object>> getVolumeOptions()   { return productMapper.selectVolumeOptions(); }
 
-        String qq = (q == null || q.isBlank()) ? null : q.trim();
-        List<String> gs = (grades == null || grades.isEmpty()) ? null : grades;
-        List<String> ac = (accords == null || accords.isEmpty()) ? null : accords;
-        List<String> bs = (brands == null || brands.isEmpty()) ? null : brands;
-        List<String> vs = (volumes == null || volumes.isEmpty()) ? null : volumes;
+    public Map<String, Object> getProducts(List<Long> brandIds,
+                                           List<Long> gradeIds,
+                                           List<Long> mainNoteIds,
+                                           List<Long> volumeIds) {
+        long total = productMapper.countProducts(brandIds, gradeIds, mainNoteIds, volumeIds);
+        List<Map<String, Object>> items = productMapper.selectProducts(brandIds, gradeIds, mainNoteIds, volumeIds);
 
-        return productMapper.search(qq, gs, ac, bs, vs);
+        Map<String, Object> res = new HashMap<>();
+        res.put("total", total);
+        res.put("items", items);
+        return res;
     }
 }

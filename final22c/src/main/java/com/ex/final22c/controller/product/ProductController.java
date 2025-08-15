@@ -1,6 +1,8 @@
 package com.ex.final22c.controller.product;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,26 +23,34 @@ public class ProductController {
 
     private final ProductService productService;
 
-    // 목록 페이지: /main/list?q=&grades=...&accords=...&brands=...&volumes=...
     @GetMapping("/list")
-    public String list(@RequestParam(name = "q", required = false) String q,
-                       @RequestParam(name = "grades", required = false) List<String> grades,
-                       @RequestParam(name = "accords", required = false) List<String> accords,
-                       @RequestParam(name = "brands", required = false) List<String> brands,
-                       @RequestParam(name = "volumes", required = false) List<String> volumes,
-                       Model model) {
+    public String listPage(@RequestParam(name = "brandIds",    required = false) List<Long> brandIds,
+                           @RequestParam(name = "gradeIds",    required = false) List<Long> gradeIds,
+                           @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
+                           @RequestParam(name = "volumeIds",   required = false) List<Long> volumeIds,
+                           Model model) {
 
-        // 5-인자 서비스 호출 (브랜드/용량 포함)
-        List<Product> list = productService.search(q, grades, accords, brands, volumes);
+        model.addAttribute("brands",    productService.getBrandOptions());
+        model.addAttribute("grades",    productService.getGradeOptions());
+        model.addAttribute("mainNotes", productService.getMainNoteOptions());
+        model.addAttribute("volumes",   productService.getVolumeOptions());
 
-        model.addAttribute("list", list);
-        model.addAttribute("q", q);
-        model.addAttribute("grades", grades);
-        model.addAttribute("accords", accords);
-        model.addAttribute("brands", brands);
-        model.addAttribute("volumes", volumes);
-
+        Map<String, Object> res = productService.getProducts(brandIds, gradeIds, mainNoteIds, volumeIds);
+        model.addAttribute("products", res.get("items"));
+        model.addAttribute("total",    res.get("total"));
         return "main/list";
+    }
+
+    @GetMapping("/list/partial")
+    public String listPartial(@RequestParam(name = "brandIds",    required = false) List<Long> brandIds,
+                              @RequestParam(name = "gradeIds",    required = false) List<Long> gradeIds,
+                              @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
+                              @RequestParam(name = "volumeIds",   required = false) List<Long> volumeIds,
+                              Model model) {
+        Map<String, Object> res = productService.getProducts(brandIds, gradeIds, mainNoteIds, volumeIds);
+        model.addAttribute("products", res.get("items"));
+        model.addAttribute("total",    res.get("total"));
+        return "main/list :: listBody";
     }
 
     // 상세 페이지: /main/content/{id}
