@@ -1,5 +1,70 @@
 <html layout:decorate="~{/layout/layout}">
 <div layout:fragment="content" class="container">
+	<div class="container my-4">
+	    <h2>상품관리</h2>
+
+	    <!-- 검색 폼 -->
+	    <form class="d-flex mb-3" role="search">
+	        <input class="form-control me-2" type="search" placeholder="검색어 입력" aria-label="Search">
+	        <button class="btn btn-outline-primary" type="submit">상품조회</button>
+	    </form>
+
+	    <!-- 상품 리스트 테이블 -->
+	    <table class="table table-bordered align-middle text-center">
+	        <thead class="table-light">
+	            <tr>
+	                <th scope="col">#</th>
+	                <th scope="col">상품명</th>
+	                <th scope="col">브랜드</th>
+	                <th scope="col">카테고리</th>
+	                <th scope="col">가격</th>
+	                <th scope="col">판매량</th>
+	                <th scope="col">상태</th>
+	                <th scope="col">선택</th>
+	            </tr>
+	        </thead>
+	        <tbody>
+	            <!-- 예시 데이터 -->
+	            <tr>
+	                <th scope="row">1</th>
+	                <td>상품1</td>
+	                <td>브랜드A</td>
+	                <td>카테고리1</td>
+	                <td>10,000</td>
+	                <td>5</td>
+	                <td>
+	                    <select class="form-select form-select-sm">
+	                        <option selected>Pick</option>
+	                        <option value="1">판매중</option>
+	                        <option value="2">품절</option>
+	                    </select>
+	                </td>
+	                <td>
+	                    <button class="btn btn-sm btn-danger">삭제</button>
+	                </td>
+	            </tr>
+	            <tr>
+	                <th scope="row">2</th>
+	                <td>상품2</td>
+	                <td>브랜드B</td>
+	                <td>카테고리2</td>
+	                <td>15,000</td>
+	                <td>3</td>
+	                <td>
+	                    <select class="form-select form-select-sm">
+	                        <option selected>Pick</option>
+	                        <option value="1">판매중</option>
+	                        <option value="2">품절</option>
+	                    </select>
+	                </td>
+	                <td>
+	                    <button class="btn btn-sm btn-danger">삭제</button>
+	                </td>
+	            </tr>
+	            <!-- 반복 가능 -->
+	        </tbody>
+	    </table>
+	</div>
 
 </div>
 </html>
