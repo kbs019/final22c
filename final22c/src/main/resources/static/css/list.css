@@ -1,0 +1,137 @@
+:root{
+  --card-radius: 1rem;
+  --panel-radius: .75rem;
+}
+
+/* 스크롤바(옵션) */
+.filter-list{
+  max-height: 280px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.filter-list::-webkit-scrollbar{ width: 8px; height: 8px; }
+.filter-list::-webkit-scrollbar-thumb{
+  background-color: rgba(0,0,0,.15);
+  border-radius: 8px;
+}
+.filter-list::-webkit-scrollbar-track{ background: transparent; }
+
+/* ---------- 필터 패널 ---------- */
+.filter-panel{
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--panel-radius);
+  padding: .75rem;
+}
+
+.filter-panel h6{
+  letter-spacing: .02em;
+}
+
+.accordion .accordion-item{
+  border: 1px solid var(--bs-border-color);
+  border-radius: .5rem;
+  overflow: hidden;
+  background: var(--bs-body-bg);
+}
+.accordion .accordion-item + .accordion-item{ margin-top: .5rem; }
+
+.accordion-button{
+  padding: .6rem 1rem;
+  font-weight: 600;
+  background: var(--bs-body-bg);
+}
+.accordion-button:not(.collapsed){
+  color: inherit;
+  background: var(--bs-body-bg);
+  box-shadow: none;
+}
+.accordion-body{
+  padding: .5rem .5rem;
+}
+
+.form-check{
+  margin-bottom: .35rem;
+}
+.form-check-input{
+  cursor: pointer;
+}
+.form-check-label{
+  cursor: pointer;
+  display: inline-flex;
+  gap: .25rem;
+  align-items: baseline;
+}
+.form-check-label .text-secondary{
+  font-size: .85em;
+}
+
+/* 모바일에서 패널 여백 */
+@media (max-width: 767.98px){
+  .filter-panel{ padding: .5rem; }
+  .accordion-button{ padding: .55rem .85rem; }
+}
+
+/* ---------- 카드 그리드 ---------- */
+#product-grid .card{
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--card-radius);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  background: var(--bs-body-bg);
+}
+#product-grid .card:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 .25rem .85rem rgba(0,0,0,.10);
+  border-color: rgba(0,0,0,.075);
+}
+#product-grid .card img{
+  display: block;
+  width: 100%;
+  height: auto;
+  border-top-left-radius: var(--card-radius);
+  border-top-right-radius: var(--card-radius);
+  background: #f7f7f7;
+}
+
+#product-grid .card-body{
+  padding: .6rem .65rem .7rem;
+}
+#product-grid .card .small{
+  opacity: .85;
+}
+#product-grid .fw-semibold{
+  font-weight: 600 !important;
+}
+
+/* 결과 카운트 */
+#result-count{
+  font-weight: 700;
+}
+
+/* ---------- 유틸 ---------- */
+/* 긴 브랜드/이름 줄바꿈 제어 */
+.text-truncate{
+  max-width: 100%;
+}
+
+/* 카드 클릭 영역(부트스트랩 stretched-link 호환) */
+.card .stretched-link::after{
+  border-radius: var(--card-radius);
+}
+
+/* 다크 모드 대비(선택) */
+@media (prefers-color-scheme: dark){
+  .filter-panel{
+    border-color: rgba(255,255,255,.12);
+  }
+  #product-grid .card{
+    border-color: rgba(255,255,255,.12);
+  }
+  #product-grid .card:hover{
+    border-color: rgba(255,255,255,.22);
+  }
+  .filter-list::-webkit-scrollbar-thumb{
+    background-color: rgba(255,255,255,.25);
+  }
+}

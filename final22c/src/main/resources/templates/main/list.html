@@ -1,351 +1,235 @@
-<th:block layout:decorate="~{layout/layout}">
-<!-- 페이지 전용 CSS -->
-<th:block layout:fragment="css">
-  <style>
-    /* 카드 이미지 비율 고정 */
-    .product-thumb { aspect-ratio: 1/1; object-fit: cover; width: 100%; }
-    .card.position-relative { position: relative; }
-    .card .ratio { position: relative; z-index: 0; overflow: hidden; }
-    /* stretched-link 오버레이가 이미지 위에 오도록 */
-    .card .stretched-link::after { z-index: 10; }
-    /* 관심(북마크) 버튼 오버레이 */
-    .wish-btn { position: absolute; top: .5rem; right: .5rem; }
-    .wish-btn .icon { font-size: 1.25rem; }
-    /* 좌측 가이드/메모 사이드 */
-    .list-sidebar { position: sticky; top: 88px; }
-    /* 결과 없음 영역 */
-    .empty { padding: 4rem 0; text-align: center; color: var(--bs-secondary-color); }
-  </style>
-</th:block>
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  <title>22°C</title>
+  <th:block layout:fragment="css">
+    <!-- 페이지 전용 CSS -->
+    <link rel="stylesheet" th:href="@{/css/list.css}">
+  </th:block>
+</head>
+
+
+<body>
 <th:block layout:fragment="content">
-  <main class="container py-4">
 
-    <!-- 상단 검색영역 -->
-    <section class="mb-4">
-      <div class="d-flex align-items-center justify-content-between gap-3">
+  <div class="row g-4">
 
-        <!-- 검색: /main/list 고정 + 현재 필터 유지 -->
-        <form class="flex-grow-1" th:action="@{/main/list}" method="get" role="search" aria-label="통합검색(브랜드+상품명)">
-          <div class="input-group input-group-lg">
-            <input type="search" name="q" th:value="${param.q}" class="form-control"
-                   placeholder="브랜드/상품명을 검색하세요" autocomplete="off">
-            <button class="btn btn-outline-secondary" type="submit" aria-label="검색">🔍</button>
+    <!-- 좌측 필터(Sticky) -->
+    <aside class="col-12 col-md-3 col-lg-2">
+      <div class="filter-panel position-sticky" style="top: 1rem;">
+        <h6 class="mb-3 fw-semibold">필터</h6>
+
+        <div class="accordion" id="filterAccordion">
+
+          <!-- Brand -->
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingBrand">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBrand" aria-expanded="false" aria-controls="collapseBrand">
+                Brand
+              </button>
+            </h2>
+            <div id="collapseBrand" class="accordion-collapse collapse" aria-labelledby="headingBrand" data-bs-parent="#filterAccordion">
+              <div class="accordion-body p-2">
+                <div class="filter-list">
+                  <div class="form-check" th:each="b : ${brands}">
+                    <input class="form-check-input filter-check" type="checkbox" name="brand"
+                           th:id="${'brand-'+b['id']}" th:value="${b['id']}">
+                    <label class="form-check-label small" th:for="${'brand-'+b['id']}">
+                      <span th:text="${b['name']}">Brand</span>
+                      <span class="text-secondary" th:text="' (' + ${b['count']} + ')'"> (0)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- 현재 필터 동시 전송(유지) -->
-          <th:block th:if="${param.grades != null}" th:each="g : ${param.grades}">
-            <input type="hidden" name="grades" th:value="${g}">
-          </th:block>
-          <th:block th:if="${param.accords != null}" th:each="a : ${param.accords}">
-            <input type="hidden" name="accords" th:value="${a}">
-          </th:block>
-          <th:block th:if="${param.brands != null}" th:each="b : ${param.brands}">
-            <input type="hidden" name="brands" th:value="${b}">
-          </th:block>
-          <th:block th:if="${param.volumes != null}" th:each="v : ${param.volumes}">
-            <input type="hidden" name="volumes" th:value="${v}">
-          </th:block>
-        </form>
+          <!-- Grade -->
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingGrade">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGrade" aria-expanded="false" aria-controls="collapseGrade">
+                Grade
+              </button>
+            </h2>
+            <div id="collapseGrade" class="accordion-collapse collapse" aria-labelledby="headingGrade" data-bs-parent="#filterAccordion">
+              <div class="accordion-body p-2">
+                <div class="filter-list">
+                  <div class="form-check" th:each="g : ${grades}">
+                    <input class="form-check-input filter-check" type="checkbox" name="grade"
+                           th:id="${'grade-'+g['id']}" th:value="${g['id']}">
+                    <label class="form-check-label small" th:for="${'grade-'+g['id']}">
+                      <span th:text="${g['name']}">Grade</span>
+                      <span class="text-secondary" th:text="' (' + ${g['count']} + ')'"> (0)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <!-- 결과 수 표시 -->
-        <div class="text-nowrap ms-2">
-          <span class="small text-secondary">검색결과</span>
-          <strong th:text="${#lists.isEmpty(list) ? 0 : #lists.size(list)}">0</strong>
+          <!-- Main Note -->
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingMainNote">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMainNote" aria-expanded="false" aria-controls="collapseMainNote">
+                Main Note
+              </button>
+            </h2>
+            <div id="collapseMainNote" class="accordion-collapse collapse" aria-labelledby="headingMainNote" data-bs-parent="#filterAccordion">
+              <div class="accordion-body p-2">
+                <div class="filter-list">
+                  <div class="form-check" th:each="m : ${mainNotes}">
+                    <input class="form-check-input filter-check" type="checkbox" name="mainNote"
+                           th:id="${'mainNote-'+m['id']}" th:value="${m['id']}">
+                    <label class="form-check-label small" th:for="${'mainNote-'+m['id']}">
+                      <span th:text="${m['name']}">MainNote</span>
+                      <span class="text-secondary" th:text="' (' + ${m['count']} + ')'"> (0)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Volume -->
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingVolume">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVolume" aria-expanded="false" aria-controls="collapseVolume">
+                Volume
+              </button>
+            </h2>
+            <div id="collapseVolume" class="accordion-collapse collapse" aria-labelledby="headingVolume" data-bs-parent="#filterAccordion">
+              <div class="accordion-body p-2">
+                <div class="filter-list">
+                  <div class="form-check" th:each="v : ${volumes}">
+                    <input class="form-check-input filter-check" type="checkbox" name="volume"
+                           th:id="${'volume-'+v['id']}" th:value="${v['id']}">
+                    <label class="form-check-label small" th:for="${'volume-'+v['id']}">
+                      <span th:text="${v['name']}">Volume</span>
+                      <span class="text-secondary" th:text="' (' + ${v['count']} + ')'"> (0)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="d-grid mt-3">
+          <button id="btn-reset" class="btn btn-outline-dark btn-sm">필터 초기화</button>
         </div>
       </div>
-    </section>
+    </aside>
 
-    <div class="row g-4">
-      <!-- 좌측 사이드: 필터 -->
-      <aside class="col-lg-3 d-none d-lg-block">
-        <div class="list-sidebar">
-          <!-- 필터 폼 -->
-          <form th:action="@{/main/list}" method="get" id="filterForm" class="card mb-3">
-            <div class="card-body">
-              <h6 class="card-title mb-3">필터</h6>
+    <!-- 중앙 리스트 -->
+    <section class="col-12 col-md-9 col-lg-10">
 
-              <!-- 현재 검색어 동시 전송 -->
-              <input type="hidden" name="q" th:value="${param.q}"/>
-
-              <!-- 브랜드 -->
-              <div class="mb-3">
-                <div class="small fw-semibold mb-2">브랜드</div>
-                <div class="vstack gap-2">
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="킬리안"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '킬리안')}">
-                    <span class="form-check-label">킬리안</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="메종 마르지엘라"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '메종 마르지엘라')}">
-                    <span class="form-check-label">메종 마르지엘라</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="톰 포드"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '톰 포드')}">
-                    <span class="form-check-label">톰 포드</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="아쿠아 디 파르마"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '아쿠아 디 파르마')}">
-                    <span class="form-check-label">아쿠아 디 파르마</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="바이레도"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '바이레도')}">
-                    <span class="form-check-label">바이레도</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="프레데릭 말"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '프레데릭 말')}">
-                    <span class="form-check-label">프레데릭 말</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="르 라보"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '르 라보')}">
-                    <span class="form-check-label">르 라보</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="샤넬"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '샤넬')}">
-                    <span class="form-check-label">샤넬</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="딥티크"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '딥티크')}">
-                    <span class="form-check-label">딥티크</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="brands" value="조 말론"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '조 말론')}">
-                    <span class="form-check-label">조 말론</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- 그레이드 -->
-              <div class="mb-3">
-                <div class="small fw-semibold mb-2">그레이드</div>
-                <div class="vstack gap-2">
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="grades"
-                           value="퍼퓸"
-                           th:checked="${param.grades != null and #lists.contains(param.grades, '퍼퓸')}">
-                    <span class="form-check-label">퍼퓸</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="grades"
-                           value="오 드 코롱"
-                           th:checked="${param.grades != null and #lists.contains(param.grades, '오 드 코롱')}">
-                    <span class="form-check-label">오 드 코롱</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="grades"
-                           value="오 드 퍼퓸"
-                           th:checked="${param.grades != null and #lists.contains(param.grades, '오 드 퍼퓸')}">
-                    <span class="form-check-label">오 드 퍼퓸</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="grades"
-                           value="오 드 뚜왈렛"
-                           th:checked="${param.grades != null and #lists.contains(param.grades, '오 드 뚜왈렛')}">
-                    <span class="form-check-label">오 드 뚜왈렛</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- 메인 어코드 -->
-              <div class="mb-1">
-                <div class="small fw-semibold mb-2">메인 어코드</div>
-                <div class="vstack gap-2">
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="시트러스"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '시트러스')}">
-                    <span class="form-check-label">시트러스</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="스파이시"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '스파이시')}">
-                    <span class="form-check-label">스파이시</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="우디"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '우디')}">
-                    <span class="form-check-label">우디</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="플로랄"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '플로랄')}">
-                    <span class="form-check-label">플로랄</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="허벌"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '허벌')}">
-                    <span class="form-check-label">허벌</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="프루티"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '프루티')}">
-                    <span class="form-check-label">프루티</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- 용량 -->
-              <div class="mb-1">
-                <div class="small fw-semibold mb-2">용량</div>
-                <div class="vstack gap-2">
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="volumes" value="15ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '15ml')}">
-                    <span class="form-check-label">15ml</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="volumes" value="30ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '30ml')}">
-                    <span class="form-check-label">30ml</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="volumes" value="50ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '50ml')}">
-                    <span class="form-check-label">50ml</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="volumes" value="75ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '75ml')}">
-                    <span class="form-check-label">75ml</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="volumes" value="100ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '100ml')}">
-                    <span class="form-check-label">100ml</span>
-                  </label>
-                  <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="volumes" value="150ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '150ml')}">
-                    <span class="form-check-label">150ml</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div class="card-footer bg-body text-end">
-              <button type="submit" class="btn btn-sm btn-primary">적용</button>
-              <a th:href="@{/main/list}" class="btn btn-sm btn-outline-secondary">초기화</a>
-            </div>
-          </form>
-        </div>
-      </aside>
-
-      <!-- 리스트 영역 -->
-      <section class="col-lg-9">
-        <!-- 결과 없음 -->
-        <div th:if="${#lists.isEmpty(list)}" class="empty border rounded bg-body">
-          표시할 항목이 없습니다.
+      <!-- 결과영역(Fragment로 교체) -->
+      <div id="list-body" th:fragment="listBody">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="small text-secondary">검색결과 <span id="result-count" th:text="${total}">0</span>개</div>
         </div>
 
-        <!-- 결과 그리드 -->
-        <div th:unless="${#lists.isEmpty(list)}"
-             class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3 g-md-4">
-          <!-- 카드 -->
-          <div class="col" th:each="product : ${list}">
-            <div class="card h-100 position-relative shadow-sm">
-
-              <!-- 관심(북마크) 버튼 -->
-              <div class="wish-btn">
-                <!-- 로그인 상태 -->
-                <!--
-                <button type="button"
-                        class="btn btn-light border-subtle rounded-circle shadow-sm btn-sm"
-                        sec:authorize="isAuthenticated()"
-                        th:classappend="${product.wished} ? ' active' : ''"
-                        th:attr="data-id=${product.id}"
-                        aria-pressed="false" title="관심 등록/해제">
-                  <span class="icon" th:text="${product.wished} ? '🔖' : '🏷️'">🔖</span>
-                </button>
-                -->
-                <!-- 비로그인 안내 -->
-                <button type="button"
-                        class="btn btn-light border-subtle rounded-circle shadow-sm btn-sm"
-                        sec:authorize="isAnonymous()"
-                        data-bs-toggle="tooltip" data-bs-title="로그인 후 사용 가능합니다">
-                  <span class="icon">🏷️</span>
-                </button>
-              </div>
-
-              <div class="ratio ratio-1x1">
-                <img class="product-thumb rounded-top"
-                     th:src="${product.imgPath != null and product.imgName != null ? (product.imgPath + product.imgName) : '/img/noimg.png'}"
-                     th:alt="${product.name}">
-              </div>
-
-              <!-- 본문 -->
-              <div class="card-body">
-                <div class="small text-secondary text-truncate" th:text="${product.brand.brandName}">Brand</div>
-                <h6 class="card-title mb-1 text-truncate" th:text="${product.name}">상품명</h6>
-                <div class="small text-secondary">
-                  <span th:text="${product.grade.gradeName}">등급</span>
-                  · <span th:text="${product.mainNote.mainNoteName}">메인노트</span>
-                  · <span th:text="${product.volume.volumeName}">용량</span>
+        <div id="product-grid" class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3">
+          <div class="col" th:each="p : ${products}">
+            <div class="card h-100 shadow-sm" style="border-radius: 1rem;">
+              <img th:src="${p['imgUrl']}" th:alt="${p['name']}" class="w-100" style="aspect-ratio:3/4;object-fit:cover;border-top-left-radius:1rem;border-top-right-radius:1rem;">
+              <div class="card-body p-2">
+                <div class="small text-secondary" th:text="${p['brandName']}">Brand</div>
+                <div class="fw-semibold text-truncate" th:title="${p['name']}" th:text="${p['name']}">Name</div>
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                  <div class="fw-bold" th:text="${#numbers.formatInteger(p['sellPrice'],3,'COMMA')} + '원'">0원</div>
+                  <a class="stretched-link" th:href="@{'/main/content/' + ${p['id']}}"></a>
                 </div>
-                <div class="fw-semibold mt-1"
-                     th:text="${product.sellprice != null ? #numbers.formatInteger(product.sellprice, 3, 'COMMA') + '원' : '-'}">00,000원</div>
               </div>
-
-              <!-- 카드 전체 클릭 -->
-              <a class="stretched-link"
-                 th:href="@{/main/content/{id}(id=${product.id})}"
-                 th:aria-label="|${product.name} 상세로 이동|"></a>
             </div>
           </div>
-          <!-- /카드 -->
         </div>
-      </section>
-    </div>
-  </main>
+      </div>
+
+    </section>
+
+  </div>
+
 </th:block>
-<!-- 페이지 전용 스크립트 -->
+
+<!-- jQuery만 사용 -->
 <th:block layout:fragment="script">
-  <script th:inline="javascript">
-    // 체크박스 변경 시 자동 제출 → /main/list
-    document.querySelectorAll('#filterForm input[type="checkbox"]').forEach(chk => {
-      chk.addEventListener('change', () => {
-        document.getElementById('filterForm').submit();
+<script>
+(function(){
+
+  // jQuery 로드될 때까지 기다렸다가 초기화
+  function waitForjQuery(init){
+    if (window.jQuery) { init(); return; }
+    var tries = 0;
+    (function poll(){
+      if (window.jQuery) return init();
+      if (++tries > 200) { console.error('[product-list] jQuery 미로드'); return; } // 10초 타임아웃
+      setTimeout(poll, 50);
+    })();
+  }
+
+  waitForjQuery(function init(){
+    var $ = window.jQuery;
+    console.log('[product-list] init');
+
+    // 체크된 값 수집
+    function collect(name){
+      return $("input[name='" + name + "']:checked")
+              .map(function(){ return this.value; }).get();
+    }
+
+    // GET 쿼리스트링 생성 (다중 파라미터)
+    function buildQS(){
+      var q = [];
+      var brand = collect("brand");
+      var grade = collect("grade");
+      var mn    = collect("mainNote");
+      var vol   = collect("volume");
+      if (brand.length) q.push(brand.map(v => "brandIds="    + encodeURIComponent(v)).join("&"));
+      if (grade.length) q.push(grade.map(v => "gradeIds="    + encodeURIComponent(v)).join("&"));
+      if (mn.length)    q.push(mn.map(v    => "mainNoteIds=" + encodeURIComponent(v)).join("&"));
+      if (vol.length)   q.push(vol.map(v   => "volumeIds="   + encodeURIComponent(v)).join("&"));
+      return q.length ? ("?" + q.join("&")) : "";
+    }
+
+    // 부분 갱신 (항상 GET, 프래그먼트 내부만 교체)
+    function reload(){
+      var url = "/main/list/partial" + buildQS();
+      console.log('[product-list] reload ->', url);
+      $("#list-body").load(url + " #list-body>*", function(response, status, xhr){
+        if(status !== "success"){
+          console.error("[product-list] 부분 로드 실패:", xhr.status, xhr.statusText);
+        }
       });
+    }
+
+    // 이벤트 바인딩 (아코디언 이벤트와 충돌 방지)
+    $(document).on("change", ".filter-check", function(e){
+      e.stopPropagation();
+      console.log('[product-list] changed:', this.name, this.value, this.checked);
+      reload();
     });
 
-    // Bootstrap Tooltip (비로그인 안내)
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    [...tooltipTriggerList].forEach(el => new bootstrap.Tooltip(el));
-
-
-    // 관심 토글(Ajax) — product 기준
-    $(document).on('click', '.wish-btn [sec\\:authorize="isAuthenticated()"], .wish-btn button[sec\\:authorize]', function () {
-      const $btn = $(this);
-      const productId = $btn.data('id');
-      if (!productId) return;
-
-      $.ajax({
-        url: /*[@{/wish/toggle}]*/ '/wish/toggle',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({ productId: productId }),
-      }).done(function (res) {
-        const wished = !!(res && res.wished);
-        $btn.toggleClass('active', wished);
-        $btn.find('.icon').text(wished ? '🔖' : '🏷️');
-      }).fail(function () {
-        alert('요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
-      });
+    $("#btn-reset").on("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      $(".filter-check").prop("checked", false);
+      reload();
     });
-  </script>
-</th:block>
+
+    // (선택) 최초 진입 시 한번 갱신하고 싶으면 주석 해제
+    // reload();
+  });
+
+})();
+</script>
 </th:block>
 
+</body>
+</html>
