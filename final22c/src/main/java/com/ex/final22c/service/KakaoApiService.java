@@ -46,7 +46,7 @@ public class KakaoApiService {
          int safeQty = Math.min(Math.max(qty, 1), Math.max(stock, 1));
          if (stock == 0) throw new IllegalStateException("품절 상품입니다.");
 
-         long unit  = (long) (p.getPrice() * 0.7);
+         long unit  = p.getSellPrice();
          long total = unit * safeQty;
 
          // ★ 총액 0 이하 방어 (카카오 total_amount는 1 이상이어야 함)

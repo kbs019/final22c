@@ -54,7 +54,7 @@ public class CheckOutController {
 
      Product product = productService.getProduct(id);
 
-     int unitPrice = (int) (product.getPrice() * 0.7);
+     int unitPrice = product.getSellPrice();
      int lineTotal = unitPrice * qty;
      Users user = userService.getUser(principal.getName());
  
