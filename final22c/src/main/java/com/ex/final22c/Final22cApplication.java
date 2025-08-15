@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 @org.mybatis.spring.annotation.MapperScan(
-    basePackages = "com.ex.final22c.repository.perfumeMapper",
+    basePackages = "com.ex.final22c.repository.productMapper",
     annotationClass = org.apache.ibatis.annotations.Mapper.class
 )
 public class Final22cApplication {
