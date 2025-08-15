@@ -1,20 +1,25 @@
-package com.ex.final22c.controller.perfume;
-
-import com.ex.final22c.data.perfume.Perfume;
-import com.ex.final22c.service.perfume.PerfumeService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+package com.ex.final22c.controller.product;
 
 import java.util.List;
 
-@Controller
-@RequiredArgsConstructor
-@RequestMapping("/main")
-public class PerfumeController {
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-    private final PerfumeService perfumeService;
+import com.ex.final22c.data.product.Product;
+import com.ex.final22c.service.product.ProductService;
+
+import lombok.RequiredArgsConstructor;
+
+@Controller
+@RequestMapping("/main")
+@RequiredArgsConstructor
+public class ProductController {
+
+    private final ProductService productService;
 
     // 목록 페이지: /main/list?q=&grades=...&accords=...
     @GetMapping("/list")
@@ -26,7 +31,7 @@ public class PerfumeController {
                     Model model) {
 
         // ★ 5-인자 서비스 호출 (브랜드/용량 반영)
-        List<Perfume> list = perfumeService.search(q, grades, accords, brands, volumes);
+        List<Product> list = productService.search(q, grades, accords, brands, volumes);
 
         model.addAttribute("list", list);
 
@@ -40,11 +45,11 @@ public class PerfumeController {
     }
 
     // 상세 페이지: /main/content/{perfumeNo}
-    @GetMapping("/content/{perfumeNo}")
-    public String perfumeContent(@PathVariable("perfumeNo") int perfumeNo,
-                                 Model model) {
-        Perfume perfume = perfumeService.getPerfume(perfumeNo);
-        model.addAttribute("perfume", perfume);
+    @GetMapping("/content/{id}")
+    public String perfumeContent(@PathVariable("id") long id,
+                                    Model model) {
+        Product product = productService.getProduct(id);
+        model.addAttribute("product", product);
         return "main/content";
     }
 }

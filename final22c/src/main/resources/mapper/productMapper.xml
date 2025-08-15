@@ -5,61 +5,61 @@
 
 <mapper namespace="com.ex.final22c.repository.productMapper.ProductMapper">
 
-  <select id="search" resultType="com.ex.final22c.data.product.Product">
+    <select id="search" resultType="com.ex.final22c.data.product.Product">
     SELECT
-      id,
-      brand_brandNo,
-      perfumeName,
-      grade,
-      mainnote,
-      volume,
-      price,
-      imgPath,
-      imgName
+        id,
+        brand_brandNo,
+        perfumeName,
+        grade,
+        mainnote,
+        volume,
+        price,
+        imgPath,
+        imgName
     FROM perfume
     WHERE 1=1
 
     <!-- 검색어 -->
     <if test="q != null and q != ''">
-      AND (
+        AND (
         perfumeName LIKE CONCAT('%', #{q}, '%')
         OR brand     LIKE CONCAT('%', #{q}, '%')
-      )
+        )
     </if>
 
     <!-- 그레이드 -->
     <if test="grades != null and grades.size() > 0">
-      AND grade IN
-      <foreach collection="grades" item="g" open="(" separator="," close=")">
+        AND grade IN
+        <foreach collection="grades" item="g" open="(" separator="," close=")">
         #{g}
-      </foreach>
+        </foreach>
     </if>
 
     <!-- 메인 어코드 -->
     <if test="accords != null and accords.size() > 0">
-      AND mainnote IN
-      <foreach collection="accords" item="a" open="(" separator="," close=")">
+        AND mainnote IN
+        <foreach collection="accords" item="a" open="(" separator="," close=")">
         #{a}
-      </foreach>
+        </foreach>
     </if>
 
     <!-- 브랜드 -->
     <if test="brands != null and brands.size() > 0">
-      AND brand IN
-      <foreach collection="brands" item="b" open="(" separator="," close=")">
+        AND brand IN
+        <foreach collection="brands" item="b" open="(" separator="," close=")">
         #{b}
-      </foreach>
+        </foreach>
     </if>
 
     <!-- 용량 -->
     <if test="volumes != null and volumes.size() > 0">
-      AND volumn IN
-      <foreach collection="volumes" item="v" open="(" separator="," close=")">
+        AND volumn IN
+        <foreach collection="volumes" item="v" open="(" separator="," close=")">
         #{v}
-      </foreach>
+        </foreach>
     </if>
 
     ORDER BY perfumeNo DESC
-  </select>
+    </select>
 
 </mapper>
