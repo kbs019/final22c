@@ -288,13 +288,13 @@
               <div class="ratio ratio-1x1">
                 <img class="perfume-thumb rounded-top"
                      th:src="@{|${perfume.imgPath}${perfume.imgName}|}"
-                     th:alt="${perfume.perfumeName}">
+                     th:alt="${perfume.name}">
               </div>
 
               <!-- 본문 -->
               <div class="card-body">
                 <div class="small text-secondary" th:text="${perfume.brand}">Brand</div>
-                <h6 class="card-title mb-1 text-truncate" th:text="${perfume.perfumeName}">향수명</h6>
+                <h6 class="card-title mb-1 text-truncate" th:text="${perfume.name}">향수명</h6>
                 <div class="fw-semibold"
                      th:text="${#numbers.formatInteger(perfume.sellPrice, 3, 'COMMA')} + '원'">00,000원</div>
               </div>
@@ -302,7 +302,7 @@
               <!-- 카드 전체를 클릭 가능하게 만드는 투명 링크 -->
               <a class="stretched-link"
                  th:href="@{/main/content/{no}(no=${perfume.perfumeNo})}"
-                 th:aria-label="|${perfume.perfumeName} 상세로 이동|"></a>
+                 th:aria-label="|${perfume.name} 상세로 이동|"></a>
             </div>
           </div>
           <!-- /카드 -->
