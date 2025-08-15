@@ -31,8 +31,10 @@
                     <th:block th:replace="~{main/content-sell :: sellFragment}"></th:block>
                 </div> -->
                 <div class="my-3 py-3 border-bottom">
-                    <h3 th:text="${product.price}"></h3>
-                    <h5 th:text="${product.price}"></h5>
+                    <h3>판매가 : <span class="sell-price"></span> 원</h3>
+                    <!-- <h5 th:text="${(product.price * 7) / 10}"></h5> -->
+                    <!-- <h5 th:text="${#numbers.formatInteger((product.price * 7) / 10, 0)}"></h5> -->
+                    <h5>정가 : <span class="price"></span> 원</h5>
                 </div>
                 <div class="my-3 py-3 border-bottom">
                     <div>

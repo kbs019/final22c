@@ -116,14 +116,14 @@ public class Users {
     private Set<Product> zzimedProducts = new HashSet<>();
 
     // 사용자가 공감한 리뷰들 - (조인 테이블 생성 - 컬럼: users_id, review_id)
-    @ManyToMany(mappedBy = "likers")
-    @Builder.Default
-    private Set<Review> likedReviews = new HashSet<>();
+    // @ManyToMany(mappedBy = "likers")
+    // @Builder.Default
+    // private Set<Review> likedReviews = new HashSet<>();
 
-    // 사용자가 작성한 리뷰들
-    @OneToMany(mappedBy = "writer")
-    @Builder.Default
-    private List<Review> reviews = new ArrayList<>();
+    // // 사용자가 작성한 리뷰들
+    // @OneToMany(mappedBy = "writer")
+    // @Builder.Default
+    // private List<Review> reviews = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

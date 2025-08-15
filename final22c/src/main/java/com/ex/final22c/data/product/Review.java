@@ -1,6 +1,9 @@
 package com.ex.final22c.data.product;
 
+import java.time.LocalDateTime;
 import java.util.*;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 import com.ex.final22c.data.user.Users;
 
@@ -34,6 +37,9 @@ public class Review {
 
     @Column(length = 4000)
     private String content;
+
+    @CreationTimestamp
+    private LocalDateTime createDate;
 
     private int rating;
 
