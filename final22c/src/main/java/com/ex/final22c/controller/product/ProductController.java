@@ -44,7 +44,7 @@ public class ProductController {
         return "main/list";
     }
 
-    // 상세 페이지: /main/content/{perfumeNo}
+    // 상세 페이지: /main/content/{id}
     @GetMapping("/content/{id}")
     public String perfumeContent(@PathVariable("id") long id,
                                     Model model) {

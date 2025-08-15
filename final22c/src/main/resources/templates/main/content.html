@@ -9,28 +9,81 @@
     <div class="productInfoWrap">
         <!-- 좌측의 향수 이미지 -->
         <div class="slideWrap">
-            <img th:src="@{|${perfume.imgPath}${perfume.imgName}|}">
+            <img th:src="@{|${product.imgPath}${product.imgName}|}">
         </div>
         <!-- 우측의 상단에 존재하는  판매 / 구매 페이지 선택 버튼 -->
         <div class="productInfo">
-            <div class="d-flex justify-content-center gap-2 mb-3">
+            <!-- <div class="d-flex justify-content-center gap-2 mb-3">
                 <button id="btn-buy" class="btn btn-outline-secondary active">구매</button>
                 <button id="btn-sell" class="btn btn-outline-secondary">판매</button>
-            </div>
+            </div> -->
 
             <!-- 내용 영역: 두 블록을 미리 렌더링해둠 -->
-            <div id="perfume-detail">
+            <div id="product-detail">
 
-                <!-- 구매 섹션: 기본 표시 -->
+                <!-- 구매 섹션: 기본 표시
                 <div id="section-buy">
                     <th:block th:replace="~{main/content-buy :: buyFragment}"></th:block>
-                </div>
+                </div>-->
 
-                <!-- 판매 섹션: 기본은 숨김 -->
+                <!-- 판매 섹션: 기본은 숨김
                 <div id="section-sell" style="display:none;">
                     <th:block th:replace="~{main/content-sell :: sellFragment}"></th:block>
+                </div> -->
+                <div class="my-3 py-3 border-bottom">
+                    <h3 th:text="${product.price}"></h3>
+                    <h5 th:text="${product.price}"></h5>
                 </div>
+                <div class="my-3 py-3 border-bottom">
+                    <div>
+                        <h3 th:text="${product.name}"></h3>
+                    </div>
+                    <div th:text="${product.brand.brandName}"></div>
+                </div>
+                <div class="my-3 py-3 border-bottom">
+                    <div>배송 정보</div>
+                    <div>
+                        <h5>배송비 3,000 원</h5>
+                    </div>
+                    <div>
+                        <h5>예상 배송일 1~3 일</h5>
+                    </div>
+                </div>
+                <div class="my-3 py-3 border-bottom">
+                    <div>구매 확정 시, 결제금액의 5% 적립</div>
+                    <form id="buy-form" method="post">
+                        <!-- 상품번호 히든으로 전달 -->
+                        <input type="hidden" name="id" th:value="${product.id}">
 
+                        <!-- CSRF (Spring Security 사용 시) -->
+                        <!-- <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"> -->
+
+                        <div class="d-flex align-items-center gap-2" id="buy-qty-wrap">
+                            <button type="button" class="btn btn-outline-secondary btn-sm btn-minus">-</button>
+
+                            <!-- 수량 입력: min=1, max=재고 -->
+                            <input type="number" class="form-control text-center qty-input" style="width:80px;"
+                                name="quantity" th:attr="max=${product.count}" min="1" value="1">
+
+                            <button type="button" class="btn btn-outline-secondary btn-sm btn-plus">+</button>
+
+                            <div class="ms-3">
+                                <div class="fw-semibold">합계: <span class="total-amount">0</span> 원</div>
+                                <div class="text-muted small">적립 예정(5%): <span class="reward-amount">0</span> P</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 d-flex gap-2">
+                            <!-- 장바구니 버튼 -->
+                            <button type="submit" class="btn btn-outline-secondary" formaction="/cart/add"
+                                formmethod="post" id="btn-add-cart">장바구니</button>
+
+                            <!-- 바로결제(주문 요약/결제 페이지로) -->
+                            <button type="submit" class="btn btn-secondary" formaction="/checkout/order"
+                                formmethod="post" id="btn-buy-now">바로 결제</button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
         </div>
@@ -41,40 +94,40 @@
         <div>
             <span>부향률</span>
             <div>
-                - <span th:text="${perfume.grade}"></span>
+                - <span th:text="${product.grade.gradeName}"></span>
             </div>
         </div>
         <div>
             <span>메인 어코드</span>
             <div>
-                - <span th:text="${perfume.mainNote}"></span>
+                - <span th:text="${product.mainNote.mainNoteName}"></span>
             </div>
         </div>
         <div>
             <span>메인 노트</span>
-            <div th:if="${perfume.singleNote != null}">
+            <div th:if="${product.singleNote != null}">
                 - <span>싱글 노트 : </span>
-                <span th:text="${perfume.singleNote}"></span>
+                <span th:text="${product.singleNote}"></span>
             </div>
-            <div th:if="${perfume.singleNote == null}">
+            <div th:if="${product.singleNote == null}">
                 <div>
                     - <span>탑 노트 : </span>
-                    <span th:text="${perfume.topNote}"></span>
+                    <span th:text="${product.topNote}"></span>
                 </div>
                 <div>
                     - <span>미들 노트 : </span>
-                    <span th:text="${perfume.middleNote}"></span>
+                    <span th:text="${product.middleNote}"></span>
                 </div>
                 <div>
                     - <span>베이스 노트 : </span>
-                    <span th:text="${perfume.baseNote}"></span>
+                    <span th:text="${product.baseNote}"></span>
                 </div>
             </div>
         </div>
         <div>
             <span>향 설명</span>
             <div>
-                - <span th:text="${perfume.description}"></span>
+                - <span th:text="${product.description}"></span>
             </div>
         </div>
         <!-- 하단의 향 소개 부분 끝 -->
@@ -85,11 +138,11 @@
         <!-- 리뷰 리스트 시작 -->
         <!-- <div>
             <h2>리뷰 리스트</h2>
-            <div th:if="${#lists.isEmpty(perfume.reviewList)}">
+            <div th:if="${#lists.isEmpty(product.reviewList)}">
                 <h3>작성된 리뷰가 없습니다.</h3>
             </div>
-            <div th:unless="${#lists.isEmpty(perfume.reviewList)}">
-                <div th:each="review : ${perfume.reviewList}">
+            <div th:unless="${#lists.isEmpty(product.reviewList)}">
+                <div th:each="review : ${product.reviewList}">
                     <div th:text="${review.gradePoint}"></div>
                     <div th:text="${review.content}"></div>
                     <div th:text="${review.user.username}"></div>
@@ -105,7 +158,7 @@
 <!-- ajax 부분 설정 추가  -->
 <th:block layout:fragment="script">
     <!-- 상단의 구매 / 판매 버튼 클릭하여 뷰 변경 -->
-    <script>
+    <!-- <script>
         const btnBuy = document.getElementById('btn-buy');
         const btnSell = document.getElementById('btn-sell');
         const secBuy = document.getElementById('section-buy');
@@ -127,7 +180,7 @@
             const v = new URL(location.href).searchParams.get('view');
             if (v === 'sell') show('sell');
         })();
-    </script>
+    </script> -->
 
     <style>
         /* Chrome, Edge, Safari(웹킷 계열)에서 공통 스피너 제거 */
@@ -158,9 +211,7 @@
             // 컨테이너별 상수 (min/max는 인풋 속성에서, price는 구매/판매에 따라)
             const MIN = parseInt(input.getAttribute('min')) || 1;
             const MAX = parseInt(input.getAttribute('max')) || 0;
-            const PRICE = container.id === 'buy-qty-wrap'
-                ? /*[[${perfume.sellPrice}]]*/ 0
-                : /*[[${perfume.buyPrice}]]*/  0;
+            const PRICE = /*[[${product.price}]]*/ 0;
             const RATE = 0.05; // 구매/판매 공통 5% 
 
             // 숫자 포맷
@@ -177,7 +228,7 @@
 
             // 합계/적립 계산 + UI 반영
             function recalcAndRender(qty) {
-                const total = PRICE * qty;
+                const total = PRICE * 0.7 * qty;
                 // 금액/포인트 반올림 규칙: 금액은 정수, 포인트는 내림(원단위 포인트 가정)
                 const point = Math.floor(total * RATE);
                 totalEl.textContent = fmt(total);

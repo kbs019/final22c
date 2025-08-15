@@ -7,29 +7,33 @@
 
     <select id="search" resultType="com.ex.final22c.data.product.Product">
     SELECT
-        id,
-        brand_brandNo,
-        perfumeName,
-        grade,
-        mainnote,
-        volume,
-        price,
-        imgPath,
-        imgName
-    FROM perfume
+        p.id,
+        b.brandName,
+        p.name,
+        g.gradeName,
+        m.mainNoteName,
+        v.volumeName,
+        p.price,
+        p.imgPath,
+        p.imgName
+    FROM product p
+    left join brand b on p.brand_brandNo = b.brandNo
+    left join grade g on p.grade_gradeNo = g.gradeNo
+    left join mainnote m on p.mainNote_mainNoteNo = m.mainNoteNo
+    left join volume v on p.volume_volumeNo = v.volumeNo
     WHERE 1=1
 
     <!-- 검색어 -->
     <if test="q != null and q != ''">
         AND (
-        perfumeName LIKE CONCAT('%', #{q}, '%')
-        OR brand     LIKE CONCAT('%', #{q}, '%')
+        p.name LIKE CONCAT('%', #{q}, '%')
+        OR b.brandName     LIKE CONCAT('%', #{q}, '%')
         )
     </if>
 
     <!-- 그레이드 -->
     <if test="grades != null and grades.size() > 0">
-        AND grade IN
+        AND g.gradeName IN
         <foreach collection="grades" item="g" open="(" separator="," close=")">
         #{g}
         </foreach>
@@ -37,7 +41,7 @@
 
     <!-- 메인 어코드 -->
     <if test="accords != null and accords.size() > 0">
-        AND mainnote IN
+        AND m.mainNoteName IN
         <foreach collection="accords" item="a" open="(" separator="," close=")">
         #{a}
         </foreach>
@@ -45,7 +49,7 @@
 
     <!-- 브랜드 -->
     <if test="brands != null and brands.size() > 0">
-        AND brand IN
+        AND b.brandName IN
         <foreach collection="brands" item="b" open="(" separator="," close=")">
         #{b}
         </foreach>
@@ -53,13 +57,13 @@
 
     <!-- 용량 -->
     <if test="volumes != null and volumes.size() > 0">
-        AND volumn IN
+        AND v.volumeName IN
         <foreach collection="volumes" item="v" open="(" separator="," close=")">
         #{v}
         </foreach>
     </if>
 
-    ORDER BY perfumeNo DESC
+    ORDER BY id DESC
     </select>
 
 </mapper>

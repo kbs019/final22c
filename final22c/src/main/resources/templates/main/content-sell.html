@@ -1,19 +1,19 @@
 <div th:fragment="sellFragment">
     <div class="my-3 py-3 border-bottom">
-        <h3 th:text="${perfume.buyPrice}"></h3>
-        <h5 th:text="${perfume.price}"></h5>
+        <h3 th:text="${product.price}"></h3>
+        <h5 th:text="${product.price}"></h5>
     </div>
     <div class="my-3 py-3 border-bottom">
         <div>
-            <h3 th:text="${perfume.perfumeName}"></h3>
+            <h3 th:text="${product.name}"></h3>
         </div>
-        <div th:text="${perfume.brand}"></div>
+        <div th:text="${product.brand.brandName}"></div>
     </div>
     <div class="my-3 py-3 border-bottom">
         <div>정산 완료 시, 정산금액의 5% 적립</div>
         <form id="sell-form" method="post">
             <!-- 상품번호 -->
-            <input type="hidden" name="perfumeNo" th:value="${perfume.perfumeNo}">
+            <input type="hidden" name="id" th:value="${product.id}">
             
             <!-- CSRF 를 사용하면 히든으로 토큰을 넘겨준다. -->
             <!-- <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"> -->
@@ -23,7 +23,7 @@
     
                 <!-- 수량 입력: min=1, max=재고 -->
                 <input type="number" class="form-control text-center qty-input" style="width:80px;"
-                    name="quantity" th:attr="max=${(100 - perfume.count) > 0 ? (100 - perfume.count) : 0}" min="1" value="1">       <!-- T(java.lang.Math).max(0, …)로 음수 방지(이미 100 이상이면 0). -->
+                    name="quantity" th:attr="max=${(100 - product.count) > 0 ? (100 - product.count) : 0}" min="1" value="1">       <!-- T(java.lang.Math).max(0, …)로 음수 방지(이미 100 이상이면 0). -->
     
                 <button type="button" class="btn btn-outline-secondary btn-sm btn-plus">+</button>
     

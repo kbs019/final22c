@@ -24,7 +24,7 @@ public class ProductService {
         return productRepository.findAll();
     }
 
-    public Product getProduct(Long id) {
+    public Product getProduct(long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("해당하는 향수의 정보를 찾을 수 없습니다."));
     }
