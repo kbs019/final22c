@@ -1,11 +1,11 @@
 <!-- templates/order/checkout.html -->
 <html layout:decorate="~{layout/layout}">
-  <!-- 페이지 전용 CSS (head 슬롯) -->
+  <!-- head 슬롯: 페이지 전용 CSS -->
   <th:block layout:fragment="css">
     <link rel="stylesheet" href="/css/content.css">
     <style>
       .to-top { display: none !important; }
-      .checkout-wrap{
+      .checkout-wrap {
         max-width:1100px; margin:24px auto;
         display:grid; grid-template-columns:1fr; gap:16px;
       }
@@ -19,27 +19,10 @@
       .point-badge{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px}
       .point-use{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb}
 
-      /* ===== 결제 모달 ===== */
-      .pay-modal {position:fixed; inset:0; z-index:9999; display:none;}
-      .pay-dim {position:absolute; inset:0; background:rgba(0,0,0,.5);}
-      .pay-dialog{
-        position:relative; width:min(960px, 92vw); height:min(720px, 88vh);
-        margin:4vh auto 0; background:#fff; border-radius:12px; overflow:hidden;
-        box-shadow:0 20px 60px rgba(0,0,0,.35);
-      }
-      .pay-dialog iframe{width:100%; height:100%; border:0; display:block;}
-      .pay-close{
-        position:absolute; right:8px; top:6px; width:40px; height:40px;
-        border:0; background:transparent; font-size:28px; line-height:40px; cursor:pointer;
-        z-index:2;
-      }
-      .pay-fallback{
-        position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-        gap:12px; background:#fff; padding:16px; text-align:center;
-      }
-      .pay-fallback .btn{
-        display:inline-block; padding:10px 16px; border-radius:8px; background:#111; color:#fff; text-decoration:none; font-weight:700;
-        width:auto;
+      /* 화면을 어둡게 하는 오버레이 (모달 느낌) */
+      #payOverlay{
+        display:none; position:fixed; inset:0; z-index:9998;
+        background:rgba(0,0,0,.5);
       }
       body.modal-open{overflow:hidden;}
     </style>
@@ -48,17 +31,13 @@
   <!-- 본문 -->
   <div layout:fragment="content" th:with="shipping=${3000}, payTotal=${lineTotal + shipping}">
     <div class="checkout-wrap">
-      <!-- 주소지 -->
+      <!-- 배송지 -->
       <div class="card">
-        <div class="summary-row">
-          <strong>배송지 주소</strong>
-        </div>
-        <div>
-          <!-- TODO: 배송지 표시/선택 UI -->
-        </div>
+        <div class="summary-row"><strong>배송지 주소</strong></div>
+        <div><!-- TODO: 배송지 표시/선택 --></div>
       </div>
 
-      <!-- 1) 주문상품 카드 -->
+      <!-- 주문상품 -->
       <div class="card">
         <div class="summary-row">
           <strong>주문상품</strong>
@@ -76,20 +55,19 @@
         </div>
       </div>
 
-      <!-- 2) 포인트 박스 -->
+      <!-- 포인트 -->
       <div class="card">
         <div class="point-box">
           <strong>포인트</strong>
           <span class="point-badge">
             보유 <span id="ownedPoint" th:text="${#numbers.formatInteger(user.mileage,0)}"></span> 원
           </span>
-          <!-- 스피너 제거 & 숫자만 입력되도록 text + 필터 -->
           <input id="usePoint" type="text" placeholder="사용할 포인트" value="0" th:attr="max=${user.mileage}">
           <button type="button" class="point-use" id="btnUseAllPoint">전액사용</button>
         </div>
       </div>
 
-      <!-- 3) 결제상세 카드 -->
+      <!-- 결제 상세 -->
       <div class="card">
         <div class="summary-row">
           <span class="muted">상품금액</span>
@@ -113,7 +91,7 @@
           <span id="rewardLabel" th:text="${#numbers.formatInteger(payTotal*0.05,0)}+'원'"></span>
         </div>
 
-        <!-- 서버에 보낼 값 -->
+        <!-- 서버 전송 값 -->
         <input type="hidden" id="product_id" th:value="${product.id}">
         <input type="hidden" id="qty"        th:value="${qty}">
         <input type="hidden" id="payTotal"   th:value="${payTotal}">
@@ -123,119 +101,154 @@
       </div>
     </div>
 
-	<!-- 결제 모달 -->
-	<div id="payModal" class="pay-modal" style="display:none; position:fixed; inset:0; z-index:9999;">
-	  <div class="pay-dim" style="position:absolute; inset:0; background:rgba(0,0,0,.5);"></div>
-	  <div class="pay-dialog" role="dialog" aria-modal="true" aria-label="결제창"
-	       style="position:relative; width:min(520px, 92vw); margin:10vh auto; background:#fff; border-radius:12px; padding:24px;">
-	    <button type="button" class="pay-close" title="닫기"
-	            style="position:absolute; right:10px; top:6px; border:0; background:transparent; font-size:24px;">&times;</button>
-	    <div id="payBody" style="text-align:center">
-	      <div style="font-weight:700; font-size:18px; margin-bottom:8px;">결제창을 여는 중…</div>
-	      <div class="muted" style="color:#6b7280">팝업이 차단되면 아래 버튼으로 열어주세요.</div>
-	      <div style="margin-top:16px;">
-	        <a id="payOpenBtn" href="#" target="_blank" rel="noopener"
-	           style="display:inline-block; padding:10px 16px; border-radius:8px; background:#111; color:#fff; text-decoration:none; font-weight:700;">
-	          새 창으로 열기
-	        </a>
-	      </div>
-	    </div>
-	  </div>
-	</div>
+    <!-- 배경 오버레이 -->
+    <div id="payOverlay"></div>
 
-    <!-- ✅ jQuery 먼저 로드 -->
+    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <!-- 페이지 스크립트 -->
-	<!-- jQuery -->
-
 	<script th:inline="javascript">
-	$(function () {
-	  // ----- 서버 값 -----
+	$(function(){
+	  // ----- 금액/포인트 계산 -----
 	  const owned   = /*[[${user.mileage}]]*/ 0 || 0;
 	  const lineSum = (/*[[${lineTotal}]]*/ 0) + (/*[[${shipping}]]*/ 0);
-
-	  // ----- 유틸 -----
 	  const fmt = n => (Math.max(0, Math.trunc(n))).toLocaleString() + '원';
 
-	  $("#usePoint").on("input", function () {
-	    this.value = this.value.replace(/[^\d]/g, '');
-	  });
+	  $("#usePoint").on("input", function(){ this.value = this.value.replace(/[^\d]/g, ''); });
 
-	  function recalc(byUserPoint) {
-	    let use = Number(byUserPoint);
-	    if (!Number.isFinite(use) || use < 0) use = 0;
-	    use = Math.min(use, owned, lineSum);
-
+	  function recalc(use){
+	    use = Math.min(Math.max(0, Number(use)||0), owned, lineSum);
 	    $("#usePoint").val(use);
 	    $("#usedPoint").val(use);
 	    $("#usedPointLabel").text(use.toLocaleString() + '원');
-
 	    const pay = Math.max(0, lineSum - use);
 	    $("#payTotal").val(pay);
 	    $("#payTotalLabel").text(fmt(pay));
-
-	    const reward = Math.trunc(pay * 0.05);
-	    $("#rewardLabel").text(fmt(reward));
+	    $("#rewardLabel").text(fmt(Math.trunc(pay * 0.05)));
 	  }
-
 	  recalc(0);
-	  $("#btnUseAllPoint").on("click", () => recalc(Math.min(owned, lineSum)));
+	  $("#btnUseAllPoint").on("click", ()=> recalc(Math.min(owned, lineSum)));
 	  $("#usePoint").on("input change", function(){ recalc(this.value); });
 
-	  // ----- 모달 open/close -----
-	  function openModal(url){
-	    $("#payOpenBtn").attr("href", url);
-	    $("#payModal").show().attr("aria-hidden","false");
-	    $("body").addClass("modal-open");
+	  // ----- 오버레이 컨트롤 -----
+	  function showOverlay(){ $("#payOverlay").show(); $("body").addClass("modal-open"); }
+	  function hideOverlay(){ $("#payOverlay").hide(); $("body").removeClass("modal-open"); }
+	  $("#payOverlay").on("click", hideOverlay);
+
+	  // ----- 가운데 팝업 열기 (모달처럼 보이게) -----
+	  function openCenteredPopup(url, w=520, h=720){
+	    const dualScreenLeft = (window.screenLeft !== undefined ? window.screenLeft : window.screenX) || 0;
+	    const dualScreenTop  = (window.screenTop  !== undefined ? window.screenTop  : window.screenY) || 0;
+	    const width  = window.outerWidth  || document.documentElement.clientWidth  || screen.width;
+	    const height = window.outerHeight || document.documentElement.clientHeight || screen.height;
+
+	    const left = dualScreenLeft + Math.max(0, (width  - w) / 2);
+	    const top  = dualScreenTop  + Math.max(0, (height - h) / 2);
+
+	    const features =
+	      `popup=yes,width=${w},height=${h},left=${left},top=${top},` +
+	      `resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
+
+	    return window.open(url, "kakaopay_popup", features);
 	  }
-	  function closeModal(){
-	    $("#payModal").hide().attr("aria-hidden","true");
-	    $("body").removeClass("modal-open");
+
+	  // ----- 팝업에서 오는 성공/취소/실패 신호 수신 -----
+	  window.addEventListener('message', function (e) {
+	    if (e.origin !== window.location.origin) return;
+	    const d = e.data || {};
+	    if (d.type !== 'PAY_RESULT') return;
+
+	    hideOverlay();
+
+	    if (d.status === 'success') {
+	      window.location.href = '/main/list';
+	    } else if (d.status === 'cancel') {
+	      alert('결제가 취소되었습니다.');
+	    } else {
+	      alert('결제에 실패했습니다.');
+	    }
+	  });
+
+	  // ----- 팝업 닫힘 감시 → 유예 → 서버 상태 조회 후 분기 -----
+	  function watchPopupClose(win, orderId){
+	    const timer = setInterval(function(){
+	      if (!win || win.closed) {
+	        clearInterval(timer);
+
+	        // postMessage가 늦게 도착할 수 있으니 잠깐 유예
+	        setTimeout(function(){
+	          $.get('/pay/order/' + orderId + '/status')
+	            .done(function(res){
+	              const st = (res && res.status || '').toUpperCase();
+	              hideOverlay();
+	              if (st === 'PAID') {
+	                // 실제로 결제 완료
+	                window.location.href = '/main/list';
+	              } else if (st === 'PENDING') {
+	                // 자동 취소하지 말고 안내 (원하면 버튼으로 /pay/cancel-pending 호출)
+	                alert('결제가 완료되지 않았습니다. 다시 시도하거나 취소할 수 있어요.');
+	                // 원하면 자동취소:
+	                // $.post('/pay/cancel-pending', { orderId }).always(() => alert('결제가 취소되었습니다.'));
+	              } else {
+	                alert('결제가 취소되었습니다.');
+	              }
+	            })
+	            .fail(function(){
+	              hideOverlay();
+	              alert('결제 결과 확인에 실패했습니다. 잠시 후 새로고침해 주세요.');
+	            });
+	        }, 1000); // 1초 유예
+	      }
+	    }, 300);
 	  }
-	  $(document).on("click", ".pay-close, .pay-dim", closeModal);
-	  $(document).on("keydown", function(e){ if(e.key === "Escape") closeModal(); });
 
 	  // ----- 결제 버튼 -----
-	  $("#payBtn").on("click", function (e) {
+	  $("#payBtn").on("click", function(e){
 	    e.preventDefault();
 
 	    const productId = Number($("#product_id").val());
 	    const qty       = Number($("#qty").val());
 	    const usedPoint = Number($("#usedPoint").val());
 
-	    // CSRF (레이아웃 head에 메타 필요)
 	    const token  = $('meta[name="_csrf"]').attr('content');
 	    const header = $('meta[name="_csrf_header"]').attr('content');
 
 	    $.ajax({
 	      type: "POST",
 	      url:  "/pay/ready",
-	      data: { productId: productId, qty: qty, usedPoint: usedPoint },
+	      data: { productId, qty, usedPoint },
 	      beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
 	      success: function(res){
-	        const url = res && res.next_redirect_pc_url;
-	        if (!url) { alert("응답 형식이 올바르지 않습니다."); console.log(res); return; }
+	        const url     = res && res.next_redirect_pc_url;
+	        const orderId = res && res.orderId;     // ✅ 서버가 넣어준 orderId 사용
+	        if (!url || !orderId) {
+	          alert("응답 형식이 올바르지 않습니다.");
+	          console.log(res);
+	          return;
+	        }
 
-	        // 모달은 띄우되, 결제 페이지는 팝업/새탭으로 열기
-	        openModal(url);
+	        showOverlay();
 
-	        // 1) 팝업 먼저 시도
-	        const win = window.open(url, "_blank", "popup");
+	        const win = openCenteredPopup(url, 520, 720);
 	        if (win && !win.closed) {
-	          // 팝업 열림 → 포커스만 주고, 모달은 안내용으로 두거나 닫기
 	          try { win.focus(); } catch(_) {}
-	          // 필요하면 자동으로 닫아도 됨: closeModal();
+	          watchPopupClose(win, orderId);        // ✅ orderId 전달
 	        } else {
-	          // 2) 팝업 차단 → 모달 안의 버튼으로 열 수 있게 유지
-	          // 사용자가 "새 창으로 열기" 버튼을 눌러 열도록 안내
+	          // 팝업 차단 시 동일 탭 이동
+	          hideOverlay();
+	          window.location.href = url;
 	        }
 	      },
 	      error: function(xhr){
+	        hideOverlay();
 	        alert("결제 준비 실패 (" + xhr.status + ")\n" + (xhr.responseText||""));
 	      }
 	    });
 	  });
+
+	  // 혹시 남아있을 오버레이 제거
+	  hideOverlay();
 	});
 	</script>
   </div>

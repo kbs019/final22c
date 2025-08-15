@@ -3,25 +3,31 @@
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ex.repository.OrderMapper">
+
+  <!-- 주문 저장 -->
   <insert id="insertOrder" parameterType="map">
-    INSERT INTO orders (order_id, user_id, order_status, order_date, total_price)
-    VALUES (order_seq.NEXTVAL, #{userId}, 'CREATED', SYSTIMESTAMP, #{totalPrice})
+    INSERT INTO orders (orderId, userNo, status, regDate, totalAmount, usedPoint)
+    VALUES (order_seq.NEXTVAL, #{userNo}, #{status}, SYSTIMESTAMP, #{totalAmount}, #{usedPoint})
   </insert>
 
-  <select id="selectCurrOrderId" resultType="long" parameterType="string">
-    SELECT MAX(order_id) FROM orders
-    WHERE user_id = #{userId}
-      AND order_status = 'CREATED'
-      AND order_date > SYSTIMESTAMP - INTERVAL '5' MINUTE
+  <!-- 최근 주문번호 조회(필요 시) -->
+  <select id="selectCurrOrderId" resultType="long" parameterType="long">
+    SELECT MAX(orderId) FROM orders
+     WHERE userNo = #{userNo}
+       AND status  = 'PENDING'
+       AND regDate > SYSTIMESTAMP - INTERVAL '5' MINUTE
   </select>
 
+  <!-- 주문 상세 저장: 실제 테이블/컬럼명에 맞추세요 -->
   <insert id="insertOrderDetail" parameterType="map">
-    INSERT INTO order_detail (order_detail_id, order_id, item_no, quantity, price, total_price)
-    VALUES (order_detail_seq.NEXTVAL, #{orderId}, #{itemNo}, #{quantity}, #{price}, #{totalPrice})
+    INSERT INTO orderDetail (orderDetailId, orderId, id, quantity, sellPrice, totalPrice)
+    VALUES (orderDetail_seq.NEXTVAL, #{orderId}, #{id}, #{quantity}, #{sellPrice}, #{totalPrice})
   </insert>
 
+  <!-- 결제 저장: Payment 테이블 실제 스키마에 맞춰 수정 -->
   <insert id="insertPayment" parameterType="map">
-    INSERT INTO payment (payment_id, order_id, method, amount, status, approved_at)
+    INSERT INTO payment (paymentId, orderId, method, amount, status, approvedAt)
     VALUES (payment_seq.NEXTVAL, #{orderId}, #{method}, #{amount}, #{status}, #{approvedAt})
   </insert>
+
 </mapper>
