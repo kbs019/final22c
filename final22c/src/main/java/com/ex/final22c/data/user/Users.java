@@ -108,6 +108,20 @@ public class Users {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAddress> addresses = new ArrayList<>();
     
+    // 배송지 주소를 추가할 때 사용
+    // UserAddress 객체를 생성하고, 해당 유저에 추가
+    public void addAddress(UserAddress addr){
+        addresses.add(addr);
+        addr.setUser(this);
+    }
+
+    // 배송지 주소를 제거할 때 사용
+    // UserAddress 객체를 제거하고, 해당 유저의 참조를 null로 설정
+    public void removeAddress(UserAddress addr){
+    addresses.remove(addr);
+    addr.setUser(null);
+    }
+
     @PrePersist
     public void prePersist() {
         if(this.role == null) {
