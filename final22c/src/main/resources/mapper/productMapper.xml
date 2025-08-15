@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ex.final22c.repository.productMapper.ProductMapper">
+
+    <select id="search" resultType="com.ex.final22c.data.product.Product">
+    SELECT
+        p.id,
+        b.brandName,
+        p.name,
+        g.gradeName,
+        m.mainNoteName,
+        v.volumeName,
+        p.price,
+        p.imgPath,
+        p.imgName
+    FROM product p
+    left join brand b on p.brand_brandNo = b.brandNo
+    left join grade g on p.grade_gradeNo = g.gradeNo
+    left join mainnote m on p.mainNote_mainNoteNo = m.mainNoteNo
+    left join volume v on p.volume_volumeNo = v.volumeNo
+    WHERE 1=1
+
+    <!-- 검색어 -->
+    <if test="q != null and q != ''">
+        AND (
+        p.name LIKE CONCAT('%', #{q}, '%')
+        OR b.brandName     LIKE CONCAT('%', #{q}, '%')
+        )
+    </if>
+
+    <!-- 그레이드 -->
+    <if test="grades != null and grades.size() > 0">
+        AND g.gradeName IN
+        <foreach collection="grades" item="g" open="(" separator="," close=")">
+        #{g}
+        </foreach>
+    </if>
+
+    <!-- 메인 어코드 -->
+    <if test="accords != null and accords.size() > 0">
+        AND m.mainNoteName IN
+        <foreach collection="accords" item="a" open="(" separator="," close=")">
+        #{a}
+        </foreach>
+    </if>
+
+    <!-- 브랜드 -->
+    <if test="brands != null and brands.size() > 0">
+        AND b.brandName IN
+        <foreach collection="brands" item="b" open="(" separator="," close=")">
+        #{b}
+        </foreach>
+    </if>
+
+    <!-- 용량 -->
+    <if test="volumes != null and volumes.size() > 0">
+        AND v.volumeName IN
+        <foreach collection="volumes" item="v" open="(" separator="," close=")">
+        #{v}
+        </foreach>
+    </if>
+
+    ORDER BY id DESC
+    </select>
+
+</mapper>
