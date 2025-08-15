@@ -16,10 +16,12 @@ public interface ProductMapper {
     long countProducts(@Param("brandIds")    List<Long> brandIds,
                        @Param("gradeIds")    List<Long> gradeIds,
                        @Param("mainNoteIds") List<Long> mainNoteIds,
-                       @Param("volumeIds")   List<Long> volumeIds);
+                       @Param("volumeIds")   List<Long> volumeIds,
+                       @Param("keyword")     String keyword);
 
     List<Map<String, Object>> selectProducts(@Param("brandIds")    List<Long> brandIds,
                                              @Param("gradeIds")    List<Long> gradeIds,
                                              @Param("mainNoteIds") List<Long> mainNoteIds,
-                                             @Param("volumeIds")   List<Long> volumeIds);
+                                             @Param("volumeIds")   List<Long> volumeIds,
+                                             @Param("keyword")     String keyword);
 }

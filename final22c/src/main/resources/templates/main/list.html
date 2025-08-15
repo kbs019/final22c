@@ -8,18 +8,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
   <title>22°C</title>
   <th:block layout:fragment="css">
-    <!-- 페이지 전용 CSS -->
     <link rel="stylesheet" th:href="@{/css/list.css}">
   </th:block>
 </head>
-
 
 <body>
 <th:block layout:fragment="content">
 
   <div class="row g-4">
 
-    <!-- 좌측 필터(Sticky) -->
+    <!-- 좌측 필터(기존 유지) -->
     <aside class="col-12 col-md-3 col-lg-2">
       <div class="filter-panel position-sticky" style="top: 1rem;">
         <h6 class="mb-3 fw-semibold">필터</h6>
@@ -129,6 +127,18 @@
     <!-- 중앙 리스트 -->
     <section class="col-12 col-md-9 col-lg-10">
 
+      <!-- 상단 검색창 추가 -->
+      <div class="search-wrap my-2">
+        <form id="search-form" class="search-box" action="javascript:void(0);" role="search">
+          <input id="keyword" name="q" type="search" placeholder="상품명을 입력하세요"
+                 th:value="${keyword}" autocomplete="off">
+          <button id="btn-search" aria-label="검색">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          </button>
+          <button id="btn-clear" type="button" aria-label="지우기" hidden>&times;</button>
+        </form>
+      </div>
+
       <!-- 결과영역(Fragment로 교체) -->
       <div id="list-body" th:fragment="listBody">
         <div class="d-flex align-items-center justify-content-between mb-3">
@@ -184,17 +194,19 @@
               .map(function(){ return this.value; }).get();
     }
 
-    // GET 쿼리스트링 생성 (다중 파라미터)
+    // GET 쿼리스트링 생성 (다중 파라미터 + 키워드)
     function buildQS(){
       var q = [];
       var brand = collect("brand");
       var grade = collect("grade");
       var mn    = collect("mainNote");
       var vol   = collect("volume");
+      var kw    = $.trim($("#keyword").val() || "");
       if (brand.length) q.push(brand.map(v => "brandIds="    + encodeURIComponent(v)).join("&"));
       if (grade.length) q.push(grade.map(v => "gradeIds="    + encodeURIComponent(v)).join("&"));
       if (mn.length)    q.push(mn.map(v    => "mainNoteIds=" + encodeURIComponent(v)).join("&"));
       if (vol.length)   q.push(vol.map(v   => "volumeIds="   + encodeURIComponent(v)).join("&"));
+      if (kw)           q.push("q=" + encodeURIComponent(kw));
       return q.length ? ("?" + q.join("&")) : "";
     }
 
@@ -207,24 +219,36 @@
           console.error("[product-list] 부분 로드 실패:", xhr.status, xhr.statusText);
         }
       });
+      // 주소 표시 동기화
+      history.replaceState(null, "", "/main/list" + buildQS());
     }
 
-    // 이벤트 바인딩 (아코디언 이벤트와 충돌 방지)
+    // 필터 변경 시 갱신
     $(document).on("change", ".filter-check", function(e){
       e.stopPropagation();
-      console.log('[product-list] changed:', this.name, this.value, this.checked);
       reload();
     });
 
+    // 검색 실행
+    $("#search-form").on("submit", function(e){ e.preventDefault(); reload(); });
+    $("#btn-search").on("click", function(e){ e.preventDefault(); reload(); });
+
+    // 입력 X 버튼
+    const $kw = $("#keyword"), $clear = $("#btn-clear");
+    function toggleClear(){ $clear.prop("hidden", !$.trim($kw.val()).length); }
+    $kw.on("input", toggleClear);
+    $clear.on("click", function(){ $kw.val(""); toggleClear(); reload(); });
+    toggleClear();
+
+    // 초기화 버튼: 필터 + 키워드 모두 해제
     $("#btn-reset").on("click", function(e){
       e.preventDefault();
       e.stopPropagation();
       $(".filter-check").prop("checked", false);
+      $("#keyword").val("");
+      toggleClear();
       reload();
     });
-
-    // (선택) 최초 진입 시 한번 갱신하고 싶으면 주석 해제
-    // reload();
   });
 
 })();
