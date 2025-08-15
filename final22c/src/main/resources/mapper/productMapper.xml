@@ -4,7 +4,7 @@
 
 <mapper namespace="com.ex.final22c.repository.productMapper.ProductMapper">
 
-    <!-- ===== 공통 WHERE 절 ===== -->
+    <!-- ===== 공통 WHERE 절 (필터 + 상품명 검색) ===== -->
     <sql id="productWhere">
         <where>
             <if test="brandIds != null and brandIds.size() > 0">
@@ -22,6 +22,9 @@
             <if test="volumeIds != null and volumeIds.size() > 0">
                 AND p.VOLUME_VOLUMENO IN
                 <foreach collection="volumeIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND LOWER(p.NAME) LIKE '%' || LOWER(#{keyword}) || '%'
             </if>
         </where>
     </sql>
