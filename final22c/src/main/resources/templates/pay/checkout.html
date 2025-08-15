@@ -66,11 +66,11 @@
         </div>
         <div style="display:flex;gap:14px;align-items:center;margin-top:10px">
           <div style="width:60px;height:60px;border:1px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center">
-            <img th:src="@{|${perfume.imgPath}${perfume.imgName}|}" alt="thumb" style="max-width:100%;max-height:100%;object-fit:cover">
+            <img th:src="@{|${product.imgPath}${product.imgName}|}"> alt="thumb" style="max-width:100%;max-height:100%;object-fit:cover">
           </div>
           <div style="flex:1">
             <div class="muted" th:text="${'수량 ' + qty}">수량</div>
-            <div th:text="${perfume.perfumeName}">상품명</div>
+            <div th:text="${product.name}">상품명</div>
           </div>
           <div style="font-weight:800" th:text="${#numbers.formatInteger(lineTotal,0)}+'원'">0</div>
         </div>
@@ -114,7 +114,7 @@
         </div>
 
         <!-- 서버에 보낼 값 -->
-        <input type="hidden" id="perfume_no" th:value="${perfume.perfumeNo}">
+        <input type="hidden" id="product_id" th:value="${product.id}">
         <input type="hidden" id="qty"        th:value="${qty}">
         <input type="hidden" id="payTotal"   th:value="${payTotal}">
         <input type="hidden" id="usedPoint"  value="0">
@@ -223,7 +223,7 @@
       $("#payBtn").on("click", function(e){
         e.preventDefault();
 
-        const perfumeNo = $("#perfume_no").val();
+        const perfumeNo = $("#product_id").val();
         const qty       = $("#qty").val();
         const usedPoint = $("#usedPoint").val();
 
@@ -234,7 +234,7 @@
         $.ajax({
           type: "POST",
           url:  "/pay/ready",
-          data: { perfumeNo, qty, usedPoint },
+          data: { productId, qty, usedPoint },
           beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
           success: function(res){
             if (res && res.next_redirect_pc_url) {
