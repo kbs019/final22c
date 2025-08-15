@@ -27,10 +27,18 @@ public class PerfumeService {
                 .orElseThrow(() -> new DataNotFoundException("해당하는 향수의 정보를 찾을 수 없습니다."));
     }
 
-    public List<Perfume> search(String q, List<String> grades, List<String> accords) {
+    public List<Perfume> search(String q,
+                                List<String> grades,
+                                List<String> accords,
+                                List<String> brands,
+                                List<String> volumes) {  // Integer 리스트로 받는 게 안전
+
         String qq = (q == null || q.isBlank()) ? null : q.trim();
         List<String> gs = (grades == null || grades.isEmpty()) ? null : grades;
         List<String> ac = (accords == null || accords.isEmpty()) ? null : accords;
-        return perfumeMapper.search(qq, gs, ac);
+        List<String> bs = (brands == null || brands.isEmpty()) ? null : brands;
+        List<String> vs = (volumes == null || volumes.isEmpty()) ? null : volumes;
+
+        return perfumeMapper.search(qq, gs, ac, bs, vs);
     }
 }

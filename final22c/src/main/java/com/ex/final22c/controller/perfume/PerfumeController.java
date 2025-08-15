@@ -19,15 +19,22 @@ public class PerfumeController {
     // 목록 페이지: /main/list?q=&grades=...&accords=...
     @GetMapping("/list")
     public String list(@RequestParam(name = "q", required = false) String q,
-                       @RequestParam(name = "grades", required = false) List<String> grades,
-                       @RequestParam(name = "accords", required = false) List<String> accords,
-                       Model model) {
+                    @RequestParam(name = "grades", required = false) List<String> grades,
+                    @RequestParam(name = "accords", required = false) List<String> accords,
+                    @RequestParam(name = "brands", required = false) List<String> brands,
+                    @RequestParam(name = "volumes", required = false) List<String> volumes,
+                    Model model) {
 
-        List<Perfume> list = perfumeService.search(q, grades, accords);
+        // ★ 5-인자 서비스 호출 (브랜드/용량 반영)
+        List<Perfume> list = perfumeService.search(q, grades, accords, brands, volumes);
+
         model.addAttribute("list", list);
+
         model.addAttribute("q", q);
         model.addAttribute("grades", grades);
         model.addAttribute("accords", accords);
+        model.addAttribute("brands", brands);
+        model.addAttribute("volumes", volumes);
 
         return "main/list";
     }

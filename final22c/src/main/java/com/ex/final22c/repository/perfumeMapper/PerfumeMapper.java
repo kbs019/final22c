@@ -9,6 +9,8 @@ import java.util.List;
 @Mapper
 public interface PerfumeMapper {
     List<Perfume> search(@Param("q") String q,
-                         @Param("grades") List<String> grades,
-                         @Param("accords") List<String> accords);
+                     @Param("grades") List<String> grades,
+                     @Param("accords") List<String> accords,
+                     @Param("brands") List<String> brands,
+                     @Param("volumes") List<String> volumes);
 }

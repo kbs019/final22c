@@ -1,20 +1,33 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.ex.final22c.repository.perfumeMapper.PerfumeMapper">
 
-  <select id="search" parameterType="map"
-          resultType="com.ex.final22c.data.perfume.Perfume">
-    SELECT *
+  <select id="search" resultType="com.ex.final22c.data.perfume.Perfume">
+    SELECT
+      perfumeNo,
+      brand,
+      perfumeName,
+      grade,
+      mainnote,
+      volumn,
+      sellPrice,
+      imgPath,
+      imgName
     FROM perfume
     WHERE 1=1
+
+    <!-- 검색어 -->
     <if test="q != null and q != ''">
-      AND (perfumeName LIKE CONCAT('%', #{q}, '%')
-           OR brand LIKE CONCAT('%', #{q}, '%'))
+      AND (
+        perfumeName LIKE CONCAT('%', #{q}, '%')
+        OR brand     LIKE CONCAT('%', #{q}, '%')
+      )
     </if>
 
+    <!-- 그레이드 -->
     <if test="grades != null and grades.size() > 0">
       AND grade IN
       <foreach collection="grades" item="g" open="(" separator="," close=")">
@@ -22,12 +35,31 @@
       </foreach>
     </if>
 
+    <!-- 메인 어코드 -->
     <if test="accords != null and accords.size() > 0">
       AND mainnote IN
       <foreach collection="accords" item="a" open="(" separator="," close=")">
         #{a}
       </foreach>
     </if>
+
+    <!-- 브랜드 -->
+    <if test="brands != null and brands.size() > 0">
+      AND brand IN
+      <foreach collection="brands" item="b" open="(" separator="," close=")">
+        #{b}
+      </foreach>
+    </if>
+
+    <!-- 용량 -->
+    <if test="volumes != null and volumes.size() > 0">
+      AND volumn IN
+      <foreach collection="volumes" item="v" open="(" separator="," close=")">
+        #{v}
+      </foreach>
+    </if>
+
+    ORDER BY perfumeNo DESC
   </select>
 
 </mapper>
