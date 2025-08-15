@@ -12,10 +12,9 @@
             <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
 			<!-- 관리자용 메뉴 -->
 			<ul class="navbar-nav" sec:authorize="hasRole('ADMIN')">
-			    <li class="nav-item"><a class="nav-link" href="#">회원관리</a></li>
-			    <li class="nav-item"><a class="nav-link" href="#">상품관리</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">주문내역관리</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">검수/정산</a></li>
+			    <li class="nav-item"><a class="nav-link" href="/admin/userList">회원관리</a></li>
+			    <li class="nav-item"><a class="nav-link" href="/admin/productList">상품관리</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">판매내역관리</a></li>
                 <li class="nav-item"><a class="nav-link" href="#">통계</a></li>
                 <li class="nav-item"><a class="nav-link" href="#">돋보기</a></li>
 			</ul>

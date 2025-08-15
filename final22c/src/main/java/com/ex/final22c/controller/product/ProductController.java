@@ -1,6 +1,8 @@
 package com.ex.final22c.controller.product;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,7 +34,6 @@ public class ProductController {
 
         // 5-인자 서비스 호출 (브랜드/용량 포함)
         List<Product> list = productService.search(q, grades, accords, brands, volumes);
-
         model.addAttribute("list", list);
         model.addAttribute("q", q);
         model.addAttribute("grades", grades);

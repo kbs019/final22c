@@ -1,10 +1,4 @@
-<!DOCTYPE html>
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
-      layout:decorate="~{layout/layout}">
-
+<th:block layout:decorate="~{layout/layout}">
 <!-- 페이지 전용 CSS -->
 <th:block layout:fragment="css">
   <style>
@@ -23,8 +17,7 @@
     .empty { padding: 4rem 0; text-align: center; color: var(--bs-secondary-color); }
   </style>
 </th:block>
-
-<div layout:fragment="content">
+<th:block layout:fragment="content">
   <main class="container py-4">
 
     <!-- 상단 검색영역 -->
@@ -317,8 +310,7 @@
       </section>
     </div>
   </main>
-</div>
-
+</th:block>
 <!-- 페이지 전용 스크립트 -->
 <th:block layout:fragment="script">
   <script th:inline="javascript">
@@ -333,11 +325,6 @@
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].forEach(el => new bootstrap.Tooltip(el));
 
-    // CSRF (Spring Security 사용 시)
-    /*<![CDATA[*/
-    const csrfHeader = /*[[${_csrf?.headerName}]]*/ 'X-CSRF-TOKEN';
-    const csrfToken  = /*[[${_csrf?.token}]]*/ '';
-    /*]]>*/
 
     // 관심 토글(Ajax) — product 기준
     $(document).on('click', '.wish-btn [sec\\:authorize="isAuthenticated()"], .wish-btn button[sec\\:authorize]', function () {
@@ -350,9 +337,6 @@
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({ productId: productId }),
-        beforeSend: function (xhr) {
-          if (csrfToken) xhr.setRequestHeader(csrfHeader, csrfToken);
-        }
       }).done(function (res) {
         const wished = !!(res && res.wished);
         $btn.toggleClass('active', wished);
@@ -363,4 +347,5 @@
     });
   </script>
 </th:block>
-</html>
+</th:block>
+
