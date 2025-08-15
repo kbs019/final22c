@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.repository.productMapper.ProductMapper;
-import com.ex.final22c.repository.productRepsotory.ProductRepository;
+import com.ex.final22c.repository.productRepository.ProductRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class ProductService {
 
-    private final ProductRepository productRepository; 
+    private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
     public List<Product> showList() {
@@ -26,14 +26,14 @@ public class ProductService {
 
     public Product getProduct(long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("해당하는 향수의 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new DataNotFoundException("해당하는 상품 정보를 찾을 수 없습니다."));
     }
 
     public List<Product> search(String q,
                                 List<String> grades,
                                 List<String> accords,
                                 List<String> brands,
-                                List<String> volumes) {  // Integer 리스트로 받는 게 안전
+                                List<String> volumes) {
 
         String qq = (q == null || q.isBlank()) ? null : q.trim();
         List<String> gs = (grades == null || grades.isEmpty()) ? null : grades;

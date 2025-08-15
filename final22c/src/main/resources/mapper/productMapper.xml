@@ -5,7 +5,7 @@
 
 <mapper namespace="com.ex.final22c.repository.productMapper.ProductMapper">
 
-    <select id="search" resultType="com.ex.final22c.data.product.Product">
+  <select id="search" resultType="com.ex.final22c.data.product.Product">
     SELECT
         p.id,
         b.brandName,
@@ -17,53 +17,53 @@
         p.imgPath,
         p.imgName
     FROM product p
-    left join brand b on p.brand_brandNo = b.brandNo
-    left join grade g on p.grade_gradeNo = g.gradeNo
-    left join mainnote m on p.mainNote_mainNoteNo = m.mainNoteNo
-    left join volume v on p.volume_volumeNo = v.volumeNo
+      LEFT JOIN brand    b ON p.brand_brandNo    = b.brandNo
+      LEFT JOIN grade    g ON p.grade_gradeNo    = g.gradeNo
+      LEFT JOIN mainNote m ON p.mainnote_mainNoteNo = m.mainNoteNo
+      LEFT JOIN volume   v ON p.volume_volumeNo   = v.volumeNo
     WHERE 1=1
 
     <!-- 검색어 -->
     <if test="q != null and q != ''">
-        AND (
-        p.name LIKE CONCAT('%', #{q}, '%')
-        OR b.brandName     LIKE CONCAT('%', #{q}, '%')
-        )
+      AND (
+           p.name      LIKE '%' || #{q} || '%'
+        OR b.brandName LIKE '%' || #{q} || '%'
+      )
     </if>
 
     <!-- 그레이드 -->
     <if test="grades != null and grades.size() > 0">
-        AND g.gradeName IN
-        <foreach collection="grades" item="g" open="(" separator="," close=")">
+      AND g.gradeName IN
+      <foreach collection="grades" item="g" open="(" separator="," close=")">
         #{g}
-        </foreach>
+      </foreach>
     </if>
 
     <!-- 메인 어코드 -->
     <if test="accords != null and accords.size() > 0">
-        AND m.mainNoteName IN
-        <foreach collection="accords" item="a" open="(" separator="," close=")">
+      AND m.mainNoteName IN
+      <foreach collection="accords" item="a" open="(" separator="," close=")">
         #{a}
-        </foreach>
+      </foreach>
     </if>
 
     <!-- 브랜드 -->
     <if test="brands != null and brands.size() > 0">
-        AND b.brandName IN
-        <foreach collection="brands" item="b" open="(" separator="," close=")">
-        #{b}
-        </foreach>
+      AND b.brandName IN
+      <foreach collection="brands" item="bname" open="(" separator="," close=")">
+        #{bname}
+      </foreach>
     </if>
 
     <!-- 용량 -->
     <if test="volumes != null and volumes.size() > 0">
-        AND v.volumeName IN
-        <foreach collection="volumes" item="v" open="(" separator="," close=")">
-        #{v}
-        </foreach>
+      AND v.volumeName IN
+      <foreach collection="volumes" item="vname" open="(" separator="," close=")">
+        #{vname}
+      </foreach>
     </if>
 
-    ORDER BY id DESC
-    </select>
+    ORDER BY p.id DESC
+  </select>
 
 </mapper>
