@@ -24,16 +24,4 @@
     INSERT INTO payment (payment_id, order_id, method, amount, status, approved_at)
     VALUES (payment_seq.NEXTVAL, #{orderId}, #{method}, #{amount}, #{status}, #{approvedAt})
   </insert>
-
-  <update id="decreaseStockAndIncreaseSellCount" parameterType="map">
-    UPDATE perfume
-       SET stock = stock - #{quantity},
-           sell_count = sell_count + #{quantity}
-     WHERE item_no = #{itemNo}
-       AND stock >= #{quantity}
-  </update>
-
-  <select id="selectPerfumePrice" parameterType="string" resultType="int">
-    SELECT price_sales FROM perfume WHERE item_no = #{itemNo}
-  </select>
 </mapper>
