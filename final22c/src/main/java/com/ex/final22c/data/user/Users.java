@@ -132,8 +132,6 @@ public class Users {
     @Builder.Default
     private List<Review> reviews = new ArrayList<>();
 
-    private Integer mileage;   // 또는 Integer
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAddress> addresses = new ArrayList<>();
     
