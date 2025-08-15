@@ -167,14 +167,14 @@
               <!-- 관심(북마크) 버튼: 로그인 시 활성, 미로그인 시 툴팁 -->
               <div class="wish-btn">
                 <!-- 로그인 상태 -->
-                <button type="button"
+                <!-- <button type="button"
                         class="btn btn-light border-subtle rounded-circle shadow-sm btn-sm"
                         sec:authorize="isAuthenticated()"
                         th:classappend="${perfume.wished} ? ' active' : ''"
                         th:attr="data-id=${perfume.perfumeNo}"
                         aria-pressed="false" title="관심 등록/해제">
                   <span class="icon" th:text="${perfume.wished} ? '🔖' : '🏷️'">🔖</span>
-                </button>
+                </button> -->
 
                 <!-- 비로그인 안내 -->
                 <button type="button"
