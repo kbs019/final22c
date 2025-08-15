@@ -113,10 +113,10 @@
 <div id="modalBackdrop" class="modal-backdrop"></div>
 <div id="addressModal" class="modal" aria-modal="true" role="dialog">
   <button class="x-close" id="btnCloseModal">×</button>
-  <form th:action="@{/mypage}" method="post" th:object="${usersAddressForm}" id="addressForm">
+  <form th:action="@{/mypage/address}" method="post" th:object="${usersAddressForm}" id="addressForm">
     <div class="field"><input type="text" th:field="*{addressName}" placeholder="배송지명" required /></div>
     <div class="field"><input type="text" th:field="*{recipient}" placeholder="받는 사람" required /></div>
-    <div class="field"><input type="text" th:field="*{phone}" maxlength="11" placeholder="전화번호" /></div>
+    <div class="field"><input type="text" th:field="*{phone}" maxlength="11" placeholder="전화번호" required /></div>
     <div class="field row">
       <button type="button" class="btn" id="btnFindZip">주소 찾기</button>
       <input style="flex:1" type="text" th:field="*{zonecode}" placeholder="우편번호" readonly required />
@@ -132,17 +132,34 @@
 </div>
 <!-- 주소 등록 모달 창 구성 끝-->
 
+<!-- 기본 배송지 출력란 -->
+<div id="defaultAddressBox" style="border:1px solid #ccc; padding:12px; border-radius:8px; margin:12px 0 16px;">
+  <strong>기본 배송지</strong><br>
+  <div><span id="outAddrName">-</span></div>
+  <div><span id="outRecipient">-</span> / <span id="outPhone">-</span></div>
+  <div><span id="outZonecode">-</span> / <span id="outRoadAddress">-</span> <span id="outDetailAddress">-</span></div>
+</div>
+<!-- 기본 배송지 출력란 끝 -->
+
 <section class="addr-list">
 <!-- 주소 목록 -->
 <ul class="addr-list" th:if="${#lists.isEmpty(userAddresses) == false}">
   <li class="addr-card" th:each="a : ${userAddresses}">
 
-    <label class="addr-radio-wrap">
-      <input type="radio" name="defaultAddress"
-             th:value="${a.addressNo}"
-             th:checked="${a.isDefault == 'Y'}">
-      <span class="dot"></span>
-    </label>
+  <label class="addr-radio-wrap">
+    <input  type="radio" name="defaultAddress"
+            class="addr-radio"
+            th:value="${a.addressNo}"
+            th:checked="${a.isDefault == 'Y'}"
+            th:attr="data-addrname=${a.addressName},
+                    data-recipient=${a.recipient},
+                    data-phone=${a.phone},
+                    data-zonecode=${a.zonecode},
+                    data-road=${a.roadAddress},
+                    data-detail=${a.detailAddress}">
+    <span class="dot"></span>
+  </label>
+
 
     <div class="addr-body">
       <div class="addr-top">
@@ -169,11 +186,6 @@
     </div>
 
     <div class="addr-side">
-      <button type="button" class="btn-md"
-              th:if="${a.isDefault != 'Y'}"
-              th:attr="data-id=${a.addressNo}">
-        기본설정
-      </button>
       <span class="addr-index" th:text="${aStat.index + 1}" th:if="${false}"></span>
     </div>
   </li>
@@ -184,6 +196,7 @@
 
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
+  // ===== 모달 열고 닫기 =====
   const modal = document.getElementById('addressModal');
   const backdrop = document.getElementById('modalBackdrop');
   function openModal(){ modal.classList.add('open'); backdrop.classList.add('open'); }
@@ -193,12 +206,7 @@
   document.getElementById('btnCancel')?.addEventListener('click', closeModal);
   backdrop?.addEventListener('click', closeModal);
 
-  const chkDefault = document.getElementById('chkDefault');
-  const hiddenDefault = document.querySelector('input[name="isDefault"]');
-  chkDefault?.addEventListener('change', e=>{
-    hiddenDefault.value = e.target.checked ? 'Y' : 'N';
-  });
-
+  // ===== 다음 주소 레이어 =====
   const layer = document.getElementById('postcodeLayer');
   function openDaumLayer(){
     new daum.Postcode({
@@ -214,7 +222,7 @@
   }
   document.getElementById('btnFindZip').addEventListener('click', openDaumLayer);
 
-  // 기본배송지 출력란 채우기
+  // ===== 기본배송지 출력란 요소 =====
   const out = {
     addrName : document.getElementById('outAddrName'),
     recipient: document.getElementById('outRecipient'),
@@ -223,24 +231,74 @@
     road     : document.getElementById('outRoadAddress'),
     detail   : document.getElementById('outDetailAddress')
   };
-  const boxes = document.querySelectorAll('.pick-default');
-  function uncheckOthers(except){ boxes.forEach(b => { if(b !== except) b.checked = false; }); }
+
   function fillOutputFrom(el){
-    out.addrName.textContent = el.dataset.addrname  || '-';
-    out.recipient.textContent= el.dataset.recipient || '-';
-    out.phone.textContent    = el.dataset.phone     || '-';
-    out.zonecode.textContent = el.dataset.zonecode  || '-';
-    out.road.textContent     = el.dataset.road      || '-';
-    out.detail.textContent   = el.dataset.detail    || '-';
+    // el은 { dataset: {...} } 형태면 됨
+    out.addrName.textContent = el?.dataset?.addrname  || '-';
+    out.recipient.textContent= el?.dataset?.recipient || '-';
+    out.phone.textContent    = el?.dataset?.phone     || '-';
+    out.zonecode.textContent = el?.dataset?.zonecode  || '-';
+    out.road.textContent     = el?.dataset?.road      || '-';
+    out.detail.textContent   = el?.dataset?.detail    || '-';
   }
-  boxes.forEach(box=>{
-    box.addEventListener('change', e=>{
-      const chk = e.currentTarget;
-      if(chk.checked){
-        uncheckOthers(chk);
-        fillOutputFrom(chk);
-      }else{
-        if(!Array.from(boxes).some(b=>b.checked)) fillOutputFrom({dataset:{}});
+
+  // ===== 라디오 및 UI 갱신 =====
+  const radios = document.querySelectorAll('input.addr-radio[name="defaultAddress"]');
+
+  function applyDefaultUI(newId) {
+    document.querySelectorAll('li.addr-card').forEach(li => {
+      const r = li.querySelector('input.addr-radio');
+      const chip = li.querySelector('.addr-chip'); // 기본뱃지
+      if (!r) return;
+      const isNew = String(r.value) === String(newId);
+      r.checked = isNew;
+      if (chip) chip.style.display = isNew ? '' : 'none';
+    });
+  }
+
+  // ===== 서버 저장 (CSRF 없음 가정) =====
+  function persistDefault(addressNo) {
+    return fetch('/mypage/address/default', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ addressNo: Number(addressNo) })
+    });
+  }
+
+  // 현재 기본 ID 추적
+  let currentDefaultId = ([...radios].find(r => r.checked) || {}).value ?? null;
+
+  // 처음 로드시 현재 기본배송지로 출력란 채우기
+  window.addEventListener('DOMContentLoaded', () => {
+    const cur = [...radios].find(r => r.checked);
+    if (cur) fillOutputFrom({ dataset: cur.dataset });
+  });
+
+  // 라디오 클릭 → 즉시 반영(낙관적) → 서버 저장 → 실패 시 롤백
+  radios.forEach(r => {
+    r.addEventListener('change', async (e) => {
+      const selected = e.currentTarget;
+      if (!selected.checked) return;
+
+      const prevId = currentDefaultId;
+      const newId  = selected.value;
+
+      // 1) 즉시 화면 반영
+      currentDefaultId = newId;
+      applyDefaultUI(newId);
+      fillOutputFrom({ dataset: selected.dataset });
+
+      // 2) 서버 반영
+      try {
+        const res = await persistDefault(newId);
+        if (!res.ok) throw new Error('save failed');
+      } catch (err) {
+        // 3) 실패 시 롤백
+        currentDefaultId = prevId;
+        applyDefaultUI(prevId);
+        const prevRadio = [...radios].find(r => String(r.value) === String(prevId));
+        fillOutputFrom(prevRadio ? { dataset: prevRadio.dataset } : { dataset: {} });
+        alert('기본 배송지 저장에 실패했습니다. 다시 시도해 주세요.');
       }
     });
   });
