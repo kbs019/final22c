@@ -63,6 +63,7 @@ public class CheckOutController {
      model.addAttribute("unitPrice", unitPrice);
      model.addAttribute("lineTotal", lineTotal);
      model.addAttribute("user", user);
+     
 
      return "pay/checkout";
  }
