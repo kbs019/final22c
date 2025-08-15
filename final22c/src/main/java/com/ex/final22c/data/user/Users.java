@@ -5,18 +5,25 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
 
+import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.product.Review;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
@@ -124,6 +131,23 @@ public class Users {
     // @OneToMany(mappedBy = "writer")
     // @Builder.Default
     // private List<Review> reviews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserAddress> addresses = new ArrayList<>();
+    
+    // 배송지 주소를 추가할 때 사용
+    // UserAddress 객체를 생성하고, 해당 유저에 추가
+    public void addAddress(UserAddress addr){
+        addresses.add(addr);
+        addr.setUser(this);
+    }
+
+    // 배송지 주소를 제거할 때 사용
+    // UserAddress 객체를 제거하고, 해당 유저의 참조를 null로 설정
+    public void removeAddress(UserAddress addr){
+    addresses.remove(addr);
+    addr.setUser(null);
+    }
 
     @PrePersist
     public void prePersist() {

@@ -38,4 +38,10 @@ public class AdminController {
 		return ResponseEntity.ok("변경 성공");
 		
 	}
+	
+	// 상품 관리
+	@GetMapping("productList")
+	public String productList() {
+		return "admin/productList";
+	}
 }

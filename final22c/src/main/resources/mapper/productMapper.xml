@@ -1,69 +1,102 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.ex.final22c.repository.productMapper.ProductMapper">
 
-  <select id="search" resultType="com.ex.final22c.data.product.Product">
-    SELECT
-        p.id,
-        b.brandName,
-        p.name,
-        g.gradeName,
-        m.mainNoteName,
-        v.volumeName,
-        p.price,
-        p.imgPath,
-        p.imgName
-    FROM product p
-      LEFT JOIN brand    b ON p.brand_brandNo    = b.brandNo
-      LEFT JOIN grade    g ON p.grade_gradeNo    = g.gradeNo
-      LEFT JOIN mainNote m ON p.mainnote_mainNoteNo = m.mainNoteNo
-      LEFT JOIN volume   v ON p.volume_volumeNo   = v.volumeNo
-    WHERE 1=1
+    <!-- ===== 공통 WHERE 절 ===== -->
+    <sql id="productWhere">
+        <where>
+            <if test="brandIds != null and brandIds.size() > 0">
+                AND p.BRAND_BRANDNO IN
+                <foreach collection="brandIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            <if test="gradeIds != null and gradeIds.size() > 0">
+                AND p.GRADE_GRADENO IN
+                <foreach collection="gradeIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            <if test="mainNoteIds != null and mainNoteIds.size() > 0">
+                AND p.MAINNOTE_MAINNOTENO IN
+                <foreach collection="mainNoteIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+            <if test="volumeIds != null and volumeIds.size() > 0">
+                AND p.VOLUME_VOLUMENO IN
+                <foreach collection="volumeIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </if>
+        </where>
+    </sql>
 
-    <!-- 검색어 -->
-    <if test="q != null and q != ''">
-      AND (
-           p.name      LIKE '%' || #{q} || '%'
-        OR b.brandName LIKE '%' || #{q} || '%'
-      )
-    </if>
+    <!-- ===== 옵션(각 항목별 상품수) ===== -->
+    <select id="selectBrandOptions" resultType="map">
+        SELECT b.BRANDNO   AS "id",
+               b.BRANDNAME AS "name",
+               NVL(cnt.cnt, 0) AS "count"
+        FROM BRAND b
+        LEFT JOIN (
+            SELECT p.BRAND_BRANDNO AS id, COUNT(*) AS cnt
+            FROM PRODUCT p
+            GROUP BY p.BRAND_BRANDNO
+        ) cnt ON cnt.id = b.BRANDNO
+        ORDER BY b.BRANDNAME
+    </select>
 
-    <!-- 그레이드 -->
-    <if test="grades != null and grades.size() > 0">
-      AND g.gradeName IN
-      <foreach collection="grades" item="g" open="(" separator="," close=")">
-        #{g}
-      </foreach>
-    </if>
+    <select id="selectGradeOptions" resultType="map">
+        SELECT g.GRADENO   AS "id",
+               g.GRADENAME AS "name",
+               NVL(cnt.cnt, 0) AS "count"
+        FROM GRADE g
+        LEFT JOIN (
+            SELECT p.GRADE_GRADENO AS id, COUNT(*) AS cnt
+            FROM PRODUCT p
+            GROUP BY p.GRADE_GRADENO
+        ) cnt ON cnt.id = g.GRADENO
+        ORDER BY g.GRADENAME
+    </select>
 
-    <!-- 메인 어코드 -->
-    <if test="accords != null and accords.size() > 0">
-      AND m.mainNoteName IN
-      <foreach collection="accords" item="a" open="(" separator="," close=")">
-        #{a}
-      </foreach>
-    </if>
+    <select id="selectMainNoteOptions" resultType="map">
+        SELECT m.MAINNOTENO   AS "id",
+               m.MAINNOTENAME AS "name",
+               NVL(cnt.cnt, 0) AS "count"
+        FROM MAINNOTE m
+        LEFT JOIN (
+            SELECT p.MAINNOTE_MAINNOTENO AS id, COUNT(*) AS cnt
+            FROM PRODUCT p
+            GROUP BY p.MAINNOTE_MAINNOTENO
+        ) cnt ON cnt.id = m.MAINNOTENO
+        ORDER BY m.MAINNOTENAME
+    </select>
 
-    <!-- 브랜드 -->
-    <if test="brands != null and brands.size() > 0">
-      AND b.brandName IN
-      <foreach collection="brands" item="bname" open="(" separator="," close=")">
-        #{bname}
-      </foreach>
-    </if>
+    <select id="selectVolumeOptions" resultType="map">
+        SELECT v.VOLUMENO   AS "id",
+               v.VOLUMENAME AS "name",
+               NVL(cnt.cnt, 0) AS "count"
+        FROM VOLUME v
+        LEFT JOIN (
+            SELECT p.VOLUME_VOLUMENO AS id, COUNT(*) AS cnt
+            FROM PRODUCT p
+            GROUP BY p.VOLUME_VOLUMENO
+        ) cnt ON cnt.id = v.VOLUMENO
+        ORDER BY v.VOLUMENAME
+    </select>
 
-    <!-- 용량 -->
-    <if test="volumes != null and volumes.size() > 0">
-      AND v.volumeName IN
-      <foreach collection="volumes" item="vname" open="(" separator="," close=")">
-        #{vname}
-      </foreach>
-    </if>
+    <!-- ===== 카운트 ===== -->
+    <select id="countProducts" resultType="long" parameterType="map">
+        SELECT COUNT(*) FROM PRODUCT p
+        <include refid="productWhere"/>
+    </select>
 
-    ORDER BY p.id DESC
-  </select>
+    <!-- ===== 목록(카드에 필요한 최소 필드) ===== -->
+    <select id="selectProducts" resultType="map" parameterType="map">
+        SELECT
+            p.ID          AS "id",
+            p.NAME        AS "name",
+            p.SELLPRICE   AS "sellPrice",
+            (NVL(p.IMGPATH, '/img/') || NVL(p.IMGNAME, 'default.png')) AS "imgUrl",
+            b.BRANDNAME   AS "brandName"
+        FROM PRODUCT p
+        LEFT JOIN BRAND b ON b.BRANDNO = p.BRAND_BRANDNO
+        <include refid="productWhere"/>
+        ORDER BY p.ID DESC
+    </select>
 
 </mapper>

@@ -1,5 +1,8 @@
 package com.ex.final22c.service.user;
 
+import java.security.Principal;
+
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,10 +27,19 @@ public class UsersService {
     //         throw new DataNotFoundException("사용자를 찾을 수 없습니다.");
     //     }
     // }
+    
+    // 사용자 정보 조회
     public Users getUser(String userName) {
         return userRepository.findByUserName(userName)
                 .orElseThrow(() -> new DataNotFoundException("사용자를 찾을 수 없습니다."));
     }   
+
+    // 로그인 사용자 정보 조회
+    public Users getLoginUser(Principal principal){
+    String username = principal.getName();
+    return userRepository.findByUserName(username)
+            .orElseThrow(() -> new UsernameNotFoundException("로그인 정보 없음"));
+    }
 
     // 회원가입
     public Users create(UsersForm usersForm) {

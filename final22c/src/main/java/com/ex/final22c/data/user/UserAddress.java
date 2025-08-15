@@ -2,9 +2,12 @@ package com.ex.final22c.data.user;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
@@ -28,8 +31,10 @@ public class UserAddress {
     @Column(name = "addressNo", nullable = false)
     private Long addressNo;         // 배송지 번호 PK
 
-    @Column(nullable = false)
-    private Long userNo;            // FK
+    // 유저 번호 FK
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "userNo", nullable = false)
+    private Users user;
 
     @Column(name = "addressName", length = 30, nullable = false)
     private String addressName;     // 배송지명 (예: 집, 회사)
