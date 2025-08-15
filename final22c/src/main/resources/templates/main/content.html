@@ -31,10 +31,8 @@
                     <th:block th:replace="~{main/content-sell :: sellFragment}"></th:block>
                 </div> -->
                 <div class="my-3 py-3 border-bottom">
-                    <h3>판매가 : <span class="sell-price"></span> 원</h3>
-                    <!-- <h5 th:text="${(product.price * 7) / 10}"></h5> -->
-                    <!-- <h5 th:text="${#numbers.formatInteger((product.price * 7) / 10, 0)}"></h5> -->
-                    <h5>정가 : <span class="price"></span> 원</h5>
+                    <h3>판매가 : <span th:text="${#numbers.formatInteger(product.sellPrice, 3, 'COMMA')}"></span> 원</h3>
+                    <h5>정가 : <span th:text="${#numbers.formatInteger(product.price, 3, 'COMMA')}"></span> 원</h5>
                 </div>
                 <div class="my-3 py-3 border-bottom">
                     <div>
@@ -214,6 +212,7 @@
             const MIN = parseInt(input.getAttribute('min')) || 1;
             const MAX = parseInt(input.getAttribute('max')) || 0;
             const PRICE = /*[[${product.price}]]*/ 0;
+            const SELLPRICE = /*[[${product.sellPrice}]]*/ 0;
             const RATE = 0.05; // 구매/판매 공통 5% 
 
             // 숫자 포맷
@@ -230,7 +229,7 @@
 
             // 합계/적립 계산 + UI 반영
             function recalcAndRender(qty) {
-                const total = PRICE * 0.7 * qty;
+                const total = SELLPRICE * qty;
                 // 금액/포인트 반올림 규칙: 금액은 정수, 포인트는 내림(원단위 포인트 가정)
                 const point = Math.floor(total * RATE);
                 totalEl.textContent = fmt(total);
