@@ -1,7 +1,8 @@
 
 package com.ex.final22c.controller.checkOut; 
 import java.security.Principal;
-  
+import java.util.List;
+
 import org.springframework.stereotype.Controller; 
 import org.springframework.ui.Model; 
 import org.springframework.web.bind.annotation.GetMapping; 
@@ -10,7 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping; 
 import org.springframework.web.bind.annotation.RequestParam;
  
-import com.ex.final22c.data.product.Product; 
+import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.user.UserAddress;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.service.mypage.UserAddressService;
 import com.ex.final22c.service.product.ProductService; 
@@ -57,12 +59,16 @@ public class CheckOutController {
      int unitPrice = product.getSellPrice();
      int lineTotal = unitPrice * qty;
      Users user = userService.getUser(principal.getName());
- 
+     UserAddress defaultAddr = userAddressService.getDefaultAddress(user.getUserNo());
+     
      model.addAttribute("product", product);
      model.addAttribute("qty", qty);
      model.addAttribute("unitPrice", unitPrice);
      model.addAttribute("lineTotal", lineTotal);
      model.addAttribute("user", user);
+     model.addAttribute("defaultAddr", defaultAddr);
+  
+     
 
      return "pay/checkout";
  }

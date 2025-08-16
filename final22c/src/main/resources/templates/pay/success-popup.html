@@ -1,0 +1,34 @@
+
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>결제 성공</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif">
+  <div>
+    <h2>결제가 완료되었습니다.</h2>
+    <p>창이 자동으로 닫혀요…</p>
+  </div>
+
+  <script>
+    (function () {
+      try {
+        if (window.opener && !window.opener.closed) {
+          // ✅ 부모창에 성공 신호 전달
+          window.opener.postMessage(
+            { type: 'PAY_RESULT', status: 'success' },
+            window.location.origin
+          );
+        }
+      } catch (e) {}
+      // ✅ 메시지 전송 후 약간 기다렸다 닫기(레이스 방지)
+      setTimeout(function(){
+        try { window.close(); } catch(e) {}
+        // same-tab 폴백
+        setTimeout(function(){ window.location.replace('/main/list'); }, 200);
+      }, 400);
+    })();
+  </script>
+</body>
+</html>
