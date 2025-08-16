@@ -24,11 +24,11 @@ public class ProductController {
     // 목록 페이지: /main/list?q=&grades=...&accords=...&brands=...&volumes=...
     @GetMapping("/list")
     public String list(@RequestParam(name = "q", required = false) String q,
-                       @RequestParam(name = "grades", required = false) List<String> grades,
-                       @RequestParam(name = "accords", required = false) List<String> accords,
-                       @RequestParam(name = "brands", required = false) List<String> brands,
-                       @RequestParam(name = "volumes", required = false) List<String> volumes,
-                       Model model) {
+                        @RequestParam(name = "grades", required = false) List<String> grades,
+                        @RequestParam(name = "accords", required = false) List<String> accords,
+                        @RequestParam(name = "brands", required = false) List<String> brands,
+                        @RequestParam(name = "volumes", required = false) List<String> volumes,
+                        Model model) {
 
         // 5-인자 서비스 호출 (브랜드/용량 포함)
         List<Product> list = productService.search(q, grades, accords, brands, volumes);
@@ -45,8 +45,7 @@ public class ProductController {
 
     // 상세 페이지: /main/content/{id}
     @GetMapping("/content/{id}")
-    public String productContent(@PathVariable("id") long id,
-                                    Model model) {
+    public String productContent(@PathVariable("id") long id, Model model) {
         Product product = productService.getProduct(id);
         model.addAttribute("product", product);
         return "main/content";

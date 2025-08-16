@@ -1,26 +1,55 @@
 <!DOCTYPE html>
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
-      layout:decorate="~{layout/layout}">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  xmlns:sec="https://www.thymeleaf.org/extras/spring-security" layout:decorate="~{layout/layout}">
 
 <!-- 페이지 전용 CSS -->
 <th:block layout:fragment="css">
   <style>
     /* 카드 이미지 비율 고정 */
-    .product-thumb { aspect-ratio: 1/1; object-fit: cover; width: 100%; }
-    .card.position-relative { position: relative; }
-    .card .ratio { position: relative; z-index: 0; overflow: hidden; }
+    .product-thumb {
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      width: 100%;
+    }
+
+    .card.position-relative {
+      position: relative;
+    }
+
+    .card .ratio {
+      position: relative;
+      z-index: 0;
+      overflow: hidden;
+    }
+
     /* stretched-link 오버레이가 이미지 위에 오도록 */
-    .card .stretched-link::after { z-index: 10; }
+    .card .stretched-link::after {
+      z-index: 10;
+    }
+
     /* 관심(북마크) 버튼 오버레이 */
-    .wish-btn { position: absolute; top: .5rem; right: .5rem; }
-    .wish-btn .icon { font-size: 1.25rem; }
+    .wish-btn {
+      position: absolute;
+      top: .5rem;
+      right: .5rem;
+    }
+
+    .wish-btn .icon {
+      font-size: 1.25rem;
+    }
+
     /* 좌측 가이드/메모 사이드 */
-    .list-sidebar { position: sticky; top: 88px; }
+    .list-sidebar {
+      position: sticky;
+      top: 88px;
+    }
+
     /* 결과 없음 영역 */
-    .empty { padding: 4rem 0; text-align: center; color: var(--bs-secondary-color); }
+    .empty {
+      padding: 4rem 0;
+      text-align: center;
+      color: var(--bs-secondary-color);
+    }
   </style>
 </th:block>
 
@@ -34,8 +63,8 @@
         <!-- 검색: /main/list 고정 + 현재 필터 유지 -->
         <form class="flex-grow-1" th:action="@{/main/list}" method="get" role="search" aria-label="통합검색(브랜드+상품명)">
           <div class="input-group input-group-lg">
-            <input type="search" name="q" th:value="${param.q}" class="form-control"
-                   placeholder="브랜드/상품명을 검색하세요" autocomplete="off">
+            <input type="search" name="q" th:value="${param.q}" class="form-control" placeholder="브랜드/상품명을 검색하세요"
+              autocomplete="off">
             <button class="btn btn-outline-secondary" type="submit" aria-label="검색">🔍</button>
           </div>
 
@@ -72,7 +101,7 @@
               <h6 class="card-title mb-3">필터</h6>
 
               <!-- 현재 검색어 동시 전송 -->
-              <input type="hidden" name="q" th:value="${param.q}"/>
+              <input type="hidden" name="q" th:value="${param.q}" />
 
               <!-- 브랜드 -->
               <div class="mb-3">
@@ -80,52 +109,52 @@
                 <div class="vstack gap-2">
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="킬리안"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '킬리안')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '킬리안')}">
                     <span class="form-check-label">킬리안</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="메종 마르지엘라"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '메종 마르지엘라')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '메종 마르지엘라')}">
                     <span class="form-check-label">메종 마르지엘라</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="톰 포드"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '톰 포드')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '톰 포드')}">
                     <span class="form-check-label">톰 포드</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="아쿠아 디 파르마"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '아쿠아 디 파르마')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '아쿠아 디 파르마')}">
                     <span class="form-check-label">아쿠아 디 파르마</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="바이레도"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '바이레도')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '바이레도')}">
                     <span class="form-check-label">바이레도</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="프레데릭 말"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '프레데릭 말')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '프레데릭 말')}">
                     <span class="form-check-label">프레데릭 말</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="르 라보"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '르 라보')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '르 라보')}">
                     <span class="form-check-label">르 라보</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="샤넬"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '샤넬')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '샤넬')}">
                     <span class="form-check-label">샤넬</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="딥티크"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '딥티크')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '딥티크')}">
                     <span class="form-check-label">딥티크</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="brands" value="조 말론"
-                           th:checked="${param.brands != null and #lists.contains(param.brands, '조 말론')}">
+                      th:checked="${param.brands != null and #lists.contains(param.brands, '조 말론')}">
                     <span class="form-check-label">조 말론</span>
                   </label>
                 </div>
@@ -136,27 +165,23 @@
                 <div class="small fw-semibold mb-2">그레이드</div>
                 <div class="vstack gap-2">
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="grades"
-                           value="퍼퓸"
-                           th:checked="${param.grades != null and #lists.contains(param.grades, '퍼퓸')}">
+                    <input class="form-check-input" type="checkbox" name="grades" value="퍼퓸"
+                      th:checked="${param.grades != null and #lists.contains(param.grades, '퍼퓸')}">
                     <span class="form-check-label">퍼퓸</span>
                   </label>
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="grades"
-                           value="오 드 코롱"
-                           th:checked="${param.grades != null and #lists.contains(param.grades, '오 드 코롱')}">
+                    <input class="form-check-input" type="checkbox" name="grades" value="오 드 코롱"
+                      th:checked="${param.grades != null and #lists.contains(param.grades, '오 드 코롱')}">
                     <span class="form-check-label">오 드 코롱</span>
                   </label>
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="grades"
-                           value="오 드 퍼퓸"
-                           th:checked="${param.grades != null and #lists.contains(param.grades, '오 드 퍼퓸')}">
+                    <input class="form-check-input" type="checkbox" name="grades" value="오 드 퍼퓸"
+                      th:checked="${param.grades != null and #lists.contains(param.grades, '오 드 퍼퓸')}">
                     <span class="form-check-label">오 드 퍼퓸</span>
                   </label>
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="grades"
-                           value="오 드 뚜왈렛"
-                           th:checked="${param.grades != null and #lists.contains(param.grades, '오 드 뚜왈렛')}">
+                    <input class="form-check-input" type="checkbox" name="grades" value="오 드 뚜왈렛"
+                      th:checked="${param.grades != null and #lists.contains(param.grades, '오 드 뚜왈렛')}">
                     <span class="form-check-label">오 드 뚜왈렛</span>
                   </label>
                 </div>
@@ -167,39 +192,33 @@
                 <div class="small fw-semibold mb-2">메인 어코드</div>
                 <div class="vstack gap-2">
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="시트러스"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '시트러스')}">
+                    <input class="form-check-input" type="checkbox" name="accords" value="시트러스"
+                      th:checked="${param.accords != null and #lists.contains(param.accords, '시트러스')}">
                     <span class="form-check-label">시트러스</span>
                   </label>
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="스파이시"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '스파이시')}">
+                    <input class="form-check-input" type="checkbox" name="accords" value="스파이시"
+                      th:checked="${param.accords != null and #lists.contains(param.accords, '스파이시')}">
                     <span class="form-check-label">스파이시</span>
                   </label>
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="우디"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '우디')}">
+                    <input class="form-check-input" type="checkbox" name="accords" value="우디"
+                      th:checked="${param.accords != null and #lists.contains(param.accords, '우디')}">
                     <span class="form-check-label">우디</span>
                   </label>
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="플로랄"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '플로랄')}">
+                    <input class="form-check-input" type="checkbox" name="accords" value="플로랄"
+                      th:checked="${param.accords != null and #lists.contains(param.accords, '플로랄')}">
                     <span class="form-check-label">플로랄</span>
                   </label>
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="허벌"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '허벌')}">
+                    <input class="form-check-input" type="checkbox" name="accords" value="허벌"
+                      th:checked="${param.accords != null and #lists.contains(param.accords, '허벌')}">
                     <span class="form-check-label">허벌</span>
                   </label>
                   <label class="form-check">
-                    <input class="form-check-input" type="checkbox" name="accords"
-                           value="프루티"
-                           th:checked="${param.accords != null and #lists.contains(param.accords, '프루티')}">
+                    <input class="form-check-input" type="checkbox" name="accords" value="프루티"
+                      th:checked="${param.accords != null and #lists.contains(param.accords, '프루티')}">
                     <span class="form-check-label">프루티</span>
                   </label>
                 </div>
@@ -211,32 +230,32 @@
                 <div class="vstack gap-2">
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="volumes" value="15ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '15ml')}">
+                      th:checked="${param.volumes != null and #lists.contains(param.volumes, '15ml')}">
                     <span class="form-check-label">15ml</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="volumes" value="30ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '30ml')}">
+                      th:checked="${param.volumes != null and #lists.contains(param.volumes, '30ml')}">
                     <span class="form-check-label">30ml</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="volumes" value="50ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '50ml')}">
+                      th:checked="${param.volumes != null and #lists.contains(param.volumes, '50ml')}">
                     <span class="form-check-label">50ml</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="volumes" value="75ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '75ml')}">
+                      th:checked="${param.volumes != null and #lists.contains(param.volumes, '75ml')}">
                     <span class="form-check-label">75ml</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="volumes" value="100ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '100ml')}">
+                      th:checked="${param.volumes != null and #lists.contains(param.volumes, '100ml')}">
                     <span class="form-check-label">100ml</span>
                   </label>
                   <label class="form-check">
                     <input class="form-check-input" type="checkbox" name="volumes" value="150ml"
-                           th:checked="${param.volumes != null and #lists.contains(param.volumes, '150ml')}">
+                      th:checked="${param.volumes != null and #lists.contains(param.volumes, '150ml')}">
                     <span class="form-check-label">150ml</span>
                   </label>
                 </div>
@@ -259,8 +278,7 @@
         </div>
 
         <!-- 결과 그리드 -->
-        <div th:unless="${#lists.isEmpty(list)}"
-             class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3 g-md-4">
+        <div th:unless="${#lists.isEmpty(list)}" class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3 g-md-4">
           <!-- 카드 -->
           <div class="col" th:each="product : ${list}">
             <div class="card h-100 position-relative shadow-sm">
@@ -279,18 +297,16 @@
                 </button>
                 -->
                 <!-- 비로그인 안내 -->
-                <button type="button"
-                        class="btn btn-light border-subtle rounded-circle shadow-sm btn-sm"
-                        sec:authorize="isAnonymous()"
-                        data-bs-toggle="tooltip" data-bs-title="로그인 후 사용 가능합니다">
+                <button type="button" class="btn btn-light border-subtle rounded-circle shadow-sm btn-sm"
+                  sec:authorize="isAnonymous()" data-bs-toggle="tooltip" data-bs-title="로그인 후 사용 가능합니다">
                   <span class="icon">🏷️</span>
                 </button>
               </div>
 
               <div class="ratio ratio-1x1">
                 <img class="product-thumb rounded-top"
-                     th:src="${product.imgPath != null and product.imgName != null ? (product.imgPath + product.imgName) : '/img/noimg.png'}"
-                     th:alt="${product.name}">
+                  th:src="${product.imgPath != null and product.imgName != null ? (product.imgPath + product.imgName) : '/img/noimg.png'}"
+                  th:alt="${product.name}">
               </div>
 
               <!-- 본문 -->
@@ -303,13 +319,13 @@
                   · <span th:text="${product.volume.volumeName}">용량</span>
                 </div>
                 <div class="fw-semibold mt-1"
-                     th:text="${product.sellprice != null ? #numbers.formatInteger(product.sellprice, 3, 'COMMA') + '원' : '-'}">00,000원</div>
+                  th:text="${product.sellprice != null ? #numbers.formatInteger(product.sellprice, 3, 'COMMA') + '원' : '-'}">
+                  00,000원</div>
               </div>
 
               <!-- 카드 전체 클릭 -->
-              <a class="stretched-link"
-                 th:href="@{/main/content/{id}(id=${product.id})}"
-                 th:aria-label="|${product.name} 상세로 이동|"></a>
+              <a class="stretched-link" th:href="@{/main/content/{id}(id=${product.id})}"
+                th:aria-label="|${product.name} 상세로 이동|"></a>
             </div>
           </div>
           <!-- /카드 -->
@@ -336,7 +352,7 @@
     // CSRF (Spring Security 사용 시)
     /*<![CDATA[*/
     const csrfHeader = /*[[${_csrf?.headerName}]]*/ 'X-CSRF-TOKEN';
-    const csrfToken  = /*[[${_csrf?.token}]]*/ '';
+    const csrfToken = /*[[${_csrf?.token}]]*/ '';
     /*]]>*/
 
     // 관심 토글(Ajax) — product 기준
@@ -363,4 +379,5 @@
     });
   </script>
 </th:block>
+
 </html>
