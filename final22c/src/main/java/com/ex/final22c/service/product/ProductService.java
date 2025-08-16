@@ -22,9 +22,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
-    public List<Product> showList() {
-        return productRepository.findAll();
-    }
+    public List<Product> showList() { return productRepository.findAll(); }
 
     public Product getProduct(long id) {
         return productRepository.findById(id)
@@ -36,12 +34,14 @@ public class ProductService {
     public List<Map<String, Object>> getMainNoteOptions() { return productMapper.selectMainNoteOptions(); }
     public List<Map<String, Object>> getVolumeOptions()   { return productMapper.selectVolumeOptions(); }
 
+    // 필터 + 상품명 검색 동시 지원
     public Map<String, Object> getProducts(List<Long> brandIds,
                                            List<Long> gradeIds,
                                            List<Long> mainNoteIds,
-                                           List<Long> volumeIds) {
-        long total = productMapper.countProducts(brandIds, gradeIds, mainNoteIds, volumeIds);
-        List<Map<String, Object>> items = productMapper.selectProducts(brandIds, gradeIds, mainNoteIds, volumeIds);
+                                           List<Long> volumeIds,
+                                           String keyword) {
+        long total = productMapper.countProducts(brandIds, gradeIds, mainNoteIds, volumeIds, keyword);
+        List<Map<String, Object>> items = productMapper.selectProducts(brandIds, gradeIds, mainNoteIds, volumeIds, keyword);
 
         Map<String, Object> res = new HashMap<>();
         res.put("total", total);
