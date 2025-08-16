@@ -24,6 +24,7 @@ public class ProductService {
 
     public List<Product> showList() { return productRepository.findAll(); }
 
+    // 해당 id 에 대한 상품 정보 조회
     public Product getProduct(long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("해당하는 상품 정보를 찾을 수 없습니다."));

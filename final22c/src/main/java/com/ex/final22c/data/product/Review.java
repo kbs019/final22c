@@ -25,7 +25,8 @@ public class Review {
     @Id
     @GeneratedValue( strategy = GenerationType.SEQUENCE, generator = "review_seq_gen" )
     @SequenceGenerator( name = "review_seq_gen", sequenceName = "grade_seq", allocationSize = 1 )
-    private Long id;
+    @Column(name = "reviewId")
+    private Long reviewId;
 
     // 상품에 대한 리뷰 - N:1 (FK : product_id)
     @ManyToOne
@@ -41,6 +42,7 @@ public class Review {
     @CreationTimestamp
     private LocalDateTime createDate;
 
+    @Column(name = "rating")
     private int rating;
 
     // 리뷰에 공감한 사용자들 - N:N (조인 테이블 생성 - 컬럼: review_id, users_id)
