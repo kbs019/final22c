@@ -6,27 +6,30 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "orderDetail", uniqueConstraints = {
-        @UniqueConstraint(name = "UK_OD_ORDER_PERFUME", columnNames = { "orderId", "perfumeNo" }) // 한 주문에서 같은 향수가 두번
-                                                                                                  // 들어가지 않게
-})
-@Getter
-@Setter
-@NoArgsConstructor
+@Table(
+    name = "orderDetail",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "UK_OD_ORDER_PRODUCT", columnNames = {"orderId","id"})
+    }
+)
+@Getter @Setter @NoArgsConstructor
 public class OrderDetail {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "orderDetail_seq_gen")
-    @SequenceGenerator(name = "orderDetail_seq_gen", sequenceName = "orderDetail_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="orderDetail_seq_gen")
+    @SequenceGenerator(name="orderDetail_seq_gen", sequenceName="orderDetail_seq", allocationSize=1)
     @Column(name = "orderDetailId")
-    private int orderDetailId; // 단일 PK (대리키)
+    private int orderDetailId;
 
-    // 주문 FK
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "orderId")
     private Order order;
 
+
     // 향수 FK (perfumeNo)
+    // FK 컬럼명이 실제 DB에서 'id'라면 유지
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id")
     private Product product;
@@ -50,13 +53,19 @@ public class OrderDetail {
             totalPrice = quantity * sellPrice;
     }
 
-    // 편의 생성자
+
+    // 편의 생성자 (가격 계산 포함)
+
     public static OrderDetail of(Order order, Product product, int qty) {
         OrderDetail d = new OrderDetail();
         d.setOrder(order);
         d.setProduct(product);
         d.setQuantity(Math.max(1, qty));
+
         d.setSellPrice((int) (product.getPrice() * 0.7));
+
+        d.setSellPrice((int) Math.round(product.getPrice() * 0.7)); // 반올림
+
         d.setTotalPrice(d.getQuantity() * d.getSellPrice());
         return d;
     }
