@@ -188,6 +188,8 @@
     var $ = window.jQuery;
     console.log('[product-list] init');
 
+    $("#keyword").focus();
+
     // 체크된 값 수집
     function collect(name){
       return $("input[name='" + name + "']:checked")
