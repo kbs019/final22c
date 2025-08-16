@@ -3,68 +3,83 @@
 	<div class="container my-4">
 	    <h2>상품관리</h2>
 
-	    <!-- 검색 폼 -->
-	    <form class="d-flex mb-3" role="search">
-	        <input class="form-control me-2" type="search" placeholder="검색어 입력" aria-label="Search">
-	        <button class="btn btn-outline-primary" type="submit">상품조회</button>
-	    </form>
+		<div class="d-flex mb-3 align-items-center">
+		  <!-- 검색창 + 검색버튼 -->
+		  <div class="input-group" style="width: 300px;">
+		    <input type="text" class="form-control" placeholder="검색어 입력">
+		    <button class="btn btn-outline-secondary" type="button">검색</button>
+		  </div>
+
+		  <!--상품등록 버튼 -->
+		  <a href="/admin/selectBrand" class="btn btn-primary ms-auto">상품등록</a>
+		</div>
 
 	    <!-- 상품 리스트 테이블 -->
 	    <table class="table table-bordered align-middle text-center">
 	        <thead class="table-light">
 	            <tr>
-	                <th scope="col">#</th>
+	                <th scope="col">상품번호</th>
 	                <th scope="col">상품명</th>
 	                <th scope="col">브랜드</th>
-	                <th scope="col">카테고리</th>
 	                <th scope="col">가격</th>
-	                <th scope="col">판매량</th>
-	                <th scope="col">상태</th>
-	                <th scope="col">선택</th>
+	                <th scope="col">재고</th>
+	                <th scope="col">관리자픽</th>
+	                <th scope="col">관리</th>
 	            </tr>
 	        </thead>
 	        <tbody>
-	            <!-- 예시 데이터 -->
-	            <tr>
-	                <th scope="row">1</th>
-	                <td>상품1</td>
-	                <td>브랜드A</td>
-	                <td>카테고리1</td>
-	                <td>10,000</td>
-	                <td>5</td>
+	            <!-- 상품 리스트 -->
+	            <tr th:each="list:${paging}">
+	                <td th:text="${list.id}"></td>
+	                <td th:text="${list.name}"></td>
+	                <td th:text="${list.brand.brandName}"></td>
+					<td th:text="${#numbers.formatInteger(list.price, 3, 'COMMA')}"></td>
+	                <td th:text="${list.count}"></td>
 	                <td>
 	                    <select class="form-select form-select-sm">
 	                        <option selected>Pick</option>
-	                        <option value="1">판매중</option>
-	                        <option value="2">품절</option>
+	                        <option value="1">Y</option>
+	                        <option value="2">N</option>
 	                    </select>
 	                </td>
 	                <td>
-	                    <button class="btn btn-sm btn-danger">삭제</button>
+						<button class="btn btn-sm btn-primary">삭제</button>
+						<button class="btn btn-sm btn-primary">수정</button>
 	                </td>
 	            </tr>
-	            <tr>
-	                <th scope="row">2</th>
-	                <td>상품2</td>
-	                <td>브랜드B</td>
-	                <td>카테고리2</td>
-	                <td>15,000</td>
-	                <td>3</td>
-	                <td>
-	                    <select class="form-select form-select-sm">
-	                        <option selected>Pick</option>
-	                        <option value="1">판매중</option>
-	                        <option value="2">품절</option>
-	                    </select>
-	                </td>
-	                <td>
-	                    <button class="btn btn-sm btn-danger">삭제</button>
-	                </td>
-	            </tr>
-	            <!-- 반복 가능 -->
 	        </tbody>
 	    </table>
 	</div>
 
+	<div th:if="${!paging.isEmpty()}">
+	    <ul class="pagination justify-content-center">
+	        <!-- 이전 블록 -->
+	        <li class="page-item" 
+	            th:classappend="${currentBlock == 0} ? 'disabled'">
+	            <a class="page-link" 
+	               th:href="@{|?page=${(currentBlock-1)*pageSize}|}">
+	                이전
+	            </a>
+	        </li>
+
+	        <!-- 페이지 번호 -->
+	        <li th:each="page : ${#numbers.sequence(currentBlock*pageSize, (currentBlock+1)*pageSize-1)}"
+	            th:if="${page < paging.totalPages}"
+	            th:classappend="${page == paging.number} ? 'active'" 
+	            class="page-item">
+	            <a class="page-link" th:href="@{|?page=${page}|}" 
+	               th:text="${page+1}"></a>
+	        </li>
+
+	        <!-- 다음 블록 -->
+	        <li class="page-item" 
+	            th:classappend="${(currentBlock+1)*pageSize >= paging.totalPages} ? 'disabled'">
+	            <a class="page-link" 
+	               th:href="@{|?page=${(currentBlock+1)*pageSize}|}">
+	                다음
+	            </a>
+	        </li>
+	    </ul>
+	</div>
 </div>
 </html>
