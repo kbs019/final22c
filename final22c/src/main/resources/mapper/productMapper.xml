@@ -40,7 +40,7 @@
             FROM PRODUCT p
             GROUP BY p.BRAND_BRANDNO
         ) cnt ON cnt.id = b.BRANDNO
-        ORDER BY b.BRANDNAME
+        ORDER BY b.BRANDNO
     </select>
 
     <select id="selectGradeOptions" resultType="map">
@@ -53,7 +53,7 @@
             FROM PRODUCT p
             GROUP BY p.GRADE_GRADENO
         ) cnt ON cnt.id = g.GRADENO
-        ORDER BY g.GRADENAME
+        ORDER BY g.GRADENO
     </select>
 
     <select id="selectMainNoteOptions" resultType="map">
@@ -66,7 +66,7 @@
             FROM PRODUCT p
             GROUP BY p.MAINNOTE_MAINNOTENO
         ) cnt ON cnt.id = m.MAINNOTENO
-        ORDER BY m.MAINNOTENAME
+        ORDER BY m.MAINNOTENO
     </select>
 
     <select id="selectVolumeOptions" resultType="map">
@@ -79,7 +79,7 @@
             FROM PRODUCT p
             GROUP BY p.VOLUME_VOLUMENO
         ) cnt ON cnt.id = v.VOLUMENO
-        ORDER BY v.VOLUMENAME
+        ORDER BY v.VOLUMENO
     </select>
 
     <!-- ===== 카운트 ===== -->

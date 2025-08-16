@@ -36,7 +36,7 @@
                 <div class="filter-list">
                   <div class="form-check" th:each="b : ${brands}">
                     <input class="form-check-input filter-check" type="checkbox" name="brand"
-                           th:id="${'brand-'+b['id']}" th:value="${b['id']}">
+                          th:id="${'brand-'+b['id']}" th:value="${b['id']}">
                     <label class="form-check-label small" th:for="${'brand-'+b['id']}">
                       <span th:text="${b['name']}">Brand</span>
                       <span class="text-secondary" th:text="' (' + ${b['count']} + ')'"> (0)</span>
@@ -59,7 +59,7 @@
                 <div class="filter-list">
                   <div class="form-check" th:each="g : ${grades}">
                     <input class="form-check-input filter-check" type="checkbox" name="grade"
-                           th:id="${'grade-'+g['id']}" th:value="${g['id']}">
+                          th:id="${'grade-'+g['id']}" th:value="${g['id']}">
                     <label class="form-check-label small" th:for="${'grade-'+g['id']}">
                       <span th:text="${g['name']}">Grade</span>
                       <span class="text-secondary" th:text="' (' + ${g['count']} + ')'"> (0)</span>
@@ -82,7 +82,7 @@
                 <div class="filter-list">
                   <div class="form-check" th:each="m : ${mainNotes}">
                     <input class="form-check-input filter-check" type="checkbox" name="mainNote"
-                           th:id="${'mainNote-'+m['id']}" th:value="${m['id']}">
+                          th:id="${'mainNote-'+m['id']}" th:value="${m['id']}">
                     <label class="form-check-label small" th:for="${'mainNote-'+m['id']}">
                       <span th:text="${m['name']}">MainNote</span>
                       <span class="text-secondary" th:text="' (' + ${m['count']} + ')'"> (0)</span>
@@ -105,7 +105,7 @@
                 <div class="filter-list">
                   <div class="form-check" th:each="v : ${volumes}">
                     <input class="form-check-input filter-check" type="checkbox" name="volume"
-                           th:id="${'volume-'+v['id']}" th:value="${v['id']}">
+                            th:id="${'volume-'+v['id']}" th:value="${v['id']}">
                     <label class="form-check-label small" th:for="${'volume-'+v['id']}">
                       <span th:text="${v['name']}">Volume</span>
                       <span class="text-secondary" th:text="' (' + ${v['count']} + ')'"> (0)</span>
