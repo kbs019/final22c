@@ -1,0 +1,29 @@
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>결제 실패</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif">
+  <div>
+    <h2>결제에 실패했습니다.</h2>
+    <p>창이 자동으로 닫혀요…</p>
+  </div>
+
+  <script>
+    (function () {
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(
+            { type: 'PAY_RESULT', status: 'fail' },
+            window.location.origin
+          );
+        }
+      } catch (e) {}
+      setTimeout(function(){
+        try { window.close(); } catch(e) {}
+      }, 400);
+    })();
+  </script>
+</body>
+</html>

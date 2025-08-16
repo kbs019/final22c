@@ -1,4 +1,3 @@
-
 package com.ex.final22c.controller.pay;
 
 import com.ex.final22c.data.order.Order;
@@ -7,7 +6,6 @@ import com.ex.final22c.service.KakaoApiService;
 import com.ex.final22c.service.order.OrderService;
 import com.ex.final22c.service.payment.PaymentService;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,7 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.security.Principal;
 import java.util.Map;
 
-@RestController
+@Controller
 @RequiredArgsConstructor
 @RequestMapping("/pay")
 public class PayController {
@@ -27,28 +25,26 @@ public class PayController {
     private final PaymentService paymentService;
 
     @PostMapping("/ready")
+    @ResponseBody
     public Map<String, Object> ready(
-            @RequestParam(name = "productId") long ProductId, // 이름 명시
-            @RequestParam(name = "qty")       int qty,
+            @RequestParam("productId") long productId,
+            @RequestParam("qty")       int qty,
+            @RequestParam("usedPoint") int usedPoint,
             Principal principal
-    ) {  // ★ 여기: 닫는 괄호 한 번만, 그리고 중괄호 열기
-
+    ) {
         if (principal == null) {
-            // 테스트만 급하면 아래 두 줄 사용해도 됨
-            // Order order = orderService.createPendingOrderForTest(1L, perfumeNo, qty);
-            // return kakaoApiService.readySingle(perfumeNo, qty, "TEST_USER", order, 0);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
+        final String userId = principal.getName();
 
-        String userId = principal.getName();
-        Order order = orderService.createPendingOrder(userId, ProductId, qty);
-        return kakaoApiService.readySingle(ProductId, qty, userId, order);
+        // usedPoint 정규화 + payable 계산/저장
+        Order order = orderService.createPendingOrder(userId, productId, qty, usedPoint);
+
+        // Kakao Ready: total_amount는 order.getTotalAmount()를 KakaoApiService에서 사용
+        return kakaoApiService.readySingle(productId, qty, userId, order);
     }
 
-    /**
-     * 결제 승인(Approve) 콜백
-     * approval_url에 orderId를 쿼리로 붙여두었기 때문에, 여기서 orderId로 Payment를 조회해 tid를 얻는다.
-     */
+    /** 승인 콜백(팝업) */
     @GetMapping("/success")
     public String success(@RequestParam("pg_token") String pgToken,
                           @RequestParam("orderId") Long orderId,
@@ -57,11 +53,8 @@ public class PayController {
 
         String userId = (principal != null ? principal.getName() : "GUEST");
 
-        // Ready 때 저장해 둔 Payment(READY)를 orderId로 가져옴
-        // ※ PaymentService에 getLatestByOrderId(or getByOrderId) 메서드가 있어야 합니다.
         Payment pay = paymentService.getLatestByOrderId(orderId);
 
-        // 카카오 승인 호출
         Map<String, Object> result = kakaoApiService.approve(
                 pay.getTid(),
                 String.valueOf(orderId),
@@ -69,17 +62,43 @@ public class PayController {
                 pgToken
         );
 
+        // 승인 완료 → 주문 상태 PAID로 마킹
+        orderService.markPaid(orderId);
+
+        model.addAttribute("orderId", orderId);
         model.addAttribute("pay", result);
-        return "pay/success";
+        return "pay/success-popup"; // postMessage 후 스스로 닫히는 뷰
     }
 
     @GetMapping("/cancel")
-    public String cancel() {
-        return "pay/cancel";
+    public String cancel(@RequestParam("orderId") Long orderId, Model model) {
+        model.addAttribute("orderId", orderId);
+        return "pay/cancel-popup";
     }
 
     @GetMapping("/fail")
-    public String fail() {
-        return "pay/fail";
+    public String fail(@RequestParam("orderId") Long orderId, Model model) {
+        model.addAttribute("orderId", orderId);
+        return "pay/fail-popup";
+    }
+
+    /** 팝업 닫힘 등으로 부모창이 호출하는 내부 취소(미승인 상태만) */
+    @PostMapping("/cancel-pending")
+    @ResponseBody
+    public void cancelPendingInternal(@RequestParam("orderId") Long orderId) {
+        Order o = orderService.get(orderId);
+        if (o == null) return;
+        if ("PAID".equalsIgnoreCase(o.getStatus())) return;     // 이미 결제됨 → 무시
+        if ("PENDING".equalsIgnoreCase(o.getStatus())) {
+            orderService.markCanceled(orderId);                 // PENDING → CANCELED
+        }
+    }
+
+    /** 부모창이 팝업 닫힘 후 상태 확인할 때 사용 */
+    @GetMapping("/order/{orderId}/status")
+    @ResponseBody
+    public Map<String, String> getStatus(@PathVariable Long orderId) {
+        Order o = orderService.get(orderId);
+        return Map.of("status", o.getStatus());
     }
 }
