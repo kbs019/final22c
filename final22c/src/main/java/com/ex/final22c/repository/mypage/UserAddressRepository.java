@@ -17,7 +17,7 @@ public interface UserAddressRepository extends JpaRepository<UserAddress, Long> 
     // 유저 번호로 주소 목록 조회
     List<UserAddress> findByUser_UserNo(Long userNo);
 
-    // 기본 주소 조회
+    // 기본 주소 설정
     @Modifying
     @Query("update UserAddress ua set ua.isDefault = 'N' where ua.user.userNo = :userNo and ua.isDefault = 'Y'")
     int clearDefaultByUserNo(@Param("userNo") Long userNo);
@@ -26,4 +26,8 @@ public interface UserAddressRepository extends JpaRepository<UserAddress, Long> 
     @Modifying
     @Query("update UserAddress ua set ua.isDefault = 'Y' where ua.addressNo = :addressNo and ua.user.userNo = :userNo")
     int markDefault(@Param("userNo") Long userNo, @Param("addressNo") Long addressNo);
+    
+    // 기본 주소지 조회
+    @Query("select ua from UserAddress ua where ua.user.userNo = :userNo and ua.isDefault = 'Y'")
+    UserAddress findDefaultByUserNo(@Param("userNo") Long userNo);
 }
