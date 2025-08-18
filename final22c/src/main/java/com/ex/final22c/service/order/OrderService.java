@@ -124,5 +124,6 @@ public class OrderService {
     	
     	// order 상태 (Paid -> canceled)
     	order.setStatus("CANCELED");
+    	orderRepository.saveAndFlush(order);
     }
 }
