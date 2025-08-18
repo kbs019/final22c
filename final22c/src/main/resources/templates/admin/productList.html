@@ -2,7 +2,28 @@
 <div layout:fragment="content" class="container">
 	<div class="container my-4">
 	    <h2>상품관리</h2>
+		<div class="filters mb-3">
+		    <div class="filter-group mb-2">
+		        <h5>브랜드</h5>
+		        <label th:each="brands:${brands}" class="me-2">
+		            <input type="checkbox" class="filter" name="brand" th:value="${brands.id}"> [[${brands.brandName}]]
+		        </label>
+		    </div>
 
+		    <div class="filter-group mb-2">
+		        <h5>상태</h5>
+		        <label class="me-2"><input type="checkbox" class="filter" name="isPicked" value="Y"> 관리자픽</label>
+		        <label class="me-2"><input type="checkbox" class="filter" name="status" value="wait"> 비활성화</label>
+		    </div>
+
+		    <div class="filter-group mb-2">
+		        <h5>정렬</h5>
+		        <label class="me-2"><input type="checkbox" class="filter" name="sortStockAsc" value="true"> 재고 오름차순</label>
+		        <label class="me-2"><input type="checkbox" class="filter" name="sortStockDesc" value="true"> 재고 내림차순</label>
+		        <label class="me-2"><input type="checkbox" class="filter" name="sortPriceAsc" value="true"> 가격 오름차순</label>
+		        <label class="me-2"><input type="checkbox" class="filter" name="sortPriceDesc" value="true"> 가격 내림차순</label>
+		    </div>
+		</div>
 		<div class="d-flex mb-3 align-items-center">
 		  <!-- 검색창 + 검색버튼 -->
 		  <div class="input-group" style="width: 300px;">
@@ -13,6 +34,7 @@
 		  <!--상품등록 버튼 -->
 		  <a href="/admin/selectBrand" class="btn btn-primary ms-auto">상품등록</a>
 		</div>
+		
 
 	    <!-- 상품 리스트 테이블 -->
 	    <table class="table table-bordered align-middle text-center">
@@ -21,30 +43,34 @@
 	                <th scope="col">상품번호</th>
 	                <th scope="col">상품명</th>
 	                <th scope="col">브랜드</th>
-	                <th scope="col">가격</th>
+	                <th scope="col">정가</th>
+	                <th scope="col">할인율(%)</th>
 	                <th scope="col">재고</th>
+	                <th scope="col">상태</th>
 	                <th scope="col">관리자픽</th>
 	                <th scope="col">관리</th>
 	            </tr>
 	        </thead>
-	        <tbody>
+	        <tbody th:fragment="productListFragment" id="productList">
 	            <!-- 상품 리스트 -->
 	            <tr th:each="list:${paging}">
 	                <td th:text="${list.id}"></td>
 	                <td th:text="${list.name}"></td>
 	                <td th:text="${list.brand.brandName}"></td>
 					<td th:text="${#numbers.formatInteger(list.price, 3, 'COMMA')}"></td>
+					<td th:text="${#numbers.formatInteger(list.discount, 0)}"></td>
 	                <td th:text="${list.count}"></td>
+	                <td th:text="${list.status == 'active' ? '활성화' : '비활성화'}"></td>
 	                <td>
-	                    <select class="form-select form-select-sm">
-	                        <option selected>Pick</option>
-	                        <option value="1">Y</option>
-	                        <option value="2">N</option>
-	                    </select>
+						<select class="form-select form-select-sm" name="isPicked" th:data-id="${list.id}" onchange="updatePick(this)">
+						    <option value="Y" th:selected="${list.isPicked == 'Y'}">Y</option>
+						    <option value="N" th:selected="${list.isPicked == 'N'}">N</option>
+						</select>
 	                </td>
 	                <td>
-						<button class="btn btn-sm btn-primary">삭제</button>
-						<button class="btn btn-sm btn-primary">수정</button>
+						<a href="javascript:void(0);" th:data-id="${list.id}" th:data-status="${list.status}" class="status btn btn-sm btn-outline-secondary"
+						   th:text="${list.status == 'active' ? '비활성화' : '활성화'}"></a>
+						<a th:href="@{/admin/productForm(id=${list.id}, brandId=${list.brand.id})}" class="btn btn-sm btn-outline-secondary">수정</a>
 	                </td>
 	            </tr>
 	        </tbody>
@@ -81,5 +107,111 @@
 	        </li>
 	    </ul>
 	</div>
+	<!-- 상태 변경 확인 모달 -->
+	<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+	  <div class="modal-dialog modal-dialog-centered">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <h5 class="modal-title">상태 변경 확인</h5>
+	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+	      </div>
+	      <div class="modal-body" id="statusModalBody">
+	        <!-- JS에서 텍스트 삽입 -->
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+	        <button type="button" class="btn btn-primary" id="confirmStatusChange">확인</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
 </div>
+<script layout:fragment="script" type="text/javascript">
+	// 필터 ajax
+	$(document).ready(function() {
+	    $('.filter').on('change', function() {
+	        let filterData = {};
+	        
+	        $('.filter').each(function() {
+	            const name = $(this).attr('name');
+	            if(this.checked) {
+	                if(filterData[name]) {
+	                    filterData[name].push($(this).val());
+	                } else {
+	                    filterData[name] = [$(this).val()];
+	                }
+	            }
+	        });
+
+	        $.ajax({
+	            url: '/admin/profilter',
+	            type: 'GET',
+	            data: filterData,
+	            success: function(res) {
+	                $('#productList').html(res);
+	            },
+	            error: function(err) {
+	                console.error(err);
+	            }
+	        });
+	    });
+	});
+// 활성화/비활성화 ajax
+const statusButtons = document.getElementsByClassName("status");
+let selectedButton = null;  // 클릭한 버튼 저장
+let newStatus = '';
+
+Array.from(statusButtons).forEach(btn => {
+  btn.addEventListener('click', function() {
+    selectedButton = this;
+    const currentStatus = this.dataset.status;
+    newStatus = currentStatus === 'active' ? 'wait' : 'active';
+    
+    // 모달 내용 변경
+    document.getElementById('statusModalBody').textContent =
+      `${newStatus === 'active' ? '활성화' : '비활성화'} 하시겠습니까?`;
+
+    // 모달 띄우기
+    const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+    modal.show();
+  });
+});
+
+// 모달 확인 클릭 시 AJAX
+document.getElementById('confirmStatusChange').addEventListener('click', function() {
+  if(selectedButton) {
+    const productId = selectedButton.dataset.id;
+
+    fetch(`/admin/productStatus/${productId}?status=${newStatus}`, { method: 'POST' })
+      .then(response => {
+        if(response.ok) {
+          // 버튼 텍스트와 dataset 갱신
+          selectedButton.dataset.status = newStatus;
+          selectedButton.textContent = newStatus === 'active' ? '비활성화' : '활성화';
+          
+          // 모달 닫기
+          const modalEl = document.getElementById('statusModal');
+          const modalInstance = bootstrap.Modal.getInstance(modalEl);
+          modalInstance.hide();
+        } else {
+          alert('상태 변경에 실패했습니다.');
+        }
+      });
+  }
+});
+// 관리자픽 수정
+function updatePick(selectBox) {
+    const id = selectBox.getAttribute("data-id");
+    const value = selectBox.value;
+
+    fetch("/admin/updatePick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: id, isPicked: value })
+    })
+    .then(res => res.text())
+    .then(msg => console.log("업데이트 성공:", msg))
+    .catch(err => console.error("업데이트 실패:", err));
+}
+</script>
 </html>

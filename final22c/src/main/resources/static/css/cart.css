@@ -1,0 +1,68 @@
+/* 헤더 높이 설정 (실제 높이에 맞춰 숫자만 조정) */
+:root { --nav-h: 72px; }   /* 예: 헤더가 약 72px */
+
+/* 그리드 컨테이너가 stretch 로 늘리지 않게 */
+.cart-wrap {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+}
+
+.cart-row {
+    display: grid;
+    grid-template-columns: 32px 96px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee
+}
+
+.qty-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px
+}
+
+.qty-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer
+}
+
+.qty-input {
+    width: 56px;
+    text-align: center
+}
+
+.muted {
+    color: #666;
+    font-size: .9rem
+}
+
+/* 우측 사이드 바 */
+.sidebar {
+    position: sticky;
+    top: calc(var(--nav-h) + 16px); /* 헤더 + 여백 */
+    border: 1px solid #eee;
+    padding: 16px;
+    border-radius: 10px;
+    background: #fff;
+    align-items: start;
+    height: fit-content;
+}
+
+.empty {
+    padding: 48px 0;
+    text-align: center;
+    color: #888
+}
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px
+}

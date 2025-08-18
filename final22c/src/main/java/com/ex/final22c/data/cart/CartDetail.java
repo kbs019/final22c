@@ -34,7 +34,7 @@ public class CartDetail {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "cartDetail_seq_gen")
     @SequenceGenerator(name = "cartDetail_seq_gen", sequenceName = "cartDetail_seq", allocationSize = 1)
     @Column(name = "cartDetailId")
-    private long cartDetailId;
+    private Long cartDetailId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "cartId", nullable = false)
