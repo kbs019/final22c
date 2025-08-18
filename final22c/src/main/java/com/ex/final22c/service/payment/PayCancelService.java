@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.payment.Payment;
+import com.ex.final22c.repository.order.OrderRepository;
+import com.ex.final22c.repository.payment.PaymentRepository;
 import com.ex.final22c.service.KakaoApiService;
 import com.ex.final22c.service.order.OrderService;
 
@@ -17,32 +20,40 @@ public class PayCancelService {
 	private final PaymentService paymentService;
 	private final KakaoApiService kakaoApiService;
 	private final OrderService orderService;
+	private final OrderRepository orderRepository;
+	private final PaymentRepository paymentRepository;
 	
 	@Transactional
-	public Map<String, Object> cancelPaid(Long orderId, String reason){
-		// 주문/결제 조회 및  상태 검증
-		Order order = orderService.get(orderId);
-		var pay = paymentService.getLatestByOrderId(orderId);
-	
-		// 이미 취소된 건 멱등 처리(그냥 반환하거나 예외)
-	    if ("CANCELED".equalsIgnoreCase(order.getStatus()) || "CANCELED".equalsIgnoreCase(pay.getStatus())) {
+	public Map<String, Object> cancelPaid(Long orderId, String reason) {
+	    // 0) 주문/결제 조회 (details fetch-join)
+	    Order order = orderRepository.findOneWithDetails(orderId)
+	        .orElseThrow(() -> new IllegalArgumentException("주문 없음: " + orderId));
+	    Payment pay = paymentRepository.findTopByOrder_OrderIdOrderByPaymentIdDesc(orderId)
+	        .orElseThrow(() -> new IllegalArgumentException("결제 정보 없음(orderId): " + orderId));
+
+	    // 1) 멱등성(이미 변경된 값에 덮어쓰기 x) / 상태 검증
+	    if ("CANCELED".equalsIgnoreCase(order.getStatus())) {
+	        // 이미 취소된 주문이면 PG/DB 추가 조작 없이 반환
 	        return Map.of("alreadyCanceled", true);
 	    }
-	    
-		if (!"PAID".equalsIgnoreCase(order.getStatus()) || !"SUCCESS".equalsIgnoreCase(pay.getStatus())) {
-			throw new IllegalStateException("취소 불가 상태");
-		}
-		
-		int amountToCancel = order.getTotalAmount();
-			
-		
-		// 취소(카카오)
-		Map<String, Object> pgResp = kakaoApiService.cancel(pay.getTid(),amountToCancel, reason);
-		
-		// 마일리지 복구 / 재고 복구 / 상태
-		orderService.applyCancel(order, amountToCancel, reason);
-		
-		return pgResp;
+	    if (!"PAID".equalsIgnoreCase(order.getStatus())) {
+	        throw new IllegalStateException("취소 불가 상태(주문이 PAID 아님)");
+	    }
+	    if (!"SUCCESS".equalsIgnoreCase(pay.getStatus())) {
+	        throw new IllegalStateException("취소 불가 상태(결제가 SUCCESS 아님)");
+	    }
+
+	    // 2) PG 취소 (전액취소만 지원)
+	    final int amountToCancel = order.getTotalAmount(); // 부분취소 미지원
+	    Map<String, Object> pgResp = kakaoApiService.cancel(pay.getTid(), amountToCancel, reason);
+
+	    // 3) DB 취소 처리 (마일리지/재고 복구 + 주문 상태 업데이트)
+	    orderService.applyCancel(order, amountToCancel, reason);
+
+	    // 4) 결제 상태도 CANCELED로 표시
+	    paymentService.markCanceledByTid(pay.getTid());
+
+	    return pgResp;
 	}
-	
+
 }
