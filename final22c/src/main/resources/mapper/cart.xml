@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ex.final22c.repository.cart.CartMapper">
+
+  <resultMap id="CartLineMap" type="com.ex.final22c.data.cart.CartLine">
+    <result property="detailId"  column="detailId"/>
+    <result property="productId" column="id"/>
+    <result property="name"      column="name"/>
+    <result property="unitPrice" column="unitPrice"/>
+    <result property="quantity"  column="quantity"/>
+    <result property="imgPath"   column="imgPath"/>
+    <result property="imgName"   column="imgName"/>
+  </resultMap>
+
+  <sql id="cartLineSelect">
+    SELECT
+      d.cartDetailId AS detailId,
+      d.id    AS id,
+      p.name         AS name,
+      p.sellPrice   AS unitPrice,
+      d.quantity     AS quantity,
+      p.imgPath     AS imgPath,
+      p.imgName     AS imgName
+    FROM cartDetail d
+    JOIN cart c    ON c.cartId = d.cartId
+    JOIN product p ON p.id = d.id
+  </sql>
+
+  <select id="selectCartLinesByUserNo" resultMap="CartLineMap">
+    <include refid="cartLineSelect"/>
+    WHERE c.userNo = #{userNo}
+    ORDER BY d.createDate DESC
+  </select>
+
+  <select id="selectCartLinesByUsername" resultMap="CartLineMap">
+    <include refid="cartLineSelect"/>
+    JOIN users u ON u.userNo = c.userNo
+    WHERE u.username = #{username}
+    ORDER BY d.createDate DESC
+  </select>
+</mapper>
