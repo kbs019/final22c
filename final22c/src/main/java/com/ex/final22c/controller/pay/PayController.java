@@ -4,6 +4,7 @@ import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.service.KakaoApiService;
 import com.ex.final22c.service.order.OrderService;
+import com.ex.final22c.service.payment.PayCancelService;
 import com.ex.final22c.service.payment.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ public class PayController {
     private final OrderService orderService;
     private final KakaoApiService kakaoApiService;
     private final PaymentService paymentService;
+    private final PayCancelService payCancelService;
 
     @PostMapping("/ready")
     @ResponseBody
@@ -101,4 +103,30 @@ public class PayController {
         Order o = orderService.get(orderId);
         return Map.of("status", o.getStatus());
     }
+    
+    @PostMapping("/cancel-paid")
+    @ResponseBody
+    public Map<String, Object> cancelPaid(@RequestParam Long orderId,
+    									  @RequestParam(required = false) String reason){
+    	var result = payCancelService.cancelPaid(orderId, reason);
+    	return Map.of("ok", true, "pg", result);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 }

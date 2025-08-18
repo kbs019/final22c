@@ -98,4 +98,24 @@ public class OrderService {
             // TODO: 필요하면 재고 복구/로그 남기기 등
         }
     }
+    // 결제 취소
+    @Transactional
+    public void applyCancel(Order order, int cancelAmount, String reason) {
+    	// 마일리지 복구
+    	int used = order.getUsedPoint();
+    	if(used > 0) {
+    		int restore = (cancelAmount >= order.getTotalAmount()) ? used : Math.min(used , cancelAmount);
+    		if(restore > 0 ) usersRepository.addMileage(order.getUser().getUserNo(), restore);
+    	}
+    	
+    	// 재고 복구
+    	if(cancelAmount >= order.getTotalAmount()) {
+    		for(OrderDetail d : order.getDetails()) {
+    			productService.increaseStock(d.getProduct().getId(), d.getQuantity());
+    		}
+    	}
+    	
+    	// order 상태 (Paid -> canceled)
+    	order.setStatus("CANCELED");
+    }
 }
