@@ -1,11 +1,15 @@
 package com.ex.final22c.service.payment;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.repository.payment.PaymentRepository;
+import com.ex.final22c.repository.productRepository.ProductRepository;
 import com.ex.final22c.repository.user.UserRepository;
+import com.ex.final22c.service.product.ProductService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +24,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;   // 주문 상태 갱신용
     private final UserRepository userRepository;     // 마일리지 차감용
+    private final ProductService productService;
 
     /** Ready */
     public Payment saveReady(Order order, int amount, String tid) {
@@ -51,7 +56,11 @@ public class PaymentService {
             int updated = userRepository.deductMileage(userNo, usedMileage);
             if (updated != 1) throw new IllegalStateException("마일리지 차감 실패 또는 잔액 부족");
         }
-
+        for (OrderDetail d : order.getDetails()) {
+            Long productId = d.getProduct().getId();
+            int  qty       = d.getQuantity();
+            productService.decreaseStock(productId, qty);
+        	}
         // 2) 주문 상태 갱신 (PENDING -> PAID)
         order.setStatus("PAID");
         orderRepository.save(order);

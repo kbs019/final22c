@@ -49,4 +49,6 @@ public class Order {
         d.setOrder(this);
         details.add(d);
     }
+    public boolean isPending() { return "PENDING".equals(status); }
+    public void markPaid() { this.status = "PAID"; }
 }

@@ -26,10 +26,6 @@ public class OrderDetail {
     @JoinColumn(name = "orderId")
     private Order order;
 
-
-    // 향수 FK (perfumeNo)
-    // FK 컬럼명이 실제 DB에서 'id'라면 유지
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id")
     private Product product;
@@ -56,16 +52,12 @@ public class OrderDetail {
 
     // 편의 생성자 (가격 계산 포함)
 
-    public static OrderDetail of(Order order, Product product, int qty) {
+    public static OrderDetail of(Product product, int qty) {
         OrderDetail d = new OrderDetail();
-        d.setOrder(order);
         d.setProduct(product);
         d.setQuantity(Math.max(1, qty));
-
-        d.setSellPrice((int) (product.getPrice() * 0.7));
-
-        d.setSellPrice((int) Math.round(product.getPrice() * 0.7)); // 반올림
-
+        // 실제 판매가 사용 (필요 시 할인 로직은 서비스에서 계산 후 전달)
+        d.setSellPrice(product.getSellPrice());
         d.setTotalPrice(d.getQuantity() * d.getSellPrice());
         return d;
     }
