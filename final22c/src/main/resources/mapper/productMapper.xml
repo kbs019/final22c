@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-
 <mapper namespace="com.ex.final22c.repository.productMapper.ProductMapper">
 
     <!-- ===== 공통 WHERE 절 (필터 + 상품명 검색) ===== -->
@@ -9,19 +9,27 @@
         <where>
             <if test="brandIds != null and brandIds.size() > 0">
                 AND p.BRAND_BRANDNO IN
-                <foreach collection="brandIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+                <foreach collection="brandIds" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
             </if>
             <if test="gradeIds != null and gradeIds.size() > 0">
                 AND p.GRADE_GRADENO IN
-                <foreach collection="gradeIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+                <foreach collection="gradeIds" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
             </if>
             <if test="mainNoteIds != null and mainNoteIds.size() > 0">
                 AND p.MAINNOTE_MAINNOTENO IN
-                <foreach collection="mainNoteIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+                <foreach collection="mainNoteIds" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
             </if>
             <if test="volumeIds != null and volumeIds.size() > 0">
                 AND p.VOLUME_VOLUMENO IN
-                <foreach collection="volumeIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+                <foreach collection="volumeIds" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
             </if>
             <if test="keyword != null and keyword != ''">
                 AND LOWER(p.NAME) LIKE '%' || LOWER(#{keyword}) || '%'
@@ -31,9 +39,7 @@
 
     <!-- ===== 옵션(각 항목별 상품수) ===== -->
     <select id="selectBrandOptions" resultType="map">
-        SELECT b.BRANDNO   AS "id",
-               b.BRANDNAME AS "name",
-               NVL(cnt.cnt, 0) AS "count"
+        SELECT b.BRANDNO AS "id", b.BRANDNAME AS "name", NVL(cnt.cnt, 0) AS "count"
         FROM BRAND b
         LEFT JOIN (
             SELECT p.BRAND_BRANDNO AS id, COUNT(*) AS cnt
@@ -44,9 +50,7 @@
     </select>
 
     <select id="selectGradeOptions" resultType="map">
-        SELECT g.GRADENO   AS "id",
-               g.GRADENAME AS "name",
-               NVL(cnt.cnt, 0) AS "count"
+        SELECT g.GRADENO AS "id", g.GRADENAME AS "name", NVL(cnt.cnt, 0) AS "count"
         FROM GRADE g
         LEFT JOIN (
             SELECT p.GRADE_GRADENO AS id, COUNT(*) AS cnt
@@ -57,9 +61,7 @@
     </select>
 
     <select id="selectMainNoteOptions" resultType="map">
-        SELECT m.MAINNOTENO   AS "id",
-               m.MAINNOTENAME AS "name",
-               NVL(cnt.cnt, 0) AS "count"
+        SELECT m.MAINNOTENO AS "id", m.MAINNOTENAME AS "name", NVL(cnt.cnt, 0) AS "count"
         FROM MAINNOTE m
         LEFT JOIN (
             SELECT p.MAINNOTE_MAINNOTENO AS id, COUNT(*) AS cnt
@@ -70,9 +72,7 @@
     </select>
 
     <select id="selectVolumeOptions" resultType="map">
-        SELECT v.VOLUMENO   AS "id",
-               v.VOLUMENAME AS "name",
-               NVL(cnt.cnt, 0) AS "count"
+        SELECT v.VOLUMENO AS "id", v.VOLUMENAME AS "name", NVL(cnt.cnt, 0) AS "count"
         FROM VOLUME v
         LEFT JOIN (
             SELECT p.VOLUME_VOLUMENO AS id, COUNT(*) AS cnt
@@ -84,22 +84,42 @@
 
     <!-- ===== 카운트 ===== -->
     <select id="countProducts" resultType="long" parameterType="map">
-        SELECT COUNT(*) FROM PRODUCT p
+        SELECT COUNT(*)
+        FROM PRODUCT p
         <include refid="productWhere"/>
     </select>
 
-    <!-- ===== 목록(카드에 필요한 최소 필드) ===== -->
+    <!-- ===== 목록(카드 최소 필드) ===== -->
     <select id="selectProducts" resultType="map" parameterType="map">
         SELECT
-            p.ID          AS "id",
-            p.NAME        AS "name",
-            p.SELLPRICE   AS "sellPrice",
+            p.ID   AS "id",
+            p.NAME AS "name",
+            p.SELLPRICE AS "sellPrice",
             (NVL(p.IMGPATH, '/img/') || NVL(p.IMGNAME, 'default.png')) AS "imgUrl",
-            b.BRANDNAME   AS "brandName"
+            b.BRANDNAME AS "brandName"
         FROM PRODUCT p
         LEFT JOIN BRAND b ON b.BRANDNO = p.BRAND_BRANDNO
         <include refid="productWhere"/>
         ORDER BY p.ID DESC
+    </select>
+
+    <!-- ====== 브랜드 페이지용 ====== -->
+    <select id="selectBrands" resultType="map">
+        SELECT
+            b.BRANDNO  AS "id",
+            b.BRANDNAME AS "name",
+            (NVL(b.IMGPATH, '/img/brand/') || NVL(b.IMGNAME, 'default.png')) AS "imgUrl"
+        FROM BRAND b
+        ORDER BY b.BRANDNO
+    </select>
+
+    <select id="selectBrandById" parameterType="long" resultType="map">
+        SELECT
+            b.BRANDNO  AS "id",
+            b.BRANDNAME AS "name",
+            (NVL(b.IMGPATH, '/img/brand/') || NVL(b.IMGNAME, 'default.png')) AS "imgUrl"
+        FROM BRAND b
+        WHERE b.BRANDNO = #{brandNo}
     </select>
 
 </mapper>

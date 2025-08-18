@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+  <meta charset="UTF-8">
+  <title>22°C - Brand Detail</title>
+  <th:block layout:fragment="css">
+    <link rel="stylesheet" th:href="@{/css/list.css}">
+  </th:block>
+</head>
+<body>
+<th:block layout:fragment="content">
+
+  <div class="container-fluid">
+    <!-- 상단 브랜드 타이틀 -->
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <img th:src="${brand['imgUrl']}" th:alt="${brand['name']}"
+           style="width:56px;height:56px;border-radius:50%;object-fit:cover;">
+      <h3 class="mb-0" th:text="${brand['name']}">브랜드명</h3>
+    </div>
+
+    <div class="small text-secondary mb-3">
+      검색결과 <span th:text="${total}">0</span>개
+    </div>
+
+    <!-- 상품 카드 (리스트와 동일 포맷) -->
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3">
+      <div class="col" th:each="p : ${products}">
+        <div class="card h-100 shadow-sm" style="border-radius: 1rem;">
+          <img th:src="${p['imgUrl']}" th:alt="${p['name']}" class="w-100"
+               style="aspect-ratio:3/4;object-fit:cover;border-top-left-radius:1rem;border-top-right-radius:1rem;">
+          <div class="card-body p-2">
+            <div class="small text-secondary" th:text="${p['brandName']}">Brand</div>
+            <div class="fw-semibold text-truncate" th:title="${p['name']}" th:text="${p['name']}">Name</div>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+              <div class="fw-bold" th:text="${#numbers.formatInteger(p['sellPrice'],3,'COMMA')} + '원'">0원</div>
+              <a class="stretched-link" th:href="@{'/main/content/' + ${p['id']}}"></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</th:block>
+</body>
+</html>
