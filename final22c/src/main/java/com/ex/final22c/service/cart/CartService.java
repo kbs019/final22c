@@ -104,7 +104,7 @@ public class CartService {
     public List<CartLine> findMyCart(String userName){
         Cart cart = cartRepository.findByUser_UserName(userName)
                 .orElseThrow(() -> new IllegalStateException("장바구니가 없습니다."));
-        return cartDetailRepository.findAllByCart_CartId(cart.getCartId())
+        return cartDetailRepository.findAllByCart_CartIdOrderByCreateDateDesc(cart.getCartId())
                 .stream()
                 .map(CartLine::from) 
                 .toList();
