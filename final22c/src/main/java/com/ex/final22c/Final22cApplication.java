@@ -5,7 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 @org.mybatis.spring.annotation.MapperScan(
-    basePackages = "com.ex.final22c.repository.productMapper",
+    basePackages = { 
+        "com.ex.final22c.repository.productMapper", 
+        "com.ex.final22c.repository.cart"
+    },
     annotationClass = org.apache.ibatis.annotations.Mapper.class
 )
 public class Final22cApplication {
