@@ -1,0 +1,141 @@
+<html layout:decorate="~{/layout/layout}">
+<div layout:fragment="content" class="container my-4">
+    <h2 class="text-center mb-4" th:text="${product != null ? '상품 수정' : '상품 등록'}"></h2>
+    <div class="row">
+        <div class="col-md-8 col-lg-6 mx-auto">
+            <form action="/admin/productForm"
+                  method="post" enctype="multipart/form-data">
+
+                <!-- 상품 ID (수정용, hidden) -->
+                <input type="hidden" name="id" th:value="${product != null ? product.id : ''}"/>
+
+                <!-- 브랜드 -->
+                <div class="mb-3">
+                    <label class="form-label">브랜드</label>
+                    <input type="text" class="form-control"
+                           th:value="${brand != null ? brand.brandName : ''}"
+                           readonly>
+                    <input type="hidden" name="brandNo"
+                           th:value="${brand != null ? brand.id : ''}">
+                </div>
+
+                <!-- 상품명 -->
+                <div class="mb-3">
+                    <label class="form-label">상품명</label>
+                    <input type="text" name="name" class="form-control"
+                           placeholder="상품명 50ml"
+                           th:value="${product != null ? product.name : ''}" required>
+                </div>
+
+                <!-- 상품 이미지 -->
+                <div class="mb-3">
+                    <label class="form-label">상품 이미지</label>
+                    <input type="file" name="imgName" class="form-control" accept="image/*">
+                    <div th:if="${product != null && product.imgName != null}" class="mt-2">
+                        <small class="text-muted">현재 이미지</small>
+                        <img th:src="@{${product.imgPath} + ${product.imgName}}"  class="img-fluid"/>
+                    </div>
+                </div>
+
+                <!-- 재고 -->
+                <div class="mb-3">
+                    <label class="form-label">재고</label>
+                    <input type="number" name="count" class="form-control" min="0"
+                           th:value="${product != null ? product.count : ''}">
+                </div>
+
+                <!-- 정가 -->
+                <div class="mb-3">
+                    <label class="form-label">정가</label>
+                    <input type="number" name="price" class="form-control" min="0" required
+                           th:value="${product != null ? product.price : ''}">
+                </div>
+
+                <!-- 할인율 -->
+                <div class="mb-3">
+                    <label class="form-label">할인율(%)</label>
+                    <input type="number" name="discount" class="form-control" step="0.01" min="0" max="100"
+                           th:value="${product != null ? product.discount : ''}">
+                </div>
+
+                <!-- 그레이드 -->
+                <div class="mb-3">
+                    <label class="form-label">그레이드</label>
+                    <select name="gradeNo" class="form-select" required>
+                        <option value="" disabled th:selected="${product == null}">그레이드 선택</option>
+                        <option th:each="grade : ${grades}"
+                                th:value="${grade.gradeNo}"
+                                th:text="${grade.gradeName}"
+                                th:selected="${product != null} ? ${product.grade.gradeNo} == ${grade.gradeNo} : false">
+                        </option>
+                    </select>
+                </div>
+
+                <!-- 메인노트 -->
+                <div class="mb-3">
+                    <label class="form-label">메인노트</label>
+                    <select name="mainNoteNo" class="form-select" required>
+                        <option value="" disabled th:selected="${product == null}">메인노트 선택</option>
+                        <option th:each="note : ${mainNotes}"
+                                th:value="${note.mainNoteNo}"
+                                th:text="${note.mainNoteName}"
+                                th:selected="${product != null} ? ${product.mainNote.mainNoteNo} == ${note.mainNoteNo} : false">
+                        </option>
+                    </select>
+                </div>
+
+                <!-- 용량 -->
+                <div class="mb-3">
+                    <label class="form-label">용량</label>
+                    <select name="volumeNo" class="form-select" required>
+                        <option value="" disabled th:selected="${product == null}">용량 선택</option>
+                        <option th:each="vol : ${volumes}"
+                                th:value="${vol.volumeNo}"
+                                th:text="${vol.volumeName}"
+                                th:selected="${product != null} ? ${product.volume.volumeNo} == ${vol.volumeNo} : false">
+                        </option>
+                    </select>
+                </div>
+
+                <!-- 싱글노트 -->
+                <div class="mb-3">
+                    <label class="form-label">싱글노트</label>
+                    <input type="text" name="singleNote" class="form-control"
+                           th:value="${product != null ? product.singleNote : ''}">
+                </div>
+
+                <!-- 베이스노트 -->
+                <div class="mb-3">
+                    <label class="form-label">베이스노트</label>
+                    <input type="text" name="baseNote" class="form-control"
+                           th:value="${product != null ? product.baseNote : ''}">
+                </div>
+
+                <!-- 미들노트 -->
+                <div class="mb-3">
+                    <label class="form-label">미들노트</label>
+                    <input type="text" name="middleNote" class="form-control"
+                           th:value="${product != null ? product.middleNote : ''}">
+                </div>
+
+                <!-- 탑노트 -->
+                <div class="mb-3">
+                    <label class="form-label">탑노트</label>
+                    <input type="text" name="topNote" class="form-control"
+                           th:value="${product != null ? product.topNote : ''}">
+                </div>
+
+                <!-- 향설명 -->
+                <div class="mb-3">
+                    <label class="form-label">향 설명</label>
+                    <textarea name="description" class="form-control" rows="4"
+                              th:text="${product != null ? product.description : ''}"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100"
+                        th:text="${product != null ? '상품 수정' : '상품 등록'}"></button>
+            </form>
+        </div>
+    </div>
+</div>
+</html>
