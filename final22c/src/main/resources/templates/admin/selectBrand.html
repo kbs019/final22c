@@ -1,71 +1,64 @@
 <html layout:decorate="~{/layout/layout}">
 <div layout:fragment="content" class="container">
-	<div class="container my-4">
-	    <h2 class="text-center mb-4">상품 등록</h2>
-	    <div class="row">
-	        <div class="col-md-6 col-lg-5 mx-auto">
-	            <form id="productForm" action="/admin/save" method="post" enctype="multipart/form-data">
-	                
-	                <!-- 브랜드 선택 -->
-	                <div class="mb-3">
-	                    <label class="form-label">브랜드</label>
-	                    <select id="brandSelect" name="brandId" class="form-select">
-	                        <option value="">브랜드 선택</option>
-	                        <option th:each="brand : ${brands}" 
-	                                th:value="${brand.id}" 
-	                                th:text="${brand.brandName}"></option>
-	                        <option value="new">+ 새로운 브랜드 등록</option>
-	                    </select>
-	                </div>
+    <div class="container my-4">
+        <h2 class="text-center mb-4">브랜드 선택</h2>
+        <div class="row">
+            <div class="col-md-6 col-lg-5 mx-auto">
 
-	                <!-- 새 브랜드 입력 -->
-	                <div id="newBrandInput" class="mb-3" style="display:none;">
-	                    <input type="text" name="newBrand" class="form-control mb-2" placeholder="새 브랜드명">
-	                    <input type="file" name="imgName" class="form-control" accept="image/*">
-	                </div>
+                <!-- 기존 브랜드 선택 -->
+                <div class="mb-3">
+                    <label class="form-label">브랜드</label>
+                    <select id="brandSelect" class="form-select">
+                        <option value="">브랜드 선택</option>
+                        <option th:each="brand : ${brands}"
+                                th:value="${brand.id}"
+                                th:text="${brand.brandName}"></option>
+                        <option value="new">+ 새로운 브랜드 등록</option>
+                    </select>
+                </div>
 
-	                <!-- hidden: 최종 브랜드 ID -->
-	                <input type="hidden" id="finalBrandId" name="finalBrandId">
+                <!-- 새 브랜드 입력 -->
+                <form id="newBrandForm" action="/admin/save" method="post" enctype="multipart/form-data" style="display:none;">
+                    <div class="mb-3">
+                        <input type="text" name="brandName" class="form-control mb-2" placeholder="새 브랜드명">
+                        <input type="file" name="imgName" class="form-control" accept="image/*">
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">새 브랜드 등록</button>
+                </form>
 
-	                <button type="submit" class="btn btn-primary w-100">등록</button>
-	            </form>
-	        </div>
-	    </div>
-	</div>
-<script>
+                <!-- 기존 브랜드 선택 후 이동 버튼 -->
+                <button id="goProductBtn" class="btn btn-primary w-100 mt-3" style="display:none;">
+                    해당 브랜드로 상품 등록
+                </button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script layout:fragment="script" type="text/javascript">
 document.getElementById("brandSelect").addEventListener("change", function() {
-	    const newBrandInput = document.getElementById("newBrandInput");
-	    if (this.value === "new") {
-	        newBrandInput.style.display = "block";
-	    } else {
-	        newBrandInput.style.display = "none";
-	    }
-	});
+    const newBrandForm = document.getElementById("newBrandForm");
+    const goProductBtn = document.getElementById("goProductBtn");
 
-	document.getElementById("productForm").addEventListener("submit", function(e){
-	    const brandSelect = document.getElementById("brandSelect");
-	    const finalBrandId = document.getElementById("finalBrandId");
+    if (this.value === "new") {
+        newBrandForm.style.display = "block";
+        goProductBtn.style.display = "none";
+    } else if (this.value !== "") {
+        newBrandForm.style.display = "none";
+        goProductBtn.style.display = "block";
+    } else {
+        newBrandForm.style.display = "none";
+        goProductBtn.style.display = "none";
+    }
+});
 
-	    if (brandSelect.value === "new") {
-	        e.preventDefault(); // 폼 제출 막기
-
-	        const formData = new FormData();
-	        formData.append("brandName", newBrandInput.querySelector("input[name='newBrand']").value);
-	        formData.append("imgName", newBrandInput.querySelector("input[name='imgName']").files[0]);
-
-	        fetch("/admin/save", {
-	            method: "POST",
-	            body: formData
-	        })
-	        .then(res => res.json())
-	        .then(data => {
-	            finalBrandId.value = data.id; // 새 브랜드 ID 세팅
-	            brandSelect.value = data.id;   // select 값도 새 브랜드 ID로 변경
-	            this.submit(); // 다시 폼 제출
-	        });
-	    } else {
-	        finalBrandId.value = brandSelect.value; // 기존 브랜드
-	    }
-	});
-	</script>
+// 기존 브랜드 선택 후 버튼 클릭 시 상품 등록 페이지 이동
+document.getElementById("goProductBtn").addEventListener("click", function() {
+    const brandId = document.getElementById("brandSelect").value;
+    if (brandId) {
+        window.location.href = "/admin/productForm?brandId=" + brandId;
+    }
+});
+</script>
 </html>
