@@ -1,7 +1,10 @@
 package com.ex.final22c.service.cart;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -9,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.data.cart.Cart;
+import com.ex.final22c.data.cart.CartDetail;
 import com.ex.final22c.data.cart.CartLine;
 import com.ex.final22c.data.cart.CartView;
 import com.ex.final22c.data.product.Product;
@@ -93,5 +97,48 @@ public class CartService {
                 .collect(Collectors.toList());
 
         return CartView.of(lines); // subtotal, grandTotal(= subtotal + 3000 or 0) 계산됨
+    }
+
+    /** 장바구니 목록 조회 */ 
+    @Transactional(readOnly = true)
+    public List<CartLine> findMyCart(String userName){
+        Cart cart = cartRepository.findByUser_UserName(userName)
+                .orElseThrow(() -> new IllegalStateException("장바구니가 없습니다."));
+        return cartDetailRepository.findAllByCart_CartId(cart.getCartId())
+                .stream()
+                .map(CartLine::from) 
+                .toList();
+    }
+
+    // ==================================================================================================================================================
+    
+    public record SelectionItem(Long cartDetailId, int quantity) {}  // ← 서비스가 받는 DTO
+
+    @Transactional(readOnly = true)
+    public CheckoutSummary prepareCheckout(String username, List<SelectionItem> items){
+        int total = 0;
+        for (SelectionItem it : items) {
+            CartDetail d = cartDetailRepository.findById(it.cartDetailId())
+                    .orElseThrow();
+            if (!d.getCart().getUser().getUserName().equals(username))
+                throw new SecurityException("본인 장바구니 아님");
+            total += d.getUnitPrice() * it.quantity();
+        }
+        return new CheckoutSummary(items, total);
+    }
+
+    public record CheckoutSummary(List<SelectionItem> items, int total) {}
+
+    // ================================================================================
+    @Transactional
+    public int removeAll(String username, List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return 0;
+        Set<Long> targetIds = ids.stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        long deleted = cartDetailRepository
+            .deleteByCartDetailIdInAndCart_User_UserName(targetIds, username);
+        return (int) deleted;
     }
 }

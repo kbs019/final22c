@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.ex.final22c.data.cart.CartView;
+import com.ex.final22c.data.cart.IdsPayload;
 import com.ex.final22c.service.cart.CartService;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,16 @@ public class CartController {
     public record AddCartResponse(int count) {
     }
 
+    // ------- 헬퍼 -------
+    private String requireLogin(Principal principal) {
+        if (principal == null || principal.getName() == null || principal.getName().isBlank())
+            throw new RuntimeException("로그인이 필요합니다.");
+        // 보수적으로 익명 토큰 방지
+        if ("anonymousUser".equalsIgnoreCase(principal.getName()))
+            throw new RuntimeException("로그인이 필요합니다.");
+        return principal.getName();
+    }
+
     @PostMapping("/add")
     public ResponseEntity<?> add(
             Principal principal,
@@ -44,13 +56,25 @@ public class CartController {
         return ResponseEntity.ok(new AddCartResponse(count));
     }
 
+    // 목록 페이지
     @GetMapping("/list")
-    public String list(Principal principal, Model model) {
-        if (principal == null)
-            return "redirect:/login";
+    public String list(Model model, Principal principal) {
+        String userName = requireLogin(principal);
+        model.addAttribute("products", cartService.findMyCart(userName));
+        return "cart/list";
+    }
 
-        CartView view = cartService.getCartView(principal.getName()); 
-        model.addAttribute("view", view);
-        return "/cart/list"; // templates/cart/list.html
+
+    /** 선택 삭제 (AJAX) */
+    @PostMapping("/remove")
+    @ResponseBody
+    public ResponseEntity<Void> remove(@RequestBody IdsPayload payload, Principal principal) {
+        if (payload == null || payload.getIds() == null || payload.getIds().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        int n = cartService.removeAll(principal.getName(), payload.getIds());
+        return ResponseEntity.noContent()
+            .header("X-Deleted-Count", String.valueOf(n))
+            .build();
     }
 }
