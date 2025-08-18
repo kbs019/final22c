@@ -22,6 +22,7 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     
     // 유저목록 (페이징,검색)
     Page<Users> findAll(Specification<Users> spec,Pageable pageable);
+
 }
 
 
