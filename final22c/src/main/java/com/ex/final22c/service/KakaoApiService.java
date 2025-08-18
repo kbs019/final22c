@@ -162,7 +162,71 @@ public class KakaoApiService {
     	        throw new IllegalStateException("KakaoPay CANCEL 실패: " + e.getResponseBodyAsString(), e);
     	}
     }
-    
+    // 장바구니 다건 
+    public Map<String, Object> readyCart(Order order) {
+        if (order == null) throw new IllegalArgumentException("order가 null입니다.");
+        int payable = order.getTotalAmount();
+        if (payable <= 0) throw new IllegalStateException("결제 총액이 0원 이하입니다.");
+
+        String partnerOrderId = String.valueOf(order.getOrderId());
+        String partnerUserId  = (order.getUser() != null ? order.getUser().getUserName() : "GUEST");
+
+        // item_name: "첫상품명 외 N건"
+        String itemName;
+        int size = (order.getDetails() != null ? order.getDetails().size() : 0);
+        if (size == 0) {
+            itemName = "장바구니";
+        } else {
+            String first = order.getDetails().get(0).getProduct().getName();
+            itemName = (size > 1) ? first + " 외 " + (size - 1) + "건" : first;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "SECRET_KEY " + secretKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("cid", "TC0ONETIME");
+        body.put("partner_order_id", partnerOrderId);
+        body.put("partner_user_id", partnerUserId);
+        body.put("item_name", itemName);
+        body.put("quantity", 1);                // 장바구니는 합산 1건으로 처리
+        body.put("total_amount", payable);      // = itemsTotal + 3000 - usedPoint (스냅샷)
+        body.put("tax_free_amount", 0);
+
+        String base = "http://localhost:8080";
+        body.put("approval_url", base + "/pay/success?orderId=" + partnerOrderId);
+        body.put("cancel_url",   base + "/pay/cancel?orderId="  + partnerOrderId);
+        body.put("fail_url",     base + "/pay/fail?orderId="    + partnerOrderId);
+
+        RestTemplate rt = new RestTemplateBuilder()
+                .setConnectTimeout(Duration.ofSeconds(5))
+                .setReadTimeout(Duration.ofSeconds(5))
+                .build();
+
+        try {
+            ResponseEntity<Map<String, Object>> res = rt.postForEntity(
+                    HOST + "/ready",
+                    new HttpEntity<>(body, headers),
+                    (Class<Map<String, Object>>)(Class<?>)Map.class
+            );
+
+            Map<String, Object> result = res.getBody();
+            if (result == null) result = new LinkedHashMap<>();
+
+            String tid = (String) result.get("tid");
+            // PENDING 상태의 결제 레코드 저장 (단건과 동일)
+            paymentService.saveReady(order, payable, tid);
+
+            result.put("orderId", order.getOrderId());
+            return result;
+
+        } catch (HttpStatusCodeException e) {
+            System.err.println("[KAKAO READY CART ERROR] " + e.getResponseBodyAsString());
+            throw new IllegalStateException("KakaoPay READY 실패: " + e.getResponseBodyAsString(), e);
+        }
+    }
     
     
     

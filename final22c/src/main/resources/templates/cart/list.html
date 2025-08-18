@@ -68,7 +68,7 @@
                 <div><strong id="selTotal">0원</strong></div>
             </div>
             <hr>
-            <form id="checkoutForm" th:action="@{/checkout/order}" method="post">
+            <form id="checkoutForm" th:action="@{/checkout/order/cart}" method="post">
                 <!-- CSRF (폼용) -->
                 <!-- <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"> -->
                 <!-- 동적 hidden은 JS가 채움 -->
@@ -197,11 +197,11 @@
                 selected.forEach((s, i) => {
                     const h1 = document.createElement('input');
                     h1.type = 'hidden'; h1.className = 'dyn';
-                    h1.name = `cartItems[${i}].cartDetailId`; h1.value = s.id; form.appendChild(h1);
+                    h1.name = `items[${i}].cartDetailId`; h1.value = s.id; form.appendChild(h1);
 
                     const h2 = document.createElement('input');
                     h2.type = 'hidden'; h2.className = 'dyn';
-                    h2.name = `cartItems[${i}].quantity`; h2.value = s.qty; form.appendChild(h2);
+                    h2.name = `items[${i}].quantity`; h2.value = s.qty; form.appendChild(h2);
                 });
 
                 form.submit();

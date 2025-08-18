@@ -1,5 +1,6 @@
 package com.ex.final22c.service.order;
 
+import com.ex.final22c.data.cart.CartLine;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.product.Product;
@@ -9,6 +10,10 @@ import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.ProductService;
 
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.Objects;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +25,7 @@ public class OrderService {
     private final ProductService productService;
     private final UserRepository usersRepository;
 
-
+    private static final int SHIPPING_FEE = 3000;
     /** 결제 대기 주문 생성 (포인트/배송비 반영) */
     @Transactional
     public Order createPendingOrder(String userId, long productId, int qty, int usedPoint) {
@@ -35,10 +40,9 @@ public class OrderService {
         int lineTotal = unitPrice * quantity;
 
         int owned = (user.getMileage() == null) ? 0 : user.getMileage();
-        int shipping = 3000;
-        int maxUsable = Math.min(owned, lineTotal + shipping); // 마일리지는 결제금액을 넘길 수 없음
+        int maxUsable = Math.min(owned, lineTotal + SHIPPING_FEE); // 마일리지는 결제금액을 넘길 수 없음
         int use   = Math.max(0, Math.min(usedPoint, maxUsable));
-        int payable = lineTotal + shipping - use;
+        int payable = lineTotal + SHIPPING_FEE - use;
 
         Order order = new Order();
         order.setUser(user);
@@ -125,5 +129,50 @@ public class OrderService {
     	// order 상태 (Paid -> canceled)
     	order.setStatus("CANCELED");
     	orderRepository.saveAndFlush(order);
+    }
+    /** 장바구니(다건) 결제 대기 주문 생성 */
+    @Transactional
+    public Order createCartPendingOrder(String userId,
+                                        List<CartLine> lines,
+                                        int itemsTotal,   // 상품 합계(서버 재계산 값)
+                                        int shipping,     // 일반적으로 3000
+                                        int usedPoint,    // 사용 포인트(서버에서 클램프)
+                                        int payableHint   // 프론트 계산 값(참고만, 서버가 재계산)
+    ) {
+        if (lines == null || lines.isEmpty()) {
+            throw new IllegalArgumentException("선택된 상품이 없습니다.");
+        }
+
+        Users user = usersRepository.findByUserName(userId)
+                .orElseThrow(() -> new IllegalStateException("로그인이 필요합니다. userId=" + userId));
+
+        // --- 포인트/결제금액 서버 재계산(신뢰 근거)
+        int owned = Objects.requireNonNullElse(user.getMileage(), 0);
+        int ship  = Math.max(0, shipping);            // 보통 3000 (비어있으면 0)
+        int maxUsable = Math.min(owned, itemsTotal + ship);
+        int use = Math.max(0, Math.min(usedPoint, maxUsable));
+        int payable = Math.max(0, itemsTotal + ship - use);
+
+        Order order = new Order();
+        order.setUser(user);
+        order.setUsedPoint(use);
+        order.setTotalAmount(payable);   // 스냅샷 결제금액
+        // status/regDate 는 엔티티의 @PrePersist 로 PENDING/now 설정된다고 가정
+
+        // --- 라인 스냅샷 저장
+        for (CartLine l : lines) {
+            Product p = productService.getProduct(l.getId()); // 영속 엔티티 참조
+            int qty = Math.max(1, l.getQuantity());
+            int unit = l.getUnitPrice();
+
+            OrderDetail d = new OrderDetail();
+            d.setProduct(p);
+            d.setQuantity(qty);
+            d.setSellPrice(unit);                 // 당시 단가 스냅샷
+            d.setTotalPrice(unit * qty);          // 라인 합계
+            order.addDetail(d);                   // 양방향 편의 메서드 사용
+        }
+
+        return orderRepository.save(order);
     }
 }
