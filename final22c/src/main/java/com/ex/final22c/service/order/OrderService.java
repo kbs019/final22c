@@ -1,6 +1,7 @@
 package com.ex.final22c.service.order;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
@@ -31,12 +32,14 @@ public class OrderService {
         if (p == null) throw new IllegalArgumentException("상품 없음: " + productId);
 
         int quantity  = Math.max(1, qty);
-        int unitPrice = (int)Math.round(p.getPrice() * 0.7);
+        int unitPrice = p.getSellPrice();
         int lineTotal = unitPrice * quantity;
 
         int owned = (user.getMileage() == null) ? 0 : user.getMileage();
-        int use   = Math.max(0, Math.min(usedPoint, Math.min(owned, lineTotal + SHIPPING_FEE)));
-        int payable = Math.max(0, lineTotal + SHIPPING_FEE - use);
+        int shipping = 3000;
+        int maxUsable = Math.min(owned, lineTotal + shipping); // 마일리지는 결제금액을 넘길 수 없음
+        int use   = Math.max(0, Math.min(usedPoint, maxUsable));
+        int payable = lineTotal + shipping - use;
 
         Order order = new Order();
         order.setUser(user);
@@ -44,6 +47,13 @@ public class OrderService {
         order.setTotalAmount(payable);     // 스냅샷
         // status, regDate 는 @PrePersist 로 PENDING/now 자동 세팅
 
+        OrderDetail d = new OrderDetail();
+        d.setProduct(p);
+        d.setQuantity(quantity);
+        d.setSellPrice(unitPrice);
+        d.setTotalPrice(lineTotal);
+        order.addDetail(d);
+        
         return orderRepository.save(order);
     }
 
@@ -64,12 +74,18 @@ public class OrderService {
     @Transactional
     public void markPaid(Long orderId) {
         Order o = get(orderId);
-        if ("PAID".equalsIgnoreCase(o.getStatus())) return; // 멱등
+        if ("PAID".equalsIgnoreCase(o.getStatus())) return; 
+        
+        int used = o.getUsedPoint();
+        if (used > 0) {
+        	Long userNo = o.getUser().getUserNo();
+        	int updated = usersRepository.deductMileage(userNo, used);
+        	if (updated != 1) throw new IllegalStateException("마일리지 차감 실패/부족");
+        }
+        
+        for (OrderDetail d : o.getDetails()) productService.decreaseStock(d.getProduct().getId(), d.getQuantity());
+
         o.setStatus("PAID");
-        // TODO: 여기서 재고 차감/판매량 증가/포인트 차감 등을 처리
-        // e.g. usersRepository.updateMileage(o.getUser().getUserNo(), -o.getUsedPoint());
-        //      productService.decreaseStock(...);
-        //      paymentService.linkOrderPaid(...);
     }
 
     /** 사용자 취소(팝업 닫힘 감지 등) — PENDING일 때만 취소 */

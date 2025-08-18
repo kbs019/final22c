@@ -49,7 +49,9 @@ public class CheckOutController {
                         HttpSession session,
                         Principal principal,
                         Model model) {
-
+	 if(principal == null) {
+		 return "redirect:/user/login";
+	 }
 	 
      Integer qty = (Integer) session.getAttribute(key(id));
      if (qty == null || qty <= 0) qty = 1;   // 기본값
