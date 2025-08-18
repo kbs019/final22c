@@ -24,14 +24,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 			""")
 	int decreaseStock(@Param("productId") Long productId,@Param("qty") int qty);
 	
-	/*
+	
 	// 재고 롤백(추후 취소/환불 구현시)
 	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Query("""
-			update product p
+			update Product p
 				set p.count = p.count + :qty
 				where p.id = :productId
 			""")
 	int increaseStock(@Param("productId") Long productId, @Param("qty") int qty);
-	*/
 }

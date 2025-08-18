@@ -128,4 +128,46 @@ public class KakaoApiService {
             throw new IllegalStateException("KakaoPay APPROVE 실패: " + e.getResponseBodyAsString(), e);
         }
     }
+    
+    // 결제 취소
+    public Map<String, Object> cancel(String tid, int cancelAmount, String reason){
+    	HttpHeaders headers = new HttpHeaders();
+    	headers.set("Authorization", "SECRET_KEY " + secretKey);
+    	headers.setContentType(MediaType.APPLICATION_JSON);
+    	headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
+    	
+    	Map<String, Object> body = new LinkedHashMap<>();
+    	body.put("cid", "TC0ONETIME");	// 테스트 버전
+    	body.put("tid", tid);			// 결제 고유번호
+    	body.put("cancel_amount", cancelAmount);	// 취소 금액
+    	body.put("cancel_tax_free_amount", 0);	// 면세금액 없어도 써줌..
+    	if(reason != null && !reason.isBlank()) {
+    		body.put("payload", reason);	// 취소 사유
+    	}
+    	
+    	RestTemplate rt = new RestTemplateBuilder()
+    			.setConnectTimeout(Duration.ofSeconds(5))
+    			.setReadTimeout(Duration.ofSeconds(5))
+    			.build();
+    	try {
+    		ResponseEntity<Map<String, Object>> res = rt.postForEntity(
+    				HOST + "/cancel",
+    				new HttpEntity<>(body, headers),
+    				(Class<Map<String, Object>>)(Class<?>)Map.class
+    		);
+    		Map<String, Object> result = res.getBody();
+    		return(result != null) ? result : new LinkedHashMap<>();
+    	}catch(HttpStatusCodeException e) {
+    		 System.err.println("[KAKAO CANCEL ERROR] " + e.getResponseBodyAsString());
+    	        throw new IllegalStateException("KakaoPay CANCEL 실패: " + e.getResponseBodyAsString(), e);
+    	}
+    }
+    
+    
+    
+    
+    
+    
+    
+    
 }

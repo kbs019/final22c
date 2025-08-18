@@ -4,6 +4,7 @@ import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.service.KakaoApiService;
 import com.ex.final22c.service.order.OrderService;
+import com.ex.final22c.service.payment.PayCancelService;
 import com.ex.final22c.service.payment.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ public class PayController {
     private final OrderService orderService;
     private final KakaoApiService kakaoApiService;
     private final PaymentService paymentService;
+    private final PayCancelService payCancelService;
 
     @PostMapping("/ready")
     @ResponseBody
@@ -50,24 +52,28 @@ public class PayController {
                           @RequestParam("orderId") Long orderId,
                           Principal principal,
                           Model model) {
+        try {
+            String userId = (principal != null ? principal.getName() : "GUEST");
 
-        String userId = (principal != null ? principal.getName() : "GUEST");
+            // 1) 카카오 승인 (내부에서 paymentService.markSuccess 호출만 수행)
+            Map<String, Object> result = kakaoApiService.approve(
+                    paymentService.getLatestByOrderId(orderId).getTid(),
+                    String.valueOf(orderId),
+                    userId,
+                    pgToken
+            );
 
-        Payment pay = paymentService.getLatestByOrderId(orderId);
+            // 2) 주문 처리 (차감/재고/상태)
+            orderService.markPaid(orderId);
 
-        Map<String, Object> result = kakaoApiService.approve(
-                pay.getTid(),
-                String.valueOf(orderId),
-                userId,
-                pgToken
-        );
-
-        // 승인 완료 → 주문 상태 PAID로 마킹
-        orderService.markPaid(orderId);
-
-        model.addAttribute("orderId", orderId);
-        model.addAttribute("pay", result);
-        return "pay/success-popup"; // postMessage 후 스스로 닫히는 뷰
+            model.addAttribute("orderId", orderId);
+            model.addAttribute("pay", result);
+            return "pay/success-popup";
+        } catch (Exception e) {
+            model.addAttribute("orderId", orderId);
+            model.addAttribute("error", e.getMessage());
+            return "pay/fail-popup";
+        }
     }
 
     @GetMapping("/cancel")
@@ -101,4 +107,30 @@ public class PayController {
         Order o = orderService.get(orderId);
         return Map.of("status", o.getStatus());
     }
+    
+    @PostMapping("/cancel-paid")
+    @ResponseBody
+    public Map<String, Object> cancelPaid(@RequestParam(name="orderId") Long orderId,
+    									  @RequestParam(name="reason", required = false) String reason){
+    	var result = payCancelService.cancelPaid(orderId, reason);
+    	return Map.of("ok", true, "pg", result);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 }
