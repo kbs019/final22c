@@ -1,11 +1,58 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html>
+<!-- templates/mypage/orders.html -->
+<section>
+  <h2>주문내역</h2>
+
+  <div th:if="${orders.content.isEmpty()}">주문 내역이 없습니다.</div>
+
+  <div th:each="o : ${orders.content}" class="card" style="margin-bottom:12px;padding:12px">
+    <div class="summary-row">
+      <div>
+        <strong th:text="'주문번호 #' + ${o.orderId}">#0</strong>
+        <span class="muted" th:text="${#temporals.format(o.regDate, 'yyyy-MM-dd HH:mm')}">date</span>
+      </div>
+      <div>
+        <span th:text="${o.status}">PENDING</span>
+      </div>
+    </div>
+
+    <!-- 금액/마일리지 -->
+    <div class="summary-row">
+      <span>결제금액</span>
+      <strong th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</strong>
+    </div>
+    <div class="summary-row">
+      <span>사용 마일리지</span>
+      <strong th:text="${#numbers.formatInteger(o.usedPoint,0)} + '점'">0점</strong>
+    </div>
+
+    <!-- 상세 품목 (원하면 열어보기로) -->
+    <div th:if="${o.details}">
+      <div th:each="d : ${o.details}" style="display:flex;gap:12px;align-items:center;margin-top:8px">
+        <img th:src="@{|${d.product.imgPath}${d.product.imgName}|}" alt=""
+             style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #eee">
+        <div style="flex:1">
+          <div th:text="${d.product.name}">상품명</div>
+          <div class="muted" th:text="${'수량 ' + d.quantity}">수량</div>
+        </div>
+        <div style="font-weight:700" th:text="${#numbers.formatInteger(d.totalPrice,0)} + '원'">0원</div>
+      </div>
+    </div>
+
+    <!-- 취소 버튼: PAID 일 때만 노출 -->
+    <form th:if="${#strings.equalsIgnoreCase(o.status,'PAID')}"
+          th:action="@{/pay/cancel-paid}" method="post" style="margin-top:10px">
+      <input type="hidden" name="orderId" th:value="${o.orderId}">
+      <input type="text" name="reason" placeholder="취소 사유 (선택)">
+      <button type="submit" class="btn btn-danger">주문취소</button>
+    </form>
+  </div>
+
+  <!-- 페이지네이션 -->
+  <div style="margin-top:12px" th:if="${orders.totalPages > 1}">
+    <a th:each="i : ${#numbers.sequence(0, orders.totalPages-1)}"
+       th:href="@{/mypage/orders(page=${i}, size=${orders.size})}"
+       th:text="${i + 1}"
+       th:classappend="${i == orders.number} ? 'active' : ''"
+       style="margin-right:8px"></a>
+  </div>
+</section>
