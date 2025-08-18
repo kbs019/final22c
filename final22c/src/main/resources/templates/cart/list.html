@@ -26,14 +26,14 @@
                     <input type="checkbox" class="row-check">
 
                     <!-- 이미지/링크 -->
-                    <a th:href="@{|/main/${cartItem.id}|}">
+                    <a th:href="@{|/main/content/${cartItem.id}|}">
                         <img th:src="@{|${cartItem.imgPath}${cartItem.imgName}|}" alt="향수 이미지" width="96" height="96"
                             style="object-fit:cover;border-radius:8px">
                     </a>
 
                     <!-- 정보 -->
                     <div>
-                        <a th:href="@{|/main/${cartItem.id}|}" style="text-decoration:none;color:inherit">
+                        <a th:href="@{|/main/content/${cartItem.id}|}" style="text-decoration:none;color:inherit">
                             <div th:text="${cartItem.name}"></div>
                             <div class="muted" th:text="${cartItem.brand}"></div>
                         </a>
