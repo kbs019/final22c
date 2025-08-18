@@ -8,18 +8,12 @@
       .card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;background:#fff}
       .muted{color:#6b7280}
       .summary-row{display:flex;justify-content:space-between;margin:6px 0}
-
-      /* 전역 버튼 (결제) */
       .btn{width:100%;padding:14px;border-radius:10px;border:0;background:#111;color:#fff;font-weight:700}
       .btn:disabled{opacity:.4}
-
-      /* 포인트 */
       .point-box{display:flex;align-items:center;gap:12px}
       .point-box input{width:160px;max-width:40%;border:1px solid #ddd;border-radius:8px;padding:8px 10px}
       .point-badge{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px}
       .point-use{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb}
-
-      /* 배송정보 */
       .addr-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
       .addr-title{font-size:18px;font-weight:700;margin:0}
       .addr-dl{display:grid;row-gap:10px}
@@ -28,20 +22,28 @@
       .addr-row dd{margin:0;font-size:14px;line-height:1.6;word-break:keep-all}
       .addr-inline{display:flex;align-items:center;justify-content:space-between;gap:10px}
       .addr-inline span{font-weight:500}
-
-      /* addr-card 안의 '변경' 버튼만 짧게 */
       .addr-card .btn{width:auto;padding:3px 30px;font-size:12px;line-height:1.2;border:1px solid #d1d5db;border-radius:4px;background:#f9fafb;color:#333;}
       .addr-card .btn:hover{ background:#f3f4f6; }
-
       @media (max-width:640px){.addr-row{grid-template-columns:90px 1fr}}
-
-      /* 결제 팝업 오버레이 (Bootstrap 모달과 충돌 방지) */
       #payOverlay{ display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,.5); }
       body.overlay-lock{ overflow:hidden; }
+      .line{display:flex;gap:14px;align-items:center;margin-top:10px}
+      .thumb{width:60px;height:60px;border:1px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
     </style>
   </th:block>
 
-  <div layout:fragment="content" th:with="shipping=${3000}, payTotal=${lineTotal + shipping}">
+  <!-- model:
+       - 장바구니 모드: items(List<CartLine>), summary(CartView: subtotal, grandTotal), user, defaultAddr
+       - 단건 모드: product, qty, lineTotal, user, defaultAddr
+  -->
+  <div layout:fragment="content"
+       th:with="
+         isCartMode=${items != null},
+         shippingCart=${items != null ? (summary.grandTotal - summary.subtotal) : 0},
+         shippingSingle=${3000},
+         payTotalSingle=${(lineTotal != null ? lineTotal : 0) + 3000}
+       ">
+
     <div class="checkout-wrap">
       <!-- 배송지 -->
       <div class="card addr-card">
@@ -66,16 +68,8 @@
               </dd>
             </div>
 
-            <div class="addr-row">
-              <dt>받는 분</dt>
-              <dd id="addrRecipient" th:text="${defaultAddr.recipient}">홍길동</dd>
-            </div>
-
-            <div class="addr-row">
-              <dt>휴대폰 번호</dt>
-              <dd id="addrPhone" th:text="${defaultAddr.phone}">01012345678</dd>
-            </div>
-
+            <div class="addr-row"><dt>받는 분</dt><dd id="addrRecipient" th:text="${defaultAddr.recipient}">홍길동</dd></div>
+            <div class="addr-row"><dt>휴대폰 번호</dt><dd id="addrPhone" th:text="${defaultAddr.phone}">01012345678</dd></div>
             <div class="addr-row">
               <dt>주소</dt>
               <dd>
@@ -107,11 +101,33 @@
         </div>
       </div>
 
-      <!-- 주문상품 -->
-      <div class="card">
-        <div class="summary-row"><strong>주문상품</strong><span class="muted">총 1개</span></div>
-        <div style="display:flex;gap:14px;align-items:center;margin-top:10px">
-          <div style="width:60px;height:60px;border:1px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center">
+      <!-- 주문상품 (장바구니 모드) -->
+      <div class="card" th:if="${isCartMode}">
+        <div class="summary-row">
+          <strong>주문상품</strong>
+          <span class="muted" th:text="${'총 ' + items.size() + '개'}">총 n개</span>
+        </div>
+
+        <div th:each="it : ${items}" class="line">
+          <div class="thumb">
+            <img th:src="@{|${it.imgPath}${it.imgName}|}" alt="thumb" style="max-width:100%;max-height:100%;object-fit:cover">
+          </div>
+          <div style="flex:1">
+            <div class="muted" th:text="${'수량 ' + it.quantity}"></div>
+            <div th:text="${it.name}">상품명</div>
+          </div>
+          <div style="font-weight:800"
+               th:text="${#numbers.formatInteger(it.lineTotal,0)} + '원'">0원</div>
+        </div>
+      </div>
+
+      <!-- 주문상품 (단건 모드) -->
+      <div class="card" th:if="${!isCartMode}">
+        <div class="summary-row">
+          <strong>주문상품</strong><span class="muted">총 1개</span>
+        </div>
+        <div class="line">
+          <div class="thumb">
             <img th:src="@{|${product.imgPath}${product.imgName}|}" alt="thumb" style="max-width:100%;max-height:100%;object-fit:cover">
           </div>
           <div style="flex:1">
@@ -134,20 +150,40 @@
         </div>
       </div>
 
-      <!-- 결제 상세 -->
-      <div class="card">
-        <div class="summary-row"><span class="muted">상품금액</span><span th:text="${#numbers.formatInteger(lineTotal,0)}+'원'">0</span></div>
-        <div class="summary-row"><span class="muted">배송비</span><span th:text="${#numbers.formatInteger(shipping,0)}+'원'">3,000</span></div>
+      <!-- 결제 상세 (장바구니 모드) -->
+      <div class="card" th:if="${isCartMode}">
+        <div class="summary-row">
+          <span class="muted">상품금액</span>
+          <span th:text="${#numbers.formatInteger(summary.subtotal,0)}+'원'">0원</span>
+        </div>
+        <div class="summary-row">
+          <span class="muted">배송비</span>
+          <span th:text="${#numbers.formatInteger(shippingCart,0)}+'원'">3,000원</span>
+        </div>
         <div class="summary-row"><span class="muted">사용 마일리지</span><span id="usedPointLabel">0원</span></div>
         <hr style="border:none;border-top:1px solid #eee;margin:10px 0">
-        <div class="summary-row" style="font-weight:800"><span>결제금액</span><span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotal,0)}+'원'"></span></div>
-        <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(payTotal*0.05,0)}+'원'"></span></div>
+        <div class="summary-row" style="font-weight:800"><span>결제금액</span><span id="payTotalLabel" th:text="${#numbers.formatInteger(summary.grandTotal,0)}+'원'"></span></div>
+        <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(summary.grandTotal*0.05,0)}+'원'"></span></div>
 
+        <!-- 다건 결제용 hidden (JS에서 payload 구성) -->
+        <input type="hidden" id="mode" value="cart">
+        <button id="payBtn" class="btn" type="button">결제하기</button>
+      </div>
+
+      <!-- 결제 상세 (단건 모드) -->
+      <div class="card" th:if="${!isCartMode}">
+        <div class="summary-row"><span class="muted">상품금액</span><span th:text="${#numbers.formatInteger(lineTotal,0)}+'원'">0</span></div>
+        <div class="summary-row"><span class="muted">배송비</span><span th:text="${#numbers.formatInteger(shippingSingle,0)}+'원'">3,000</span></div>
+        <div class="summary-row"><span class="muted">사용 마일리지</span><span id="usedPointLabel">0원</span></div>
+        <hr style="border:none;border-top:1px solid #eee;margin:10px 0">
+        <div class="summary-row" style="font-weight:800"><span>결제금액</span><span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotalSingle,0)}+'원'"></span></div>
+        <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(payTotalSingle*0.05,0)}+'원'"></span></div>
+
+        <!-- 단건 hidden -->
+        <input type="hidden" id="mode" value="single">
         <input type="hidden" id="product_id" th:value="${product.id}">
         <input type="hidden" id="qty"        th:value="${qty}">
-        <input type="hidden" id="payTotal"   th:value="${payTotal}">
-        <input type="hidden" id="usedPoint"  value="0">
-
+        <input type="hidden" id="lineTotal"  th:value="${lineTotal}">
         <button id="payBtn" class="btn" type="button">결제하기</button>
       </div>
     </div>
@@ -178,7 +214,7 @@
       </div>
     </div>
 
-    <!-- 새 주소 등록 모달 (체크박스 제거: 항상 기본배송지로 등록) -->
+    <!-- 새 주소 등록 모달 (항상 기본 배송지) -->
     <div class="modal fade" id="addAddrModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
@@ -216,7 +252,6 @@
                   <input type="text" class="form-control form-control-sm" id="f_detailAddress" placeholder="상세주소" required>
                 </div>
 
-                <!-- 다음(카카오) 우편번호 embed 영역 -->
                 <div id="postcodeLayer2" style="display:none; position:relative; height:400px; margin-top:8px; border:1px solid #eee; border-radius:10px;"></div>
               </div>
             </div>
@@ -233,260 +268,317 @@
     <!-- 결제 오버레이 -->
     <div id="payOverlay"></div>
 
-    <!-- jQuery -->
+    <!-- jQuery / Bootstrap / 다음 우편번호 -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- Bootstrap (레이아웃에 이미 있으면 제거) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
-    <!-- 다음(카카오) 우편번호 -->
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
-    <script th:inline="javascript">
-    $(function(){
-      /* ---------- 포인트 ---------- */
-      const owned   = /*[[${user.mileage}]]*/ 0 || 0;
-      const lineSum = (/*[[${lineTotal}]]*/ 0) + (/*[[${shipping}]]*/ 0);
-      const fmt = n => (Math.max(0, Math.trunc(n))).toLocaleString() + '원';
-      $("#usePoint").on("input", function(){ this.value = this.value.replace(/[^\d]/g, ''); });
-      function recalc(use){
-        use = Math.min(Math.max(0, Number(use)||0), owned, lineSum);
-        $("#usePoint").val(use); $("#usedPoint").val(use);
-        $("#usedPointLabel").text(use.toLocaleString() + '원');
-        const pay = Math.max(0, lineSum - use);
-        $("#payTotal").val(pay); $("#payTotalLabel").text(fmt(pay));
-        $("#rewardLabel").text(fmt(Math.trunc(pay * 0.05)));
-      }
-      recalc(0);
-      $("#btnUseAllPoint").on("click", ()=> recalc(Math.min(owned, lineSum)));
-      $("#usePoint").on("input change", function(){ recalc(this.value); });
+	
+	<script th:inline="javascript">
+	$(function(){
+	  /* ================== 안전한 서버 변수 바인딩 ================== */
+	  // 장바구니 모드 여부 (없으면 false)
+	  const isCartMode = /*[[${#ctx.containsVariable('isCartMode') ? isCartMode : false}]]*/ false;
 
-      /* ---------- 배송 요청사항(표시만) ---------- */
-      const $memoSel = $("#deliveryMemoSelect");
-      const $memoInp = $("#deliveryMemoInput");
-      const $memoPreview = $("#deliveryMemoPreview");
-      function syncDeliveryMemo(){
-        const v = $memoSel.val();
-        if (v === "자유입력") { $memoInp.show().focus(); $memoPreview.text($memoInp.val()?.trim() ? $memoInp.val() : "(직접 입력)"); }
-        else { $memoInp.hide().val(""); $memoPreview.text(v ? v : "(요청사항 없음)"); }
-      }
-      if ($memoSel.length) {
-        $memoSel.on("change", syncDeliveryMemo);
-        $memoInp.on("input", function(){ if ($memoSel.val() === "자유입력") $memoPreview.text(this.value.trim() ? this.value : "(직접 입력)"); });
-        syncDeliveryMemo();
-      }
+	  // 보유 포인트 (user 없거나 mileage null일 때 0)
+	  const owned = /*[[${#ctx.containsVariable('user') && user.mileage != null ? user.mileage : 0}]]*/ 0;
 
-      /* ---------- 주소 선택 모달 ---------- */
-      const addrModalEl = document.getElementById('addrModal');
-      const addrModal   = new bootstrap.Modal(addrModalEl);
-      addrModalEl.addEventListener('show.bs.modal', () => { loadAddressList(); });
-      addrModalEl.addEventListener('hidden.bs.modal', () => { document.body.classList.remove('modal-open'); document.body.style.removeProperty('padding-right'); $('.modal-backdrop').remove(); });
+	  // 합계 산출용: 장바구니/단건 각각 모델 키가 없을 수 있으니 반드시 안전 가드
+	  const cartSubtotal  = /*[[${#ctx.containsVariable('summary') ? summary.subtotal : 0}]]*/ 0;
+	  const singleLineSum = /*[[${#ctx.containsVariable('lineTotal') ? lineTotal : 0}]]*/ 0;
 
-      function loadAddressList(){
-        const currentNo = $("#currentAddressNo").val();
-        $("#addrList").html('<div class="text-muted">불러오는 중…</div>');
-        $("#addrDefaultBox").empty();
-        $.get("/mypage/address/list")
-          .done(function(res){
-            const arr = (res && res.addresses) || [];
-            const def = arr.find(a => a.isDefault === 'Y');
-            if (def) {
-              $("#addrDefaultBox").html(`
-                <div class="fw-bold mb-1">기본 배송지</div>
-                <div>${esc(def.addressName||'')}</div>
-                <div>${esc(def.recipient||'')} / ${esc(def.phone||'')}</div>
-                <div>(${esc(def.zonecode||'')}) ${esc(def.roadAddress||'')} ${esc(def.detailAddress||'')}</div>
-              `);
-            }
-            if (arr.length === 0) { $("#addrList").html('<div class="text-muted">등록된 배송지가 없습니다.</div>'); return; }
-            const html = arr.map(a => {
-              const checked = String(a.addressNo) === String(currentNo) ? 'checked' : '';
-              return `
-                <div class="form-check border rounded p-3 mb-2">
-                  <input class="form-check-input" type="radio" name="addrChoice" id="addr_${a.addressNo}"
-                         value="${a.addressNo}" ${checked}>
-                  <label class="form-check-label w-100" for="addr_${a.addressNo}">
-                    <div class="fw-semibold">${esc(a.addressName||'')}</div>
-                    <div class="text-muted">수령인 ${esc(a.recipient||'')} / ${esc(a.phone||'')}</div>
-                    <div>주소 (${esc(a.zonecode||'')}) ${esc(a.roadAddress||'')} ${esc(a.detailAddress||'')}</div>
-                  </label>
-                </div>`;
-            }).join("");
-            $("#addrList").html(html);
-          })
-          .fail(() => { $("#addrList").html('<div class="text-danger">주소를 불러오지 못했습니다.</div>'); });
-      }
+	  // 배송비(고정 3000) — 모델에서 내려오면 사용, 없으면 3000
+	  const shippingCart   = /*[[${#ctx.containsVariable('shippingCart') ? shippingCart : 3000}]]*/ 3000;
+	  const shippingSingle = /*[[${#ctx.containsVariable('shippingSingle') ? shippingSingle : 3000}]]*/ 3000;
 
-      $("#addrModalSet").on("click", function(){
-        const $sel = $("input[name=addrChoice]:checked");
-        if ($sel.length === 0) { alert("주소를 선택해 주세요."); return; }
-        const addressNo = Number($sel.val());
-        const token  = $('meta[name="_csrf"]').attr('content');
-        const header = $('meta[name="_csrf_header"]').attr('content');
-        $.ajax({
-          type: "POST",
-          url:  "/mypage/address/default",
-          data: JSON.stringify({ addressNo }),
-          contentType: "application/json; charset=UTF-8",
-          dataType: "json",
-          beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); }
-        })
-        .done(function(res){
-          if (!res || !res.ok || !res.address) { alert("설정에 실패했습니다."); return; }
-          const a = res.address;
-          $("#currentAddressNo").val(a.addressNo);
-          $("#addrName").text(a.addressName || '');
-          $("#addrRecipient").text(a.recipient || '');
-          $("#addrPhone").text(a.phone || '');
-          $("#addrZone").text(a.zonecode || '');
-          $("#addrRoad").text(a.roadAddress || '');
-          $("#addrDetail").text(a.detailAddress || '');
-          addrModal.hide();
-        })
-        .fail(function(xhr){ alert("설정에 실패했습니다. ("+xhr.status+")"); });
-      });
 
-      /* ---------- 새 주소 등록 모달 (항상 기본으로) ---------- */
-      const addAddrModalEl = document.getElementById('addAddrModal');
-      const addAddrModal   = new bootstrap.Modal(addAddrModalEl);
-      addAddrModalEl.addEventListener('show.bs.modal', () => {
-        $("#f_addressName,#f_recipient,#f_phone,#f_zonecode,#f_roadAddress,#f_detailAddress").val('');
-        $("#postcodeLayer2").hide().empty();
-      });
-      addAddrModalEl.addEventListener('hidden.bs.modal', () => { $('.modal-backdrop').each(function(i, el){ if (i) $(el).remove(); }); });
+	  const subtotal = isCartMode ? cartSubtotal : singleLineSum;
+	  const shipping = isCartMode ? shippingCart : shippingSingle;
+	  const baseSum  = Math.max(0, subtotal + shipping);
 
-      function openPostcodeIn(layerId, zoneInput, roadInput) {
-        const $ly = $(layerId);
-        new daum.Postcode({
-          oncomplete: function(data){
-            $(zoneInput).val(data.zonecode || '');
-            $(roadInput).val(data.roadAddress || data.jibunAddress || '');
-            $ly.hide().empty();
-            $("#f_detailAddress").focus();
-          },
-          onresize : function(size){ $ly.height(size.height); }
-        }).embed($ly.get(0));
-        $ly.show();
-      }
-      $("#btnFindZip2").on("click", function(){ openPostcodeIn("#postcodeLayer2", "#f_zonecode", "#f_roadAddress"); });
+	  // 장바구니 선택 라인 (없으면 빈 배열)
+	  // [{cartDetailId, quantity}, ...]
+	  const cartItems = /*[[${#ctx.containsVariable('items') ? items : null}]]*/ null;
+	  const safeCartItems = Array.isArray(cartItems) ? cartItems : [];
+	  
+	  // 단건용 hidden 값이 있을 수 있으니 캐시
+	  const $productId = $("#product_id");
+	  const $qty       = $("#qty");
 
-      $("#addAddrForm").on("submit", function(e){
-        e.preventDefault();
-        const data = {
-          addressName:   $("#f_addressName").val().trim(),
-          recipient:     $("#f_recipient").val().trim(),
-          phone:         $("#f_phone").val().trim(),
-          zonecode:      $("#f_zonecode").val().trim(),
-          roadAddress:   $("#f_roadAddress").val().trim(),
-          detailAddress: $("#f_detailAddress").val().trim(),
-          isDefault:     true   // ✅ 항상 기본 배송지로 등록
-        };
-        if (!data.addressName || !data.recipient || !data.phone || !data.zonecode || !data.roadAddress) {
-          alert("필수 항목을 입력해 주세요."); return;
-        }
-        const token  = $('meta[name="_csrf"]').attr('content');
-        const header = $('meta[name="_csrf_header"]').attr('content');
-        $.ajax({
-          type: "POST",
-          url:  "/mypage/address/new",
-          data, // x-www-form-urlencoded
-          beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
-          dataType: "json"
-        })
-        .done(function(res){
-          if (!res || !res.ok || !res.address) { alert("등록에 실패했습니다."); return; }
-          const a = res.address;
-          $("#currentAddressNo").val(a.addressNo);
-          loadAddressList();
+	  /* ================== 포인트 UI ================== */
+	  const fmt = n => (Math.max(0, Math.trunc(n))).toLocaleString('ko-KR') + '원';
+	  $("#usePoint").on("input", function(){ this.value = this.value.replace(/[^\d]/g, ''); });
 
-          // 기본으로 저장되었으니 주문 화면 즉시 갱신 후 모달 닫기
-          $("#addrName").text(a.addressName || '');
-          $("#addrRecipient").text(a.recipient || '');
-          $("#addrPhone").text(a.phone || '');
-          $("#addrZone").text(a.zonecode || '');
-          $("#addrRoad").text(a.roadAddress || '');
-          $("#addrDetail").text(a.detailAddress || '');
+	  // 공통 hidden(없으면 생성)
+	  if ($("#_usedPoint").length === 0) {
+	    $("body").append('<input type="hidden" id="_usedPoint" value="0"><input type="hidden" id="_pay" value="'+baseSum+'">');
+	  }
 
-          addAddrModal.hide();
-          addrModal.hide();
-        })
-        .fail(function(xhr){ alert("등록 실패 ("+xhr.status+")"); });
-      });
+	  function recalc(use){
+	    use = Math.min(Math.max(0, Number(use)||0), owned, baseSum);
+	    $("#usePoint").val(use);
+	    $("#usedPointLabel").text(use.toLocaleString('ko-KR') + '원');
+	    const pay = Math.max(0, baseSum - use);
+	    $("#payTotalLabel").text(fmt(pay));
+	    $("#rewardLabel").text(fmt(Math.trunc(pay * 0.05)));
+	    $("#_usedPoint").val(use);
+	    $("#_pay").val(pay);
+	  }
+	  recalc(0);
 
-      /* ---------- 결제 오버레이 ---------- */
-      function showOverlay(){ $("#payOverlay").show(); $("body").addClass("overlay-lock"); }
-      function hideOverlay(){ $("#payOverlay").hide(); $("body").removeClass("overlay-lock"); }
-      $("#payOverlay").on("click", hideOverlay);
+	  $("#btnUseAllPoint").on("click", ()=> recalc(Math.min(owned, baseSum)));
+	  $("#usePoint").on("input change", function(){ recalc(this.value); });
 
-      function openCenteredPopup(url, w=520, h=720){
-        const dualScreenLeft = (window.screenLeft ?? window.screenX) || 0;
-        const dualScreenTop  = (window.screenTop  ?? window.screenY) || 0;
-        const width  = window.outerWidth  || document.documentElement.clientWidth  || screen.width;
-        const height = window.outerHeight || document.documentElement.clientHeight || screen.height;
-        const left = dualScreenLeft + Math.max(0, (width  - w) / 2);
-        const top  = dualScreenTop  + Math.max(0, (height - h) / 2);
-        const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
-        return window.open(url, "kakaopay_popup", features);
-      }
+	  /* ================== (선택) 배송요청사항 UI가 DOM에 있을 때만 동작 ================== */
+	  const $memoSel = $("#deliveryMemoSelect");
+	  const $memoInp = $("#deliveryMemoInput");
+	  const $memoPreview = $("#deliveryMemoPreview");
+	  function syncDeliveryMemo(){
+	    if (!$memoSel.length) return;
+	    const v = $memoSel.val();
+	    if (v === "자유입력") { $memoInp.show().focus(); $memoPreview.text($memoInp.val()?.trim() ? $memoInp.val() : "(직접 입력)"); }
+	    else { $memoInp.hide().val(""); $memoPreview.text(v ? v : "(요청사항 없음)"); }
+	  }
+	  if ($memoSel.length) {
+	    $memoSel.on("change", syncDeliveryMemo);
+	    $memoInp.on("input", function(){ if ($memoSel.val() === "자유입력") $memoPreview.text(this.value.trim() ? this.value : "(직접 입력)"); });
+	    syncDeliveryMemo();
+	  }
 
-      window.addEventListener('message', function (e) {
-        if (e.origin !== window.location.origin) return;
-        const d = e.data || {};
-        if (d.type !== 'PAY_RESULT') return;
-        hideOverlay();
-        if (d.status === 'success')      window.location.href = '/main/list';
-        else if (d.status === 'cancel') alert('결제가 취소되었습니다.');
-        else                            alert('결제에 실패했습니다.');
-      });
+	  /* ================== 주소 모달(존재 시에만) ================== */
+	  const addrModalEl = document.getElementById('addrModal');
+	  if (addrModalEl) {
+	    const addrModal   = new bootstrap.Modal(addrModalEl);
+	    addrModalEl.addEventListener('show.bs.modal', () => { loadAddressList(); });
+	    addrModalEl.addEventListener('hidden.bs.modal', () => {
+	      document.body.classList.remove('modal-open');
+	      document.body.style.removeProperty('padding-right');
+	      $('.modal-backdrop').remove();
+	    });
 
-      function watchPopupClose(win, orderId){
-        const timer = setInterval(function(){
-          if (!win || win.closed) {
-            clearInterval(timer);
-            setTimeout(function(){
-              $.get('/pay/order/' + orderId + '/status')
-                .done(function(res){
-                  const st = (res && res.status || '').toUpperCase();
-                  hideOverlay();
-                  if (st === 'PAID')           window.location.href = '/main/list';
-                  else if (st === 'PENDING')   alert('결제가 완료되지 않았습니다. 다시 시도하거나 취소할 수 있어요.');
-                  else                         alert('결제가 취소되었습니다.');
-                })
-                .fail(function(){ hideOverlay(); alert('결과 확인 실패. 잠시 후 새로고침해 주세요.'); });
-            }, 1000);
-          }
-        }, 300);
-      }
+	    function loadAddressList(){
+	      const currentNo = $("#currentAddressNo").val();
+	      $("#addrList").html('<div class="text-muted">불러오는 중…</div>');
+	      $("#addrDefaultBox").empty();
+	      $.get("/mypage/address/list")
+	        .done(function(res){
+	          const arr = (res && res.addresses) || [];
+	          const def = arr.find(a => a.isDefault === 'Y');
+	          if (def) {
+	            $("#addrDefaultBox").html(`
+	              <div class="fw-bold mb-1">기본 배송지</div>
+	              <div>${esc(def.addressName||'')}</div>
+	              <div>${esc(def.recipient||'')} / ${esc(def.phone||'')}</div>
+	              <div>(${esc(def.zonecode||'')}) ${esc(def.roadAddress||'')} ${esc(def.detailAddress||'')}</div>
+	            `);
+	          }
+	          if (arr.length === 0) { $("#addrList").html('<div class="text-muted">등록된 배송지가 없습니다.</div>'); return; }
+	          const html = arr.map(a => {
+	            const checked = String(a.addressNo) === String(currentNo) ? 'checked' : '';
+	            return `
+	              <div class="form-check border rounded p-3 mb-2">
+	                <input class="form-check-input" type="radio" name="addrChoice" id="addr_${a.addressNo}"
+	                       value="${a.addressNo}" ${checked}>
+	                <label class="form-check-label w-100" for="addr_${a.addressNo}">
+	                  <div class="fw-semibold">${esc(a.addressName||'')}</div>
+	                  <div class="text-muted">수령인 ${esc(a.recipient||'')} / ${esc(a.phone||'')}</div>
+	                  <div>주소 (${esc(a.zonecode||'')}) ${esc(a.roadAddress||'')} ${esc(a.detailAddress||'')}</div>
+	                </label>
+	              </div>`;
+	          }).join("");
+	          $("#addrList").html(html);
+	        })
+	        .fail(() => { $("#addrList").html('<div class="text-danger">주소를 불러오지 못했습니다.</div>'); });
+	    }
 
-      $("#payBtn").on("click", function(e){
-        e.preventDefault();
-        const productId = Number($("#product_id").val());
-        const qty       = Number($("#qty").val());
-        const usedPoint = Number($("#usedPoint").val());
-        const token  = $('meta[name="_csrf"]').attr('content');
-        const header = $('meta[name="_csrf_header"]').attr('content');
+	    $("#addrModalSet").on("click", function(){
+	      const $sel = $("input[name=addrChoice]:checked");
+	      if ($sel.length === 0) { alert("주소를 선택해 주세요."); return; }
+	      const addressNo = Number($sel.val());
+	      const token  = $('meta[name="_csrf"]').attr('content');
+	      const header = $('meta[name="_csrf_header"]').attr('content');
+	      $.ajax({
+	        type: "POST",
+	        url:  "/mypage/address/default",
+	        data: JSON.stringify({ addressNo }),
+	        contentType: "application/json; charset=UTF-8",
+	        dataType: "json",
+	        beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); }
+	      })
+	      .done(function(res){
+	        if (!res || !res.ok || !res.address) { alert("설정에 실패했습니다."); return; }
+	        const a = res.address;
+	        $("#currentAddressNo").val(a.addressNo);
+	        $("#addrName").text(a.addressName || '');
+	        $("#addrRecipient").text(a.recipient || '');
+	        $("#addrPhone").text(a.phone || '');
+	        $("#addrZone").text(a.zonecode || '');
+	        $("#addrRoad").text(a.roadAddress || '');
+	        $("#addrDetail").text(a.detailAddress || '');
+	        bootstrap.Modal.getInstance(addrModalEl).hide();
+	      })
+	      .fail(function(xhr){ alert("설정에 실패했습니다. ("+xhr.status+")"); });
+	    });
+	  }
 
-        $.ajax({
-          type: "POST",
-          url:  "/pay/ready",
-          data: { productId, qty, usedPoint },
-          beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
-          success: function(res){
-            const url     = res && res.next_redirect_pc_url;
-            const orderId = res && res.orderId;
-            if (!url || !orderId) { alert("응답 형식이 올바르지 않습니다."); console.log(res); return; }
-            showOverlay();
-            const win = openCenteredPopup(url, 520, 720);
-            if (win && !win.closed) { try { win.focus(); } catch(_) {} watchPopupClose(win, orderId); }
-            else { hideOverlay(); window.location.href = url; }
-          },
-          error: function(xhr){ hideOverlay(); alert("결제 준비 실패 (" + xhr.status + ")\n" + (xhr.responseText||"")); }
-        });
-      });
+	  /* ================== 다음(카카오) 우편번호 모달(존재 시만) ================== */
+	  const addAddrModalEl = document.getElementById('addAddrModal');
+	  if (addAddrModalEl) {
+	    const addAddrModal   = new bootstrap.Modal(addAddrModalEl);
+	    addAddrModalEl.addEventListener('show.bs.modal', () => {
+	      $("#f_addressName,#f_recipient,#f_phone,#f_zonecode,#f_roadAddress,#f_detailAddress").val('');
+	      $("#postcodeLayer2").hide().empty();
+	    });
+	    addAddrModalEl.addEventListener('hidden.bs.modal', () => { $('.modal-backdrop').each(function(i, el){ if (i) $(el).remove(); }); });
 
-      function esc(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-      hideOverlay();
-    });
-    </script>
+	    function openPostcodeIn(layerId, zoneInput, roadInput) {
+	      const $ly = $(layerId);
+	      new daum.Postcode({
+	        oncomplete: function(data){
+	          $(zoneInput).val(data.zonecode || '');
+	          $(roadInput).val(data.roadAddress || data.jibunAddress || '');
+	          $ly.hide().empty();
+	          $("#f_detailAddress").focus();
+	        },
+	        onresize : function(size){ $ly.height(size.height); }
+	      }).embed($ly.get(0));
+	      $ly.show();
+	    }
+	    $("#btnFindZip2").on("click", function(){ openPostcodeIn("#postcodeLayer2", "#f_zonecode", "#f_roadAddress"); });
+
+	    $("#addAddrForm").on("submit", function(e){
+	      e.preventDefault();
+	      const data = {
+	        addressName:   $("#f_addressName").val().trim(),
+	        recipient:     $("#f_recipient").val().trim(),
+	        phone:         $("#f_phone").val().trim(),
+	        zonecode:      $("#f_zonecode").val().trim(),
+	        roadAddress:   $("#f_roadAddress").val().trim(),
+	        detailAddress: $("#f_detailAddress").val().trim(),
+	        isDefault:     true
+	      };
+	      if (!data.addressName || !data.recipient || !data.phone || !data.zonecode || !data.roadAddress) {
+	        alert("필수 항목을 입력해 주세요."); return;
+	      }
+	      const token  = $('meta[name="_csrf"]').attr('content');
+	      const header = $('meta[name="_csrf_header"]').attr('content');
+	      $.ajax({
+	        type: "POST",
+	        url:  "/mypage/address/new",
+	        data, // x-www-form-urlencoded
+	        beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
+	        dataType: "json"
+	      })
+	      .done(function(res){
+	        if (!res || !res.ok || !res.address) { alert("등록에 실패했습니다."); return; }
+	        const a = res.address;
+	        $("#currentAddressNo").val(a.addressNo);
+	        if (addrModalEl) { // 기본 정보 즉시 반영
+	          $("#addrName").text(a.addressName || '');
+	          $("#addrRecipient").text(a.recipient || '');
+	          $("#addrPhone").text(a.phone || '');
+	          $("#addrZone").text(a.zonecode || '');
+	          $("#addrRoad").text(a.roadAddress || '');
+	          $("#addrDetail").text(a.detailAddress || '');
+	        }
+	        bootstrap.Modal.getInstance(addAddrModalEl).hide();
+	        if (addrModalEl) bootstrap.Modal.getInstance(addrModalEl).hide();
+	      })
+	      .fail(function(xhr){ alert("등록 실패 ("+xhr.status+")"); });
+	    });
+	  }
+
+	  /* ================== 결제 팝업/오버레이 ================== */
+	  function showOverlay(){ $("#payOverlay").show(); $("body").addClass("overlay-lock"); }
+	  function hideOverlay(){ $("#payOverlay").hide(); $("body").removeClass("overlay-lock"); }
+	  $("#payOverlay").on("click", hideOverlay);
+
+	  function openCenteredPopup(url, w=520, h=720){
+	    const dualScreenLeft = (window.screenLeft ?? window.screenX) || 0;
+	    const dualScreenTop  = (window.screenTop  ?? window.screenY) || 0;
+	    const width  = window.outerWidth  || document.documentElement.clientWidth  || screen.width;
+	    const height = window.outerHeight || document.documentElement.clientHeight || screen.height;
+	    const left = dualScreenLeft + Math.max(0, (width  - w) / 2);
+	    const top  = dualScreenTop  + Math.max(0, (height - h) / 2);
+	    const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
+	    return window.open(url, "kakaopay_popup", features);
+	  }
+
+	  function watchPopupClose(win, orderId){
+	    const timer = setInterval(function(){
+	      if (!win || win.closed) {
+	        clearInterval(timer);
+	        setTimeout(function(){
+	          $.get('/pay/order/' + orderId + '/status')
+	            .done(function(res){
+	              const st = (res && res.status || '').toUpperCase();
+	              hideOverlay();
+	              if (st === 'PAID')           window.location.href = '/main/list';
+	              else if (st === 'PENDING')   alert('결제가 완료되지 않았습니다. 다시 시도하거나 취소할 수 있어요.');
+	              else                         alert('결제가 취소되었습니다.');
+	            })
+	            .fail(function(){ hideOverlay(); alert('결과 확인 실패. 잠시 후 새로고침해 주세요.'); });
+	        }, 1000);
+	      }
+	    }, 300);
+	  }
+
+	  /* ================== 결제 버튼 ================== */
+	  $("#payBtn").on("click", function(e){
+	    e.preventDefault();
+	    const usedPoint = Number($("#_usedPoint").val()) || 0;
+	    const token  = $('meta[name="_csrf"]').attr('content');
+	    const header = $('meta[name="_csrf_header"]').attr('content');
+
+		if (isCartMode) {
+		  const payload = (safeCartItems || []).map(it => ({
+		    cartDetailId: it.cartDetailId,
+		    quantity: Math.max(1, Number(it.quantity)||1),
+		  }));
+		  if (payload.length === 0) { alert("선택된 상품이 없습니다."); return; }
+
+		  $.ajax({
+		    type: "POST",
+		    url:  "/pay/ready/cart",
+		    data: JSON.stringify({ usedPoint, items: payload }),
+		    contentType: "application/json; charset=UTF-8",
+		    beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
+		    success: onReadyOk,
+		    error: onReadyErr
+		  });
+		} else {
+		  const productId = Number($productId.val());
+		  const qty       = Math.max(1, Number($qty.val())||1);
+
+		  $.ajax({
+		    type: "POST",
+		    url:  "/pay/ready/single",
+		    data: JSON.stringify({ productId, quantity: qty, usedPoint }),
+		    contentType: "application/json; charset=UTF-8",
+		    beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
+		    success: onReadyOk,
+		    error: onReadyErr
+		  });
+		}
+
+
+	    function onReadyOk(res){
+	      const payUrl  = res && res.next_redirect_pc_url;
+	      const orderId = res && res.orderId;
+	      if (!payUrl || !orderId) { alert("응답 형식이 올바르지 않습니다."); console.log(res); return; }
+	      showOverlay();
+	      const win = openCenteredPopup(payUrl, 520, 720);
+	      if (win && !win.closed) { try { win.focus(); } catch(_) {} watchPopupClose(win, orderId); }
+	      else { hideOverlay(); window.location.href = payUrl; }
+	    }
+	    function onReadyErr(xhr){ hideOverlay(); alert("결제 준비 실패 (" + xhr.status + ")\n" + (xhr.responseText||"")); }
+	  });
+
+	  function esc(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+	  $("#payOverlay").hide(); $("body").removeClass("overlay-lock");
+	});
+	</script>
   </div>
 </html>
