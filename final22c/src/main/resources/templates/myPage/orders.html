@@ -1,58 +1,132 @@
+<html layout:decorate="~{layout/layout}">
+<div layout:fragment="content">
+<style>
+  .order-card{ 
+    position: relative;              /* 기준점 */
+    padding-right: 48px;             /* 화살표 자리 확보 */
+    border:1px solid #e5e7eb; 
+    border-radius:12px; 
+    padding:16px; 
+    margin-bottom:16px;
+  }
+  .order-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .order-title{font-weight:700}
+  .order-amount{font-weight:800}
+  .stepper{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-items:center;margin:10px 0}
+  .step{position:relative;text-align:center;font-size:12px;color:#9ca3af}
+  .step::before{content:"";position:absolute;top:10px;left:-50%;right:50%;height:2px;background:#e5e7eb}
+  .step:first-child::before{display:none}
+  .step .dot{width:10px;height:10px;border-radius:50%;background:#e5e7eb;margin:0 auto}
+  .step.active{color:#111827}
+  .step.active .dot{background:#111827}
+  .step.active::before{background:#111827}
+  .badge-cancel{display:inline-block;padding:2px 8px;border-radius:999px;background:#fee2e2;color:#991b1b;font-weight:700;font-size:12px}
+  /* 기존 .more의 text-align은 제거 */
+  .more{
+    position: absolute;
+    right: 16px;                     /* 카드 오른쪽 끝 */
+    top: 50%;                        /* 세로 가운데 */
+    transform: translateY(-50%);
+    display: inline-flex;
+    width: 28px; height: 28px;       /* 클릭 영역 확보 */
+    justify-content: center; align-items: center;
+    font-size: 20px; font-weight: 700;
+    text-decoration: none; color: #111827;
+  }
+  .muted{color:#6b7280}
+  .more:hover{ text-decoration: none; opacity:.8; }
+</style>
+
 <!-- templates/mypage/orders.html -->
 <section>
   <h2>주문내역</h2>
 
   <div th:if="${orders.content.isEmpty()}">주문 내역이 없습니다.</div>
 
-  <div th:each="o : ${orders.content}" class="card" style="margin-bottom:12px;padding:12px">
-    <div class="summary-row">
-      <div>
-        <strong th:text="'주문번호 #' + ${o.orderId}">#0</strong>
-        <span class="muted" th:text="${#temporals.format(o.regDate, 'yyyy-MM-dd HH:mm')}">date</span>
-      </div>
-      <div>
-        <span th:text="${o.status}">PENDING</span>
-      </div>
-    </div>
+  <div th:each="o : ${orders.content}"
+       class="order-card"
+       th:with="
+         first=${#lists.isEmpty(o.details) ? null : o.details[0]},
+         restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1},
+         step=${
+            #strings.equalsIgnoreCase(o.status,'DELIVERED') ? 4 :
+            (#strings.equalsIgnoreCase(o.status,'SHIPPED') ? 3 :
+            (#strings.equalsIgnoreCase(o.status,'PREPARING') ? 2 :
+            (#strings.equalsIgnoreCase(o.status,'PAID') ? 1 : 0)))
+         }">
 
-    <!-- 금액/마일리지 -->
-    <div class="summary-row">
-      <span>결제금액</span>
-      <strong th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</strong>
-    </div>
-    <div class="summary-row">
-      <span>사용 마일리지</span>
-      <strong th:text="${#numbers.formatInteger(o.usedPoint,0)} + '점'">0점</strong>
-    </div>
-
-    <!-- 상세 품목 (원하면 열어보기로) -->
-    <div th:if="${o.details}">
-      <div th:each="d : ${o.details}" style="display:flex;gap:12px;align-items:center;margin-top:8px">
-        <img th:src="@{|${d.product.imgPath}${d.product.imgName}|}" alt=""
-             style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #eee">
-        <div style="flex:1">
-          <div th:text="${d.product.name}">상품명</div>
-          <div class="muted" th:text="${'수량 ' + d.quantity}">수량</div>
+    <!-- 상단 요약 -->
+    <div class="order-top">
+      <div>
+        <div class="muted" th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}"></div>
+        <div class="order-title">
+          <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
+          <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"> 외 0건</span>
+          <span th:if="${restCnt==0 && first != null}" th:text="${' ' + first.quantity + '개'}"> 1개</span>
+          <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
         </div>
-        <div style="font-weight:700" th:text="${#numbers.formatInteger(d.totalPrice,0)} + '원'">0원</div>
       </div>
+
     </div>
 
-    <!-- 취소 버튼: PAID 일 때만 노출 -->
+    <!-- 취소 상태 배지 -->
+    <div th:if="${#strings.equalsIgnoreCase(o.status,'CANCELLED')}" class="badge-cancel">주문취소</div>
+
+    <!-- 우측 화살표(상세로 이동하려면 링크 연결) -->
+    <a class="more" th:href="@{/mypage/order/{id}(id=${o.orderId})}">></a>
+    
+    <!-- 가로 스텝 (취소가 아니면 표시) -->
+    <div th:if="${!#strings.equalsIgnoreCase(o.status,'CANCELLED')}" class="stepper"
+         th:attr="data-step=${step}, data-max=4">
+      <div class="step"><div class="dot"></div><div>결제완료</div></div>
+      <div class="step"><div class="dot"></div><div>출고</div></div>
+      <div class="step"><div class="dot"></div><div>배송 중</div></div>
+      <div class="step"><div class="dot"></div><div>배송완료</div></div>
+    </div>
+
+    <!-- (선택) 취소 버튼: PAID 일 때만
     <form th:if="${#strings.equalsIgnoreCase(o.status,'PAID')}"
-          th:action="@{/pay/cancel-paid}" method="post" style="margin-top:10px">
+          th:action="@{/pay/cancel-paid}" method="post" style="margin-top:8px">
       <input type="hidden" name="orderId" th:value="${o.orderId}">
       <input type="text" name="reason" placeholder="취소 사유 (선택)">
-      <button type="submit" class="btn btn-danger">주문취소</button>
-    </form>
+      <button type="submit" class="btn btn-danger btn-sm">주문취소</button>
+    </form> -->
   </div>
 
-  <!-- 페이지네이션 -->
+  <!-- 페이지네이션: 경로는 단수 /mypage/order 로! -->
   <div style="margin-top:12px" th:if="${orders.totalPages > 1}">
     <a th:each="i : ${#numbers.sequence(0, orders.totalPages-1)}"
-       th:href="@{/mypage/orders(page=${i}, size=${orders.size})}"
+       th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
        th:text="${i + 1}"
-       th:classappend="${i == orders.number} ? 'active' : ''"
+       th:classappend="${i == orders.number} ? ' active' : ''"
        style="margin-right:8px"></a>
   </div>
 </section>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const INTERVAL_MS = 10000; // 10초
+  document.querySelectorAll('.stepper').forEach(stepper => {
+    const steps = stepper.querySelectorAll('.step');
+    const max = parseInt(stepper.dataset.max || steps.length, 10);
+    let cur = parseInt(stepper.dataset.step || '0', 10); // 0~max
+
+    function render(n) {
+      // n개를 활성화(1단계면 첫 칸만 활성화)
+      steps.forEach((el, idx) => el.classList.toggle('active', idx < n));
+    }
+
+    render(cur);
+
+    // 이미 완료( cur >= max )면 진행 중지
+    if (cur >= max) return;
+
+    const timer = setInterval(() => {
+      cur += 1;
+      render(cur);
+      if (cur >= max) clearInterval(timer); // 배송완료까지 가면 멈춤
+    }, INTERVAL_MS);
+  });
+});
+</script>
+</div>
+</html>
