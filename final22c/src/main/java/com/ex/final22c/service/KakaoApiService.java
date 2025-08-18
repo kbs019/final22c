@@ -1,11 +1,9 @@
-
 package com.ex.final22c.service;
 
-import com.ex.final22c.data.order.Order;              // ✅ 주문 엔티티
+import com.ex.final22c.data.order.Order;              
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.service.payment.PaymentService;
 import com.ex.final22c.service.product.ProductService;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -62,7 +60,6 @@ public class KakaoApiService {
         body.put("total_amount", payable);
         body.put("tax_free_amount", 0);
 
-        // TODO: 운영에서는 설정값으로 빼세요
         String base = "http://localhost:8080";
         body.put("approval_url", base + "/pay/success?orderId=" + partnerOrderId);
         body.put("cancel_url",   base + "/pay/cancel?orderId="  + partnerOrderId);
@@ -83,7 +80,7 @@ public class KakaoApiService {
             String tid = (String) result.get("tid");
             paymentService.saveReady(order, payable, tid);
 
-            // ✅ 프런트가 팝업 닫힘 감시에 쓰도록 orderId를 함께 반환
+            // 프런트가 팝업 닫힘 감시에 쓰도록 orderId를 함께 반환
             result.put("orderId", order.getOrderId());
             return result;
 
