@@ -24,7 +24,6 @@ public class ProductService {
 
     public List<Product> showList() { return productRepository.findAll(); }
 
-    // 해당 id 에 대한 상품 정보 조회
     public Product getProduct(long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("해당하는 상품 정보를 찾을 수 없습니다."));
@@ -35,7 +34,7 @@ public class ProductService {
     public List<Map<String, Object>> getMainNoteOptions() { return productMapper.selectMainNoteOptions(); }
     public List<Map<String, Object>> getVolumeOptions()   { return productMapper.selectVolumeOptions(); }
 
-    // 필터 + 상품명 검색 동시 지원
+    // 필터 + 상품명 검색
     public Map<String, Object> getProducts(List<Long> brandIds,
                                            List<Long> gradeIds,
                                            List<Long> mainNoteIds,
@@ -49,26 +48,30 @@ public class ProductService {
         res.put("items", items);
         return res;
     }
-    
-    // 결제 승인시 재고 차감
+
+    // ====== 브랜드 페이지용 ======
+    public List<Map<String, Object>> getBrands() {
+        return productMapper.selectBrands();
+    }
+
+    public Map<String, Object> getBrand(Long brandNo) {
+        Map<String, Object> b = productMapper.selectBrandById(brandNo);
+        if (b == null) throw new DataNotFoundException("브랜드를 찾을 수 없습니다. brandNo=" + brandNo);
+        return b;
+    }
+
+    // ====== 재고 증감 (기존 유지) ======
     @Transactional
     public void decreaseStock(Long productId, int qty) {
-    	if (qty <=0) return;
-    	int updated = productRepository.decreaseStock(productId, qty);
-    	if (updated != 1) {
-    		throw new IllegalStateException("재고 부족 또는 상품 없음: id=" + productId);
-        }
+        if (qty <= 0) return;
+        int updated = productRepository.decreaseStock(productId, qty);
+        if (updated != 1) throw new IllegalStateException("재고 부족 또는 상품 없음: id=" + productId);
     }
-    
-    // 추후 취소/환불 구현시 재고 복구
+
     @Transactional
     public void increaseStock(Long productId, int qty) {
         if (qty <= 0) return;
         int updated = productRepository.increaseStock(productId, qty);
-        if (updated != 1) {
-            throw new IllegalStateException("재고 복구 실패 또는 상품 없음: id=" + productId);
-        }
+        if (updated != 1) throw new IllegalStateException("재고 복구 실패 또는 상품 없음: id=" + productId);
     }
-
-    
 }
