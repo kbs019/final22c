@@ -17,7 +17,7 @@ public interface CartDetailRepository extends JpaRepository<CartDetail, Long> {
 
     // cartId 에 해당하는 CartDetail 타입의 모든 레코드 조회
     @EntityGraph(attributePaths = {"product","product.brand"})      // fetch.EAGER 방지
-    List<CartDetail> findAllByCart_CartId(Long cartId);
+    List<CartDetail> findAllByCart_CartIdOrderByCreateDateDesc(Long cartId);
 
     // userName 에 해당하는 Users 객체의 Cart 를 제거
     long deleteByCartDetailIdInAndCart_User_UserName(Collection<Long> ids, String userName);
