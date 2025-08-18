@@ -1,0 +1,216 @@
+<html layout:decorate="~{layout/layout}">
+<th:block layout:fragment="css">
+    <link rel="stylesheet" href="/css/cart.css">
+</th:block>
+
+<th:block layout:fragment="content">
+    <div class="container cart-wrap" style="margin-top:16px">
+
+        <!-- 좌측: 리스트 -->
+        <section>
+            <div class="actions" th:if="${products != null and !products.isEmpty()}">
+                <label><input type="checkbox" id="checkAll"> 전체선택</label>
+                <button type="button" id="btnRemove" class="btn btn-outline-secondary btn-sm">선택 삭제</button>
+            </div>
+
+            <div id="cartList">
+                <!-- 비어있을 때 -->
+                <div class="empty" th:if="${products == null or products.isEmpty()}">
+                    장바구니가 비어 있습니다.
+                </div>
+
+                <!-- 라인 렌더 -->
+                <div th:each="cartItem : ${products}" class="cart-row" th:data-id="${cartItem.cartDetailId}"
+                    th:data-unit-price="${cartItem.unitPrice}">
+                    <!-- 체크 -->
+                    <input type="checkbox" class="row-check">
+
+                    <!-- 이미지/링크 -->
+                    <a th:href="@{|/main/${cartItem.id}|}">
+                        <img th:src="@{|${cartItem.imgPath}${cartItem.imgName}|}" alt="향수 이미지" width="96" height="96"
+                            style="object-fit:cover;border-radius:8px">
+                    </a>
+
+                    <!-- 정보 -->
+                    <div>
+                        <a th:href="@{|/main/${cartItem.id}|}" style="text-decoration:none;color:inherit">
+                            <div th:text="${cartItem.name}"></div>
+                            <div class="muted" th:text="${cartItem.brand}"></div>
+                        </a>
+                        <div class="muted" th:text="${#numbers.formatInteger(cartItem.unitPrice, 3, 'COMMA')} + '원'">
+                        </div>
+                    </div>
+
+                    <!-- 수량/금액 -->
+                    <div style="text-align:right">
+                        <div class="qty-wrap">
+                            <button type="button" class="qty-btn btnMinus">-</button>
+                            <input type="number" class="qty-input" th:value="${cartItem.quantity}" min="1">
+                            <button type="button" class="qty-btn btnPlus">+</button>
+                        </div>
+                        <div style="margin-top:6px">
+                            <strong class="line-total"
+                                th:text="${#numbers.formatInteger(cartItem.unitPrice * cartItem.quantity,3,'COMMA')} + '원'"></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 우측: 합계/결제 -->
+        <aside class="sidebar">
+            <div style="display:flex;justify-content:space-between">
+                <div>선택 상품</div>
+                <div><span id="selCount">0</span>개</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <div>상품 합계</div>
+                <div><strong id="selTotal">0원</strong></div>
+            </div>
+            <hr>
+            <form id="checkoutForm" th:action="@{/checkout/order}" method="post">
+                <!-- CSRF (폼용) -->
+                <!-- <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"> -->
+                <!-- 동적 hidden은 JS가 채움 -->
+                <button type="button" id="btnCheckout" class="btn btn-secondary" style="width:100%">결제하기</button>
+            </form>
+            <div class="muted" style="margin-top:8px">선택된 상품만 결제 페이지로 이동합니다.</div>
+        </aside>
+    </div>
+</th:block>
+
+
+<th:block layout:fragment="script">
+    <!-- 페이지 전용 JS -->
+    <script th:inline="javascript">
+        // ---------- 유틸 ----------
+        const fmt = n => (n || 0).toLocaleString('ko-KR') + '원';
+        // const getCsrf = () => ({
+        //     token: document.querySelector('meta[name="_csrf"]').content,
+        //     header: document.querySelector('meta[name="_csrf_header"]').content
+        // });
+
+        const $list = document.getElementById('cartList');
+        const $checkAll = document.getElementById('checkAll');
+        const $selCount = document.getElementById('selCount');
+        const $selTotal = document.getElementById('selTotal');
+
+        function refreshSummary() {
+            const rows = Array.from($list.querySelectorAll('.cart-row'));
+            let total = 0, cnt = 0;
+            rows.forEach(r => {
+                const checked = r.querySelector('.row-check')?.checked;
+                const qty = Number(r.querySelector('.qty-input')?.value || 1);
+                const unit = Number(r.dataset.unitPrice || 0);
+                const line = unit * qty;
+                const $line = r.querySelector('.line-total');
+                if ($line) $line.textContent = fmt(line);
+                if (checked) { total += line; cnt++; }
+            });
+            $selCount.textContent = cnt;
+            $selTotal.textContent = fmt(total);
+        }
+
+        // 디바운스 PATCH
+        const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+        const syncQty = debounce((row) => {
+            const id = row.dataset.id;
+            const qty = row.querySelector('.qty-input').value;
+            // const { token, header } = getCsrf();
+            fetch(`/cart/${id}/qty?qty=${qty}`, { method: 'PATCH' });
+        }, 250);
+
+        // ---------- 이벤트 ----------
+        if ($list) {
+            $list.addEventListener('click', e => {
+                const row = e.target.closest('.cart-row'); if (!row) return;
+                const qtyInput = row.querySelector('.qty-input');
+                if (e.target.classList.contains('btnMinus')) {
+                    qtyInput.value = Math.max(1, Number(qtyInput.value || 1) - 1);
+                    syncQty(row); refreshSummary();
+                }
+                if (e.target.classList.contains('btnPlus')) {
+                    qtyInput.value = Number(qtyInput.value || 1) + 1;
+                    syncQty(row); refreshSummary();
+                }
+            });
+            $list.addEventListener('input', e => {
+                if (e.target.classList.contains('qty-input')) {
+                    let v = Number(e.target.value || 1);
+                    if (v < 1) v = 1;
+                    e.target.value = v;
+                    syncQty(e.target.closest('.cart-row'));
+                    refreshSummary();
+                }
+            });
+            $list.addEventListener('change', e => {
+                if (e.target.classList.contains('row-check')) {
+                    const rows = Array.from($list.querySelectorAll('.cart-row'));
+                    const allChecked = rows.length > 0 && rows.every(r => r.querySelector('.row-check')?.checked);
+                    if ($checkAll) $checkAll.checked = allChecked;
+                    refreshSummary();
+                }
+            });
+        }
+
+        if ($checkAll) {
+            $checkAll.addEventListener('change', e => {
+                $list.querySelectorAll('.row-check').forEach(cb => cb.checked = e.target.checked);
+                refreshSummary();
+            });
+        }
+
+        // 선택 삭제
+        const $btnRemove = document.getElementById('btnRemove');
+        if ($btnRemove) {
+            $btnRemove.addEventListener('click', () => {
+                const ids = Array.from($list.querySelectorAll('.cart-row'))
+                    .filter(r => r.querySelector('.row-check')?.checked)
+                    .map(r => r.dataset.id);
+                if (ids.length === 0) { alert('선택된 항목이 없습니다.'); return; }
+                // const { token, header } = getCsrf();
+                fetch('/cart/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids })
+                }).then(res => {
+                    if (res.ok) { location.reload(); }
+                    else { alert('삭제 중 문제가 발생했습니다.'); }
+                });
+            });
+        }
+
+        // 결제하기
+        const $btnCheckout = document.getElementById('btnCheckout');
+        if ($btnCheckout) {
+            $btnCheckout.addEventListener('click', () => {
+                const selected = Array.from($list.querySelectorAll('.cart-row'))
+                    .filter(r => r.querySelector('.row-check')?.checked)
+                    .map(r => ({ id: r.dataset.id, qty: r.querySelector('.qty-input').value }));
+                if (selected.length === 0) { alert('선택된 상품이 없습니다.'); return; }
+
+                const form = document.getElementById('checkoutForm');
+                // 기존 동적 hidden 제거
+                Array.from(form.querySelectorAll('input.dyn')).forEach(n => n.remove());
+
+                // Spring 바인딩 규칙: items[0].cartDetailId, items[0].quantity
+                selected.forEach((s, i) => {
+                    const h1 = document.createElement('input');
+                    h1.type = 'hidden'; h1.className = 'dyn';
+                    h1.name = `cartItems[${i}].cartDetailId`; h1.value = s.id; form.appendChild(h1);
+
+                    const h2 = document.createElement('input');
+                    h2.type = 'hidden'; h2.className = 'dyn';
+                    h2.name = `cartItems[${i}].quantity`; h2.value = s.qty; form.appendChild(h2);
+                });
+
+                form.submit();
+            });
+        }
+
+        // 초기 합계
+        refreshSummary();
+    </script>
+</th:block>
+
+</html>

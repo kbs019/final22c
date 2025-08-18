@@ -13,23 +13,7 @@
         </div>
         <!-- 우측의 상단에 존재하는  판매 / 구매 페이지 선택 버튼 -->
         <div class="productInfo">
-            <!-- <div class="d-flex justify-content-center gap-2 mb-3">
-                <button id="btn-buy" class="btn btn-outline-secondary active">구매</button>
-                <button id="btn-sell" class="btn btn-outline-secondary">판매</button>
-            </div> -->
-
-            <!-- 내용 영역: 두 블록을 미리 렌더링해둠 -->
             <div id="product-detail">
-
-                <!-- 구매 섹션: 기본 표시
-                <div id="section-buy">
-                    <th:block th:replace="~{main/content-buy :: buyFragment}"></th:block>
-                </div>-->
-
-                <!-- 판매 섹션: 기본은 숨김
-                <div id="section-sell" style="display:none;">
-                    <th:block th:replace="~{main/content-sell :: sellFragment}"></th:block>
-                </div> -->
                 <div class="my-3 py-3 border-bottom">
                     <h3>판매가 : <span th:text="${#numbers.formatInteger(product.sellPrice, 3, 'COMMA')}"></span> 원</h3>
                     <h5>정가 : <span th:text="${#numbers.formatInteger(product.price, 3, 'COMMA')}"></span> 원</h5>
@@ -75,8 +59,7 @@
 
                         <div class="mt-3 d-flex gap-2">
                             <!-- 장바구니 버튼 -->
-                            <button type="submit" class="btn btn-outline-secondary" formaction="/cart/add"
-                                formmethod="post" id="btn-add-cart">장바구니</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-add-cart">장바구니</button>
 
                             <!-- 바로결제(주문 요약/결제 페이지로) -->
                             <button type="submit" class="btn btn-secondary" formaction="/checkout/order"
@@ -85,9 +68,33 @@
                     </form>
                 </div>
             </div>
-
         </div>
     </div>
+
+    <!-- 장바구니 버튼을 클릭했을 때, 출력되는 모달창 -->
+    <div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">장바구니 담기</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cartModalMsg">장바구니에 제품이 등록되었습니다.</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
+                    <span sec:authorize="isAuthenticated()">
+                        <a th:href="@{/cart/list}" class="btn btn-secondary" id="goCartBtn">장바구니로 이동</a>
+                    </span>
+                    <span sec:authorize="isAnonymous()">
+                        <a th:href="@{/user/login}" class="btn btn-secondary" id="goCartBtn">로그인하기</a>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 하단의 향 소개 부분 시작 -->
     <div class="productDescription">
         <h2>향 소개</h2>
@@ -157,30 +164,63 @@
 </div>
 <!-- ajax 부분 설정 추가  -->
 <th:block layout:fragment="script">
-    <!-- 상단의 구매 / 판매 버튼 클릭하여 뷰 변경 -->
-    <!-- <script>
-        const btnBuy = document.getElementById('btn-buy');
-        const btnSell = document.getElementById('btn-sell');
-        const secBuy = document.getElementById('section-buy');
-        const secSell = document.getElementById('section-sell');
+    <script th:inline="javascript">
+        // Bootstrap Modal 준비
+        const cartModalEl = document.getElementById('cartModal');
+        const cartModal = cartModalEl ? new bootstrap.Modal(cartModalEl) : null;
 
-        function show(type) {
-            const isBuy = type === 'buy';
-            secBuy.style.display = isBuy ? '' : 'none';
-            secSell.style.display = isBuy ? 'none' : '';
-            btnBuy.classList.toggle('active', isBuy);
-            btnSell.classList.toggle('active', !isBuy);
+        // 공통 DOM
+        const btnAddCart = document.getElementById('btn-add-cart');
+        const buyForm = document.getElementById('buy-form');
+        const qtyInput = document.querySelector('.qty-input');
+        const msgBox = document.getElementById('cartModalMsg');
+        const badgeEl = document.getElementById('cart-count');
+
+        // 상품 정보(템플릿 값 주입)
+        const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+        const PRODUCT_NAME = /*[[${product.name}]]*/ '';
+        const MAX_STOCK = parseInt(qtyInput.getAttribute('max') || '0', 10);
+
+        // 더블클릭 방지
+        function withButtonLock(btn, fn) {
+            if (!btn || btn.disabled) return;
+            btn.disabled = true;
+            Promise.resolve(fn()).finally(() => setTimeout(() => btn.disabled = false, 800));
         }
 
-        btnBuy.addEventListener('click', () => show('buy'));
-        btnSell.addEventListener('click', () => show('sell'));
+        // 장바구니 추가
+        btnAddCart?.addEventListener('click', () => withButtonLock(btnAddCart, async () => {
+            // 수량 보정(1~MAX)
+            let qty = parseInt(qtyInput.value, 10);
+            if (isNaN(qty) || qty < 1) qty = 1;
+            if (MAX_STOCK > 0) qty = Math.min(qty, MAX_STOCK);
 
-        // URL로 진입 시 ?view=sell 지원하고 싶으면:
-        (function initFromURL() {
-            const v = new URL(location.href).searchParams.get('view');
-            if (v === 'sell') show('sell');
-        })();
-    </script> -->
+            try {
+                const res = await fetch('/cart/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',             // 동일 출처 쿠키 전송 보장
+                    body: JSON.stringify({ productId: PRODUCT_ID, qty })
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok) {
+                    if (badgeEl && typeof data.count === 'number') {
+                        badgeEl.textContent = String(data.count);
+                    }
+                    if (msgBox) msgBox.textContent = `“${PRODUCT_NAME}” ${qty}개가 장바구니에 담겼습니다.`;
+                    cartModal?.show();
+                } else {
+                    if (msgBox) msgBox.textContent = (data && data.message) ? data.message : '처리 중 오류가 발생했습니다.';
+                    cartModal?.show();
+                }
+            } catch (e) {
+                if (msgBox) msgBox.textContent = '네트워크 오류가 발생했습니다.';
+                cartModal?.show();
+            }
+        }));
+    </script>
 
     <style>
         /* Chrome, Edge, Safari(웹킷 계열)에서 공통 스피너 제거 */
@@ -200,7 +240,7 @@
     </script>
 
     <script th:inline="javascript">
-        document.querySelectorAll('#buy-qty-wrap, #sell-qty-wrap').forEach(container => {
+        document.querySelectorAll('#buy-qty-wrap').forEach(container => {
             // 컨테이너별 DOM 잡기
             const minusBtn = container.querySelector('.btn-minus');
             const plusBtn = container.querySelector('.btn-plus');

@@ -5,38 +5,40 @@
 
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
-        	<!-- 일반 사용자 메인로고 -->
+            <!-- 일반 사용자 메인로고 -->
             <a class="navbar-brand" sec:authorize="!hasRole('ADMIN')" href="/main/list">Main</a>
             <!-- 관리자 메인로고 -->
             <a class="navbar-brand" sec:authorize="hasRole('ADMIN')" href="/admin/userList">Main</a>
             <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
-			<!-- 관리자용 메뉴 -->
-			<ul class="navbar-nav" sec:authorize="hasRole('ADMIN')">
-			    <li class="nav-item"><a class="nav-link" href="/admin/userList">회원관리</a></li>
-			    <li class="nav-item"><a class="nav-link" href="/admin/productList">상품관리</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">판매내역관리</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">통계</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">돋보기</a></li>
-			</ul>
-			<!-- 일반 사용자 메뉴 -->
-			<ul class="navbar-nav" sec:authorize="!hasRole('ADMIN')">
-			    <li class="nav-item"><a class="nav-link" href="#">HOME</a></li>
-			    <li class="nav-item"><a class="nav-link" href="#">BEST</a></li>
-			    <li class="nav-item"><a class="nav-link" href="/main/list">LIST</a></li>
-			    <li class="nav-item"><a class="nav-link" href="#">BRAND</a></li>
-			    <li class="nav-item">
-                    <a class="nav-link nav-icon" href="/main/list" title="검색" aria-label="검색">
-                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                    <span class="visually-hidden">검색</span>
-                    </a>
-                </li>
-			</ul>
+                <!-- 관리자용 메뉴 -->
+                <ul class="navbar-nav" sec:authorize="hasRole('ADMIN')">
+                    <li class="nav-item"><a class="nav-link" href="/admin/userList">회원관리</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/productList">상품관리</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">판매내역관리</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">통계</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">돋보기</a></li>
+                </ul>
+                <!-- 일반 사용자 메뉴 -->
+                <ul class="navbar-nav" sec:authorize="!hasRole('ADMIN')">
+                    <li class="nav-item"><a class="nav-link" href="#">HOME</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">BEST</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/main/list">LIST</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">BRAND</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-icon" href="/main/list" title="검색" aria-label="검색">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <span class="visually-hidden">검색</span>
+                        </a>
+                    </li>
+                </ul>
             </div>
             <div class="navbar-icons">
-                <i class="fas fa-shopping-cart icon"></i>
-				<a sec:authorize="isAnonymous()" class="nav-link" href="/user/login">로그인</a>
-				<a sec:authorize="hasRole('USER')" class="nav-link" href="/mypage/address">마이페이지</a>
-				<a sec:authorize="isAuthenticated()" class="nav-link" href="/user/logout">로그아웃</a>
+                <a sec:authorize="isAuthenticated()" th:href="@{/cart/list}" class="nav-link">
+                    <i class="fas fa-shopping-cart icon"></i>
+                </a>
+                <a sec:authorize="isAnonymous()" class="nav-link" href="/user/login">로그인</a>
+                <a sec:authorize="hasRole('USER')" class="nav-link" href="/mypage/address">마이페이지</a>
+                <a sec:authorize="isAuthenticated()" class="nav-link" href="/user/logout">로그아웃</a>
             </div>
         </div>
     </nav>
