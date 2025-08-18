@@ -11,7 +11,7 @@ import com.ex.final22c.data.user.Users;
 
 public interface CartRepository extends JpaRepository<Cart, Long> {
     // Optional<Cart> findByUserId(Long userId);
-    Optional<Cart> findByUserUserName(String userName);
+    Optional<Cart> findByUser_UserName(String userName);
 
     Optional<Cart> findByUser(Users user);
 
