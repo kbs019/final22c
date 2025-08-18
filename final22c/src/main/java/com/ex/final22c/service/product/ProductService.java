@@ -49,4 +49,27 @@ public class ProductService {
         res.put("items", items);
         return res;
     }
+    
+    // 결제 승인시 재고 차감
+    @Transactional
+    public void decreaseStock(Long productId, int qty) {
+    	if (qty <=0) return;
+    	int updated = productRepository.decreaseStock(productId, qty);
+    	if (updated != 1) {
+    		throw new IllegalStateException("재고 부족 또는 상품 없음: id=" + productId);
+        }
+    }
+    /*
+    // 추후 취소/환불 구현시 재고 복구
+    @Transactional
+    public void increaseStock(Long productId, int qty) {
+        if (qty <= 0) return;
+        int updated = productRepository.increaseStock(productId, qty);
+        if (updated != 1) {
+            throw new IllegalStateException("재고 복구 실패 또는 상품 없음: id=" + productId);
+        }
+    }
+    */
+
+    
 }
