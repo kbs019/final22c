@@ -3,10 +3,8 @@ package com.ex.final22c.service.payment;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
-import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.repository.payment.PaymentRepository;
-import com.ex.final22c.repository.productRepository.ProductRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.ProductService;
 
