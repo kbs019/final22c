@@ -2,6 +2,7 @@ package com.ex.final22c.service.admin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -34,6 +35,7 @@ import com.ex.final22c.repository.user.UserRepository;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
@@ -209,7 +211,6 @@ public class AdminService {
     	    product.setDescription(dto.getDescription());
 
     	    String brandName = null;
-    	    String volumeName = null;
 
     	    // 브랜드 처리
     	    if (dto.getBrandNo() != null) {
@@ -224,7 +225,6 @@ public class AdminService {
     	        Volume volume = volumeRepository.findById(dto.getVolumeNo())
     	                            .orElseThrow(() -> new RuntimeException("용량 없음"));
     	        product.setVolume(volume);
-    	        volumeName = volume.getVolumeName();
     	    }
 
     	    // 그레이드/메인노트/노트 처리 (기존 로직 그대로)
@@ -255,19 +255,31 @@ public class AdminService {
     	    // 이미지 처리
     	    String uploadDir2 = "src/main/resources/static/img/" + brandName + "/";
     	    if (imgName != null && !imgName.isEmpty()) {
+    	        // 기존 이미지 삭제
+    	        if (product.getImgName() != null && !"default.png".equals(product.getImgName())) {
+    	            Path oldFilePath = Paths.get(uploadDir2, product.getImgName());
+    	            try {
+    	                Files.deleteIfExists(oldFilePath);
+    	            } catch (IOException e) {
+    	                e.printStackTrace();
+    	                System.out.println("기존 이미지 삭제 실패: " + oldFilePath);
+    	            }
+    	        }
+
+    	        // 새 이미지 저장
     	        String originalFilename = imgName.getOriginalFilename();
     	        String productName = dto.getName();
-    	        String extension = originalFilename != null && originalFilename.contains(".")
+    	        String extension = (originalFilename != null && originalFilename.contains("."))
     	                           ? originalFilename.substring(originalFilename.lastIndexOf("."))
     	                           : "";
-    	        String savedFileName = productName + extension;
+    	        String savedFileName = productName +  extension;
     	        Path savePath = Paths.get(uploadDir2, savedFileName);
     	        try {
 					imgName.transferTo(savePath);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-    	        product.setImgName(savedFileName + " " + volumeName);
+    	        product.setImgName(savedFileName);
     	        product.setImgPath("/img/" + brandName + "/");
     	    } else if (product.getId() == null) {
     	        // 신규 등록 시만 default 이미지
@@ -298,4 +310,39 @@ public class AdminService {
             productRepository.save(product);
         }
     }
+    
+    // 상품 필터
+    public List<Product> filterProducts(List<Long> brandIds, List<String> isPickedList, List<String> statusList,
+            Boolean sortStockAsc, Boolean sortStockDesc,
+            Boolean sortPriceAsc, Boolean sortPriceDesc) {
+
+		// JPA Specification 사용 예제
+		return productRepository.findAll((root, query, cb) -> {
+			List<Predicate> predicates = new ArrayList<>();
+			
+			if(brandIds != null && !brandIds.isEmpty()) {
+			predicates.add(root.get("brand").get("id").in(brandIds));
+			}
+			
+			if(isPickedList != null && !isPickedList.isEmpty()) {
+			predicates.add(root.get("isPicked").in(isPickedList));
+			}
+			
+			if(statusList != null && !statusList.isEmpty()) {
+			predicates.add(root.get("status").in(statusList));
+			}
+			
+			query.where(predicates.toArray(new Predicate[0]));
+			
+			// 정렬
+			List<Order> orders = new ArrayList<>();
+			if(Boolean.TRUE.equals(sortStockAsc)) orders.add(cb.asc(root.get("stock")));
+			if(Boolean.TRUE.equals(sortStockDesc)) orders.add(cb.desc(root.get("stock")));
+			if(Boolean.TRUE.equals(sortPriceAsc)) orders.add(cb.asc(root.get("price")));
+			if(Boolean.TRUE.equals(sortPriceDesc)) orders.add(cb.desc(root.get("price")));
+			if(!orders.isEmpty()) query.orderBy(orders);
+			
+		return query.getRestriction();
+		});
+	}
 }
