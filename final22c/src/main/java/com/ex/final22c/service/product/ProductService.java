@@ -59,7 +59,7 @@ public class ProductService {
     		throw new IllegalStateException("재고 부족 또는 상품 없음: id=" + productId);
         }
     }
-    /*
+    
     // 추후 취소/환불 구현시 재고 복구
     @Transactional
     public void increaseStock(Long productId, int qty) {
@@ -69,7 +69,6 @@ public class ProductService {
             throw new IllegalStateException("재고 복구 실패 또는 상품 없음: id=" + productId);
         }
     }
-    */
 
     
 }
