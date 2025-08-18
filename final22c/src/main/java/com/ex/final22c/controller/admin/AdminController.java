@@ -57,7 +57,10 @@ public class AdminController {
 		Page<Product> paging = adminService.getItemList(page);
 		int pageSize = 10; // 한 블록에 보여줄 페이지 수
 		int currentBlock = paging.getNumber() / pageSize; // 현재 블록
-
+		
+		List<Brand> brands = this.adminService.getBrand();
+		
+		model.addAttribute("brands",brands);
 		model.addAttribute("pageSize", pageSize);
 		model.addAttribute("currentBlock", currentBlock);
 		model.addAttribute("paging",paging);
@@ -128,5 +131,20 @@ public class AdminController {
 	    return ResponseEntity.ok().build();
 	}
 	
-	
+	// 상품 정렬
+    @GetMapping("profilter")
+    public String filterProducts(
+            @RequestParam(value = "brand", required = false) List<Long> brand,
+            @RequestParam(value = "isPicked", required = false) List<String> isPicked,
+            @RequestParam(value = "status", required = false) List<String> status,
+            @RequestParam(value = "sortStockAsc", required = false) Boolean sortStockAsc,
+            @RequestParam(value = "sortStockDesc", required = false) Boolean sortStockDesc,
+            @RequestParam(value = "sortPriceAsc", required = false) Boolean sortPriceAsc,
+            @RequestParam(value = "sortPriceDesc", required = false) Boolean sortPriceDesc,
+            Model model) {
+
+        List<Product> products = adminService.filterProducts(brand, isPicked, status, sortStockAsc, sortStockDesc, sortPriceAsc, sortPriceDesc);
+        model.addAttribute("products", products);
+        return "product/productList :: productListFragment"; // thymeleaf fragment
+    }
 }
