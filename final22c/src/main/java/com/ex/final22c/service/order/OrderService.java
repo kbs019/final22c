@@ -96,6 +96,7 @@ public class OrderService {
 
         // 3) 상태 갱신
         o.setStatus("PAID");
+        o.setDeliveryStatus("ORDERED");
         orderRepository.save(o);
     }
 

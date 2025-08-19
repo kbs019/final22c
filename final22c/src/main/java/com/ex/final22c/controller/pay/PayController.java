@@ -1,5 +1,21 @@
 package com.ex.final22c.controller.pay;
 
+import java.security.Principal;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.ex.final22c.data.cart.CartLine;
 import com.ex.final22c.data.cart.CartView;
 import com.ex.final22c.data.order.Order;
@@ -10,16 +26,8 @@ import com.ex.final22c.service.cart.CartService;
 import com.ex.final22c.service.order.OrderService;
 import com.ex.final22c.service.payment.PayCancelService;
 import com.ex.final22c.service.payment.PaymentService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.security.Principal;
-import java.util.List;
-import java.util.Map;
+import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
@@ -136,9 +144,9 @@ public class PayController {
     }
 
     /* ================= 결제 취소(유저 요청) ================= */
-    @PostMapping("/cancel-paid")
+    @PostMapping("/cancel-paid/{targetOrderId}")
     @ResponseBody
-    public Map<String, Object> cancelPaid(@RequestParam("orderId") Long orderId,
+    public Map<String, Object> cancelPaid(@PathVariable("targetOrderId") Long orderId,
     									  @RequestParam(value="reason", required=false) String reason) {
         var result = payCancelService.cancelPaid(orderId, reason);
         return Map.of("ok", true, "pg", result);
