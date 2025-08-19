@@ -53,18 +53,37 @@ public class AdminController {
 	
 	// 상품 관리
 	@GetMapping("productList")
-	public String productList(Model model,@RequestParam(value="page",defaultValue="0") int page) {
-		Page<Product> paging = adminService.getItemList(page);
-		int pageSize = 10; // 한 블록에 보여줄 페이지 수
-		int currentBlock = paging.getNumber() / pageSize; // 현재 블록
-		
-		List<Brand> brands = this.adminService.getBrand();
-		
-		model.addAttribute("brands",brands);
-		model.addAttribute("pageSize", pageSize);
-		model.addAttribute("currentBlock", currentBlock);
-		model.addAttribute("paging",paging);
-		return "admin/productList";
+	public String productList(
+	        Model model,
+	        @RequestParam(value="page", defaultValue="0") int page,
+	        @RequestParam(value="kw", defaultValue="") String kw,
+	        @RequestParam(value="brand", required=false) List<Long> brandIds,
+	        @RequestParam(value="isPicked", required=false) String isPicked,
+	        @RequestParam(value="status", required=false) String status,
+	        @RequestParam(value="sortStock", required=false) String sortStock,
+	        @RequestParam(value="sortPrice", required=false) String sortPrice
+	) {
+	    Page<Product> paging = adminService.getItemList(page, kw, brandIds, isPicked, status, sortStock, sortPrice);
+
+	    int pageSize = 10;
+	    int currentBlock = paging.getNumber() / pageSize;
+
+	    List<Brand> brands = adminService.getBrand();
+
+	    model.addAttribute("brands", brands);
+	    model.addAttribute("pageSize", pageSize);
+	    model.addAttribute("currentBlock", currentBlock);
+	    model.addAttribute("paging", paging);
+
+	    // 선택된 필터/정렬값 다시 모델에 전달
+	    model.addAttribute("kw", kw);
+	    model.addAttribute("brand", brandIds);
+	    model.addAttribute("isPicked", isPicked);
+	    model.addAttribute("status", status);
+	    model.addAttribute("sortStock", sortStock);
+	    model.addAttribute("sortPrice", sortPrice);
+
+	    return "admin/productList";
 	}
 	
 	// 브랜드 선택/등록
@@ -124,27 +143,15 @@ public class AdminController {
 	}
 	
 	// 상품 상태 변경
-	@PostMapping("/productStatus/{id}")
+	@PostMapping("productStatus/{id}")
 	public ResponseEntity<?> changeStatus(@PathVariable("id") Long id, @RequestParam("status") String status) {
 	
 	    this.adminService.productStatus(id, status);
 	    return ResponseEntity.ok().build();
 	}
-	
-	// 상품 정렬
-    @GetMapping("profilter")
-    public String filterProducts(
-            @RequestParam(value = "brand", required = false) List<Long> brand,
-            @RequestParam(value = "isPicked", required = false) List<String> isPicked,
-            @RequestParam(value = "status", required = false) List<String> status,
-            @RequestParam(value = "sortStockAsc", required = false) Boolean sortStockAsc,
-            @RequestParam(value = "sortStockDesc", required = false) Boolean sortStockDesc,
-            @RequestParam(value = "sortPriceAsc", required = false) Boolean sortPriceAsc,
-            @RequestParam(value = "sortPriceDesc", required = false) Boolean sortPriceDesc,
-            Model model) {
 
-        List<Product> products = adminService.filterProducts(brand, isPicked, status, sortStockAsc, sortStockDesc, sortPriceAsc, sortPriceDesc);
-        model.addAttribute("products", products);
-        return "product/productList :: productListFragment"; // thymeleaf fragment
-    }
+	@GetMapping("orderList")
+	public String orderList() {
+		return "admin/orderList";
+	}
 }
