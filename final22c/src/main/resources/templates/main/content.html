@@ -14,18 +14,21 @@
         <!-- 우측의 상단에 존재하는  판매 / 구매 페이지 선택 버튼 -->
         <div class="productInfo">
             <div id="product-detail">
-                <div class="my-3 py-3 border-bottom">
-                    <h3>판매가 : <span th:text="${#numbers.formatInteger(product.sellPrice, 3, 'COMMA')}"></span> 원</h3>
-                    <h5>정가 : <span th:text="${#numbers.formatInteger(product.price, 3, 'COMMA')}"></span> 원</h5>
-                </div>
-                <div class="my-3 py-3 border-bottom">
+                <div class="mb-3 py-3 border-bottom">
+                    <strong th:text="${product.brand.brandName}"></strong>
                     <div>
                         <h3 th:text="${product.name}"></h3>
                     </div>
-                    <div th:text="${product.brand.brandName}"></div>
+                    <div class="mb-3 pt-3" style="text-align: right;">
+                        <div>
+                            <strong th:text="${product.discount} + '%'" style="color: #d33;"></strong>
+                            <span th:text="${#numbers.formatInteger(product.sellPrice, 3, 'COMMA')} + '원'" style="font-size: 1.5em;"></span>
+                        </div>
+                        <div><del th:text="${#numbers.formatInteger(product.price, 3, 'COMMA')} + '원'"></del></div>
+                    </div>
                 </div>
-                <div class="my-3 py-3 border-bottom">
-                    <div>배송 정보</div>
+                <div class="mb-3 pb-3 border-bottom">
+                    <div>배송 정보</div><br>
                     <div>
                         <h5>배송비 3,000 원</h5>
                     </div>
@@ -98,20 +101,23 @@
     <!-- 하단의 향 소개 부분 시작 -->
     <div class="productDescription">
         <h2>향 소개</h2>
+        <br>
         <div>
-            <span>부향률</span>
+            <span>[부향률]</span>
             <div>
                 - <span th:text="${product.grade.gradeName}"></span>
             </div>
         </div>
+        <br>
         <div>
-            <span>메인 어코드</span>
+            <span>[메인 어코드]</span>
             <div>
                 - <span th:text="${product.mainNote.mainNoteName}"></span>
             </div>
         </div>
+        <br>
         <div>
-            <span>메인 노트</span>
+            <span>[메인 노트]</span>
             <div th:if="${product.singleNote != null}">
                 - <span>싱글 노트 : </span>
                 <span th:text="${product.singleNote}"></span>
@@ -131,8 +137,9 @@
                 </div>
             </div>
         </div>
+        <br>
         <div>
-            <span>향 설명</span>
+            <span>[향 설명]</span>
             <div>
                 - <span th:text="${product.description}"></span>
             </div>

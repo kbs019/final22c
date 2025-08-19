@@ -15,10 +15,24 @@ public class CartLine {
     private String imgPath;             // 해당 상품의 이미지 출력 경로
     private String imgName;             // 해당 상품의 이미지명
     private int stock;                  // 해당 상품의 현재 남은 재고
+    private int listPrice;              // 해당 상품의 정가 리스트
+    private double listDiscount;        // 해당 상품의 할인률 리스트
 
     // 파생값 -- 라인 합계
     public int getLineTotal(){
         return unitPrice * quantity;
+    }
+
+    // 할인률을 정수(%) 로 사용하기 위해 변환
+    public int getDiscountPercent(){
+        double v = listDiscount;
+        if( Double.isNaN(v) || Double.isInfinite(v) || v <= 0 ){
+            return 0;
+        }
+
+        // 1.0 이상은 '이미 퍼센트'로 간주 -> 소수점 아래 삭제
+        // 1.0 미만은 '비율'로 간주 -> 100 곱하고 소수점 아래 삭제
+        return ( v > 1.0 ) ? (int) v : (int) ( v * 100.0 );
     }
     
     // ▼ 변경: static 팩토리 메서드로 공개
@@ -33,6 +47,8 @@ public class CartLine {
             .imgPath(d.getProduct().getImgPath())
             .imgName(d.getProduct().getImgName())
             .stock(d.getProduct().getCount())
+            .listPrice(d.getProduct().getPrice())
+            .listDiscount(d.getProduct().getDiscount())
             .build();
     }
 

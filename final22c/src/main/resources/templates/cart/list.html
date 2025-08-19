@@ -21,9 +21,10 @@
 
                 <!-- 라인 렌더 -->
                 <div th:each="cartItem : ${products}" class="cart-row" th:data-id="${cartItem.cartDetailId}"
-                    th:data-unit-price="${cartItem.unitPrice}" th:data-stock="${cartItem.stock}">
+                    th:data-unit-price="${cartItem.unitPrice}" th:data-list-price="${cartItem.listPrice}"
+                    th:data-stock="${cartItem.stock}">
                     <!-- 체크 -->
-                    <input type="checkbox" class="row-check">
+                    <input type="checkbox" class="row-check" th:disabled="${cartItem.stock == 0}">
 
                     <!-- 이미지/링크 -->
                     <a th:href="@{|/main/content/${cartItem.id}|}">
@@ -37,7 +38,15 @@
                             <div th:text="${cartItem.name}"></div>
                             <div class="muted" th:text="${cartItem.brand}"></div>
                         </a>
-                        <div class="muted" th:text="${#numbers.formatInteger(cartItem.unitPrice, 3, 'COMMA')} + '원'">
+                        <span class="muted">
+                            <del th:text="${#numbers.formatInteger(cartItem.listPrice, 3, 'COMMA')} + '원'"></del>
+                        </span>
+                        <span>
+                            <strong class="muted" th:text="${cartItem.discountPercent} + '%'"
+                                style="color:#d33;"></strong>
+                        </span>
+                        <div>
+                            <strong th:text="${#numbers.formatInteger(cartItem.unitPrice, 3, 'COMMA')} + '원'"></strong>
                         </div>
                     </div>
 
@@ -45,13 +54,14 @@
                     <div style="text-align:right">
                         <div class="qty-wrap">
                             <button type="button" class="qty-btn btnMinus">-</button>
-                            <input type="number" class="qty-input" th:value="${cartItem.quantity}" min="1" th:attr="max=${cartItem.stock}">
+                            <input type="number" class="qty-input" th:value="${cartItem.quantity}" min="1"
+                                th:attr="max=${cartItem.stock}">
                             <button type="button" class="qty-btn btnPlus">+</button>
                         </div>
 
-                        <!-- <div class="muted" th:if="${cartItem.stock == 0}" style="color:#d33; margin-top:4px;">
+                        <div class="muted" th:if="${cartItem.stock == 0}" style="color:#d33; margin-top:4px;">
                             품절되어 수량 변경 및 결제가 제한됩니다.
-                        </div> -->
+                        </div>
 
                         <div style="margin-top:6px">
                             <strong class="line-total"
@@ -64,13 +74,31 @@
 
         <!-- 우측: 합계/결제 -->
         <aside class="sidebar">
-            <div style="display:flex;justify-content:space-between">
-                <div>선택 상품</div>
-                <div><span id="selCount">0</span>개</div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <div>내 보유 마일리지</div>
+                <div><strong th:text="${#numbers.formatInteger(userMileage ?: 0, 1, 'COMMA')} + '원'"></strong></div>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:8px">
-                <div>상품 합계</div>
+                <div>선택 상품</div>
+                <div><strong id="selCount">0</strong>개</div>
+            </div>
+            <hr>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <div>정가 합계</div>
+                <div><strong id="selListTotal">0원</strong></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <div>할인 금액</div>
+                <div><strong id="selDiscount">0원</strong></div>
+            </div>
+            <hr>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <div>최종 결제 합계</div>
                 <div><strong id="selTotal">0원</strong></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <div>적립 마일리지</div>
+                <div><strong id="getMileage">0원</strong></div>
             </div>
             <hr>
             <form id="checkoutForm" th:action="@{/checkout/order/cart}" method="post">
@@ -91,6 +119,7 @@
         // ---------- 유틸 ----------
         const fmt = n => (n || 0).toLocaleString('ko-KR') + '원';       // 1000 단위로 , 를 연결해주고, '원' 을 붙여주는 작업을 도와줌
         const getMax = (row) => Number(row?.dataset?.stock ?? 1);       // 최대 재고 가져오기
+        const isSellable = (row) => getMax(row) > 0;                    // 최대 재고가 0 보다 크다면 true (판매가능)
         // const getCsrf = () => ({
         //     token: document.querySelector('meta[name="_csrf"]').content,
         //     header: document.querySelector('meta[name="_csrf_header"]').content
@@ -98,39 +127,80 @@
 
         const $list = document.getElementById('cartList');
         const $checkAll = document.getElementById('checkAll');
-        const $selCount = document.getElementById('selCount');
-        const $selTotal = document.getElementById('selTotal');
+        const $selCount = document.getElementById('selCount');          // 선택된 상품의 갯수 ( 구매하려는 상품의 갯수 -- 우측 사이드바에 출력되는 값 )
+        const $selTotal = document.getElementById('selTotal');          // 선택된 상품의 판매가의 총 합
+        const $getMileage = document.getElementById('getMileage');      // 선택된 상품의 판매가에 적립률 계산
 
         // 버튼 상태 갱신 (수량 == 최대일 때 + 비활성화)
         function toggleButtons(row) {
             const qtyInput = row.querySelector('.qty-input');
             const btnPlus = row.querySelector('.btnPlus');
             const btnMinus = row.querySelector('.btnMinus');
-            const qty = Number( qtyInput.value || 1 );
+            const cb = row.querySelector('.row-check');
+            const qty = Number(qtyInput.value || 1);
             const max = getMax(row);
 
-            if( btnPlus ){ btnPlus.disabled = qty >= max || max <= 0; }
-            if( btnMinus ){ btnMinus.disabled = qty <= 1 || max <= 0; }
+            if (btnPlus) { btnPlus.disabled = qty >= max || max <= 0; }
+            if (btnMinus) { btnMinus.disabled = qty <= 1 || max <= 0; }
 
             // 품절이면 입력 자체를 막는다.
-            qtyInput.disabled = ( max <= 0 );
+            qtyInput.disabled = (max <= 0);
+
+            // 품절이면 체크박스도 막고 체크 해제
+            if (cb) {
+                cb.disabled = !isSellable(row);
+                if (cb.disabled) { cb.checked = false; }
+            }
         }
 
         function refreshSummary() {
             const rows = Array.from($list.querySelectorAll('.cart-row'));
-            let total = 0, cnt = 0;
+            let total = 0, cnt = 0, mileage = 0, listTotal = 0;
+
             rows.forEach(r => {
-                const checked = r.querySelector('.row-check')?.checked;
+                const sellable = isSellable(r);
+                const cb = r.querySelector('.row-check');
+
+                const checked = cb?.checked && sellable;
+
                 const qty = Number(r.querySelector('.qty-input')?.value || 1);
                 const unit = Number(r.dataset.unitPrice || 0);
-                const line = unit * qty;
+                const listPrice = Number(r.dataset.listPrice || 0);
+                const lineUnit = unit * qty;
+                const lineList = listPrice * qty;
+
                 const $line = r.querySelector('.line-total');
-                if ($line) $line.textContent = fmt(line);
-                if (checked) { total += line; cnt++; }
+
+                if ($line) {
+                    $line.textContent = fmt(lineUnit);
+                }
+
+                if (checked) {
+                    total += lineUnit;
+                    listTotal += lineList;
+                    cnt++;
+                }
                 toggleButtons(r);
             });
-            $selCount.textContent = cnt;
+
+            const discountPrice = listTotal - total;            // 할인 금액
+            mileage = total * 0.05;                             // 적립 마일리지
+
+            $selCount.textContent = cnt;                        // 선택된 상품의 갯수를 출력
             $selTotal.textContent = fmt(total);
+            $getMileage.textContent = fmt(mileage);
+
+            // 선택된 상품들의 정가의 합
+            const $listTotal = document.getElementById('selListTotal');
+            if ($listTotal) {
+                $listTotal.textContent = fmt(listTotal);
+            }
+
+            // 할인금액 표시 추가
+            const $discountPrice = document.getElementById('selDiscount');
+            if ($discountPrice) {
+                $discountPrice.textContent = fmt(discountPrice);
+            }
         }
 
         // 디바운스 PATCH
@@ -143,17 +213,20 @@
 
             const res = await fetch(`/cart/check/${id}/qty?qty=${qty}`, { method: 'PATCH' });
             let data = {};
-            try { data = await res.json(); } catch (_) {}
-            console.log('[PATCH /cart/{id}/qty]', { id, req: qty, status: res.status, data });
+            try { data = await res.json(); } catch (_) { }
+
+            // 확인용 로그
+            console.log('[PATCH /cart/check/{id}/qty]', { id, req: qty, status: res.status, data });
 
             // 서버가 보정했다면 클라이언트도 동기화
-            if( data && typeof data.qty !== 'underfined' ) {
+            if (data && typeof data.qty !== 'undefined') {
                 row.querySelector('.qty-input').value = data.qty;
-                if( typeof data.max !== 'underfined' ){
+                if (typeof data.max !== 'undefined') {
                     row.dataset.stock = data.max;
                 }
-                if( !data.ok ){
+                if (!data.ok) {
                     alert('선택 수량이 재고를 초과하여 최대 수량으로 조정되었습니다.');
+                    refreshSummary();
                 }
             }
         }, 250);
@@ -178,8 +251,8 @@
                     const row = e.target.closest('.cart-row');
                     const max = getMax(row);
                     let v = Number(e.target.value || 1);
-                    if ( Number.isNaN(v) ) { v = 1; }
-                    v = Math.max( 1, Math.min(v, max) );        // 1 ~ max 로 범위 지정
+                    if (Number.isNaN(v)) { v = 1; }
+                    v = Math.max(1, Math.min(v, max));        // 1 ~ max 로 범위 지정
                     e.target.value = v;
                     syncQty(row);
                     refreshSummary();
@@ -187,7 +260,8 @@
             });
             $list.addEventListener('change', e => {
                 if (e.target.classList.contains('row-check')) {
-                    const rows = Array.from($list.querySelectorAll('.cart-row'));
+                    const rows = Array.from($list.querySelectorAll('.cart-row'))
+                        .filter(isSellable);
                     const allChecked = rows.length > 0 && rows.every(r => r.querySelector('.row-check')?.checked);
                     if ($checkAll) $checkAll.checked = allChecked;
                     refreshSummary();
@@ -195,9 +269,11 @@
             });
         }
 
+        // 전체 선택
         if ($checkAll) {
             $checkAll.addEventListener('change', e => {
-                $list.querySelectorAll('.row-check').forEach(cb => cb.checked = e.target.checked);
+                $list.querySelectorAll('.row-check:not([disabled])')
+                    .forEach(cb => cb.checked = e.target.checked);
                 refreshSummary();
             });
         }
@@ -226,11 +302,21 @@
         const $btnCheckout = document.getElementById('btnCheckout');
         if ($btnCheckout) {
             $btnCheckout.addEventListener('click', () => {
-                const selected = Array.from($list.querySelectorAll('.cart-row'))
-                    .filter(r => r.querySelector('.row-check')?.checked)
-                    .map(r => ({ id: r.dataset.id, qty: r.querySelector('.qty-input').value }));
-                if (selected.length === 0) { alert('선택된 상품이 없습니다.'); return; }
+                const rows = Array.from($list.querySelectorAll('.cart-row'));
+                const selectedRows = rows.filter(r => r.querySelector('.row-check')?.checked);
+                if (selectedRows.length === 0) { alert('선택된 상품이 없습니다.'); return; }
 
+                // 품절 선택 여부 검사
+                const invalid = selectedRows.filter(r => !isSellable(r));
+                if (invalid.length > 0) {
+                    // 안전하게 체크 해제
+                    invalid.forEach(r => { const cb = r.querySelector('.row-check'); if (cb) cb.checked = false; });
+                    refreshSummary();
+                    alert('품절된 상품이 포함되어 있어 결제할 수 없습니다.');
+                    return;
+                }
+
+                const selected = selectedRows.map(r => ({ id: r.dataset.id, qty: r.querySelector('.qty-input').value }));
                 const form = document.getElementById('checkoutForm');
                 // 기존 동적 hidden 제거
                 Array.from(form.querySelectorAll('input.dyn')).forEach(n => n.remove());
