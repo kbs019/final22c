@@ -19,6 +19,28 @@
     flex-basis: 50%;
 }
 
-/* content.css */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1050}
-.modal-card{background:#fff;border-radius:12px;padding:20px;min-width:280px;max-width:420px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+/* 모달창의 구성 설정 */
+.modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.4);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:1050
+}
+.modal-card{
+    background:#fff;
+    border-radius:12px;
+    padding:20px;
+    min-width:280px;
+    max-width:420px;
+    box-shadow:0 10px 30px rgba(0,0,0,.2)
+}
+
+/* Chrome, Edge, Safari(웹킷 계열)에서 공통 스피너 제거 */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
