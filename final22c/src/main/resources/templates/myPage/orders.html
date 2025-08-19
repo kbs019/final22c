@@ -98,6 +98,7 @@
   .cm-btn:focus{ outline:2px solid #111827; outline-offset:2px; }
 </style>
 
+<!-- templates/mypage/orders.html -->
 <section>
   <h2>주문내역</h2>
 
@@ -124,14 +125,7 @@
         <span th:if="${restCnt==0 && first != null}" th:text="${' ' + first.quantity + '개'}"></span>
         <span th:if="${o.status=='CANCELED'}" class="badge-canceled">주문취소</span>
       </div>
-
       <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
-    </div>
-
-    <!-- 우측 상단 버튼 -->
-    <div class="order-actions">
-      <button class="order-btn btn-confirm" type="button">주문확정</button>
-      <button class="refund-btn btn-refund" type="button">결제취소</button>
     </div>
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
@@ -162,12 +156,11 @@
 
   <!-- 페이지네이션 (경로 주의: 단수 /mypage/order) -->
   <div style="margin-top:12px" th:if="${orders.totalPages > 1}">
-    <a th:each="i : ${#numbers.sequence(0, orders.totalPages - 1)}"
+    <a th:each="i : ${#numbers.sequence(0, orders.totalPages-1)}"
        th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
        th:text="${i + 1}"
-       th:classappend="${i == orders.number} ? 'active' : ''"
-       style="margin-right:8px">
-    </a>
+       th:classappend="${i == orders.number} ? ' active' : ''"
+       style="margin-right:8px"></a>
   </div>
 </section>
 
@@ -305,4 +298,3 @@ $confirmYes.addEventListener('click', async () => {
 </script>
 </div>
 </html>
-
