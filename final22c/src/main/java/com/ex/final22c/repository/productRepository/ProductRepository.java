@@ -2,6 +2,7 @@ package com.ex.final22c.repository.productRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -10,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.user.Users;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
@@ -34,4 +36,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 				where p.id = :productId
 			""")
 	int increaseStock(@Param("productId") Long productId, @Param("qty") int qty);
+	
+	// 상품목록 (페이징,검색)
+    Page<Product> findAll(Specification<Product> spec, Pageable pageable);
 }
