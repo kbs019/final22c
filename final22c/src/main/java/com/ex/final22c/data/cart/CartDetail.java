@@ -1,6 +1,5 @@
 package com.ex.final22c.data.cart;
 
-import java.beans.Transient;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -19,6 +18,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
@@ -58,8 +58,8 @@ public class CartDetail {
     private LocalDateTime createDate;
 
     // Quantity 의 set() 변경
-    public void setQuantity(int q) {
-        this.quantity = Math.max(1, q);
+    public void setQuantity(int quantity) {
+        this.quantity = Math.max(1, quantity);
     }
 
     // 현재 단가 = Product.sellPrice
@@ -75,10 +75,13 @@ public class CartDetail {
     @PrePersist
     @PreUpdate
     void computeLine() {
-        if (sellPrice == 0 && product != null)
-            sellPrice = product.getSellPrice();
-        if (quantity < 1)
+        if (quantity < 1) {
             quantity = 1;
-        totalPrice = (sellPrice != 0 ? sellPrice : 0) * quantity;
+        }
+
+        // 스냅샷 NO: 항상 현재 Product의 sellPrice로 재계산
+        int current = (product != null ? product.getSellPrice() : 0);
+        this.sellPrice = current; // 저장하되 '현재가 기록' 용도로만
+        this.totalPrice = current * quantity;
     }
 }

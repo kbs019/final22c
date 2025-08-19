@@ -8,6 +8,9 @@ import java.util.*;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface CartDetailRepository extends JpaRepository<CartDetail, Long> {
@@ -16,10 +19,39 @@ public interface CartDetailRepository extends JpaRepository<CartDetail, Long> {
     int countByCartUserUserName(String userName);
 
     // cartId 에 해당하는 CartDetail 타입의 모든 레코드 조회
-    @EntityGraph(attributePaths = {"product","product.brand"})      // fetch.EAGER 방지
+    @EntityGraph(attributePaths = { "product", "product.brand" }) // fetch.EAGER 방지
     List<CartDetail> findAllByCart_CartIdOrderByCreateDateDesc(Long cartId);
 
     // userName 에 해당하는 Users 객체의 Cart 를 제거
     long deleteByCartDetailIdInAndCart_User_UserName(Collection<Long> ids, String userName);
+
+    // 단건 조회: 소유자 일치 + product/cart/user fetch
+    @EntityGraph(attributePaths = { "product", "cart", "cart.user" })
+    @Query("""
+            select cd
+            from CartDetail cd
+            where cd.cartDetailId = :id
+            and cd.cart.user.userName = :userName
+            """)
+    Optional<CartDetail> findByIdAndOwnerFetch(@Param("id") Long id, @Param("userName") String userName);
+
+    // 다건 조회: 체크아웃/일괄 처리 등에 사용
+    @EntityGraph(attributePaths = { "product", "cart", "cart.user" })
+    @Query("""
+            select cd
+            from CartDetail cd
+            where cd.cart.user.userName = :userName
+            and cd.cartDetailId in :ids
+            """)
+    List<CartDetail> findAllByIdsAndOwnerFetch(@Param("userName") String userName, @Param("ids") List<Long> ids);
+
+    // 선택 삭제
+    @Modifying
+    @Query("""
+            delete from CartDetail cd
+            where cd.cart.user.userName = :userName
+            and cd.cartDetailId in :ids
+            """)
+    int deleteByIdsAndOwner(@Param("userName") String userName, @Param("ids") List<Long> ids);
 
 }
