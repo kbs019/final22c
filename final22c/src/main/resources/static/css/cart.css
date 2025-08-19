@@ -66,3 +66,10 @@
     align-items: center;
     margin-bottom: 8px
 }
+
+/* Chrome, Edge, Safari(웹킷 계열)에서 공통 스피너 제거 */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
