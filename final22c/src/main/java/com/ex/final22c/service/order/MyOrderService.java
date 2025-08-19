@@ -3,8 +3,8 @@ package com.ex.final22c.service.order;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +22,23 @@ public class MyOrderService {
     private final UsersService usersService;
     private final OrderRepository orderRepository;
 
+    // @Transactional(readOnly = true)
+    // public Page<Order> listMyOrders(String username, int page, int size){
+    //     Users me = usersService.getUser(username);
+    //     Pageable pageable = PageRequest.of(page, size, Sort.by("regDate").descending());
+    //     return orderRepository.findByUser_UserNoAndStatusOrderByRegDateDesc(
+    //         me.getUserNo(), "PAID", pageable
+    //     );
+    // }
+
     @Transactional(readOnly = true)
-    public Page<Order> listMyOrders(String username, int page, int size){
+    public Page<Order> listMyOrders(String username, int page, int size, Boolean hideCanceled){
         Users me = usersService.getUser(username);
         Pageable pageable = PageRequest.of(page, size, Sort.by("regDate").descending());
-        return orderRepository.findByUser_UserNoAndStatusOrderByRegDateDesc(
-            me.getUserNo(), "PAID", pageable
-        );
+        if (Boolean.TRUE.equals(hideCanceled)) {
+            return orderRepository.findByUser_UserNoAndStatusNotOrderByRegDateDesc(me.getUserNo(), "CANCELED", pageable);
+        }
+        return orderRepository.findByUser_UserNoOrderByRegDateDesc(me.getUserNo(), pageable);
     }
 
     @Transactional(readOnly = true)

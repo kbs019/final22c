@@ -125,12 +125,19 @@
         <span th:if="${restCnt==0 && first != null}" th:text="${' ' + first.quantity + '개'}"></span>
         <span th:if="${o.status=='CANCELED'}" class="badge-canceled">주문취소</span>
       </div>
+
       <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
+    </div>
+
+    <!-- 우측 상단 버튼 -->
+    <div class="order-actions"
+          th:if="${o.status == 'PAID'}">
+      <button class="refund-btn btn-refund" type="button">결제취소</button>
     </div>
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
     <div class="stepper"
-         th:if="${o.status!='CANCELED'}"
+         th:if="${o.status != 'CANCELED'}"
          th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
@@ -156,9 +163,12 @@
 
   <!-- 페이지네이션 (경로 주의: 단수 /mypage/order) -->
   <div style="margin-top:12px" th:if="${orders.totalPages > 1}">
-    <a th:each="i : ${#numbers.sequence(0, orders.totalPages-1)}"
+    <a th:each="i : ${#numbers.sequence(0, orders.totalPages - 1)}"
        th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
        th:text="${i + 1}"
+       th:classappend="${i == orders.number} ? 'active' : ''"
+       style="margin-right:8px">
+    </a>
        th:classappend="${i == orders.number} ? ' active' : ''"
        style="margin-right:8px"></a>
   </div>
