@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.data.cart.CartDetail;
 import com.ex.final22c.repository.cartDetail.CartDetailRepository;
@@ -45,6 +46,7 @@ public class CartDetailService {
     }
 
     // 선택 삭제 (소유자 기준으로만 삭제)
+    @Transactional
     public int removeMine( String userName, List<Long> ids ){
         if( ids == null || ids.isEmpty() ){ return 0; }
         return cartDetailRepository.deleteByIdsAndOwner(userName, ids);
