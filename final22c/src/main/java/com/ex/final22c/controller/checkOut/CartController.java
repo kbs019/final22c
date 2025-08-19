@@ -1,6 +1,7 @@
 package com.ex.final22c.controller.checkOut;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -8,13 +9,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.ex.final22c.data.cart.CartDetail;
 import com.ex.final22c.data.cart.CartView;
 import com.ex.final22c.data.cart.IdsPayload;
+import com.ex.final22c.repository.cartDetail.CartDetailRepository;
+import com.ex.final22c.service.cart.CartDetailService;
 import com.ex.final22c.service.cart.CartService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +32,8 @@ import lombok.RequiredArgsConstructor;
 public class CartController {
 
     private final CartService cartService;
+    private final CartDetailService cartDetailService;
+    private final CartDetailRepository cartDetailRepository;
 
     public record AddCartRequest(Long productId, int qty) {
     }
@@ -40,6 +49,28 @@ public class CartController {
         if ("anonymousUser".equalsIgnoreCase(principal.getName()))
             throw new RuntimeException("로그인이 필요합니다.");
         return principal.getName();
+    }
+
+    @PatchMapping("/check/{id}/qty")
+    public ResponseEntity<Map<String, Object>> changeQty(
+            @PathVariable("id") Long id,
+            @RequestParam(name = "qty") int qty,
+            Principal principal) {
+
+        String userName = principal.getName();
+        int clamped = cartDetailService.clampAndUpdateQty(userName, id, qty);
+
+        // 최신 재고를 응답에 포함하려면 재조회 (findMine은 fetch join)
+        int stock = cartDetailService.findMine(userName, id).getProduct().getCount();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("qty", clamped);
+        body.put("max", stock);
+        body.put("ok", clamped == qty);
+
+        return (clamped == qty)
+                ? ResponseEntity.ok(body)
+                : ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @PostMapping("/add")
@@ -64,7 +95,6 @@ public class CartController {
         return "cart/list";
     }
 
-
     /** 선택 삭제 (AJAX) */
     @PostMapping("/remove")
     @ResponseBody
@@ -72,9 +102,9 @@ public class CartController {
         if (payload == null || payload.getIds() == null || payload.getIds().isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
-        int n = cartService.removeAll(principal.getName(), payload.getIds());
+        int n = cartDetailService.removeMine(principal.getName(), payload.getIds());
         return ResponseEntity.noContent()
-            .header("X-Deleted-Count", String.valueOf(n))
-            .build();
+                .header("X-Deleted-Count", String.valueOf(n))
+                .build();
     }
 }

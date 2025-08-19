@@ -21,7 +21,7 @@
 
                 <!-- 라인 렌더 -->
                 <div th:each="cartItem : ${products}" class="cart-row" th:data-id="${cartItem.cartDetailId}"
-                    th:data-unit-price="${cartItem.unitPrice}">
+                    th:data-unit-price="${cartItem.unitPrice}" th:data-stock="${cartItem.stock}">
                     <!-- 체크 -->
                     <input type="checkbox" class="row-check">
 
@@ -45,9 +45,14 @@
                     <div style="text-align:right">
                         <div class="qty-wrap">
                             <button type="button" class="qty-btn btnMinus">-</button>
-                            <input type="number" class="qty-input" th:value="${cartItem.quantity}" min="1">
+                            <input type="number" class="qty-input" th:value="${cartItem.quantity}" min="1" th:attr="max=${cartItem.stock}">
                             <button type="button" class="qty-btn btnPlus">+</button>
                         </div>
+
+                        <!-- <div class="muted" th:if="${cartItem.stock == 0}" style="color:#d33; margin-top:4px;">
+                            품절되어 수량 변경 및 결제가 제한됩니다.
+                        </div> -->
+
                         <div style="margin-top:6px">
                             <strong class="line-total"
                                 th:text="${#numbers.formatInteger(cartItem.unitPrice * cartItem.quantity,3,'COMMA')} + '원'"></strong>
@@ -84,7 +89,8 @@
     <!-- 페이지 전용 JS -->
     <script th:inline="javascript">
         // ---------- 유틸 ----------
-        const fmt = n => (n || 0).toLocaleString('ko-KR') + '원';
+        const fmt = n => (n || 0).toLocaleString('ko-KR') + '원';       // 1000 단위로 , 를 연결해주고, '원' 을 붙여주는 작업을 도와줌
+        const getMax = (row) => Number(row?.dataset?.stock ?? 1);       // 최대 재고 가져오기
         // const getCsrf = () => ({
         //     token: document.querySelector('meta[name="_csrf"]').content,
         //     header: document.querySelector('meta[name="_csrf_header"]').content
@@ -94,6 +100,21 @@
         const $checkAll = document.getElementById('checkAll');
         const $selCount = document.getElementById('selCount');
         const $selTotal = document.getElementById('selTotal');
+
+        // 버튼 상태 갱신 (수량 == 최대일 때 + 비활성화)
+        function toggleButtons(row) {
+            const qtyInput = row.querySelector('.qty-input');
+            const btnPlus = row.querySelector('.btnPlus');
+            const btnMinus = row.querySelector('.btnMinus');
+            const qty = Number( qtyInput.value || 1 );
+            const max = getMax(row);
+
+            if( btnPlus ){ btnPlus.disabled = qty >= max || max <= 0; }
+            if( btnMinus ){ btnMinus.disabled = qty <= 1 || max <= 0; }
+
+            // 품절이면 입력 자체를 막는다.
+            qtyInput.disabled = ( max <= 0 );
+        }
 
         function refreshSummary() {
             const rows = Array.from($list.querySelectorAll('.cart-row'));
@@ -106,6 +127,7 @@
                 const $line = r.querySelector('.line-total');
                 if ($line) $line.textContent = fmt(line);
                 if (checked) { total += line; cnt++; }
+                toggleButtons(r);
             });
             $selCount.textContent = cnt;
             $selTotal.textContent = fmt(total);
@@ -113,11 +135,27 @@
 
         // 디바운스 PATCH
         const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
-        const syncQty = debounce((row) => {
+        const syncQty = debounce(async (row) => {
             const id = row.dataset.id;
             const qty = row.querySelector('.qty-input').value;
+
             // const { token, header } = getCsrf();
-            fetch(`/cart/${id}/qty?qty=${qty}`, { method: 'PATCH' });
+
+            const res = await fetch(`/cart/check/${id}/qty?qty=${qty}`, { method: 'PATCH' });
+            let data = {};
+            try { data = await res.json(); } catch (_) {}
+            console.log('[PATCH /cart/{id}/qty]', { id, req: qty, status: res.status, data });
+
+            // 서버가 보정했다면 클라이언트도 동기화
+            if( data && typeof data.qty !== 'underfined' ) {
+                row.querySelector('.qty-input').value = data.qty;
+                if( typeof data.max !== 'underfined' ){
+                    row.dataset.stock = data.max;
+                }
+                if( !data.ok ){
+                    alert('선택 수량이 재고를 초과하여 최대 수량으로 조정되었습니다.');
+                }
+            }
         }, 250);
 
         // ---------- 이벤트 ----------
@@ -125,21 +163,25 @@
             $list.addEventListener('click', e => {
                 const row = e.target.closest('.cart-row'); if (!row) return;
                 const qtyInput = row.querySelector('.qty-input');
+                const max = getMax(row);
                 if (e.target.classList.contains('btnMinus')) {
                     qtyInput.value = Math.max(1, Number(qtyInput.value || 1) - 1);
                     syncQty(row); refreshSummary();
                 }
                 if (e.target.classList.contains('btnPlus')) {
-                    qtyInput.value = Number(qtyInput.value || 1) + 1;
+                    qtyInput.value = Math.min(max, Number(qtyInput.value || 1) + 1);
                     syncQty(row); refreshSummary();
                 }
             });
             $list.addEventListener('input', e => {
                 if (e.target.classList.contains('qty-input')) {
+                    const row = e.target.closest('.cart-row');
+                    const max = getMax(row);
                     let v = Number(e.target.value || 1);
-                    if (v < 1) v = 1;
+                    if ( Number.isNaN(v) ) { v = 1; }
+                    v = Math.max( 1, Math.min(v, max) );        // 1 ~ max 로 범위 지정
                     e.target.value = v;
-                    syncQty(e.target.closest('.cart-row'));
+                    syncQty(row);
                     refreshSummary();
                 }
             });
