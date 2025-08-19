@@ -38,6 +38,9 @@ public class Order {
 
     @OneToMany(mappedBy="order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> details = new ArrayList<>();
+    
+    @Column(name="deliveryStatus")
+    private String deliveryStatus;
 
     @PrePersist
     public void prePersist() {
