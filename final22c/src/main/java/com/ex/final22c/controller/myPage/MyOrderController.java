@@ -32,4 +32,17 @@ public class MyOrderController {
 		model.addAttribute("orders",orders);
 		return "mypage/orders";
 	}
+
+	@GetMapping("/order/fragment")
+	public String listFragment(@RequestParam(defaultValue = "0") int page,
+							   @RequestParam(defaultValue = "10") int size,
+							   Principal principal, Model model) {
+		// 로그인 안되어 있을 시 로그인 화면으로
+		if( principal == null ) return "redirect:/user/login";
+
+		Page<Order> orders = myOrderService.listMyOrders(principal.getName(), page, size);
+		model.addAttribute("orders", orders);
+		return "mypage/orders :: listAndPager";
+	}
+	
 }

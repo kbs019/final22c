@@ -97,61 +97,76 @@
   .cm-btn:focus{ outline:2px solid #111827; outline-offset:2px; }
 </style>
 
-<!-- templates/mypage/orders.html -->
 <section>
   <h2>주문내역</h2>
 
   <div th:if="${orders.content.isEmpty()}">주문 내역이 없습니다.</div>
 
-  <div th:each="o : ${orders.content}" class="order-card" th:attr="data-order-id=${o.orderId}"
-      th:with="
-        first=${#lists.isEmpty(o.details) ? null : o.details[0]},
-        restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1},
-        step=${
-            #strings.equalsIgnoreCase(o.status,'DELIVERED') ? 4 :
-            (#strings.equalsIgnoreCase(o.status,'SHIPPED') ? 3 :
-            (#strings.equalsIgnoreCase(o.status,'PREPARING') ? 2 :
-            (#strings.equalsIgnoreCase(o.status,'PAID') ? 1 : 0)))
-        }">
+  <div th:each="o : ${orders.content}"
+       class="order-card"
+       th:attr="data-order-id=${o.orderId}"
+       th:with="
+         first=${#lists.isEmpty(o.details) ? null : o.details[0]},
+         restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1},
+         step=${
+           #strings.equalsIgnoreCase(o.status,'DELIVERED') ? 4 :
+           (#strings.equalsIgnoreCase(o.status,'SHIPPED') ? 3 :
+           (#strings.equalsIgnoreCase(o.status,'PREPARING') ? 2 :
+           (#strings.equalsIgnoreCase(o.status,'PAID') ? 1 : 0)))
+         }"
+       style="margin-bottom:12px">
 
-      <!-- 좌: 주문정보 -->
-      <div class="order-info">
-      <div class="muted" th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}"></div>
+    <!-- 좌: 주문정보 -->
+    <div class="order-info">
+      <div class="muted" th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}">2025.01.01</div>
+
       <div class="order-title">
         <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
         <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
         <span th:if="${restCnt==0 && first != null}" th:text="${' ' + first.quantity + '개'}"></span>
       </div>
+
       <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
+    </div>
+
+    <!-- 우측 상단 버튼 -->
+    <div class="order-actions">
+      <button class="order-btn btn-confirm" type="button">주문확정</button>
+      <button class="refund-btn btn-refund" type="button">결제취소</button>
     </div>
 
     <!-- 하단 진행바 -->
     <div class="stepper" th:attr="data-step=${step}, data-max=4, data-interval=10000">
-      <div class="step"><div class="dot"></div><div>결제완료</div></div>
-      <div class="step"><div class="dot"></div><div>출고</div></div>
+      <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
       <div class="step"><div class="dot"></div><div>배송완료</div></div>
     </div>
 
-    <!-- 우측 상단 버튼(가로 배치) -->
-    <div class="order-actions">
-      <button class="order-btn btn-confirm" type="button">주문확정</button>
-      <button class="refund-btn btn-refund"  type="button">환불요청</button>
-    </div>
+    <!-- 상세 품목
+    <div th:if="${o.details}">
+      <div th:each="d : ${o.details}" style="display:flex;gap:12px;align-items:center;margin-top:8px">
+        <img th:src="@{|${d.product.imgPath}${d.product.imgName}|}" alt=""
+             style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #eee">
+        <div style="flex:1">
+          <div th:text="${d.product.name}">상품명</div>
+          <div class="muted" th:text="${'수량 ' + d.quantity}">수량</div>
+        </div>
+        <div style="font-weight:700" th:text="${#numbers.formatInteger(d.totalPrice,0)} + '원'">0원</div>
+      </div>
+    </div> -->
 
-
-    <!-- 우측 중앙 > -->
+    <!-- 우측 중앙 > (주의: 상세 매핑 없으면 404) -->
     <a class="more" th:href="@{/mypage/order/{id}(id=${o.orderId})}">&gt;</a>
   </div>
 
-
-  <!-- 페이지네이션: 경로는 단수 /mypage/order 로! -->
+  <!-- 페이지네이션 -->
   <div style="margin-top:12px" th:if="${orders.totalPages > 1}">
-    <a th:each="i : ${#numbers.sequence(0, orders.totalPages-1)}"
+    <a th:each="i : ${#numbers.sequence(0, orders.totalPages - 1)}"
        th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
        th:text="${i + 1}"
-       th:classappend="${i == orders.number} ? ' active' : ''"
-       style="margin-right:8px"></a>
+       th:classappend="${i == orders.number} ? 'active' : ''"
+       style="margin-right:8px">
+    </a>
   </div>
 </section>
 
@@ -251,7 +266,7 @@ function openConfirm(orderId, action){
   pendingAction = action;
   $confirmText.textContent = action === 'confirm'
     ? '주문을 확정하시겠습니까?'
-    : '환불을 요청하시겠습니까?';
+    : '결제취소를 요청하시겠습니까?';
   openModal($confirm);
 }
 function closeConfirm(){ closeModal($confirm); }
@@ -323,7 +338,7 @@ $confirmYes.addEventListener('click', async () => {
 
     openResult(data.message || (pendingAction === 'confirm'
       ? '주문이 확정되었습니다.'
-      : '환불 요청이 접수되었습니다.'));
+      : '결제취소가 접수되었습니다.'));
   } catch (e) {
     console.error(e);
     openResult('처리 중 오류가 발생했습니다.');
@@ -332,3 +347,4 @@ $confirmYes.addEventListener('click', async () => {
 </script>
 </div>
 </html>
+
