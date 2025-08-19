@@ -144,7 +144,7 @@ public class CartService {
     }
     
     // 체크아웃 뷰
- // 선택 항목으로 체크아웃 화면에 뿌릴 라인/합계(배송비 3,000 포함) 구성
+    // 선택 항목으로 체크아웃 화면에 뿌릴 라인/합계(배송비 3,000 포함) 구성
     @Transactional(readOnly = true)
     public CartView prepareCheckoutView(String username, List<SelectionItem> items){
         if (items == null || items.isEmpty()) return CartView.of(List.of());

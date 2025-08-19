@@ -17,12 +17,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.ex.final22c.data.cart.CartDetail;
-import com.ex.final22c.data.cart.CartView;
 import com.ex.final22c.data.cart.IdsPayload;
-import com.ex.final22c.repository.cartDetail.CartDetailRepository;
+import com.ex.final22c.data.user.Users;
 import com.ex.final22c.service.cart.CartDetailService;
 import com.ex.final22c.service.cart.CartService;
+import com.ex.final22c.service.user.UsersService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,7 +32,7 @@ public class CartController {
 
     private final CartService cartService;
     private final CartDetailService cartDetailService;
-    private final CartDetailRepository cartDetailRepository;
+    private final UsersService usersService;
 
     public record AddCartRequest(Long productId, int qty) {
     }
@@ -91,6 +90,8 @@ public class CartController {
     @GetMapping("/list")
     public String list(Model model, Principal principal) {
         String userName = requireLogin(principal);
+        Users user = usersService.getUser(userName);
+        model.addAttribute("userMileage", user.getMileage());
         model.addAttribute("products", cartService.findMyCart(userName));
         return "cart/list";
     }
