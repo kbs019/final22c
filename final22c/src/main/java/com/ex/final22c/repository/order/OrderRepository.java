@@ -5,10 +5,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,4 +40,28 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
          where o.orderId = :orderId
     """)
     Optional<Order> findOneWithDetails(@Param("orderId") Long orderId);
+    
+    
+    /** 스케줄러 배송중, 배송완료 변경*/
+    @Modifying
+    @Query("""
+        UPDATE Order o
+           SET o.deliveryStatus = 'DELIVERED'
+         WHERE o.status = 'PAID'
+           AND o.deliveryStatus IN ('ORDERED','SHIPPING')
+           AND o.regDate <= :threshold3
+    """)
+    int updateToDelivered(@Param("threshold3") LocalDateTime threshold3);
+
+    @Modifying
+    @Query("""
+        UPDATE Order o
+           SET o.deliveryStatus = 'SHIPPING'
+         WHERE o.status = 'PAID'
+           AND o.deliveryStatus = 'ORDERED'
+           AND o.regDate <= :threshold1
+           AND o.regDate > :threshold3
+    """)
+    int updateToShipping(@Param("threshold1") LocalDateTime threshold1,
+                         @Param("threshold3") LocalDateTime threshold3);
 }
