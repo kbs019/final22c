@@ -1,46 +1,116 @@
-.productInfoWrap {
+/* 공통 레이아웃 튜닝 */
+.productInfoWrap{
+    /* 기존: position:relative; z-index:2; display:flex; margin... */
     position: relative;
     z-index: 2;
     display: flex;
-    margin: 48px 0 40px;
-}
-.productInfoWrap .slideWrap {
-    position: relative;
-    width: 50%;
-    flex-shrink: 0;
-    flex-basis: 50%;
-}
-.productInfoWrap .productInfo {
-    width: calc(50% - 40px);
-    flex-shrink: 1;
-    border-left: 1px solid #ebebeb;
-    padding: 0 0 40px 40px;
+    align-items: flex-start;        /* 상단 정렬 */
+    gap: 40px;                      /* 좌우 간격 */
+    max-width: 1200px;              /* 본문 최대 폭 */
+    margin: 48px auto 40px;         /* 가운데 정렬 */
+    padding: 0 16px;                /* 좌우 여백(좁은 화면 대비) */
     box-sizing: border-box;
-    flex-basis: 50%;
 }
 
-/* 모달창의 구성 설정 */
-.modal-backdrop{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.4);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:1050
-}
-.modal-card{
-    background:#fff;
-    border-radius:12px;
-    padding:20px;
-    min-width:280px;
-    max-width:420px;
-    box-shadow:0 10px 30px rgba(0,0,0,.2)
+/* 좌측 이미지 영역: 가변(넓게), 최소 폭 보장 */
+.productInfoWrap .slideWrap{
+    position: relative;
+    flex: 1 1 0%;                   /* 가능한 한 넓게 차지 */
+    min-width: 320px;               /* 너무 좁아지지 않도록 */
+    padding-right: 0;               /* gap로 간격 관리하므로 padding 제거 */
 }
 
-/* Chrome, Edge, Safari(웹킷 계열)에서 공통 스피너 제거 */
+/* 이미지 반응형 + 세로 과도 확장 방지 */
+.productInfoWrap .slideWrap img{
+    display: block;
+    width: 100%;
+    height: auto;                   /* 가로 기준 비율 유지 */
+    max-height: calc(100vh - 180px);/* 화면 높이 넘치지 않도록 */
+    object-fit: contain;            /* 잘림 방지 */
+    margin: 0 auto;
+}
+
+/* 우측 정보 영역: 고정 폭 상한 + 유연 폭 하한 */
+.productInfoWrap .productInfo{
+    flex: 0 1 520px;                 /* 최대 약 520px */
+    min-width: 360px;                /* 최소 가독 폭 */
+    box-sizing: border-box;
+    border-left: 1px solid #ebebeb;
+    padding-left: 32px;
+    position: sticky; 
+    top: 80px;
+}
+
+/* 버튼/입력 등 폼 요소가 줄바꿈 없이 자연스럽게 보이도록 */
+#buy-qty-wrap{
+    flex-wrap: wrap;
+    row-gap: 8px;
+}
+
+/* number 스피너 제거 (웹킷) */
 input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
+input[type=number]::-webkit-outer-spin-button{
     -webkit-appearance: none;
     margin: 0;
+}
+
+/* 모달(커스텀 사용 시) */
+.modal-backdrop{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+}
+.modal-card{
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    min-width: 280px;
+    max-width: 420px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+
+/* ========= 반응형 전환 ========= */
+/* 노트북 이하: 우측 패널 폭 조금 줄이고 여백 최적화 */
+@media (max-width: 1200px){
+    .productInfoWrap .productInfo{
+        flex-basis: 480px;
+        min-width: 320px;
+        padding-left: 24px;
+    }
+}
+
+/* 태블릿 이하: 세로 스택(이미지 위, 정보 아래) */
+@media (max-width: 992px){
+    .productInfoWrap{
+        flex-direction: column;
+        gap: 24px;
+    }
+    .productInfoWrap .slideWrap,
+    .productInfoWrap .productInfo{
+        width: 100%;
+        min-width: 0;
+    }
+    .productInfoWrap .productInfo{
+        border-left: 0;
+        border-top: 1px solid #ebebeb;  /* 경계선 방향 변경 */
+        padding-left: 0;
+        padding-top: 24px;
+    }
+    .productInfoWrap .slideWrap img{
+        max-height: 520px;               /* 세로 스택 시 너무 길어지지 않게 */
+    }
+}
+
+/* 모바일: 폰트/간격 조금 더 촘촘하게 */
+    @media (max-width: 576px){
+    .productInfoWrap{
+        padding: 0 12px;
+    }
+    #buy-qty-wrap .form-control{
+        width: 70px; /* 수량 인풋 살짝 축소 */
+    }
 }
