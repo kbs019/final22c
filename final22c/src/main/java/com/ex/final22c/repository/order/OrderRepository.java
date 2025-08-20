@@ -32,7 +32,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             Long userNo, String status
     );
 
-    // 취소만 제외(필요할 때)
+    // 특정 상태를 제외하고 싶을때
     @EntityGraph(attributePaths = {"details", "details.product"})
     Page<Order> findByUser_UserNoAndStatusNotOrderByRegDateDesc(
             Long userNo, String status, Pageable pageable);
@@ -72,5 +72,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            AND o.regDate > :threshold3
     """)
     int updateToShipping(@Param("threshold1") LocalDateTime threshold1,
-                         @Param("threshold3") LocalDateTime threshold3);
+                         @Param("threshold3") LocalDateTime threshold3
+    );           
+    
+    @Modifying
+    @Query("""
+        UPDATE Order o
+           SET o.deliveryStatus = 'CONFIRMED'
+         WHERE o.orderId = :orderId
+           AND o.status = 'PAID'
+           AND o.deliveryStatus = 'DELIVERED'
+    """)
+    int updateToConfirmed(@Param("orderId") Long orderId);
 }

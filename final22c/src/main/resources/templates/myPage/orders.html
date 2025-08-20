@@ -106,7 +106,7 @@
 
   <div th:each="o : ${orders.content}"
        class="order-card"
-       th:classappend="${o.status=='CANCELED'} ? ' is-canceled'"
+       th:classappend="${o.status=='CANCELED'} ? 'is-canceled'"
        th:attr="data-order-id=${o.orderId}"
        th:with="
          first=${#lists.isEmpty(o.details) ? null : o.details[0]},
@@ -130,14 +130,13 @@
     </div>
 
     <!-- 우측 상단 버튼 -->
-    <div class="order-actions"
-          th:if="${o.status == 'PAID'}">
+    <div class="order-actions" th:if="${o.status == 'PAID' and o.deliveryStatus == 'ORDERED'}">
       <button class="refund-btn btn-refund" type="button">결제취소</button>
     </div>
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
     <div class="stepper"
-         th:if="${o.status != 'CANCELED'}"
+         th:if="${o.status=='PAID' and o.status=='PENDING' and o.deliveryStatus == 'DELIVERED' and o.deliveryStatus == 'ORDERED'}"
          th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
@@ -157,7 +156,7 @@
               class="refund-btn btn-refund" type="button">환불요청</button>
     </div>
 
-    <!-- 우측 중앙 > -->
+    <!-- 우측 중앙 > (상세보기) -->
     <a class="more" th:href="@{/mypage/order/{id}(id=${o.orderId})}">&gt;</a>
   </div>
 
@@ -195,116 +194,153 @@
   </div>
 </div>
 
+<!-- 주문 상세 모달 -->
+<div id="orderDetailModal" class="cm-modal" aria-hidden="true">
+  <div class="cm-modal__content">
+    <button type="button" id="orderDetailClose" style="float:right;">X</button>
+    <h3>주문 상세</h3>
+    <div th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}"></div> /
+    <div th:text="${o.regDate}"></div>
+  </div>
+</div>
+
 <script>
-/* ===== 스텝퍼 표시(고정) =====
-   - data-step(1/2/3)에 맞춰 active만 반영
-   - 자동진행 없음
-*/
-(function(){
-  function render(stepper, n){
-    const steps = stepper.querySelectorAll('.step');
-    steps.forEach((el, idx) => el.classList.toggle('active', idx < n));
-    stepper.dataset.step = String(n);
+  /* ===== 스텝퍼 표시(고정) =====
+    - data-step(1/2/3)에 맞춰 active만 반영
+    - 자동진행 없음
+  */
+  (function(){
+    function render(stepper, n){
+      const steps = stepper.querySelectorAll('.step');
+      steps.forEach((el, idx) => el.classList.toggle('active', idx < n));
+      stepper.dataset.step = String(n);
+    }
+    document.querySelectorAll('.stepper').forEach(stepper=>{
+      const n = parseInt(stepper.dataset.step || '1', 10);
+      render(stepper, n);
+    });
+    window.stepperRender = render; // 필요 시 수동 갱신
+  })();
+
+  /* ===== 모달 공통 ===== */
+  const $confirm     = document.getElementById('confirmModal');
+  const $confirmText = document.getElementById('confirmText');
+  const $confirmYes  = document.getElementById('confirmYes');
+  const $confirmNo   = document.getElementById('confirmNo');
+
+  const $result      = document.getElementById('resultModal');
+  const $resultText  = document.getElementById('resultText');
+  const $resultOk    = document.getElementById('resultOk');
+
+  let targetOrderId = null;
+  let pendingAction = null; // 'cancel' | 'confirm' | 'refund'
+
+  function openModal(el){ el.classList.add('is-open'); document.body.style.overflow='hidden'; }
+  function closeModal(el){ el.classList.remove('is-open'); document.body.style.overflow=''; }
+
+  function openConfirm(orderId, action, message){
+    targetOrderId = orderId;
+    pendingAction = action;
+    $confirmText.textContent = message;
+    openModal($confirm);
   }
-  document.querySelectorAll('.stepper').forEach(stepper=>{
-    const n = parseInt(stepper.dataset.step || '1', 10);
-    render(stepper, n);
+  function closeConfirm(){ closeModal($confirm); }
+
+  function openResult(msg){ $resultText.textContent = msg; openModal($result); }
+  function closeResult(){ closeModal($result); }
+
+  /* 버튼 리스너 */
+  $confirmNo.addEventListener('click', closeConfirm);
+  $resultOk.addEventListener('click', closeResult);
+
+  /* 카드별 버튼 이벤트 */
+  document.querySelectorAll('.order-card').forEach(card=>{
+    const id = card.dataset.orderId;
+    const btnCancel  = card.querySelector('.btn-cancel');
+    const btnConfirm = card.querySelector('.btn-confirm');
+    const btnRefund  = card.querySelector('.btn-refund');
+
+    btnCancel?.addEventListener('click', ()=>{
+      openConfirm(id,'cancel','주문을 취소하시겠습니까?');
+    });
+    btnConfirm?.addEventListener('click', ()=>{
+      openConfirm(id,'confirm','주문을 확정하시겠습니까?');
+    });
+    btnRefund?.addEventListener('click', ()=>{
+      openConfirm(id,'refund','환불을 요청하시겠습니까?');
+    });
   });
-  window.stepperRender = render; // 필요 시 수동 갱신
-})();
 
-/* ===== 모달 공통 ===== */
-const $confirm     = document.getElementById('confirmModal');
-const $confirmText = document.getElementById('confirmText');
-const $confirmYes  = document.getElementById('confirmYes');
-const $confirmNo   = document.getElementById('confirmNo');
+  /* 확인 모달 '예' 처리 */
+  $confirmYes.addEventListener('click', async () => {
+    closeConfirm();
+    try {
+      let url;
+      if (pendingAction === 'cancel')  url = `/pay/cancel-paid/${targetOrderId}`;
+      if (pendingAction === 'confirm') url = `/pay/${targetOrderId}/confirm`;
+      if (pendingAction === 'refund')  url = `/pay/${targetOrderId}/refund`;
 
-const $result      = document.getElementById('resultModal');
-const $resultText  = document.getElementById('resultText');
-const $resultOk    = document.getElementById('resultOk');
+      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+      let data = {};
+      try { data = await res.json(); } catch(_) {}
+      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
 
-let targetOrderId = null;
-let pendingAction = null; // 'cancel' | 'confirm' | 'refund'
+      const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
 
-function openModal(el){ el.classList.add('is-open'); document.body.style.overflow='hidden'; }
-function closeModal(el){ el.classList.remove('is-open'); document.body.style.overflow=''; }
+      if (pendingAction === 'cancel') {
+        // 취소: 상태 배지/스텝퍼/버튼 숨김
+        card?.classList.add('is-canceled');
 
-function openConfirm(orderId, action, message){
-  targetOrderId = orderId;
-  pendingAction = action;
-  $confirmText.textContent = message;
-  openModal($confirm);
-}
-function closeConfirm(){ closeModal($confirm); }
+        // 버튼 그룹 전부 숨김 (여러 개 있을 수 있음)
+        card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
 
-function openResult(msg){ $resultText.textContent = msg; openModal($result); }
-function closeResult(){ closeModal($result); }
+        // 진행바 제거
+        card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
 
-/* 버튼 리스너 */
-$confirmNo.addEventListener('click', closeConfirm);
-$resultOk.addEventListener('click', closeResult);
-
-/* 카드별 버튼 이벤트 */
-document.querySelectorAll('.order-card').forEach(card=>{
-  const id = card.dataset.orderId;
-  const btnCancel  = card.querySelector('.btn-cancel');
-  const btnConfirm = card.querySelector('.btn-confirm');
-  const btnRefund  = card.querySelector('.btn-refund');
-
-  btnCancel?.addEventListener('click', ()=>{
-    openConfirm(id,'cancel','주문을 취소하시겠습니까?');
-  });
-  btnConfirm?.addEventListener('click', ()=>{
-    openConfirm(id,'confirm','주문을 확정하시겠습니까?');
-  });
-  btnRefund?.addEventListener('click', ()=>{
-    openConfirm(id,'refund','환불을 요청하시겠습니까?');
-  });
-});
-
-/* 확인 모달 '예' 처리 */
-$confirmYes.addEventListener('click', async () => {
-  closeConfirm();
-  try {
-    let url;
-    if (pendingAction === 'cancel')  url = `/pay/cancel-paid/${targetOrderId}`;
-    if (pendingAction === 'confirm') url = `/pay/${targetOrderId}/confirm`;
-    if (pendingAction === 'refund')  url = `/pay/${targetOrderId}/refund`;
-
-    const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
-    let data = {};
-    try { data = await res.json(); } catch(_) {}
-    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
-
-    // UI 반영(가벼운 처리)
-    const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
-    if (pendingAction === 'cancel') {
-      // 취소: 상태 배지/스텝퍼/버튼 숨김
-      card?.classList.add('is-canceled');
-      const actions = card?.querySelector('.order-actions');
-      if (actions) actions.style.display = 'none';
-      const stepper = card?.querySelector('.stepper');
-      if (stepper) stepper.remove();
-      // 제목 옆 배지 추가(이미 서버에서 CANCELED면 다음 렌더시 자동 표시)
-      const title = card?.querySelector('.order-title');
-      if (title && !title.querySelector('.badge-canceled')) {
-        const b = document.createElement('span');
-        b.className='badge-canceled'; b.textContent='주문취소';
-        title.appendChild(b);
+        // 제목 옆 배지 추가
+        const title = card?.querySelector('.order-title');
+        if (title && !title.querySelector('.badge-canceled')) {
+          const b = document.createElement('span');
+          b.className='badge-canceled'; b.textContent='주문취소';
+          title.appendChild(b);
+        }
       }
-    }
-    if (pendingAction === 'confirm') {
-      // 확정 시 버튼 숨기기(필요 시)
-      const actions = card?.querySelector('.order-actions');
-      if (actions) actions.style.display = 'none';
-    }
 
-    openResult(data.message || '처리가 완료되었습니다.');
-  } catch (e) {
-    console.error(e);
-    openResult('처리 중 오류가 발생했습니다.');
-  }
-});
+      if (pendingAction === 'confirm') {
+        // ✅ 주문 확정: 버튼 전부 숨기고, 진행바 제거
+        card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
+        card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
+
+        // (선택) 확정 배지 붙이고 싶다면
+        const title = card?.querySelector('.order-title');
+        if (title && !title.querySelector('.badge-confirmed')) {
+          const b = document.createElement('span');
+          b.className='badge-confirmed';
+          b.style.cssText='display:inline-block;padding:4px 8px;border-radius:8px;background:#e5f3ff;color:#1d4ed8;font-weight:600;font-size:12px;margin-left:8px';
+          b.textContent='주문확정';
+          title.appendChild(b);
+        }
+      }
+      openResult(data.message || '처리가 완료되었습니다.');
+    } catch (e) {
+      console.error(e);
+      openResult('처리 중 오류가 발생했습니다.');
+    }
+  });
+  // ">" 링크 클릭 → 모달 열기
+  document.querySelectorAll('.order-card .more').forEach(link=>{
+    link.addEventListener('click', e=>{
+      e.preventDefault();
+      document.getElementById('orderDetailModal').classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+    });
+  });
+
+  // 닫기 버튼 → 모달 닫기
+  document.getElementById('orderDetailClose').addEventListener('click', ()=>{
+    document.getElementById('orderDetailModal').classList.remove('is-open');
+    document.body.style.overflow = '';
+  });
 </script>
 </div>
 </html>
