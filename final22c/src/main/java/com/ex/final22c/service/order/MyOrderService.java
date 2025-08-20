@@ -1,5 +1,6 @@
 package com.ex.final22c.service.order;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -22,18 +23,38 @@ public class MyOrderService {
     private final UsersService usersService;
     private final OrderRepository orderRepository;
 
+    /**
+     * 마이페이지 목록(페이징): PENDING 제외하고(PAID + CANCELED) 최신순
+     */
     @Transactional(readOnly = true)
-    public Page<Order> listMyOrders(String username, int page, int size){
+    public Page<Order> listMyOrders(String username, int page, int size) {
         Users me = usersService.getUser(username);
         Pageable pageable = PageRequest.of(page, size, Sort.by("regDate").descending());
-        return orderRepository.findByUser_UserNoAndStatusOrderByRegDateDesc(
-            me.getUserNo(), "PAID", pageable
+        return orderRepository.findByUser_UserNoAndStatusNotOrderByRegDateDesc(
+                me.getUserNo(), "PENDING", pageable
         );
     }
 
+    /**
+     * 세부 포함 전체 리스트(페이징 없음): PENDING 제외하고(PAID + CANCELED) 최신순
+     */
     @Transactional(readOnly = true)
-    public List<Order> listMyOrdersWithDetails(String username){
+    public List<Order> listMyOrdersWithDetails(String username) {
         Users me = usersService.getUser(username);
-        return orderRepository.findAllByUser_UserNoAndStatusOrderByRegDateDesc(me.getUserNo(), "PAID");
+        return orderRepository.findAllByUser_UserNoAndStatusNotOrderByRegDateDesc(
+                me.getUserNo(), "PENDING"
+        );
+    }
+
+    /**
+     * (옵션) 상태 필터를 명시하고 싶을 때: IN 조건 사용
+     * 예) ["PAID","CANCELED"] 만 보고 싶을 때
+     */
+    @Transactional(readOnly = true)
+    public List<Order> listMyOrdersByStatuses(String username, Collection<String> statuses) {
+        Users me = usersService.getUser(username);
+        return orderRepository.findByUser_UserNoAndStatusInOrderByRegDateDesc(
+                me.getUserNo(), statuses
+        );
     }
 }

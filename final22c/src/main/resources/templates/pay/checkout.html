@@ -138,14 +138,14 @@
         </div>
       </div>
 
-      <!-- 포인트 -->
+      <!-- 마일리지 -->
       <div class="card">
         <div class="point-box">
-          <strong>포인트</strong>
+          <strong>마일리지</strong>
           <span class="point-badge">보유 <span id="ownedPoint" th:text="${#numbers.formatInteger(user.mileage,0)}"></span> 원</span>
         </div>
         <div class="point-box" style="margin-top:8px;">
-          <input id="usePoint" type="text" placeholder="사용할 포인트" value="0" th:attr="max=${user.mileage}">
+          <input id="usePoint" type="text" placeholder="사용할 마일리지" value="0" th:attr="max=${user.mileage}">
           <button type="button" class="point-use" id="btnUseAllPoint">전액사용</button>
         </div>
       </div>
@@ -208,13 +208,16 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
-            <button type="button" id="addrModalSet" class="btn btn-dark">기본 배송지로 설정</button>
+            <!-- ✅ 이번 주문만 적용 -->
+            <button type="button" id="addrModalApply" class="btn btn-dark">선택한 주소 사용</button>
+            <!-- 기존: 기본배송지 변경 -->
+            <button type="button" id="addrModalSet" class="btn btn-outline-secondary">기본 배송지로 설정</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 새 주소 등록 모달 (항상 기본 배송지) -->
+    <!-- 새 주소 등록 모달 (기본배송지 저장은 옵션) -->
     <div class="modal fade" id="addAddrModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
@@ -252,6 +255,12 @@
                   <input type="text" class="form-control form-control-sm" id="f_detailAddress" placeholder="상세주소" required>
                 </div>
 
+                <!-- ✅ 기본배송지 저장 옵션 -->
+                <div class="col-12 form-check mt-2">
+                  <input class="form-check-input" type="checkbox" id="f_isDefault">
+                  <label class="form-check-label" for="f_isDefault">이 주소를 기본 배송지로 저장</label>
+                </div>
+
                 <div id="postcodeLayer2" style="display:none; position:relative; height:400px; margin-top:8px; border:1px solid #eee; border-radius:10px;"></div>
               </div>
             </div>
@@ -275,310 +284,318 @@
             crossorigin="anonymous"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
-	
-	<script th:inline="javascript">
-	$(function(){
-	  /* ================== 안전한 서버 변수 바인딩 ================== */
-	  // 장바구니 모드 여부 (없으면 false)
-	  const isCartMode = /*[[${#ctx.containsVariable('isCartMode') ? isCartMode : false}]]*/ false;
+    <script th:inline="javascript">
+    $(function(){
+      /* ================== 안전한 서버 변수 바인딩 ================== */
+      const isCartMode = /*[[${#ctx.containsVariable('isCartMode') ? isCartMode : false}]]*/ false;
+      const owned = /*[[${#ctx.containsVariable('user') && user.mileage != null ? user.mileage : 0}]]*/ 0;
+      const cartSubtotal  = /*[[${#ctx.containsVariable('summary') ? summary.subtotal : 0}]]*/ 0;
+      const singleLineSum = /*[[${#ctx.containsVariable('lineTotal') ? lineTotal : 0}]]*/ 0;
+      const shippingCart   = /*[[${#ctx.containsVariable('shippingCart') ? shippingCart : 3000}]]*/ 3000;
+      const shippingSingle = /*[[${#ctx.containsVariable('shippingSingle') ? shippingSingle : 3000}]]*/ 3000;
 
-	  // 보유 포인트 (user 없거나 mileage null일 때 0)
-	  const owned = /*[[${#ctx.containsVariable('user') && user.mileage != null ? user.mileage : 0}]]*/ 0;
+      const subtotal = isCartMode ? cartSubtotal : singleLineSum;
+      const shipping = isCartMode ? shippingCart : shippingSingle;
+      const baseSum  = Math.max(0, subtotal + shipping);
 
-	  // 합계 산출용: 장바구니/단건 각각 모델 키가 없을 수 있으니 반드시 안전 가드
-	  const cartSubtotal  = /*[[${#ctx.containsVariable('summary') ? summary.subtotal : 0}]]*/ 0;
-	  const singleLineSum = /*[[${#ctx.containsVariable('lineTotal') ? lineTotal : 0}]]*/ 0;
+      const cartItems = /*[[${#ctx.containsVariable('items') ? items : null}]]*/ null;
+      const safeCartItems = Array.isArray(cartItems) ? cartItems : [];
 
-	  // 배송비(고정 3000) — 모델에서 내려오면 사용, 없으면 3000
-	  const shippingCart   = /*[[${#ctx.containsVariable('shippingCart') ? shippingCart : 3000}]]*/ 3000;
-	  const shippingSingle = /*[[${#ctx.containsVariable('shippingSingle') ? shippingSingle : 3000}]]*/ 3000;
+      const $productId = $("#product_id");
+      const $qty       = $("#qty");
 
+      /* ================== 포인트 UI ================== */
+      const fmt = n => (Math.max(0, Math.trunc(n))).toLocaleString('ko-KR') + '원';
+      $("#usePoint").on("input", function(){ this.value = this.value.replace(/[^\d]/g, ''); });
 
-	  const subtotal = isCartMode ? cartSubtotal : singleLineSum;
-	  const shipping = isCartMode ? shippingCart : shippingSingle;
-	  const baseSum  = Math.max(0, subtotal + shipping);
+      if ($("#_usedPoint").length === 0) {
+        $("body").append('<input type="hidden" id="_usedPoint" value="0"><input type="hidden" id="_pay" value="'+baseSum+'">');
+      }
 
-	  // 장바구니 선택 라인 (없으면 빈 배열)
-	  // [{cartDetailId, quantity}, ...]
-	  const cartItems = /*[[${#ctx.containsVariable('items') ? items : null}]]*/ null;
-	  const safeCartItems = Array.isArray(cartItems) ? cartItems : [];
-	  
-	  // 단건용 hidden 값이 있을 수 있으니 캐시
-	  const $productId = $("#product_id");
-	  const $qty       = $("#qty");
+      function recalc(use){
+        use = Math.min(Math.max(0, Number(use)||0), owned, baseSum);
+        $("#usePoint").val(use);
+        $("#usedPointLabel").text(use.toLocaleString('ko-KR') + '원');
+        const pay = Math.max(0, baseSum - use);
+        $("#payTotalLabel").text(fmt(pay));
+        $("#rewardLabel").text(fmt(Math.trunc(pay * 0.05)));
+        $("#_usedPoint").val(use);
+        $("#_pay").val(pay);
+      }
+      recalc(0);
 
-	  /* ================== 포인트 UI ================== */
-	  const fmt = n => (Math.max(0, Math.trunc(n))).toLocaleString('ko-KR') + '원';
-	  $("#usePoint").on("input", function(){ this.value = this.value.replace(/[^\d]/g, ''); });
+      $("#btnUseAllPoint").on("click", ()=> recalc(Math.min(owned, baseSum)));
+      $("#usePoint").on("input change", function(){ recalc(this.value); });
 
-	  // 공통 hidden(없으면 생성)
-	  if ($("#_usedPoint").length === 0) {
-	    $("body").append('<input type="hidden" id="_usedPoint" value="0"><input type="hidden" id="_pay" value="'+baseSum+'">');
-	  }
+      /* ================== (선택) 배송요청사항 UI ================== */
+      const $memoSel = $("#deliveryMemoSelect");
+      const $memoInp = $("#deliveryMemoInput");
+      const $memoPreview = $("#deliveryMemoPreview");
+      function syncDeliveryMemo(){
+        if (!$memoSel.length) return;
+        const v = $memoSel.val();
+        if (v === "자유입력") { $memoInp.show().focus(); $memoPreview.text($memoInp.val()?.trim() ? $memoInp.val() : "(직접 입력)"); }
+        else { $memoInp.hide().val(""); $memoPreview.text(v ? v : "(요청사항 없음)"); }
+      }
+      if ($memoSel.length) {
+        $memoSel.on("change", syncDeliveryMemo);
+        $memoInp.on("input", function(){ if ($memoSel.val() === "자유입력") $memoPreview.text(this.value.trim() ? this.value : "(직접 입력)"); });
+        syncDeliveryMemo();
+      }
 
-	  function recalc(use){
-	    use = Math.min(Math.max(0, Number(use)||0), owned, baseSum);
-	    $("#usePoint").val(use);
-	    $("#usedPointLabel").text(use.toLocaleString('ko-KR') + '원');
-	    const pay = Math.max(0, baseSum - use);
-	    $("#payTotalLabel").text(fmt(pay));
-	    $("#rewardLabel").text(fmt(Math.trunc(pay * 0.05)));
-	    $("#_usedPoint").val(use);
-	    $("#_pay").val(pay);
-	  }
-	  recalc(0);
+      /* ================== 공통: 주소 뷰 반영/캐시 ================== */
+      let __addrCache = [];
+      function applyAddressToView(a){
+        if (!a) return;
+        $("#currentAddressNo").val(a.addressNo);
+        $("#addrName").text(a.addressName || '');
+        $("#addrRecipient").text(a.recipient || '');
+        $("#addrPhone").text(a.phone || '');
+        $("#addrZone").text(a.zonecode || '');
+        $("#addrRoad").text(a.roadAddress || '');
+        $("#addrDetail").text(a.detailAddress || '');
+      }
 
-	  $("#btnUseAllPoint").on("click", ()=> recalc(Math.min(owned, baseSum)));
-	  $("#usePoint").on("input change", function(){ recalc(this.value); });
+      /* ================== 주소 모달 ================== */
+      const addrModalEl = document.getElementById('addrModal');
+      if (addrModalEl) {
+        const addrModal   = new bootstrap.Modal(addrModalEl);
+        addrModalEl.addEventListener('show.bs.modal', () => { loadAddressList(); });
+        addrModalEl.addEventListener('hidden.bs.modal', () => {
+          document.body.classList.remove('modal-open');
+          document.body.style.removeProperty('padding-right');
+          $('.modal-backdrop').remove();
+        });
 
-	  /* ================== (선택) 배송요청사항 UI가 DOM에 있을 때만 동작 ================== */
-	  const $memoSel = $("#deliveryMemoSelect");
-	  const $memoInp = $("#deliveryMemoInput");
-	  const $memoPreview = $("#deliveryMemoPreview");
-	  function syncDeliveryMemo(){
-	    if (!$memoSel.length) return;
-	    const v = $memoSel.val();
-	    if (v === "자유입력") { $memoInp.show().focus(); $memoPreview.text($memoInp.val()?.trim() ? $memoInp.val() : "(직접 입력)"); }
-	    else { $memoInp.hide().val(""); $memoPreview.text(v ? v : "(요청사항 없음)"); }
-	  }
-	  if ($memoSel.length) {
-	    $memoSel.on("change", syncDeliveryMemo);
-	    $memoInp.on("input", function(){ if ($memoSel.val() === "자유입력") $memoPreview.text(this.value.trim() ? this.value : "(직접 입력)"); });
-	    syncDeliveryMemo();
-	  }
+        function loadAddressList(){
+          const currentNo = $("#currentAddressNo").val();
+          $("#addrList").html('<div class="text-muted">불러오는 중…</div>');
+          $("#addrDefaultBox").empty();
+          $.get("/mypage/address/list")
+            .done(function(res){
+              const arr = (res && res.addresses) || [];
+              __addrCache = arr; // ✅ 캐시
 
-	  /* ================== 주소 모달(존재 시에만) ================== */
-	  const addrModalEl = document.getElementById('addrModal');
-	  if (addrModalEl) {
-	    const addrModal   = new bootstrap.Modal(addrModalEl);
-	    addrModalEl.addEventListener('show.bs.modal', () => { loadAddressList(); });
-	    addrModalEl.addEventListener('hidden.bs.modal', () => {
-	      document.body.classList.remove('modal-open');
-	      document.body.style.removeProperty('padding-right');
-	      $('.modal-backdrop').remove();
-	    });
+              const def = arr.find(a => a.isDefault === 'Y');
+              if (def) {
+                $("#addrDefaultBox").html(`
+                  <div class="fw-bold mb-1">기본 배송지</div>
+                  <div>${esc(def.addressName||'')}</div>
+                  <div>${esc(def.recipient||'')} / ${esc(def.phone||'')}</div>
+                  <div>(${esc(def.zonecode||'')}) ${esc(def.roadAddress||'')} ${esc(def.detailAddress||'')}</div>
+                `);
+              }
+              if (arr.length === 0) { $("#addrList").html('<div class="text-muted">등록된 배송지가 없습니다.</div>'); return; }
 
-	    function loadAddressList(){
-	      const currentNo = $("#currentAddressNo").val();
-	      $("#addrList").html('<div class="text-muted">불러오는 중…</div>');
-	      $("#addrDefaultBox").empty();
-	      $.get("/mypage/address/list")
-	        .done(function(res){
-	          const arr = (res && res.addresses) || [];
-	          const def = arr.find(a => a.isDefault === 'Y');
-	          if (def) {
-	            $("#addrDefaultBox").html(`
-	              <div class="fw-bold mb-1">기본 배송지</div>
-	              <div>${esc(def.addressName||'')}</div>
-	              <div>${esc(def.recipient||'')} / ${esc(def.phone||'')}</div>
-	              <div>(${esc(def.zonecode||'')}) ${esc(def.roadAddress||'')} ${esc(def.detailAddress||'')}</div>
-	            `);
-	          }
-	          if (arr.length === 0) { $("#addrList").html('<div class="text-muted">등록된 배송지가 없습니다.</div>'); return; }
-	          const html = arr.map(a => {
-	            const checked = String(a.addressNo) === String(currentNo) ? 'checked' : '';
-	            return `
-	              <div class="form-check border rounded p-3 mb-2">
-	                <input class="form-check-input" type="radio" name="addrChoice" id="addr_${a.addressNo}"
-	                       value="${a.addressNo}" ${checked}>
-	                <label class="form-check-label w-100" for="addr_${a.addressNo}">
-	                  <div class="fw-semibold">${esc(a.addressName||'')}</div>
-	                  <div class="text-muted">수령인 ${esc(a.recipient||'')} / ${esc(a.phone||'')}</div>
-	                  <div>주소 (${esc(a.zonecode||'')}) ${esc(a.roadAddress||'')} ${esc(a.detailAddress||'')}</div>
-	                </label>
-	              </div>`;
-	          }).join("");
-	          $("#addrList").html(html);
-	        })
-	        .fail(() => { $("#addrList").html('<div class="text-danger">주소를 불러오지 못했습니다.</div>'); });
-	    }
+              const html = arr.map(a => {
+                const checked = String(a.addressNo) === String(currentNo) ? 'checked' : '';
+                return `
+                  <div class="form-check border rounded p-3 mb-2">
+                    <input class="form-check-input" type="radio" name="addrChoice" id="addr_${a.addressNo}"
+                           value="${a.addressNo}" ${checked}>
+                    <label class="form-check-label w-100" for="addr_${a.addressNo}">
+                      <div class="fw-semibold">${esc(a.addressName||'')}</div>
+                      <div class="text-muted">수령인 ${esc(a.recipient||'')} / ${esc(a.phone||'')}</div>
+                      <div>주소 (${esc(a.zonecode||'')}) ${esc(a.roadAddress||'')} ${esc(a.detailAddress||'')}</div>
+                    </label>
+                  </div>`;
+              }).join("");
+              $("#addrList").html(html);
+            })
+            .fail(() => { $("#addrList").html('<div class="text-danger">주소를 불러오지 못했습니다.</div>'); });
+        }
 
-	    $("#addrModalSet").on("click", function(){
-	      const $sel = $("input[name=addrChoice]:checked");
-	      if ($sel.length === 0) { alert("주소를 선택해 주세요."); return; }
-	      const addressNo = Number($sel.val());
-	      const token  = $('meta[name="_csrf"]').attr('content');
-	      const header = $('meta[name="_csrf_header"]').attr('content');
-	      $.ajax({
-	        type: "POST",
-	        url:  "/mypage/address/default",
-	        data: JSON.stringify({ addressNo }),
-	        contentType: "application/json; charset=UTF-8",
-	        dataType: "json",
-	        beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); }
-	      })
-	      .done(function(res){
-	        if (!res || !res.ok || !res.address) { alert("설정에 실패했습니다."); return; }
-	        const a = res.address;
-	        $("#currentAddressNo").val(a.addressNo);
-	        $("#addrName").text(a.addressName || '');
-	        $("#addrRecipient").text(a.recipient || '');
-	        $("#addrPhone").text(a.phone || '');
-	        $("#addrZone").text(a.zonecode || '');
-	        $("#addrRoad").text(a.roadAddress || '');
-	        $("#addrDetail").text(a.detailAddress || '');
-	        bootstrap.Modal.getInstance(addrModalEl).hide();
-	      })
-	      .fail(function(xhr){ alert("설정에 실패했습니다. ("+xhr.status+")"); });
-	    });
-	  }
+        // ✅ 이번 주문만 적용 (기본배송지 변경 없음)
+        $("#addrModalApply").on("click", function(){
+          const $sel = $("input[name=addrChoice]:checked");
+          if ($sel.length === 0) { alert("주소를 선택해 주세요."); return; }
+          const no = String($sel.val());
+          const a  = (__addrCache || []).find(x => String(x.addressNo) === no);
+          if (!a) { alert("주소 정보를 찾을 수 없습니다."); return; }
+          applyAddressToView(a);
+          bootstrap.Modal.getInstance(addrModalEl).hide();
+        });
 
-	  /* ================== 다음(카카오) 우편번호 모달(존재 시만) ================== */
-	  const addAddrModalEl = document.getElementById('addAddrModal');
-	  if (addAddrModalEl) {
-	    const addAddrModal   = new bootstrap.Modal(addAddrModalEl);
-	    addAddrModalEl.addEventListener('show.bs.modal', () => {
-	      $("#f_addressName,#f_recipient,#f_phone,#f_zonecode,#f_roadAddress,#f_detailAddress").val('');
-	      $("#postcodeLayer2").hide().empty();
-	    });
-	    addAddrModalEl.addEventListener('hidden.bs.modal', () => { $('.modal-backdrop').each(function(i, el){ if (i) $(el).remove(); }); });
+        // 기존: 기본 배송지로 설정(서버 호출)
+        $("#addrModalSet").on("click", function(){
+          const $sel = $("input[name=addrChoice]:checked");
+          if ($sel.length === 0) { alert("주소를 선택해 주세요."); return; }
+          const addressNo = Number($sel.val());
+          const token  = $('meta[name="_csrf"]').attr('content');
+          const header = $('meta[name="_csrf_header"]').attr('content');
+          $.ajax({
+            type: "POST",
+            url:  "/mypage/address/default",
+            data: JSON.stringify({ addressNo }),
+            contentType: "application/json; charset=UTF-8",
+            dataType: "json",
+            beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); }
+          })
+          .done(function(res){
+            if (!res || !res.ok || !res.address) { alert("설정에 실패했습니다."); return; }
+            const a = res.address;
+            applyAddressToView(a); // 기본도 바뀌었으니 화면 반영
+            bootstrap.Modal.getInstance(addrModalEl).hide();
+          })
+          .fail(function(xhr){ alert("설정에 실패했습니다. ("+xhr.status+")"); });
+        });
+      }
 
-	    function openPostcodeIn(layerId, zoneInput, roadInput) {
-	      const $ly = $(layerId);
-	      new daum.Postcode({
-	        oncomplete: function(data){
-	          $(zoneInput).val(data.zonecode || '');
-	          $(roadInput).val(data.roadAddress || data.jibunAddress || '');
-	          $ly.hide().empty();
-	          $("#f_detailAddress").focus();
-	        },
-	        onresize : function(size){ $ly.height(size.height); }
-	      }).embed($ly.get(0));
-	      $ly.show();
-	    }
-	    $("#btnFindZip2").on("click", function(){ openPostcodeIn("#postcodeLayer2", "#f_zonecode", "#f_roadAddress"); });
+      /* ================== 다음(카카오) 우편번호 모달 ================== */
+      const addAddrModalEl = document.getElementById('addAddrModal');
+      if (addAddrModalEl) {
+        const addAddrModal   = new bootstrap.Modal(addAddrModalEl);
+        addAddrModalEl.addEventListener('show.bs.modal', () => {
+          $("#f_addressName,#f_recipient,#f_phone,#f_zonecode,#f_roadAddress,#f_detailAddress").val('');
+          $("#f_isDefault").prop("checked", false);
+          $("#postcodeLayer2").hide().empty();
+        });
+        addAddrModalEl.addEventListener('hidden.bs.modal', () => { $('.modal-backdrop').each(function(i, el){ if (i) $(el).remove(); }); });
 
-	    $("#addAddrForm").on("submit", function(e){
-	      e.preventDefault();
-	      const data = {
-	        addressName:   $("#f_addressName").val().trim(),
-	        recipient:     $("#f_recipient").val().trim(),
-	        phone:         $("#f_phone").val().trim(),
-	        zonecode:      $("#f_zonecode").val().trim(),
-	        roadAddress:   $("#f_roadAddress").val().trim(),
-	        detailAddress: $("#f_detailAddress").val().trim(),
-	        isDefault:     true
-	      };
-	      if (!data.addressName || !data.recipient || !data.phone || !data.zonecode || !data.roadAddress) {
-	        alert("필수 항목을 입력해 주세요."); return;
-	      }
-	      const token  = $('meta[name="_csrf"]').attr('content');
-	      const header = $('meta[name="_csrf_header"]').attr('content');
-	      $.ajax({
-	        type: "POST",
-	        url:  "/mypage/address/new",
-	        data, // x-www-form-urlencoded
-	        beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
-	        dataType: "json"
-	      })
-	      .done(function(res){
-	        if (!res || !res.ok || !res.address) { alert("등록에 실패했습니다."); return; }
-	        const a = res.address;
-	        $("#currentAddressNo").val(a.addressNo);
-	        if (addrModalEl) { // 기본 정보 즉시 반영
-	          $("#addrName").text(a.addressName || '');
-	          $("#addrRecipient").text(a.recipient || '');
-	          $("#addrPhone").text(a.phone || '');
-	          $("#addrZone").text(a.zonecode || '');
-	          $("#addrRoad").text(a.roadAddress || '');
-	          $("#addrDetail").text(a.detailAddress || '');
-	        }
-	        bootstrap.Modal.getInstance(addAddrModalEl).hide();
-	        if (addrModalEl) bootstrap.Modal.getInstance(addrModalEl).hide();
-	      })
-	      .fail(function(xhr){ alert("등록 실패 ("+xhr.status+")"); });
-	    });
-	  }
+        function openPostcodeIn(layerId, zoneInput, roadInput) {
+          const $ly = $(layerId);
+          new daum.Postcode({
+            oncomplete: function(data){
+              $(zoneInput).val(data.zonecode || '');
+              $(roadInput).val(data.roadAddress || data.jibunAddress || '');
+              $ly.hide().empty();
+              $("#f_detailAddress").focus();
+            },
+            onresize : function(size){ $ly.height(size.height); }
+          }).embed($ly.get(0));
+          $ly.show();
+        }
+        $("#btnFindZip2").on("click", function(){ openPostcodeIn("#postcodeLayer2", "#f_zonecode", "#f_roadAddress"); });
 
-	  /* ================== 결제 팝업/오버레이 ================== */
-	  function showOverlay(){ $("#payOverlay").show(); $("body").addClass("overlay-lock"); }
-	  function hideOverlay(){ $("#payOverlay").hide(); $("body").removeClass("overlay-lock"); }
-	  $("#payOverlay").on("click", hideOverlay);
+        // 새 주소 저장
+        $("#addAddrForm").on("submit", function(e){
+          e.preventDefault();
+          const data = {
+            addressName:   $("#f_addressName").val().trim(),
+            recipient:     $("#f_recipient").val().trim(),
+            phone:         $("#f_phone").val().trim(),
+            zonecode:      $("#f_zonecode").val().trim(),
+            roadAddress:   $("#f_roadAddress").val().trim(),
+            detailAddress: $("#f_detailAddress").val().trim(),
+            isDefault:     $("#f_isDefault").is(":checked") // ✅ 체크시에만 기본 변경
+          };
+          if (!data.addressName || !data.recipient || !data.phone || !data.zonecode || !data.roadAddress) {
+            alert("필수 항목을 입력해 주세요."); return;
+          }
+          const token  = $('meta[name="_csrf"]').attr('content');
+          const header = $('meta[name="_csrf_header"]').attr('content');
+          $.ajax({
+            type: "POST",
+            url:  "/mypage/address/new",
+            data, // x-www-form-urlencoded 로 전송 (백엔드 폼 바인딩 가정)
+            beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
+            dataType: "json"
+          })
+          .done(function(res){
+            if (!res || !res.ok || !res.address) { alert("등록에 실패했습니다."); return; }
+            const a = res.address;
 
-	  function openCenteredPopup(url, w=520, h=720){
-	    const dualScreenLeft = (window.screenLeft ?? window.screenX) || 0;
-	    const dualScreenTop  = (window.screenTop  ?? window.screenY) || 0;
-	    const width  = window.outerWidth  || document.documentElement.clientWidth  || screen.width;
-	    const height = window.outerHeight || document.documentElement.clientHeight || screen.height;
-	    const left = dualScreenLeft + Math.max(0, (width  - w) / 2);
-	    const top  = dualScreenTop  + Math.max(0, (height - h) / 2);
-	    const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
-	    return window.open(url, "kakaopay_popup", features);
-	  }
+            // 👉 기본체크 여부와 무관하게, 이번 주문 화면에는 방금 주소를 즉시 반영
+            applyAddressToView(a);
 
-	  function watchPopupClose(win, orderId){
-	    const timer = setInterval(function(){
-	      if (!win || win.closed) {
-	        clearInterval(timer);
-	        setTimeout(function(){
-	          $.get('/pay/order/' + orderId + '/status')
-	            .done(function(res){
-	              const st = (res && res.status || '').toUpperCase();
-	              hideOverlay();
-	              if (st === 'PAID')           window.location.href = '/main/list';
-	              else if (st === 'PENDING')   alert('결제가 완료되지 않았습니다. 다시 시도하거나 취소할 수 있어요.');
-	              else                         alert('결제가 취소되었습니다.');
-	            })
-	            .fail(function(){ hideOverlay(); alert('결과 확인 실패. 잠시 후 새로고침해 주세요.'); });
-	        }, 1000);
-	      }
-	    }, 300);
-	  }
+            // 모달 닫기
+            const addModalInst  = bootstrap.Modal.getInstance(addAddrModalEl);
+            if (addModalInst) addModalInst.hide();
+            const addrModalInst = bootstrap.Modal.getInstance(document.getElementById('addrModal'));
+            if (addrModalInst) addrModalInst.hide();
+          })
+          .fail(function(xhr){ alert("등록 실패 ("+xhr.status+")"); });
+        });
+      }
 
-	  /* ================== 결제 버튼 ================== */
-	  $("#payBtn").on("click", function(e){
-	    e.preventDefault();
-	    const usedPoint = Number($("#_usedPoint").val()) || 0;
-	    const token  = $('meta[name="_csrf"]').attr('content');
-	    const header = $('meta[name="_csrf_header"]').attr('content');
+      /* ================== 결제 팝업/오버레이 ================== */
+      function showOverlay(){ $("#payOverlay").show(); $("body").addClass("overlay-lock"); }
+      function hideOverlay(){ $("#payOverlay").hide(); $("body").removeClass("overlay-lock"); }
+      $("#payOverlay").on("click", hideOverlay);
 
-		if (isCartMode) {
-		  const payload = (safeCartItems || []).map(it => ({
-		    cartDetailId: it.cartDetailId,
-		    quantity: Math.max(1, Number(it.quantity)||1),
-		  }));
-		  if (payload.length === 0) { alert("선택된 상품이 없습니다."); return; }
+      function openCenteredPopup(url, w=520, h=720){
+        const dualScreenLeft = (window.screenLeft ?? window.screenX) || 0;
+        const dualScreenTop  = (window.screenTop  ?? window.screenY) || 0;
+        const width  = window.outerWidth  || document.documentElement.clientWidth  || screen.width;
+        const height = window.outerHeight || document.documentElement.clientHeight || screen.height;
+        const left = dualScreenLeft + Math.max(0, (width  - w) / 2);
+        const top  = dualScreenTop  + Math.max(0, (height - h) / 2);
+        const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
+        return window.open(url, "kakaopay_popup", features);
+      }
 
-		  $.ajax({
-		    type: "POST",
-		    url:  "/pay/ready/cart",
-		    data: JSON.stringify({ usedPoint, items: payload }),
-		    contentType: "application/json; charset=UTF-8",
-		    beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
-		    success: onReadyOk,
-		    error: onReadyErr
-		  });
-		} else {
-		  const productId = Number($productId.val());
-		  const qty       = Math.max(1, Number($qty.val())||1);
+      function watchPopupClose(win, orderId){
+        const timer = setInterval(function(){
+          if (!win || win.closed) {
+            clearInterval(timer);
+            setTimeout(function(){
+              $.get('/pay/order/' + orderId + '/status')
+                .done(function(res){
+                  const st = (res && res.status || '').toUpperCase();
+                  hideOverlay();
+                  if (st === 'PAID')           window.location.href = '/main/list';
+                  else if (st === 'PENDING')   alert('결제가 완료되지 않았습니다. 다시 시도하거나 취소할 수 있어요.');
+                  else                         alert('결제가 취소되었습니다.');
+                })
+                .fail(function(){ hideOverlay(); alert('결과 확인 실패. 잠시 후 새로고침해 주세요.'); });
+            }, 1000);
+          }
+        }, 300);
+      }
 
-		  $.ajax({
-		    type: "POST",
-		    url:  "/pay/ready/single",
-		    data: JSON.stringify({ productId, quantity: qty, usedPoint }),
-		    contentType: "application/json; charset=UTF-8",
-		    beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
-		    success: onReadyOk,
-		    error: onReadyErr
-		  });
-		}
+      /* ================== 결제 버튼 ================== */
+      $("#payBtn").on("click", function(e){
+        e.preventDefault();
+        const usedPoint = Number($("#_usedPoint").val()) || 0;
+        const token  = $('meta[name="_csrf"]').attr('content');
+        const header = $('meta[name="_csrf_header"]').attr('content');
 
+        if (isCartMode) {
+          const payload = (safeCartItems || []).map(it => ({
+            cartDetailId: it.cartDetailId,
+            quantity: Math.max(1, Number(it.quantity)||1),
+          }));
+          if (payload.length === 0) { alert("선택된 상품이 없습니다."); return; }
 
-	    function onReadyOk(res){
-	      const payUrl  = res && res.next_redirect_pc_url;
-	      const orderId = res && res.orderId;
-	      if (!payUrl || !orderId) { alert("응답 형식이 올바르지 않습니다."); console.log(res); return; }
-	      showOverlay();
-	      const win = openCenteredPopup(payUrl, 520, 720);
-	      if (win && !win.closed) { try { win.focus(); } catch(_) {} watchPopupClose(win, orderId); }
-	      else { hideOverlay(); window.location.href = payUrl; }
-	    }
-	    function onReadyErr(xhr){ hideOverlay(); alert("결제 준비 실패 (" + xhr.status + ")\n" + (xhr.responseText||"")); }
-	  });
+          $.ajax({
+            type: "POST",
+            url:  "/pay/ready/cart",
+            data: JSON.stringify({ usedPoint, items: payload }),
+            contentType: "application/json; charset=UTF-8",
+            beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
+            success: onReadyOk,
+            error: onReadyErr
+          });
+        } else {
+          const productId = Number($productId.val());
+          const qty       = Math.max(1, Number($qty.val())||1);
 
-	  function esc(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-	  $("#payOverlay").hide(); $("body").removeClass("overlay-lock");
-	});
-	</script>
+          $.ajax({
+            type: "POST",
+            url:  "/pay/ready/single",
+            data: JSON.stringify({ productId, quantity: qty, usedPoint }),
+            contentType: "application/json; charset=UTF-8",
+            beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
+            success: onReadyOk,
+            error: onReadyErr
+          });
+        }
+
+        function onReadyOk(res){
+          const payUrl  = res && res.next_redirect_pc_url;
+          const orderId = res && res.orderId;
+          if (!payUrl || !orderId) { alert("응답 형식이 올바르지 않습니다."); console.log(res); return; }
+          showOverlay();
+          const win = openCenteredPopup(payUrl, 520, 720);
+          if (win && !win.closed) { try { win.focus(); } catch(_) {} watchPopupClose(win, orderId); }
+          else { hideOverlay(); window.location.href = payUrl; }
+        }
+        function onReadyErr(xhr){ hideOverlay(); alert("결제 준비 실패 (" + xhr.status + ")\n" + (xhr.responseText||"")); }
+      });
+
+      function esc(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+      $("#payOverlay").hide(); $("body").removeClass("overlay-lock");
+    });
+    </script>
   </div>
 </html>
