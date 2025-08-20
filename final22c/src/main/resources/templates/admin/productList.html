@@ -2,34 +2,107 @@
 <div layout:fragment="content" class="container">
 	<div class="container my-4">
 	    <h2>상품관리</h2>
-		<div class="filters mb-3">
-		    <div class="filter-group mb-2">
-		        <h5>브랜드</h5>
-		        <label th:each="brands:${brands}" class="me-2">
-		            <input type="checkbox" class="filter" name="brand" th:value="${brands.id}"> [[${brands.brandName}]]
-		        </label>
-		    </div>
+<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded">
 
-		    <div class="filter-group mb-2">
-		        <h5>상태</h5>
-		        <label class="me-2"><input type="checkbox" class="filter" name="isPicked" value="Y"> 관리자픽</label>
-		        <label class="me-2"><input type="checkbox" class="filter" name="status" value="wait"> 비활성화</label>
-		    </div>
+    <!-- 검색 -->
+    <div class="mb-3">
+        <label class="form-label">검색</label>
+        <input type="text" class="form-control" placeholder="상품명 입력" name="kw" th:value="${kw}" id="search_kw">
+    </div>
 
-		    <div class="filter-group mb-2">
-		        <h5>정렬</h5>
-		        <label class="me-2"><input type="checkbox" class="filter" name="sortStockAsc" value="true"> 재고 오름차순</label>
-		        <label class="me-2"><input type="checkbox" class="filter" name="sortStockDesc" value="true"> 재고 내림차순</label>
-		        <label class="me-2"><input type="checkbox" class="filter" name="sortPriceAsc" value="true"> 가격 오름차순</label>
-		        <label class="me-2"><input type="checkbox" class="filter" name="sortPriceDesc" value="true"> 가격 내림차순</label>
-		    </div>
-		</div>
+    <!-- 브랜드 필터 -->
+    <div class="mb-3">
+        <label class="form-label">브랜드</label>
+        <div class="d-flex flex-wrap">
+            <div th:each="b : ${brands}" class="form-check me-3">
+                <input class="form-check-input" type="checkbox" name="brand" th:value="${b.id}" th:checked="${brand != null and brand.contains(b.id)}" id="brand__${b.id}">
+                <label class="form-check-label" th:for="'brand__' + ${b.id}">[[${b.brandName}]]</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- 상태 필터 -->
+	<div class="mb-3">
+	    <label class="form-label">관리자픽</label>
+	    <div class="form-check form-check-inline">
+	        <input class="form-check-input" type="radio" name="isPicked" value="Y" 
+	               th:checked="${isPicked != null and isPicked.contains('Y')}" id="isPickedYes">
+	        <label class="form-check-label" for="isPickedYes">Y</label>
+	    </div>
+	    <div class="form-check form-check-inline">
+	        <input class="form-check-input" type="radio" name="isPicked" value="N" 
+	               th:checked="${isPicked != null and isPicked.contains('N')}" id="isPickedNo">
+	        <label class="form-check-label" for="isPickedNo">N</label>
+	    </div>
+	    <div class="form-check form-check-inline">
+	        <input class="form-check-input" type="radio" name="isPicked" value="" 
+	               th:checked="${isPicked == null}" id="isPickedNone">
+	        <label class="form-check-label" for="isPickedNone">전체</label>
+	    </div>
+	</div>
+	
+	<div class="mb-3">
+	    <label class="form-label">상태</label>
+	    <div class="form-check form-check-inline">
+	        <input class="form-check-input" type="radio" name="status" value="active" 
+	               th:checked="${status != null and status.contains('active')}" id="statusActive">
+	        <label class="form-check-label" for="statusActive">활성화</label>
+	    </div>
+	    <div class="form-check form-check-inline">
+	        <input class="form-check-input" type="radio" name="status" value="wait" 
+	               th:checked="${status != null and status.contains('wait')}" id="statusWait">
+	        <label class="form-check-label" for="statusWait">비활성화</label>
+	    </div>
+	    <div class="form-check form-check-inline">
+	        <input class="form-check-input" type="radio" name="status" value="" 
+	               th:checked="${status == null}" id="statusNone">
+	        <label class="form-check-label" for="statusNone">전체</label>
+	    </div>
+	</div>
+
+    <!-- 정렬 -->
+    <div class="mb-3">
+        <label class="form-label">재고 정렬</label>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="sortStock" value="asc" th:checked="${sortStock == 'asc'}" id="sortStockAsc">
+            <label class="form-check-label" for="sortStockAsc">낮은순</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="sortStock" value="desc" th:checked="${sortStock == 'desc'}" id="sortStockDesc">
+            <label class="form-check-label" for="sortStockDesc">많은순</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="sortStock" value="" th:checked="${sortStock == null}" id="sortStockNone">
+            <label class="form-check-label" for="sortStockNone">정렬 없음</label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">가격 정렬</label>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="sortPrice" value="asc" th:checked="${sortPrice == 'asc'}" id="sortPriceAsc">
+            <label class="form-check-label" for="sortPriceAsc">낮은순</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="sortPrice" value="desc" th:checked="${sortPrice == 'desc'}" id="sortPriceDesc">
+            <label class="form-check-label" for="sortPriceDesc">높은순</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="sortPrice" value="" th:checked="${sortPrice == null}" id="sortPriceNone">
+            <label class="form-check-label" for="sortPriceNone">정렬 없음</label>
+        </div>
+    </div>
+	    <!-- 페이지 hidden -->
+    <input type="hidden" name="page" id="page" th:value="${paging.number}"/>
+    <!-- 버튼 -->
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">필터 적용</button>
+        <a href="/admin/productList" class="btn btn-secondary">필터 초기화</a>
+    </div>
+
+</form>
 		<div class="d-flex mb-3 align-items-center">
-		  <!-- 검색창 + 검색버튼 -->
-		  <div class="input-group" style="width: 300px;">
-		    <input type="text" class="form-control" placeholder="검색어 입력">
-		    <button class="btn btn-outline-secondary" type="button">검색</button>
-		  </div>
+
 
 		  <!--상품등록 버튼 -->
 		  <a href="/admin/selectBrand" class="btn btn-primary ms-auto">상품등록</a>
@@ -37,7 +110,7 @@
 		
 
 	    <!-- 상품 리스트 테이블 -->
-	    <table class="table table-bordered align-middle text-center">
+	    <table class="table table-bordered align-middle text-center" >
 	        <thead class="table-light">
 	            <tr>
 	                <th scope="col">상품번호</th>
@@ -51,9 +124,9 @@
 	                <th scope="col">관리</th>
 	            </tr>
 	        </thead>
-	        <tbody th:fragment="productListFragment" id="productList">
+	        <tbody id="productList">
 	            <!-- 상품 리스트 -->
-	            <tr th:each="list:${paging}">
+	            <tr th:each="list : ${paging}" th:fragment="productRow">
 	                <td th:text="${list.id}"></td>
 	                <td th:text="${list.name}"></td>
 	                <td th:text="${list.brand.brandName}"></td>
@@ -78,35 +151,26 @@
 	</div>
 
 	<div th:if="${!paging.isEmpty()}">
-	    <ul class="pagination justify-content-center">
-	        <!-- 이전 블록 -->
-	        <li class="page-item" 
-	            th:classappend="${currentBlock == 0} ? 'disabled'">
-	            <a class="page-link" 
-	               th:href="@{|?page=${(currentBlock-1)*pageSize}|}">
-	                이전
-	            </a>
-	        </li>
+<ul class="pagination justify-content-center">
+    <ul class="pagination">
+        <li class="page-item" th:classappend="${currentBlock == 0} ? 'disabled'">
+            <a href="#" class="page-link" th:data-page="${(currentBlock > 0) ? (currentBlock-1)*pageSize : 0}" onclick="goPage(this)">이전</a>
+        </li>
 
-	        <!-- 페이지 번호 -->
-	        <li th:each="page : ${#numbers.sequence(currentBlock*pageSize, (currentBlock+1)*pageSize-1)}"
-	            th:if="${page < paging.totalPages}"
-	            th:classappend="${page == paging.number} ? 'active'" 
-	            class="page-item">
-	            <a class="page-link" th:href="@{|?page=${page}|}" 
-	               th:text="${page+1}"></a>
-	        </li>
+        <li class="page-item" th:each="pageNum : ${#numbers.sequence(currentBlock*pageSize, ((currentBlock+1)*pageSize-1 < paging.totalPages-1 ? (currentBlock+1)*pageSize-1 : paging.totalPages-1))}" th:classappend="${pageNum == paging.number} ? 'active'">
+            <a href="#" class="page-link" th:data-page="${pageNum}" th:text="${pageNum+1}" onclick="goPage(this)"></a>
+        </li>
 
-	        <!-- 다음 블록 -->
-	        <li class="page-item" 
-	            th:classappend="${(currentBlock+1)*pageSize >= paging.totalPages} ? 'disabled'">
-	            <a class="page-link" 
-	               th:href="@{|?page=${(currentBlock+1)*pageSize}|}">
-	                다음
-	            </a>
-	        </li>
-	    </ul>
+        <li class="page-item" th:classappend="${(currentBlock+1)*pageSize >= paging.totalPages} ? 'disabled'">
+            <a href="#" class="page-link" th:data-page="${((currentBlock+1)*pageSize < paging.totalPages) ? (currentBlock+1)*pageSize : paging.totalPages-1}" onclick="goPage(this)">다음</a>
+        </li>
+    </ul>
+</ul>
 	</div>
+	<form th:action="@{/admin/productList}" method="get" id="searchForm">
+		<input type="hidden" id="kw" name="kw" th:value="${kw}" />
+		<input type="hidden" id="page" name="page" th:value="${paging.number}" />
+	</form>
 	<!-- 상태 변경 확인 모달 -->
 	<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
 	  <div class="modal-dialog modal-dialog-centered">
@@ -127,81 +191,44 @@
 	</div>
 </div>
 <script layout:fragment="script" type="text/javascript">
-	// 필터 ajax
-	$(document).ready(function() {
-	    $('.filter').on('change', function() {
-	        let filterData = {};
-	        
-	        $('.filter').each(function() {
-	            const name = $(this).attr('name');
-	            if(this.checked) {
-	                if(filterData[name]) {
-	                    filterData[name].push($(this).val());
-	                } else {
-	                    filterData[name] = [$(this).val()];
-	                }
-	            }
-	        });
-
-	        $.ajax({
-	            url: '/admin/profilter',
-	            type: 'GET',
-	            data: filterData,
-	            success: function(res) {
-	                $('#productList').html(res);
-	            },
-	            error: function(err) {
-	                console.error(err);
-	            }
-	        });
-	    });
-	});
-// 활성화/비활성화 ajax
-const statusButtons = document.getElementsByClassName("status");
-let selectedButton = null;  // 클릭한 버튼 저장
+//=========================
+//상품 상태 변경 (활성화/비활성화) 모달
+//=========================
+let selectedButton = null;
 let newStatus = '';
 
-Array.from(statusButtons).forEach(btn => {
-  btn.addEventListener('click', function() {
+$(document).on('click', '.status', function() {
     selectedButton = this;
-    const currentStatus = this.dataset.status;
+    const currentStatus = $(this).data('status');
     newStatus = currentStatus === 'active' ? 'wait' : 'active';
-    
-    // 모달 내용 변경
-    document.getElementById('statusModalBody').textContent =
-      `${newStatus === 'active' ? '활성화' : '비활성화'} 하시겠습니까?`;
 
-    // 모달 띄우기
-    const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+    $('#statusModalBody').text(`${newStatus === 'active' ? '활성화' : '비활성화'} 하시겠습니까?`);
+    const modal = new bootstrap.Modal($('#statusModal')[0]);
     modal.show();
-  });
 });
 
-// 모달 확인 클릭 시 AJAX
-document.getElementById('confirmStatusChange').addEventListener('click', function() {
-  if(selectedButton) {
-    const productId = selectedButton.dataset.id;
-
-    fetch(`/admin/productStatus/${productId}?status=${newStatus}`, { method: 'POST' })
-      .then(response => {
-        if(response.ok) {
-          // 버튼 텍스트와 dataset 갱신
-          selectedButton.dataset.status = newStatus;
-          selectedButton.textContent = newStatus === 'active' ? '비활성화' : '활성화';
-          
-          // 모달 닫기
-          const modalEl = document.getElementById('statusModal');
-          const modalInstance = bootstrap.Modal.getInstance(modalEl);
-          modalInstance.hide();
-        } else {
-          alert('상태 변경에 실패했습니다.');
-        }
-      });
-  }
+$('#confirmStatusChange').on('click', function() {
+    if(selectedButton) {
+        const productId = $(selectedButton).data('id');
+        fetch(`/admin/productStatus/${productId}?status=${newStatus}`, { method: 'POST' })
+            .then(res => {
+                if(res.ok) {
+                    $(selectedButton).data('status', newStatus);
+                    $(selectedButton).text(newStatus === 'active' ? '비활성화' : '활성화');
+                    const modalInstance = bootstrap.Modal.getInstance($('#statusModal')[0]);
+                    modalInstance.hide();
+                } else {
+                    alert('상태 변경 실패');
+                }
+            });
+    }
 });
-// 관리자픽 수정
+
+//=========================
+//관리자픽 변경
+//=========================
 function updatePick(selectBox) {
-    const id = selectBox.getAttribute("data-id");
+    const id = $(selectBox).data('id');
     const value = selectBox.value;
 
     fetch("/admin/updatePick", {
@@ -210,8 +237,14 @@ function updatePick(selectBox) {
         body: JSON.stringify({ id: id, isPicked: value })
     })
     .then(res => res.text())
-    .then(msg => console.log("업데이트 성공:", msg))
-    .catch(err => console.error("업데이트 실패:", err));
+    .then(msg => console.log("관리자픽 업데이트 성공:", msg))
+    .catch(err => console.error("관리자픽 업데이트 실패:", err));
+}
+
+function goPage(a) {
+    const page = a.getAttribute('data-page');
+    document.getElementById('page').value = page;
+    document.getElementById('filterForm').submit();
 }
 </script>
 </html>

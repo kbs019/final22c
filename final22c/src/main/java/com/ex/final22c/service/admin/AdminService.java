@@ -35,7 +35,8 @@ import com.ex.final22c.repository.user.UserRepository;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Order;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
@@ -110,13 +111,26 @@ public class AdminService {
 	        }
 	        this.userRepository.save(user);
      }
-    
+    // 상품명 검색
+    private Specification<Product> proSearch(String kw){
+    	return new Specification<>() {
+
+			@Override
+			public Predicate toPredicate(Root<Product> root, CriteriaQuery<?> query,
+					CriteriaBuilder cb) {
+				return cb.like(root.get("name"), "%" + kw + "%");
+			}
+    		
+    	};
+    }
+
     // 상품 목록
-    public Page<Product> getItemList(int page){
+    public Page<Product> getItemList(int page,String kw){
     	List<Sort.Order> sorts = new ArrayList<>();
     	sorts.add(Sort.Order.desc("id"));
     	PageRequest pageable = PageRequest.of(page,10,Sort.by(sorts));
-    	return this.productRepository.findAll(pageable);
+    	Specification<Product> spec = proSearch(kw);
+    	return this.productRepository.findAll(spec,pageable);
     }
     
     // 상품 추출
@@ -311,38 +325,71 @@ public class AdminService {
         }
     }
     
-    // 상품 필터
-    public List<Product> filterProducts(List<Long> brandIds, List<String> isPickedList, List<String> statusList,
-            Boolean sortStockAsc, Boolean sortStockDesc,
-            Boolean sortPriceAsc, Boolean sortPriceDesc) {
+	 // 동적 필터
+    private Specification<Product> proFilter(
+            String kw,
+            List<Long> brandIds,
+            List<String> isPicked,
+            List<String> status
+    ) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-		// JPA Specification 사용 예제
-		return productRepository.findAll((root, query, cb) -> {
-			List<Predicate> predicates = new ArrayList<>();
-			
-			if(brandIds != null && !brandIds.isEmpty()) {
-			predicates.add(root.get("brand").get("id").in(brandIds));
-			}
-			
-			if(isPickedList != null && !isPickedList.isEmpty()) {
-			predicates.add(root.get("isPicked").in(isPickedList));
-			}
-			
-			if(statusList != null && !statusList.isEmpty()) {
-			predicates.add(root.get("status").in(statusList));
-			}
-			
-			query.where(predicates.toArray(new Predicate[0]));
-			
-			// 정렬
-			List<Order> orders = new ArrayList<>();
-			if(Boolean.TRUE.equals(sortStockAsc)) orders.add(cb.asc(root.get("stock")));
-			if(Boolean.TRUE.equals(sortStockDesc)) orders.add(cb.desc(root.get("stock")));
-			if(Boolean.TRUE.equals(sortPriceAsc)) orders.add(cb.asc(root.get("price")));
-			if(Boolean.TRUE.equals(sortPriceDesc)) orders.add(cb.desc(root.get("price")));
-			if(!orders.isEmpty()) query.orderBy(orders);
-			
-		return query.getRestriction();
-		});
-	}
+            // 검색 (상품명 LIKE)
+            if (kw != null && !kw.isBlank()) {
+                predicates.add(cb.like(root.get("name"), "%" + kw + "%"));
+            }
+
+            // 브랜드 필터
+            if (brandIds != null && !brandIds.isEmpty()) {
+                Join<Product, Brand> brandJoin = root.join("brand", JoinType.LEFT);
+                predicates.add(brandJoin.get("id").in(brandIds));
+            }
+
+            // 관리자픽 필터
+            if (isPicked != null && !isPicked.isEmpty()) {
+                predicates.add(root.get("isPicked").in(isPicked));
+            }
+
+            // 상태 필터
+            if (status != null && !status.isEmpty()) {
+                predicates.add(root.get("status").in(status));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+    // 상품 필터
+    public Page<Product> getItemList(
+            int page,
+            String kw,
+            List<Long> brandIds,
+            String isPicked,  // radio로 하나만 선택
+            String status,    // radio로 하나만 선택
+            String sortStock, // "asc" / "desc" / null
+            String sortPrice  // "asc" / "desc" / null
+    ) {
+        List<Sort.Order> sorts = new ArrayList<>();
+
+        // 재고 정렬
+        if ("asc".equals(sortStock)) sorts.add(Sort.Order.asc("count"));
+        else if ("desc".equals(sortStock)) sorts.add(Sort.Order.desc("count"));
+
+        // 가격 정렬
+        if ("asc".equals(sortPrice)) sorts.add(Sort.Order.asc("price"));
+        else if ("desc".equals(sortPrice)) sorts.add(Sort.Order.desc("price"));
+
+        // 정렬이 없으면 기본 id DESC
+        if (sorts.isEmpty()) sorts.add(Sort.Order.desc("id"));
+
+        PageRequest pageable = PageRequest.of(page, 10, Sort.by(sorts));
+
+        // 동적 필터
+        List<String> isPickedList = isPicked == null || isPicked.isEmpty() ? null : List.of(isPicked);
+        List<String> statusList = status == null || status.isEmpty() ? null : List.of(status);
+
+        Specification<Product> spec = proFilter(kw, brandIds, isPickedList, statusList);
+
+        return productRepository.findAll(spec, pageable);
+    }
 }

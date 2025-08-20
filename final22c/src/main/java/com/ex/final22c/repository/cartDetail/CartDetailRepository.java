@@ -28,11 +28,11 @@ public interface CartDetailRepository extends JpaRepository<CartDetail, Long> {
     // 단건 조회: 소유자 일치 + product/cart/user fetch
     @EntityGraph(attributePaths = { "product", "cart", "cart.user" })
     @Query("""
-            select cd
-            from CartDetail cd
-            where cd.cartDetailId = :id
-            and cd.cart.user.userName = :userName
-            """)
+			select cd
+			from CartDetail cd 
+			where cd.cartDetailId = :id
+			and cd.cart.user.userName = :userName
+		""")
     Optional<CartDetail> findByIdAndOwnerFetch(@Param("id") Long id, @Param("userName") String userName);
 
     // 다건 조회: 체크아웃/일괄 처리 등에 사용
@@ -42,7 +42,7 @@ public interface CartDetailRepository extends JpaRepository<CartDetail, Long> {
             from CartDetail cd
             where cd.cart.user.userName = :userName
             and cd.cartDetailId in :ids
-            """)
+        """)
     List<CartDetail> findAllByIdsAndOwnerFetch(@Param("userName") String userName, @Param("ids") List<Long> ids);
 
     // 선택 삭제
@@ -51,7 +51,6 @@ public interface CartDetailRepository extends JpaRepository<CartDetail, Long> {
             delete from CartDetail cd
             where cd.cart.user.userName = :userName
             and cd.cartDetailId in :ids
-            """)
+        """)
     int deleteByIdsAndOwner(@Param("userName") String userName, @Param("ids") List<Long> ids);
-
 }
