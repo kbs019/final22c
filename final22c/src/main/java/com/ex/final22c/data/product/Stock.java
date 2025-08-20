@@ -37,7 +37,7 @@ public class Stock {
     @JoinColumn(name = "id", nullable = false)
     private Product product;            // 상품 식별 번호
 
-    @NaturalId(mutable = false)
+    @NaturalId(mutable = false)         // 조회를 더 쉽게 할 수 있도록 도와주는 어노테이션
     @Column( name = "serialNo", nullable = false, unique = true )
     private String serialNo;            // 시리얼 번호
 
@@ -45,12 +45,12 @@ public class Stock {
     private String status;              // 상태 ( 판매중 / 결제완료 / 판매완료 / 환불됨 )   --  결제취소 시, 판매중으로 변경
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "createDate", updatable = false)
+    private LocalDateTime createDate;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "updateDate")
+    private LocalDateTime updateDate;
 
     @PrePersist
     public void onCreate() {
