@@ -117,222 +117,299 @@
     <!-- 페이지 전용 JS -->
     <script th:inline="javascript">
         // ---------- 유틸 ----------
-        const fmt = n => (n || 0).toLocaleString('ko-KR') + '원';       // 1000 단위로 , 를 연결해주고, '원' 을 붙여주는 작업을 도와줌
-        const getMax = (row) => Number(row?.dataset?.stock ?? 1);       // 최대 재고 가져오기
-        const isSellable = (row) => getMax(row) > 0;                    // 최대 재고가 0 보다 크다면 true (판매가능)
+        const fmt = n => (n || 0).toLocaleString('ko-KR') + '원';       
+        // 숫자를 한국식 천단위 구분(,) + "원" 을 붙여주는 함수
+        // 0이나 null 이 들어오면 기본값 0 처리
+
+        const getMax = (row) => Number(row?.dataset?.stock ?? 1);       // 현재 재고 가져오기
+        // 특정 상품 행(row)의 data-stock 속성을 읽어 재고 갯수 반환
+        // 값이 없으면 기본값 1 처리
+
+        const isSellable = (row) => getMax(row) > 0;                    
+        // 현재 재고가 0 보다 크다면 true (판매가능)
+
         // const getCsrf = () => ({
         //     token: document.querySelector('meta[name="_csrf"]').content,
         //     header: document.querySelector('meta[name="_csrf_header"]').content
         // });
 
-        const $list = document.getElementById('cartList');
-        const $checkAll = document.getElementById('checkAll');
+        const $list = document.getElementById('cartList');              // 장바구니 전체
+        const $checkAll = document.getElementById('checkAll');          // 체크박스
         const $selCount = document.getElementById('selCount');          // 선택된 상품의 갯수 ( 구매하려는 상품의 갯수 -- 우측 사이드바에 출력되는 값 )
         const $selTotal = document.getElementById('selTotal');          // 선택된 상품의 판매가의 총 합
         const $getMileage = document.getElementById('getMileage');      // 선택된 상품의 판매가에 적립률 계산
 
         // 버튼 상태 갱신 (수량 == 최대일 때 + 비활성화)
         function toggleButtons(row) {
-            const qtyInput = row.querySelector('.qty-input');
-            const btnPlus = row.querySelector('.btnPlus');
-            const btnMinus = row.querySelector('.btnMinus');
-            const cb = row.querySelector('.row-check');
-            const qty = Number(qtyInput.value || 1);
-            const max = getMax(row);
+            const qtyInput = row.querySelector('.qty-input');           // 장바구니의 한 행에 존재하는 class 선택자가 "qty-input" 인 태그 꺼냄
+            const btnPlus = row.querySelector('.btnPlus');              // class 선택자가 btnPlus 인 태그를 꺼냄
+            const btnMinus = row.querySelector('.btnMinus');            // class 선택자가 btnMinus 인 태그를 꺼냄
+            const cb = row.querySelector('.row-check');                 // class 선택자가 row-check 인 태그를 꺼냄
 
-            if (btnPlus) { btnPlus.disabled = qty >= max || max <= 0; }
-            if (btnMinus) { btnMinus.disabled = qty <= 1 || max <= 0; }
+            const qty = Number(qtyInput.value || 1);                    // qtyInput 이라는 변수의 값을 꺼내어 숫자로 변환 (값이 없으면 기본값 1)
+            const max = getMax(row);                                    // 현재 재고의 값을 꺼냄
 
-            // 품절이면 입력 자체를 막는다.
-            qtyInput.disabled = (max <= 0);
+            if (btnPlus) { btnPlus.disabled = qty >= max || max <= 0; }         // 수량이 재고 이상이거나 재고가 0 이하라면, btnPlus 를 비활성화
+            if (btnMinus) { btnMinus.disabled = qty <= 1 || max <= 0; }         // 수량이 1 이하이거나 재고가 0 이하라면, btnMinus 를 비활성화
+
+            // 품절이면 입력 자체를 막는다. (재고가 0 이하라면 qtyInput 을 비활성화)
+            qtyInput.disabled = (max <= 0);           
 
             // 품절이면 체크박스도 막고 체크 해제
             if (cb) {
-                cb.disabled = !isSellable(row);
-                if (cb.disabled) { cb.checked = false; }
+                cb.disabled = !isSellable(row);                 // 해당 행이 판매불가능 (품절) 이라면 체크박스를 비활성화
+                if (cb.disabled) { cb.checked = false; }        // 체크박스가 비활성화 되었다면, 체크 해제
             }
         }
 
         function refreshSummary() {
-            const rows = Array.from($list.querySelectorAll('.cart-row'));
-            let total = 0, cnt = 0, mileage = 0, listTotal = 0;
+            const rows = Array.from($list.querySelectorAll('.cart-row'));       // 장바구니 전체 중 class 선택자가 "cart-row" 인 모든 행을 배열로 만들어 rows 변수에 대입
+            let total = 0, cnt = 0, mileage = 0, listTotal = 0;                 
+            // total    :   판매가의 총합
+            // cnt      :   선택된 행의 갯수
+            // mileage  :   적립될 마일리지
+            // listTotal    :   정가의 총합
 
+            // rows 배열 속 값을 모두 사용할 때까지 반복 실행
             rows.forEach(r => {
-                const sellable = isSellable(r);
-                const cb = r.querySelector('.row-check');
+                const sellable = isSellable(r);                 // 해당 행이 isSellable() 판매 가능하면 true / 판매 불가(품절)라면 false
+                const cb = r.querySelector('.row-check');       // 해당 행의 class 선택자가 "row-check" 인 태그를 변수 cb 에 대입   -- 해당 행의 체크박스
 
-                const checked = cb?.checked && sellable;
+                const checked = cb?.checked && sellable;        // 해당 행의 체크박스가 checked 되어있으면서 판매가능이라면, checked 변수에 true 를 대입 -- 하나의 조건도 되지 않는다면, false
 
-                const qty = Number(r.querySelector('.qty-input')?.value || 1);
-                const unit = Number(r.dataset.unitPrice || 0);
-                const listPrice = Number(r.dataset.listPrice || 0);
-                const lineUnit = unit * qty;
-                const lineList = listPrice * qty;
+                const qty = Number(r.querySelector('.qty-input')?.value || 1);      // 해당 행의 "qty-input" 이라는 이름의 class 선택자를 가진 태그의 값을 꺼내어 숫자로 변환 (값이 없으면 기본값 1)
+                const unit = Number(r.dataset.unitPrice || 0);                      // 해당 행의 th:data-unit-price 속성의 값을 꺼내어 숫자로 변환 (값이 없으면 기본값 0)
+                const listPrice = Number(r.dataset.listPrice || 0);                 // 해당 행의 th:data-list-price 속성의 값을 꺼내어 숫자로 변환 (값이 없으면 기본값 0)
+                const lineUnit = unit * qty;                                        // unit 변수에 들어있는 값과 qty 에 들어있는 값을 곱하여 -- 정해진 수량에 대한 총 판매가를 구한다.
+                const lineList = listPrice * qty;                                   // listPrice 변수에 들어있는 값과 qty 에 들어있는 값을 곱하여 -- 정해진 수량에 대한 총 정가를 구한다.
 
-                const $line = r.querySelector('.line-total');
+                const $line = r.querySelector('.line-total');                       // 해당 행의 "line-total" 이라는 이름의 class 선택자를 가진 태그를 꺼내어 $line 이라는 변수로 생성
 
-                if ($line) {
-                    $line.textContent = fmt(lineUnit);
+                if ($line) {                                    
+                    $line.textContent = fmt(lineUnit);          // $line 이라는 변수에 값으로 lineUnit(정해진 수량에 대한 총 판매가)을 fmt 함수를 사용하여 생성된 문자열을 대입
                 }
 
-                if (checked) {
-                    total += lineUnit;
-                    listTotal += lineList;
-                    cnt++;
+                if (checked) {                  // 해당 행의 체크박스가 checked 이면서 판매가능일 경우
+                    total += lineUnit;          // total 변수(판매가의 총합)에 lineUnit 의 값을 누적시킨다.
+                    listTotal += lineList;      // listTotal 변수(정가의 총합)에 lineList 의 값을 누적시킨다.
+                    cnt++;                      // cnt 변수(선택된 행의 갯수)를 1씩 증가시킨다.
                 }
-                toggleButtons(r);
+
+                toggleButtons(r);               // 해당 행에 대한 버튼들을 갱신시킨다.
             });
 
-            const discountPrice = listTotal - total;            // 할인 금액
-            mileage = total * 0.05;                             // 적립 마일리지
+            const discountPrice = listTotal - total;            // 할인 금액 (정가의 총합 - 판매가의 총합)
+            mileage = total * 0.05;                             // 적립 마일리지 (판매가의 총합의 5%)
 
             $selCount.textContent = cnt;                        // 선택된 상품의 갯수를 출력
-            $selTotal.textContent = fmt(total);
-            $getMileage.textContent = fmt(mileage);
+            $selTotal.textContent = fmt(total);                 // total 변수(판매가의 총합)에 fmt 함수를 적용하여 문자열로 변환한 뒤, $selTotal 변수에 대입
+            $getMileage.textContent = fmt(mileage);             // mileage 변수(적립될 마일리지 총합)에 fmt 함수를 적용하여 문자열로 변환한 뒤, $getMileage 변수에 대입
 
             // 선택된 상품들의 정가의 합
-            const $listTotal = document.getElementById('selListTotal');
+            const $listTotal = document.getElementById('selListTotal');         // id 선택자가 selListTotal 인 태그를 $listTotal 이라는 변수로 생성
             if ($listTotal) {
-                $listTotal.textContent = fmt(listTotal);
+                $listTotal.textContent = fmt(listTotal);        // listTotal(정가의 총합)에 fmt 함수를 적용하여 문자열로 변환한 뒤, $listTotal 변수에 대입
             }
 
             // 할인금액 표시 추가
-            const $discountPrice = document.getElementById('selDiscount');
-            if ($discountPrice) {
-                $discountPrice.textContent = fmt(discountPrice);
+            const $discountPrice = document.getElementById('selDiscount');      // id 선택자가 selDiscount 인 태그를 $discountPrice 라는 변수로 생성
+            if ($discountPrice) {       
+                $discountPrice.textContent = fmt(discountPrice);        // discountPrice 변수(할인된 금액의 총합)에 fmt 함수를 적용하여 문자열로 변환한 뒤, $discountPrice 변수에 대입
             }
         }
 
         // 디바운스 PATCH
         const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
-        const syncQty = debounce(async (row) => {
-            const id = row.dataset.id;
-            const qty = row.querySelector('.qty-input').value;
+        // 디바운스 유틸    -- 입력이 여러번 발생해도 250ms 동안 대기 후 마지막 것만 실행
+
+        const syncQty = debounce(async (row) => {                   // debounce 가 반환한 래핑 함수. row(한 행 DOM)를 받아 처리
+            const id = row.dataset.id;                              // 각 행의 th:data-id 의 값을 꺼내어 id 변수에 대입
+            const qty = row.querySelector('.qty-input').value;      // 각 행의 class 선택자가 "qty-input" 인 태그의 값을 꺼내어 qty 변수에 대입
 
             // const { token, header } = getCsrf();
 
-            const res = await fetch(`/cart/check/${id}/qty?qty=${qty}`, { method: 'PATCH' });
-            let data = {};
+            // 서버에 수량 검증/보정 요청: PATCH /cart/check/{id}/qty?qty={qty}
+            const res = await fetch(`/cart/check/${id}/qty?qty=${qty}`, {           // fetch: 네트워크 요청. await 로 응답 도착까지 대기
+                method: 'PATCH'                                                     // 부분 변경 의미의 HTTP PATCH 사용
+            });
+
+            let data = {};              // 응답 JSON을 담을 그릇. 파싱 실패 대비 기본 {}
+
             try { data = await res.json(); } catch (_) { }
+            // JSON 파싱 시도(서버가 JSON을 주지 않더라도 안전)
+            // 예: { ok:true, qty:5, max:12 } 같은 형태를 가정
+            // JSON 아니라서 에러 나면 무시하고 data는 {} 유지
 
             // 확인용 로그
             console.log('[PATCH /cart/check/{id}/qty]', { id, req: qty, status: res.status, data });
 
-            // 서버가 보정했다면 클라이언트도 동기화
-            if (data && typeof data.qty !== 'undefined') {
-                row.querySelector('.qty-input').value = data.qty;
-                if (typeof data.max !== 'undefined') {
-                    row.dataset.stock = data.max;
+            // 서버가 수량 필드를 내려줬다면(=서버 측 보정값 포함), 클라이언트도 그 값으로 동기화
+            if (data && typeof data.qty !== 'undefined') {                  // data.qty 가 정의되어 있으면
+                row.querySelector('.qty-input').value = data.qty;           // 입력창 값을 서버 확정 수량으로 갱신
+
+                // 서버가 현재 재고 상한(max)을 함께 내려줬다면, 행의 data-stock 도 갱신
+                if (typeof data.max !== 'undefined') {                      // data.max 존재 시
+                    row.dataset.stock = data.max;                           // 버튼 비활성화 로직 등이 참고하는 최대 재고 갱신
                 }
-                if (!data.ok) {
-                    alert('선택 수량이 재고를 초과하여 최대 수량으로 조정되었습니다.');
-                    refreshSummary();
+
+                // ok 가 false면(예: 초과 요청) 사용자에게 알리고 합계/버튼상태 재계산
+                if (!data.ok) {                                                             // 서버 판단상 정상 처리 아님(초과 등)
+                    alert('선택 수량이 재고를 초과하여 최대 수량으로 조정되었습니다.');         // 보정 사실 안내
+                    refreshSummary();                                                       // 합계/버튼 상태 등 UI 재계산
                 }
             }
-        }, 250);
+        }, 250);                // 디바운스 지연시간 250ms: 입력이 멈춘 뒤 마지막 호출만 실행
 
         // ---------- 이벤트 ----------
         if ($list) {
             $list.addEventListener('click', e => {
-                const row = e.target.closest('.cart-row'); if (!row) return;
-                const qtyInput = row.querySelector('.qty-input');
-                const max = getMax(row);
-                if (e.target.classList.contains('btnMinus')) {
-                    qtyInput.value = Math.max(1, Number(qtyInput.value || 1) - 1);
-                    syncQty(row); refreshSummary();
+            // 장바구니 전체에 'click' 이벤트를 설정
+                const row = e.target.closest('.cart-row'); 
+                // e.target = 실제 클릭된 요소 (수량 변경 버튼 / 수량 직접 입력 요소 등)
+                // row = 그 요소가 속한 ".cart-row" 라는 이름의 DOM
+
+                if (!row) return;
+                // row 가 null 이라면, 이 핸들러 함수 실행을 중단하고 바로 빠져나간다.
+                // 즉, 장바구니 항목이 아닌 부분에 대한 클릭은 아무 작업도 하지 않도록 한다. (안전 장치 설정)
+
+                const qtyInput = row.querySelector('.qty-input');               // 해당 행의 qty-input 이라는 이름의 DOM 을 찾아 qtyInput 변수에 대입
+                const max = getMax(row);                                        // 해당 행의 현재 재고를 max 라는 변수에 대입
+
+                if (e.target.classList.contains('btnMinus')) {      // 실행된 이벤트의 class 선택자들 중 btnMinus 가 포함된다면, (즉, btnMinus 버튼이 눌린 경우)
+                    qtyInput.value = Math.max(1, Number(qtyInput.value || 1) - 1);      
+                    // qtyInput 의 값을 숫자로 변환하여(값이 없다면 1을 기본값으로 설정) -1 을 시킨 뒤, 1 과 비교하여 더 큰 값을 qtyInput 변수의 값으로 설정
+                    // 감소시킨 값이 1보다 작아지지 않도록 제한
+                    syncQty(row);               // 해당행을 디바운스 진행 (250ms 사이에 들어오는 같은 작업은 하나로 간주)
+                    refreshSummary();           // 합계/버튼 상태 등 UI 재계산
                 }
-                if (e.target.classList.contains('btnPlus')) {
-                    qtyInput.value = Math.min(max, Number(qtyInput.value || 1) + 1);
-                    syncQty(row); refreshSummary();
+
+                if (e.target.classList.contains('btnPlus')) {       // 실행된 이벤트의 class 선택자들 중 btnPlus 가 포함된다면, (즉, btnPlus 버튼이 눌린 경우)
+                    qtyInput.value = Math.min(max, Number(qtyInput.value || 1) + 1);      
+                    // qtyInput 의 값을 숫자로 변환하여(값이 없다면 1을 기본값으로 설정) +1 을 시킨 뒤, max(해당 상품의 재고) 과 비교하여 더 작은 값을 qtyInput 변수의 값으로 설정
+                    // 증가시킨 값이 max(해당 상품의 재고)보다 커지지 않도록 제한
+                    syncQty(row);               // 해당행을 디바운스 진행 (250ms 사이에 들어오는 같은 작업은 하나로 간주)
+                    refreshSummary();           // 합계/버튼 상태 등 UI 재계산
                 }
             });
-            $list.addEventListener('input', e => {
-                if (e.target.classList.contains('qty-input')) {
+
+            $list.addEventListener('input', e => {                  // 장바구니 전체에 input 이벤트를 설정
+                if (e.target.classList.contains('qty-input')) {     // 실행된 이벤트의 class 선택자들 중 qty-input 이 포함된다면, (즉, 수량이 직접 입력된 경우)
+
                     const row = e.target.closest('.cart-row');
-                    const max = getMax(row);
-                    let v = Number(e.target.value || 1);
-                    if (Number.isNaN(v)) { v = 1; }
-                    v = Math.max(1, Math.min(v, max));        // 1 ~ max 로 범위 지정
-                    e.target.value = v;
-                    syncQty(row);
-                    refreshSummary();
+                    // e.target = 실제 클릭된 요소 (수량 변경 버튼 / 수량 직접 입력 요소 등)
+                    // row = 그 요소가 속한 ".cart-row" 라는 이름의 DOM
+
+                    const max = getMax(row);                    // 해당 행의 현재 재고를 max 라는 변수에 대입
+
+                    let v = Number(e.target.value || 1);        // 이벤트가 일어난 요소의 값을 꺼내어 숫자로 변환 (꺼내지는 값이 없다면, 기본값 1 로 설정)
+
+                    if (Number.isNaN(v)) { v = 1; }             
+                    // v 에 들어있는 값이 NaN 인지 검사하여 맞다면 1로 덮어씀
+                    // 즉, 변환하여 숫자로 바꿀 수 없는 경우(문자열을 입력한 경우) 1로 변환
+
+                    v = Math.max(1, Math.min(v, max));          // 1 ~ max 로 범위 지정
+
+                    e.target.value = v;                         // 해당 요소의 값으로 v 를 대입
+                    syncQty(row);                               // 해당행을 디바운스 진행 (250ms 사이에 들어오는 같은 작업은 하나로 간주)
+                    refreshSummary();                           // 합계/버튼 상태 등 UI 재계산
                 }
             });
-            $list.addEventListener('change', e => {
-                if (e.target.classList.contains('row-check')) {
-                    const rows = Array.from($list.querySelectorAll('.cart-row'))
-                        .filter(isSellable);
+
+            $list.addEventListener('change', e => {             // 장바구니 전체에 change 라는 이벤트를 설정
+                if (e.target.classList.contains('row-check')) {         // row-check 라는 이름의 요소가 실행되었다면,
+
+                    const rows = Array.from($list.querySelectorAll('.cart-row'))        // 장바구니의 "cart-row" 라는 이름의 요소를 배열로 생성한 뒤,
+                        .filter(isSellable);                                            // 판매 가능한 행만을 필터링하여 rows 변수에 대입
+
                     const allChecked = rows.length > 0 && rows.every(r => r.querySelector('.row-check')?.checked);
-                    if ($checkAll) $checkAll.checked = allChecked;
-                    refreshSummary();
+                    // rows 변수 속 배열에 들어있는 값의 갯수가 0 보다 크면서, 모든 row-check 라는 이름의 요소가 checked(체크되어있는 상태)라면 true / 하나의 조건도 해당하지 않는다면, false
+
+                    if ($checkAll) $checkAll.checked = allChecked;      // allChecked 변수의 값이 true 라면, $checkAll(전체 선택 체크박스)를 checked 시킨다.
+                    refreshSummary();                                   // 합계/버튼 상태 등 UI 재계산
                 }
             });
         }
 
         // 전체 선택
         if ($checkAll) {
-            $checkAll.addEventListener('change', e => {
-                $list.querySelectorAll('.row-check:not([disabled])')
-                    .forEach(cb => cb.checked = e.target.checked);
-                refreshSummary();
+            $checkAll.addEventListener('change', e => {                 // 전체 선택 체크박스에 change 이벤트를 설정한다.
+                $list.querySelectorAll('.row-check:not([disabled])')    // 장바구니 전체에서 row-check 라는 이름의 요소들 중 disabled 되지 않은 모든 요소를 찾아
+                    .forEach(cb => cb.checked = e.target.checked);      // 해당 요소들을 모두 checked 되도록 반복
+                refreshSummary();                                       // 합계/버튼 상태 등 UI 재계산
             });
         }
 
         // 선택 삭제
-        const $btnRemove = document.getElementById('btnRemove');
+        const $btnRemove = document.getElementById('btnRemove');        // id 선택자가 btnRemove 인 요소를 찾아 $btnRemove 변수에 대입
         if ($btnRemove) {
-            $btnRemove.addEventListener('click', () => {
-                const ids = Array.from($list.querySelectorAll('.cart-row'))
-                    .filter(r => r.querySelector('.row-check')?.checked)
-                    .map(r => r.dataset.id);
-                if (ids.length === 0) { alert('선택된 항목이 없습니다.'); return; }
+            $btnRemove.addEventListener('click', () => {                // $btnRemove 변수에 click 이벤트를 설정
+                const ids = Array.from($list.querySelectorAll('.cart-row'))             // cart-row 라는 이름의 class 명을 가진 모든 요소를 배열로 변환
+                    .filter(r => r.querySelector('.row-check')?.checked)                // 해당 요소들 중 row-check 라는 이름의 class 명을 가진 요소가 checked 된 행을 필터링(checked 인 행만 남김)
+                    .map(r => r.dataset.id);                                            // 해당 요소를 key 로 하여 해당 행의 th:data-id 값을 value 로 하여 map 객체로 변환
+
+                if (ids.length === 0) { alert('선택된 항목이 없습니다.'); return; }         // ids 라는 변수에 들어있는 배열 속 값의 갯수가 0 이라면, alert 창을 띄우고 return 시킨다.
+
                 // const { token, header } = getCsrf();
-                fetch('/cart/remove', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ids })
-                }).then(res => {
-                    if (res.ok) { location.reload(); }
-                    else { alert('삭제 중 문제가 발생했습니다.'); }
+
+                fetch('/cart/remove', {                                 // 서버에 /cart/remove 라는 URI 를 요청한다.
+                    method: 'POST',                                     // 서버에 보내는 요청 타입은 POST
+                    headers: { 'Content-Type': 'application/json' },    // 서버에 보내는 데이터가 JSON 형식
+                    body: JSON.stringify({ ids })                       // ids 변수에 들어있는 배열을 JSON 구조의 문자열로 변환해서 전송
+                })
+                .then(res => {                                          // fetch 는 Promise 를 반환하므로, 응답이 오면 res 객체로 처리
+                    if (res.ok) { location.reload(); }                  // res 가 ok(이상없이 실행되었다면) 라면, 페이지 새로고침
+                    else { alert('삭제 중 문제가 발생했습니다.'); }       // 실패 시, 사용자에게 알림창을 표시
                 });
             });
         }
 
         // 결제하기
-        const $btnCheckout = document.getElementById('btnCheckout');
+        const $btnCheckout = document.getElementById('btnCheckout');            // id 선택자가 btnCheckout 인 요소를 조회하여 $btnCheckout 변수로 설정
         if ($btnCheckout) {
-            $btnCheckout.addEventListener('click', () => {
-                const rows = Array.from($list.querySelectorAll('.cart-row'));
-                const selectedRows = rows.filter(r => r.querySelector('.row-check')?.checked);
-                if (selectedRows.length === 0) { alert('선택된 상품이 없습니다.'); return; }
+            $btnCheckout.addEventListener('click', () => {                          // $btnCheckout 변수에 click 이벤트 설정
+                const rows = Array.from($list.querySelectorAll('.cart-row'));                       // 장바구니 전체 페이지에서 cart-row 라는 class 선택자를 가진 요소를 조회하여 배열로 생성하여 rows 변수로 설정
+                const selectedRows = rows.filter(r => r.querySelector('.row-check')?.checked);      // rows 변수에 들어있는 배열의 row-check 라는 class 선택자를 가진 요소 중 checked 인 것만 추출하여 serlectedRows 변수로 설정
+                if (selectedRows.length === 0) { alert('선택된 상품이 없습니다.'); return; }            // selectedRows 변수에 들어있는 값의 갯수가 0 이라면, 알림창을 표시하고 리턴시킴
 
                 // 품절 선택 여부 검사
-                const invalid = selectedRows.filter(r => !isSellable(r));
-                if (invalid.length > 0) {
+                const invalid = selectedRows.filter(r => !isSellable(r));       // selectedRows 변수에 들어있는 배열에서 판매가 불가능한 제품들을 추출하여 invalid 변수로 설정
+                if (invalid.length > 0) {                       // invalid 변수에 들어있는 값의 갯수가 0 보다 크다면
                     // 안전하게 체크 해제
-                    invalid.forEach(r => { const cb = r.querySelector('.row-check'); if (cb) cb.checked = false; });
-                    refreshSummary();
-                    alert('품절된 상품이 포함되어 있어 결제할 수 없습니다.');
+                    invalid.forEach(r => { const cb = r.querySelector('.row-check'); if (cb) cb.checked = false; });        
+                    // invalid 변수에 들어있는 값을 반복시켜 각 행의 row-check 라는 이름의 클래스를 가진 요소를 cb 라는 변수로 설정하여
+                    // cb 변수의 checked 설정을 false 로 바꿔, 체크를 해제시킨다.
+
+                    refreshSummary();           // 합계/버튼 상태 등 UI 재계산
+
+                    alert('품절된 상품이 포함되어 있어 결제할 수 없습니다.');       // alert 를 사용하여 알림창 표시
+
                     return;
                 }
 
                 const selected = selectedRows.map(r => ({ id: r.dataset.id, qty: r.querySelector('.qty-input').value }));
-                const form = document.getElementById('checkoutForm');
+                // selectedRows 변수에 들어있는 배열 속 값을 id 라는 key에 대해 th:data-id 라는 값을 value로 / qty 라는 key에 대해 qty-input 이라는 클래스명을 가진 요소의 값을 value 로 설정하여 selected 변수로 설정
+
+                const form = document.getElementById('checkoutForm');           // checkoutForm 이라는 id 선택자를 가진 요소를 찾아 form 변수로 설정
+
                 // 기존 동적 hidden 제거
-                Array.from(form.querySelectorAll('input.dyn')).forEach(n => n.remove());
+                Array.from(form.querySelectorAll('input.dyn')).forEach(n => n.remove());        
+                // form 변수에 들어있는 요소 속 input 태그 중 dyn 이라는 class 선택자를 가진 모든 요소를 조회한 뒤, 해당 요소를 전부 삭제하여 배열을 생성한다.
 
                 // Spring 바인딩 규칙: items[0].cartDetailId, items[0].quantity
-                selected.forEach((s, i) => {
-                    const h1 = document.createElement('input');
-                    h1.type = 'hidden'; h1.className = 'dyn';
-                    h1.name = `items[${i}].cartDetailId`; h1.value = s.id; form.appendChild(h1);
+                selected.forEach((s, i) => {                                                            // selected 변수에 들어있는 값을 반복시킨다.
+                    const h1 = document.createElement('input');                                         // input 요소를 생성하여 h1 이라는 변수로 설정
+                    h1.type = 'hidden'; h1.className = 'dyn';                                           // h1 변수에 들어있는 input 요소의 타입은 hidden 이고, class 선택자명은 dyn 이다.
+                    h1.name = `items[${i}].cartDetailId`; h1.value = s.id; form.appendChild(h1);        
+                    // name 속성의 값은 items[${i}].cartDetailId 이며, i 는 인덱스로 0 부터 시작한다. 
+                    // value 속성의 값은 selected 변수 속 배열에 들어있는 id 키에 대한 값이다.
+                    // 이후, h1 변수의 값을 form 변수에 추가시킨다.
 
                     const h2 = document.createElement('input');
                     h2.type = 'hidden'; h2.className = 'dyn';
                     h2.name = `items[${i}].quantity`; h2.value = s.qty; form.appendChild(h2);
                 });
 
-                form.submit();
+                form.submit();          // form 변수 속 요소를 실행시킨다
             });
         }
 
