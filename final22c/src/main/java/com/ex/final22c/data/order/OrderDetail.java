@@ -49,9 +49,7 @@ public class OrderDetail {
             totalPrice = quantity * sellPrice;
     }
 
-
     // 편의 생성자 (가격 계산 포함)
-
     public static OrderDetail of(Product product, int qty) {
         OrderDetail d = new OrderDetail();
         d.setProduct(product);

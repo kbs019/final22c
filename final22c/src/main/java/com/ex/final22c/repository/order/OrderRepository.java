@@ -73,15 +73,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     """)
     int updateToShipping(@Param("threshold1") LocalDateTime threshold1,
                          @Param("threshold3") LocalDateTime threshold3
-    );           
-    
+    );   
+            
     @Modifying
     @Query("""
         UPDATE Order o
-           SET o.deliveryStatus = 'CONFIRMED'
-         WHERE o.orderId = :orderId
-           AND o.status = 'PAID'
-           AND o.deliveryStatus = 'DELIVERED'
+          SET o.deliveryStatus = 'CONFIRMED'
+        WHERE o.orderId = :orderId
+          AND o.user.userNo = :userNo
+          AND o.status = 'PAID'
+          AND o.deliveryStatus = 'DELIVERED'
     """)
-    int updateToConfirmed(@Param("orderId") Long orderId);
+    int updateToConfirmed(@Param("orderId") Long orderId, Long userNo);
 }
