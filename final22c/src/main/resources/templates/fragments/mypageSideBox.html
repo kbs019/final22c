@@ -1,0 +1,164 @@
+<th:block th:fragment="styles">
+    <style>
+    :root { --header-height: 64px; }
+
+    /* 그리드는 반드시 오버플로우가 보이게 */
+    .mypage-grid{
+    display:grid; grid-template-columns:240px 1fr; gap:24px; align-items:start;
+    overflow:visible;
+    }
+    @media (max-width:900px){ .mypage-grid{ grid-template-columns:1fr } }
+
+    /* ✅ sticky는 래퍼가 담당 */
+    .sidebox-wrap{
+    position: sticky;
+    top: calc(var(--header-height) + 16px);
+    align-self: start;          /* 세로 늘어짐 방지 */
+    height: fit-content;        /* 내용 높이에 맞춤 */
+    }
+
+    /* 실제 박스는 스크롤만 담당 */
+    .sidebox{
+    max-height: calc(100vh - var(--header-height) - 32px);
+    overflow: auto;
+    border:1px solid #e5e7eb; border-radius:12px; background:#fff; padding:16px;
+    }
+
+    .sidebox__title{ font-size:16px; font-weight:700; margin-bottom:12px; }
+    .sidebox__nav{ display:flex; flex-direction:column; gap:6px; }
+    .sidebox__nav a{ display:block; padding:10px 12px; border-radius:10px; color:#111827; text-decoration:none; }
+    .sidebox__nav a:hover{ background:#f3f4f6; }
+    .sidebox__nav a.is-active{ background:#111827; color:#fff; font-weight:700; }
+
+    /* 공통 배지 */
+    .badge{display:inline-block;padding:4px 8px;border-radius:8px;font-weight:600;font-size:12px;margin-left:8px}
+    .badge-canceled{background:#fee2e2;color:#991b1b}
+    .badge-confirmed{background:#e5f3ff;color:#1d4ed8}
+
+    /* 공통 모달 */
+    .cm-modal{
+        position: fixed; inset: 0;
+        display: none; align-items: center; justify-content: center;
+        background: rgba(0,0,0,.45); z-index: 2000;
+    }
+    .cm-modal.is-open{ display: flex; }
+    .cm-modal__content{
+        width: min(92vw, 360px);
+        background: #fff; border-radius: 12px;
+        box-shadow: 0 12px 30px rgba(0,0,0,.25);
+        padding: 20px; text-align: center;
+    }
+    .cm-modal__actions{ display:flex; gap:8px; justify-content:center; margin-top:12px; }
+    .cm-btn{
+        display: inline-block; min-width: 96px;
+        padding: 10px 14px; border-radius: 10px;
+        border: 1px solid #e5e7eb; background:#f9fafb; color:#111827; cursor:pointer;
+    }
+    .cm-btn--primary{ background:#111827; color:#fff; border-color:#111827; }
+    .cm-btn:focus{ outline:2px solid #111827; outline-offset:2px; }
+    </style>
+</th:block>
+
+<section th:fragment="sidebox(section)">
+  <div class="sidebox-wrap"> <!-- ✅ sticky 전용 래퍼 -->
+    <aside class="sidebox" aria-label="마이페이지 내비게이션">
+      <h3 class="sidebox__title">마이페이지</h3>
+      <nav class="sidebox__nav">
+        <a th:href="@{/mypage/order}"    th:classappend="${section}=='orders'   ? ' is-active' : ''">주문내역</a>
+        <a th:href="@{/mypage/address}"  th:classappend="${section}=='address'  ? ' is-active' : ''">배송지</a>
+        <a th:href="@{/mypage/activity}" th:classappend="${section}=='activity' ? ' is-active' : ''">활동내역</a>
+        <a href="#" id="link-profile"    th:classappend="${section}=='profile'  ? ' is-active' : ''">개인정보(수정)</a>
+        <a th:href="@{/mypage/wishlist}" th:classappend="${section}=='wishlist' ? ' is-active' : ''">찜목록</a>
+      </nav>
+    </aside>
+  </div>
+</section>
+
+<th:block th:fragment="modals">
+  <!-- 확인 모달 -->
+  <div id="confirmModal" class="cm-modal" aria-hidden="true"> ... </div>
+
+  <!-- 결과 모달 -->
+  <div id="resultModal" class="cm-modal" aria-hidden="true"> ... </div>
+
+  <!-- 비밀번호 확인 모달 -->
+  <div id="pwModal" class="cm-modal" aria-hidden="true">
+    <div class="cm-modal__content">
+      <h3 style="margin-bottom:8px">비밀번호 확인</h3>
+      <p style="font-size:14px;color:#6b7280;margin-bottom:8px">개인정보 수정 전 본인확인이 필요합니다.</p>
+      <input id="pwInput" type="password" placeholder="비밀번호"
+             style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+      <div id="pwError" style="color:#b91c1c;font-size:12px;margin-top:6px;display:none">비밀번호가 올바르지 않습니다.</div>
+      <div class="cm-modal__actions" style="margin-top:12px">
+        <button id="pwSubmit" class="cm-btn cm-btn--primary">확인</button>
+        <button id="pwCancel" class="cm-btn">취소</button>
+      </div>
+    </div>
+  </div>
+</th:block>
+
+<th:block th:fragment="scripts">
+  <script>
+    // ===== 공통 모달 유틸 =====
+    const $confirm=document.getElementById('confirmModal');
+    const $confirmText=document.getElementById('confirmText');
+    const $confirmYes=document.getElementById('confirmYes');
+    const $confirmNo=document.getElementById('confirmNo');
+    const $result=document.getElementById('resultModal');
+    const $resultText=document.getElementById('resultText');
+    const $resultOk=document.getElementById('resultOk');
+
+    function openModal(el){ el?.classList.add('is-open'); document.body.style.overflow='hidden'; }
+    function closeModal(el){ el?.classList.remove('is-open'); document.body.style.overflow=''; }
+    function openResult(msg){ if($resultText) $resultText.textContent = msg; openModal($result); }
+    function closeResult(){ closeModal($result); }
+
+    // 확인 모달 오픈(다른 페이지에서 재사용)
+    window.openConfirm = function(orderId, action, message){
+      window.targetOrderId = orderId;
+      window.pendingAction = action; // 'cancel' | 'confirm' | 'refund' 등
+      if($confirmText) $confirmText.textContent = message || '확인하시겠습니까?';
+      openModal($confirm);
+    };
+    window.closeConfirm = ()=>closeModal($confirm);
+    window.openResult = openResult;
+
+    // 기본 버튼 리스너
+    $confirmNo?.addEventListener('click', ()=>closeModal($confirm));
+    $resultOk?.addEventListener('click', ()=>closeModal($result));
+
+    // ===== 개인정보(수정) 비밀번호 확인 =====
+    const linkProfile=document.getElementById('link-profile');
+    const pwModal=document.getElementById('pwModal');
+    const pwInput=document.getElementById('pwInput');
+    const pwError=document.getElementById('pwError');
+    const pwSubmit=document.getElementById('pwSubmit');
+    const pwCancel=document.getElementById('pwCancel');
+
+    function openPw(){ if(!pwModal) return; pwInput.value=''; pwError.style.display='none'; openModal(pwModal); pwInput.focus(); }
+    function closePw(){ closeModal(pwModal); }
+
+    linkProfile?.addEventListener('click', (e)=>{ e.preventDefault(); openPw(); });
+    pwCancel?.addEventListener('click', closePw);
+    pwInput?.addEventListener('keydown', e=>{ if(e.key==='Enter') pwSubmit?.click(); });
+
+    pwSubmit?.addEventListener('click', async ()=>{
+      try{
+        const res = await fetch('/mypage/profile/verify', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          credentials:'same-origin',
+          body: JSON.stringify({ password: pwInput.value || '' })
+        });
+        const data = await res.json().catch(()=>({}));
+        if(res.status===401){ window.location.href='/user/login'; return; }
+        if(!res.ok || !data.ok) throw new Error(data.message || '인증 실패');
+        window.location.href = '/mypage/profile';
+      }catch(err){
+        pwError.textContent = err.message || '비밀번호가 올바르지 않습니다.';
+        pwError.style.display = 'block';
+      }
+    });
+  </script>
+</th:block>
+
