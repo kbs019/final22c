@@ -13,7 +13,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+
 import com.ex.final22c.data.order.Order;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -21,16 +27,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     /** 마이페이지 목록: 사용자 + 상태(예: PAID) 페이징 조회
      *  EntityGraph로 details/product를 미리 로딩해서 Lazy 예외 방지
      */
-    @EntityGraph(attributePaths = {"details", "details.product"})
-    Page<Order> findByUser_UserNoAndStatusOrderByRegDateDesc(
-            Long userNo, String status, Pageable pageable
-    );
 
-    /** (옵션) 전체 리스트로 받고 싶을 때 — 페이징 없이 */
-    @EntityGraph(attributePaths = {"details", "details.product"})
-    List<Order> findAllByUser_UserNoAndStatusOrderByRegDateDesc(
-            Long userNo, String status
-    );
+
+	// PENDING 제외하고 전체 리스트
+	@EntityGraph(attributePaths = {"details", "details.product"})
+	List<Order> findAllByUser_UserNoAndStatusNotOrderByRegDateDesc(
+	        Long userNo, String status
+	);
+
+	// 특정 상태들만(IN 조건)
+	@EntityGraph(attributePaths = {"details", "details.product"})
+	List<Order> findByUser_UserNoAndStatusInOrderByRegDateDesc(
+	        Long userNo, Collection<String> statuses);
 
     // 특정 상태를 제외하고 싶을때
     @EntityGraph(attributePaths = {"details", "details.product"})
