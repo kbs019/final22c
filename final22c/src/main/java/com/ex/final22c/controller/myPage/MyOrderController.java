@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,8 +20,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.user.Users;
 import com.ex.final22c.service.order.MyOrderService;
+import com.ex.final22c.service.user.UsersService;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,8 +60,10 @@ public class MyOrderController {
 
 		Page<Order> orders = myOrderService.listMyOrders(principal.getName(), page, size);
 		model.addAttribute("orders", orders);
+		model.addAttribute("section", "orders");
 		return "mypage/orders";
 	}
+
 
 	public String list(@RequestParam(name = "page", defaultValue = "0") int page,
 					   @RequestParam(name = "size", defaultValue = "10") int size,
@@ -88,4 +94,5 @@ public class MyOrderController {
 			model.addAttribute("size", size);
 			return "mypage/orders";
 			}
+
 }
