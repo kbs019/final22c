@@ -50,8 +50,8 @@ public class MyOrderController {
 	// }
 
 	@GetMapping("/order")
-	public String listFragment(@RequestParam(defaultValue = "0") int page,
-							   @RequestParam(defaultValue = "10") int size,
+	public String listFragment(@RequestParam(name= "page", defaultValue = "0") int page,
+							   @RequestParam(name= "size",defaultValue = "10") int size,
 							   Principal principal, Model model) {
 		// 로그인 안되어 있을 시 로그인 화면으로
 		if(principal == null) {
