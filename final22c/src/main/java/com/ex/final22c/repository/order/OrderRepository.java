@@ -1,6 +1,9 @@
 package com.ex.final22c.repository.order;
 
-import com.ex.final22c.data.order.Order;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -10,9 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import com.ex.final22c.data.order.Order;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -30,6 +31,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findAllByUser_UserNoAndStatusOrderByRegDateDesc(
             Long userNo, String status
     );
+
+    // 특정 상태를 제외하고 싶을때
+    @EntityGraph(attributePaths = {"details", "details.product"})
+    Page<Order> findByUser_UserNoAndStatusNotOrderByRegDateDesc(
+            Long userNo, String status, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"details", "details.product"})
+    Page<Order> findByUser_UserNoOrderByRegDateDesc(Long userNo, Pageable pageable);
 
     /** 단건 조회: 주문 + 상세 + 상품까지 fetch-join (결제승인/취소 등 트랜잭션 로직에서 사용) */
     @Query("""
@@ -63,5 +72,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            AND o.regDate > :threshold3
     """)
     int updateToShipping(@Param("threshold1") LocalDateTime threshold1,
-                         @Param("threshold3") LocalDateTime threshold3);
+                         @Param("threshold3") LocalDateTime threshold3
+    );   
+            
+    @Modifying
+    @Query("""
+        UPDATE Order o
+          SET o.deliveryStatus = 'CONFIRMED'
+        WHERE o.orderId = :orderId
+          AND o.user.userNo = :userNo
+          AND o.status = 'PAID'
+          AND o.deliveryStatus = 'DELIVERED'
+    """)
+    int updateToConfirmed(@Param("orderId") Long orderId, Long userNo);
 }
