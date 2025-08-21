@@ -1,352 +1,308 @@
 <html layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
-<style>
-  /* 카드: 2행 그리드 (1행: 정보/버튼, 2행: 진행바) */
-  .order-card{
-    position: relative;
-    display: grid;
-    grid-template-columns: 1fr auto;   /* 좌:정보 / 우:버튼 */
-    grid-template-rows: auto 52px;     /* 2행: 진행바 높이 */
-    grid-template-areas:
-      "info actions"
-      "stepper stepper";
-    column-gap: 24px;
-    align-items: start;
-    padding: 16px 56px 16px 16px;      /* 우측 > 아이콘 공간 */
-    border:1px solid #e5e7eb; border-radius:12px; background:#fff;
-  }
 
-  /* 영역 배치 */
-  .order-info   { grid-area: info; }
-  .stepper      { grid-area: stepper; }
-  .order-actions{ grid-area: actions; }
+  <!-- 공통 스타일 (sidebox / 모달 / 배지 등) -->
+  <div th:replace="~{fragments/mypageSideBox :: styles}"></div>
 
-  /* 진행바: 카드 하단에 붙이기 */
-  .stepper{
-    justify-self: stretch;
-    align-self: end;
-    padding-right: 40px;
-    margin: 0;
-    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; align-items:center;
-  }
+  <section class="mypage-grid">
+    <!-- 좌측 사이드박스 -->
+    <div th:replace="~{fragments/mypageSideBox :: sidebox(${section})}"></div>
 
-  /* 버튼: 우측 상단 가로 배치 */
-  .order-actions{
-    align-self: start;
-    display:flex; flex-direction: row; gap:8px;
-  }
-  .order-btn, .refund-btn, .cancel-btn{
-    border:none; border-radius:12px; padding:8px 14px; cursor:pointer; white-space:nowrap;
-  }
-  .order-btn{background:#111827;color:#fff}
-  .order-btn:hover{opacity:.9}
-  .refund-btn{background:#f3f4f6;color:#111827}
-  .refund-btn:hover{background:#e5e7eb}
-  .cancel-btn{background:#fee2e2;color:#991b1b}
-  .cancel-btn:hover{background:#fecaca}
+    <!-- 우측 본문 -->
+    <div class="mypage-body">
 
-  /* 우측 중앙의 '>' 아이콘 */
-  .more{
-    position:absolute; right:16px; top:50%; transform:translateY(-50%);
-    width:28px; height:28px; display:inline-flex; justify-content:center; align-items:center;
-    font-size:20px; font-weight:700; color:#111827; text-decoration:none; z-index:1;
-  }
-  .more:hover{opacity:.8}
+      <!-- 주문 페이지 전용 스타일 -->
+      <style>
+        /* 보조 텍스트 */
+        .muted{ color:#6b7280; font-size:12px; }
 
-  /* 진행바 기본/활성 스타일 */
-  .step{position:relative;text-align:center;font-size:12px;color:#9ca3af}
-  .step::before{content:"";position:absolute;top:10px;left:-50%;right:50%;height:2px;background:#e5e7eb}
-  .step:first-child::before{display:none}
-  .step .dot{width:10px;height:10px;border-radius:50%;background:#e5e7eb;margin:0 auto}
-  .step.active{color:#111827}
-  .step.active .dot{background:#111827}
-  .step.active::before{background:#111827}
+        /* 주문 카드 전용 레이아웃 */
+        .order-card{
+          position: relative;
+          display: grid;
+          grid-template-columns: 1fr auto;
+          grid-template-rows: auto 52px;
+          grid-template-areas:
+            "info actions"
+            "stepper stepper";
+          column-gap: 24px;
+          align-items: start;
+          padding: 16px 56px 16px 16px;
+          border:1px solid #e5e7eb; border-radius:12px; background:#fff;
+        }
+        .order-info   { grid-area: info; }
+        .stepper      { grid-area: stepper; }
+        .order-actions{ grid-area: actions; }
 
-  /* 취소 주문 표시(선택) */
-  .badge-canceled{display:inline-block;padding:4px 8px;border-radius:8px;background:#fee2e2;color:#991b1b;font-weight:600;font-size:12px;margin-left:8px}
-  .order-card.is-canceled{opacity:.9}
-  
-  /* 주문 확정 */
-  .badge-confirmed{background:#e5f3ff;color:#1d4ed8}
-  /* 좁은 화면 대응 */
-  @media (max-width: 900px){
-    .order-card{ grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
-    .order-actions{ align-self:center; }
-  }
+        /* 진행바(주문 페이지 전용) */
+        .stepper{
+          justify-self: stretch;
+          align-self: end;
+          padding-right: 40px;
+          margin: 0;
+          display:grid; grid-template-columns:repeat(3,1fr); gap:8px; align-items:center;
+        }
+        .step{position:relative;text-align:center;font-size:12px;color:#9ca3af}
+        .step::before{content:"";position:absolute;top:10px;left:-50%;right:50%;height:2px;background:#e5e7eb}
+        .step:first-child::before{display:none}
+        .step .dot{width:10px;height:10px;border-radius:50%;background:#e5e7eb;margin:0 auto}
+        .step.active{color:#111827}
+        .step.active .dot{background:#111827}
+        .step.active::before{background:#111827}
 
-  /* Overlay */
-  .cm-modal{
-    position: fixed; inset: 0;
-    display: none; align-items: center; justify-content: center;
-    background: rgba(0,0,0,.45); z-index: 2000;
-  }
-  .cm-modal.is-open{ display: flex; }
+        /* 우측 상단 버튼 */
+        .order-actions{ align-self: start; display:flex; flex-direction: row; gap:8px; }
+        .order-btn, .refund-btn, .cancel-btn{
+          border:none; border-radius:12px; padding:8px 14px; cursor:pointer; white-space:nowrap;
+        }
+        .order-btn{background:#111827;color:#fff}
+        .order-btn:hover{opacity:.9}
+        .refund-btn{background:#f3f4f6;color:#111827}
+        .refund-btn:hover{background:#e5e7eb}
+        .cancel-btn{background:#fee2e2;color:#991b1b}
+        .cancel-btn:hover{background:#fecaca}
 
-  /* Box */
-  .cm-modal__content{
-    width: min(92vw, 360px);
-    background: #fff; border-radius: 12px;
-    box-shadow: 0 12px 30px rgba(0,0,0,.25);
-    padding: 20px; text-align: center;
-  }
+        /* 우측 중앙 '>' 아이콘 */
+        .more{
+          position:absolute; right:16px; top:50%; transform:translateY(-50%);
+          width:28px; height:28px; display:inline-flex; justify-content:center; align-items:center;
+          font-size:20px; font-weight:700; color:#111827; text-decoration:none; z-index:1;
+        }
+        .more:hover{opacity:.8}
 
-  .cm-modal__actions{ display:flex; gap:8px; justify-content:center; margin-top:12px; }
-  .cm-btn{
-    display: inline-block; min-width: 96px;
-    padding: 10px 14px; border-radius: 10px;
-    border: 1px solid #e5e7eb; background:#f9fafb; color:#111827; cursor:pointer;
-  }
-  .cm-btn--primary{ background:#111827; color:#fff; border-color:#111827; }
-  .cm-btn:focus{ outline:2px solid #111827; outline-offset:2px; }
-</style>
+        /* 취소 카드 흐림 효과(배지 색상은 공통 스타일 사용) */
+        .order-card.is-canceled{opacity:.9}
 
-<!-- templates/mypage/orders.html -->
-<section>
-  <h2>주문내역</h2>
+        /* 반응형(주문 카드 전용) */
+        @media (max-width: 900px){
+          .order-card{ grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
+          .order-actions{ align-self:center; }
+        }
+      </style>
 
-  <div th:if="${orders.content.isEmpty()}">주문 내역이 없습니다.</div>
+      <!-- 주문 리스트 -->
+      <section>
+        <h2>주문내역</h2>
 
-  <div th:each="o : ${orders.content}"
-       class="order-card"
-       th:classappend="${o.status=='CANCELED'} ? 'is-canceled'"
-       th:attr="data-order-id=${o.orderId}"
-       th:with="
-         first=${#lists.isEmpty(o.details) ? null : o.details[0]},
-         restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1},
-         step=${
-           #strings.equalsIgnoreCase(o.deliveryStatus,'DELIVERED') ? 3 :
-           (#strings.equalsIgnoreCase(o.deliveryStatus,'SHIPPING')  ? 2 : 1)
-         }">
+        <div th:if="${orders.content.isEmpty()}">주문 내역이 없습니다.</div>
 
-    <!-- 좌: 주문정보 -->
-    <div class="order-info">
-      <div class="muted" th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}"></div>
-      <div class="order-title">
-        <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
-        <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
-        <span th:if="${restCnt==0 && first != null}" th:text="${' ' + first.quantity + '개'}"></span>
-        <span th:if="${o.status=='CANCELED'}" class="badge-canceled">주문취소</span>
-        <span th:if="${o.status=='PAID' and o.deliveryStatus=='CONFIRMED'}"
-        class="badge badge-confirmed">주문확정</span>
+        <div th:each="o : ${orders.content}"
+             class="order-card"
+             th:classappend="${o.status=='CANCELED'} ? 'is-canceled'"
+             th:attr="data-order-id=${o.orderId}"
+             th:with="
+               first=${#lists.isEmpty(o.details) ? null : o.details[0]},
+               restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1},
+               step=${
+                 #strings.equalsIgnoreCase(o.deliveryStatus,'DELIVERED') ? 3 :
+                 (#strings.equalsIgnoreCase(o.deliveryStatus,'SHIPPING')  ? 2 : 1)
+               }">
+
+          <!-- 좌: 주문정보 -->
+          <div class="order-info">
+            <div class="muted" th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}"></div>
+            <div class="order-title">
+              <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
+              <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
+              <span th:if="${restCnt==0 && first != null}" th:text="${' ' + first.quantity + '개'}"></span>
+
+              <!-- 취소/확정 배지 (색상은 공통 CSS에서) -->
+              <span th:if="${o.status=='CANCELED'}" class="badge badge-canceled">주문취소</span>
+              <span th:if="${o.status=='PAID' and #strings.equalsIgnoreCase(o.deliveryStatus,'CONFIRMED')}"
+                    class="badge badge-confirmed">주문확정</span>
+            </div>
+
+            <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
+          </div>
+
+          <!-- 하단 진행바: 배송상태에 따라 고정 표시 -->
+          <div class="stepper"
+               th:if="${o.status=='PAID' and
+                       (#strings.equalsIgnoreCase(o.deliveryStatus,'ORDERED') or
+                        #strings.equalsIgnoreCase(o.deliveryStatus,'SHIPPING') or
+                        #strings.equalsIgnoreCase(o.deliveryStatus,'DELIVERED'))}"
+               th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
+            <div class="step"><div class="dot"></div><div>주문접수</div></div>
+            <div class="step"><div class="dot"></div><div>배송 중</div></div>
+            <div class="step"><div class="dot"></div><div>배송완료</div></div>
+          </div>
+
+          <!-- 우측 상단 버튼 -->
+          <div class="order-actions">
+            <!-- ORDERED & PAID → 주문취소만 -->
+            <button th:if="${o.status=='PAID' and #strings.equalsIgnoreCase(o.deliveryStatus,'ORDERED')}"
+                    class="cancel-btn btn-cancel" type="button">주문취소</button>
+
+            <!-- DELIVERED & PAID → 주문확정 / 환불요청 -->
+            <button th:if="${o.status=='PAID' and #strings.equalsIgnoreCase(o.deliveryStatus,'DELIVERED')}"
+                    class="order-btn btn-confirm" type="button">주문확정</button>
+            <button th:if="${o.status=='PAID' and #strings.equalsIgnoreCase(o.deliveryStatus,'DELIVERED')}"
+                    class="refund-btn btn-refund" type="button">환불요청</button>
+          </div>
+
+          <!-- 우측 중앙 > (상세보기) -->
+          <a class="more" th:href="@{/mypage/order/{id}(id=${o.orderId})}">&gt;</a>
+        </div>
+
+        <!-- 페이지네이션 -->
+        <div style="margin-top:12px" th:if="${orders.totalPages > 1}">
+          <a th:each="i : ${#numbers.sequence(0, orders.totalPages - 1)}"
+             th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
+             th:text="${i + 1}"
+             th:classappend="${i == orders.number} ? ' active' : ''"
+             style="margin-right:8px"></a>
+        </div>
+      </section>
+
+      <!-- 주문 상세 모달(이 페이지 전용) -->
+      <div id="orderDetailModal" class="cm-modal" aria-hidden="true">
+        <div class="cm-modal__content">
+          <button type="button" id="orderDetailClose" style="float:right;">X</button>
+          <h3>주문 상세</h3>
+          <div id="od-date"></div>
+          <div id="od-body"></div>
+        </div>
       </div>
 
-      <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
+      <!-- 주문 페이지 전용 스크립트 -->
+      <script>
+        /* ===== 스텝퍼 표시(고정) ===== */
+        (function(){
+          function render(stepper, n){
+            const steps = stepper.querySelectorAll('.step');
+            steps.forEach((el, idx) => el.classList.toggle('active', idx < n));
+            stepper.dataset.step = String(n);
+          }
+          document.querySelectorAll('.stepper').forEach(stepper=>{
+            const n = parseInt(stepper.dataset.step || '1', 10);
+            render(stepper, n);
+          });
+          window.stepperRender = render;
+        })();
+
+        /* ===== 버튼 핸들링 ===== */
+        const $confirmYes  = document.getElementById('confirmYes');
+        const $resultText  = document.getElementById('resultText');
+
+        let targetOrderId = null;
+        let pendingAction = null; // 'cancel' | 'confirm' | 'refund'
+
+        // 카드별 버튼 이벤트
+        document.querySelectorAll('.order-card').forEach(card=>{
+          const id = card.dataset.orderId;
+          const btnCancel  = card.querySelector('.btn-cancel');
+          const btnConfirm = card.querySelector('.btn-confirm');
+          const btnRefund  = card.querySelector('.btn-refund');
+
+          btnCancel?.addEventListener('click', ()=>{
+            targetOrderId = id; pendingAction='cancel';
+            openConfirm(id,'cancel','주문을 취소하시겠습니까?');
+          });
+          btnConfirm?.addEventListener('click', ()=>{
+            targetOrderId = id; pendingAction='confirm';
+            openConfirm(id,'confirm','주문을 확정하시겠습니까?');
+          });
+          btnRefund?.addEventListener('click', ()=>{
+            targetOrderId = id; pendingAction='refund';
+            openConfirm(id,'refund','환불을 요청하시겠습니까?');
+          });
+        });
+
+        // 확인 모달 '예' 처리 (공통 모달 마크업은 프래그먼트 제공)
+        $confirmYes?.addEventListener('click', async () => {
+          try {
+            let url;
+            if (pendingAction === 'cancel')  url = `/pay/cancel-paid/${targetOrderId}`;
+            if (pendingAction === 'confirm') url = `/pay/${targetOrderId}/confirm`;
+            if (pendingAction === 'refund')  url = `/pay/${targetOrderId}/refund`;
+            if (!url) throw new Error('지원하지 않는 작업입니다.');
+
+            $confirmYes.disabled = true;
+            const res = await fetch(url, {
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:'{}',
+              credentials:'same-origin'
+            });
+
+            if (res.status === 401) { window.location.href = '/user/login'; return; }
+
+            let data = {};
+            try { data = await res.json(); } catch(_) {}
+            if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+
+            const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
+
+            if (pendingAction === 'cancel') {
+              card?.classList.add('is-canceled');
+              card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
+              card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
+              const title = card?.querySelector('.order-title');
+              if (title && !title.querySelector('.badge-canceled')) {
+                const b = document.createElement('span');
+                b.className = 'badge badge-canceled';
+                b.textContent = '주문취소';
+                title.appendChild(b);
+              }
+              openResult(data.message || '주문이 취소되었습니다.');
+              return;
+            }
+
+            if (pendingAction === 'confirm') {
+              // UI 갱신
+              card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
+              card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
+              const title = card?.querySelector('.order-title');
+              if (title && !title.querySelector('.badge-confirmed')) {
+                const b = document.createElement('span');
+                b.className = 'badge badge-confirmed';
+                b.textContent = '주문확정';
+                title.appendChild(b);
+              }
+
+              const added   = (data && typeof data.mileage === 'number') ? data.mileage : 0;
+              const balance = (data && typeof data.pointBalance === 'number') ? data.pointBalance : null;
+
+              let msg = data.message || '주문이 확정되었습니다.';
+              if (added > 0)       msg += ` (+${added}P 적립)`;
+              if (balance != null) msg += ` / 보유 포인트: ${balance}P`;
+
+              openResult(msg);
+              return;
+            }
+
+            // 환불요청 등 공통
+            openResult(data.message || '처리가 완료되었습니다.');
+          } catch (e) {
+            console.error(e);
+            openResult(e.message || '처리 중 오류가 발생했습니다.');
+          } finally {
+            // 모달은 공통 스크립트에서 닫힘
+            $confirmYes.disabled = false;
+          }
+        });
+
+        // ">" 링크 → 상세 모달(데모)
+        document.querySelectorAll('.order-card .more').forEach(link=>{
+          link.addEventListener('click', e=>{
+            e.preventDefault();
+            const modal = document.getElementById('orderDetailModal');
+            modal?.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+          });
+        });
+        document.getElementById('orderDetailClose')?.addEventListener('click', ()=>{
+          const modal = document.getElementById('orderDetailModal');
+          modal?.classList.remove('is-open');
+          document.body.style.overflow = '';
+        });
+      </script>
     </div>
+  </section>
 
-    <!-- 우측 상단 버튼 -->
-    <div class="order-actions" th:if="${o.status == 'PAID' and o.deliveryStatus == 'ORDERED'}">
-      <button class="refund-btn btn-refund" type="button">결제취소</button>
-    </div>
+  <!-- 공통 모달 + 공통 스크립트 (프래그먼트) -->
+  <div th:replace="~{fragments/mypageSideBox :: modals}"></div>
+  <div th:replace="~{fragments/mypageSideBox :: scripts}"></div>
 
-    <!-- 하단 진행바: 취소가 아닌 경우에만 -->
-    <div class="stepper"
-        th:if="${o.status=='PAID' and (o.deliveryStatus=='ORDERED' or o.deliveryStatus=='SHIPPING' or o.deliveryStatus=='DELIVERED')}"
-        th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
-      <div class="step"><div class="dot"></div><div>주문접수</div></div>
-      <div class="step"><div class="dot"></div><div>배송 중</div></div>
-      <div class="step"><div class="dot"></div><div>배송완료</div></div>
-    </div>
-
-    <!-- 우측 상단 버튼 -->
-    <div class="order-actions">
-      <!-- ORDERED & PAID → 주문취소만 -->
-      <button th:if="${o.status=='PAID' and o.deliveryStatus=='ORDERED'}"
-              class="cancel-btn btn-cancel" type="button">주문취소</button>
-
-      <!-- DELIVERED & PAID → 주문확정 / 환불요청 -->
-      <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}"
-              class="order-btn btn-confirm" type="button">주문확정</button>
-      <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}"
-              class="refund-btn btn-refund" type="button">환불요청</button>
-    </div>
-
-    <!-- 우측 중앙 > (상세보기) -->
-    <a class="more" th:href="@{/mypage/order/{id}(id=${o.orderId})}">&gt;</a>
-  </div>
-
-  <!-- 페이지네이션 (경로 주의: 단수 /mypage/order) -->
-  <div style="margin-top:12px" th:if="${orders.totalPages > 1}">
-    <a th:each="i : ${#numbers.sequence(0, orders.totalPages - 1)}"
-      th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
-      th:text="${i + 1}"
-      th:classappend="${i == orders.number} ? ' active' : ''"
-      style="margin-right:8px"></a>
-  </div>
-</section>
-
-<!-- 확인 모달 -->
-<div id="confirmModal" class="cm-modal" aria-hidden="true">
-  <div class="cm-modal__content">
-    <p id="confirmText">확인하시겠습니까?</p>
-    <div class="cm-modal__actions">
-      <button id="confirmYes" class="cm-btn cm-btn--primary">예</button>
-      <button id="confirmNo"  class="cm-btn">아니요</button>
-    </div>
-  </div>
-</div>
-
-<!-- 결과 모달 -->
-<div id="resultModal" class="cm-modal" aria-hidden="true">
-  <div class="cm-modal__content">
-    <p id="resultText">처리가 완료되었습니다.</p>
-    <div class="cm-modal__actions">
-      <button id="resultOk" class="cm-btn cm-btn--primary">확인</button>
-    </div>
-  </div>
-</div>
-
-<!-- 주문 상세 모달 -->
-<div id="orderDetailModal" class="cm-modal" aria-hidden="true">
-  <div class="cm-modal__content">
-    <button type="button" id="orderDetailClose" style="float:right;">X</button>
-    <h3>주문 상세</h3>
-    <div id="od-date"></div>
-    <div id="od-body"></div>
-  </div>
-</div>
-
-<script>
-  /* ===== 스텝퍼 표시(고정) =====
-    - data-step(1/2/3)에 맞춰 active만 반영
-    - 자동진행 없음
-  */
-  (function(){
-    function render(stepper, n){
-      const steps = stepper.querySelectorAll('.step');
-      steps.forEach((el, idx) => el.classList.toggle('active', idx < n));
-      stepper.dataset.step = String(n);
-    }
-    document.querySelectorAll('.stepper').forEach(stepper=>{
-      const n = parseInt(stepper.dataset.step || '1', 10);
-      render(stepper, n);
-    });
-    window.stepperRender = render; // 필요 시 수동 갱신
-  })();
-
-  /* ===== 모달 공통 ===== */
-  const $confirm     = document.getElementById('confirmModal');
-  const $confirmText = document.getElementById('confirmText');
-  const $confirmYes  = document.getElementById('confirmYes');
-  const $confirmNo   = document.getElementById('confirmNo');
-
-  const $result      = document.getElementById('resultModal');
-  const $resultText  = document.getElementById('resultText');
-  const $resultOk    = document.getElementById('resultOk');
-
-  let targetOrderId = null;
-  let pendingAction = null; // 'cancel' | 'confirm' | 'refund'
-
-  function openModal(el){ el.classList.add('is-open'); document.body.style.overflow='hidden'; }
-  function closeModal(el){ el.classList.remove('is-open'); document.body.style.overflow=''; }
-
-  function openConfirm(orderId, action, message){
-    targetOrderId = orderId;
-    pendingAction = action;
-    $confirmText.textContent = message;
-    openModal($confirm);
-  }
-  function closeConfirm(){ closeModal($confirm); }
-
-  function openResult(msg){ $resultText.textContent = msg; openModal($result); }
-  function closeResult(){ closeModal($result); }
-
-  /* 버튼 리스너 */
-  $confirmNo.addEventListener('click', closeConfirm);
-  $resultOk.addEventListener('click', closeResult);
-
-  /* 카드별 버튼 이벤트 */
-  document.querySelectorAll('.order-card').forEach(card=>{
-    const id = card.dataset.orderId;
-    const btnCancel  = card.querySelector('.btn-cancel');
-    const btnConfirm = card.querySelector('.btn-confirm');
-    const btnRefund  = card.querySelector('.btn-refund');
-
-    btnCancel?.addEventListener('click', ()=>{
-      openConfirm(id,'cancel','주문을 취소하시겠습니까?');
-    });
-    btnConfirm?.addEventListener('click', ()=>{
-      openConfirm(id,'confirm','주문을 확정하시겠습니까?');
-    });
-    btnRefund?.addEventListener('click', ()=>{
-      openConfirm(id,'refund','환불을 요청하시겠습니까?');
-    });
-  });
-
-  /* 확인 모달 '예' 처리 */
-  $confirmYes.addEventListener('click', async () => {
-  closeConfirm();
-  try {
-    let url;
-    if (pendingAction === 'cancel')  url = `/pay/cancel-paid/${targetOrderId}`;
-    if (pendingAction === 'confirm') url = `/pay/${targetOrderId}/confirm`;
-    if (pendingAction === 'refund')  url = `/pay/${targetOrderId}/refund`;
-
-    if (!url) throw new Error('지원하지 않는 작업입니다.');
-
-    $confirmYes.disabled = true; // 중복 클릭 방지
-    const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}', credentials:'same-origin' });
-
-    // 401 → 로그인
-    if (res.status === 401) {
-      window.location.href = '/user/login';
-      return;
-    }
-
-    let data = {};
-    try { data = await res.json(); } catch(_) {}
-    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
-
-    const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
-
-    if (pendingAction === 'cancel') {
-      card?.classList.add('is-canceled');
-      card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
-      card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
-      const title = card?.querySelector('.order-title');
-      if (title && !title.querySelector('.badge-canceled')) {
-        const b = document.createElement('span');
-        b.className='badge-canceled'; b.textContent='주문취소';
-        title.appendChild(b);
-      }
-    }
-
-  if (pendingAction === 'confirm') {
-    // 버튼/스텝퍼 숨김
-    card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
-    card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
-
-    // 상품명 옆에 "주문확정" 배지
-    const title = card?.querySelector('.order-title') || card?.querySelector('.order-info');
-    if (title && !title.querySelector('.badge-confirmed')) {
-      const b = document.createElement('span');
-      b.className = 'badge badge-confirmed';
-      b.textContent = '주문확정';
-      title.appendChild(b);
-    }
-
-    // 응답 메시지 표시
-    const added   = (data && typeof data.mileage === 'number') ? data.mileage : 0;
-    const balance = (data && typeof data.pointBalance === 'number') ? data.pointBalance : null;
-
-    let msg = data.message || '주문이 확정되었습니다.';
-    if (added > 0)       msg += ` (+${added}P 적립)`;
-    if (balance != null) msg += ` / 보유 포인트: ${balance}P`;
-
-    openResult(msg);
-    return;
-  }
-
-    openResult(data.message || '처리가 완료되었습니다.');
-  } catch (e) {
-    console.error(e);
-    openResult(e.message || '처리 중 오류가 발생했습니다.');
-  } finally {
-    $confirmYes.disabled = false;
-    // 필요시 초기화
-    // pendingAction = null;
-    // targetOrderId = null;
-  }
-});
-</script>
 </div>
 </html>

@@ -1,5 +1,22 @@
 <html layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
+    <!-- 1) 공통 스타일 -->
+<div th:replace="~{fragments/mypageSideBox :: styles}"></div>
+
+<section class="mypage-grid">
+  <!-- 2) 사이드박스 -->
+  <div th:replace="~{fragments/mypageSideBox :: sidebox(${section})}"></div>
+
+  <!-- 3) 우측 본문 -->
+  <div class="mypage-body">
+    <!-- 여기 기존 페이지 내용(주문리스트/주소폼/활동내역/위시리스트/프로필폼 등) -->
+  </div>
+</section>
+
+<!-- 4) 공통 모달 + 공통 스크립트 -->
+<div th:replace="~{fragments/mypageSideBox :: modals}"></div>
+<div th:replace="~{fragments/mypageSideBox :: scripts}"></div>
+
 <style>
   .to-top { display: none !important; }
 

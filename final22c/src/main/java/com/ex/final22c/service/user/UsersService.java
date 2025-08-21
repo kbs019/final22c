@@ -33,6 +33,11 @@ public class UsersService {
         return userRepository.findByUserName(userName)
                 .orElseThrow(() -> new DataNotFoundException("사용자를 찾을 수 없습니다."));
     }   
+    
+    public boolean verifyPassword(String username, String raw, PasswordEncoder encoder){
+        Users u = getUser(username);
+        return encoder.matches(raw, u.getPassword());
+    }
 
     // 로그인 사용자 정보 조회
     public Users getLoginUser(Principal principal){
