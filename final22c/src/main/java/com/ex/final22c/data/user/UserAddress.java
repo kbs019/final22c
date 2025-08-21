@@ -25,37 +25,44 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UserAddress {
 
+    // 배송지 번호 PK
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="userAddress_seq_gen")
     @SequenceGenerator(name = "userAddress_seq_gen", sequenceName="userAddress_seq", allocationSize = 1)
     @Column(name = "addressNo", nullable = false)
-    private Long addressNo;         // 배송지 번호 PK
+    private Long addressNo;         
 
     // 유저 번호 FK
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "userNo", nullable = false)
     private Users user;
 
+    // 배송지명 (예: 집, 회사)
     @Column(name = "addressName", length = 30, nullable = false)
-    private String addressName;     // 배송지명 (예: 집, 회사)
+    private String addressName;     
 
+    // 수령인
     @Column(length = 30, nullable = false)
-    private String recipient;       // 수령인
+    private String recipient;       
 
+    // 수령인 전화번호
     @Column(name = "phone", length = 30, nullable = false)
     private String phone;
 
+    // 다음API: zonecode (새 우편번호)
     @Column(length = 10, nullable = false)
-    private String zonecode;        // 다음API: zonecode (새 우편번호)
+    private String zonecode;        
 
+    // 다음API: roadAddress
     @Column(length = 100, nullable = false)
-    private String roadAddress;     // 다음API: roadAddress
+    private String roadAddress;     
 
+    // 상세주소
     @Column(length = 100, nullable = false)
-    private String detailAddress;   // 상세주소
+    private String detailAddress;   
 
+    // 기본 배송지 여부
     @Column(length = 1, nullable = false)
-
     private String isDefault;
 
     @PrePersist
