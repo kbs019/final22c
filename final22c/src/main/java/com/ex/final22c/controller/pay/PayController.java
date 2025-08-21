@@ -161,7 +161,7 @@ public class PayController {
 
     /* ================= 마일리지 적립 ================= */
     @PostMapping("/{orderId}/confirm")
-    public ResponseEntity<?> confirm(@PathVariable Long orderId, Principal principal) {
+    public ResponseEntity<?> confirm(@PathVariable("orderId") Long orderId, Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
