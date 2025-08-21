@@ -82,7 +82,7 @@
 
           <input type="hidden" id="currentAddressNo" th:value="${defaultAddr.addressNo}">
 
-          <!-- 배송시 요청사항 (표시만) -->
+          <!-- 배송시 요청사항 -->
           <div class="addr-memo mt-3">
             <div class="d-flex gap-2 flex-wrap align-items-center">
               <label class="addr-label d-block mb-1" style="min-width:120px;">배송 시 요청사항</label>
@@ -92,10 +92,8 @@
                 <option value="경비실에 맡겨주세요">경비실에 맡겨주세요</option>
                 <option value="자유입력">자유입력</option>
               </select>
-              <input type="text" id="deliveryMemoInput"
-                     class="form-control form-control-sm"
-                     placeholder="요청사항을 입력하세요"
-                     style="max-width:420px; display:none;">
+              <input type="text" id="deliveryMemoInput" class="form-control form-control-sm"
+                     placeholder="요청사항을 입력하세요" style="max-width:420px; display:none;">
             </div>
           </div>
         </div>
@@ -116,8 +114,7 @@
             <div class="muted" th:text="${'수량 ' + it.quantity}"></div>
             <div th:text="${it.name}">상품명</div>
           </div>
-          <div style="font-weight:800"
-               th:text="${#numbers.formatInteger(it.lineTotal,0)} + '원'">0원</div>
+          <div style="font-weight:800" th:text="${#numbers.formatInteger(it.lineTotal,0)} + '원'">0원</div>
         </div>
       </div>
 
@@ -165,7 +162,6 @@
         <div class="summary-row" style="font-weight:800"><span>결제금액</span><span id="payTotalLabel" th:text="${#numbers.formatInteger(summary.grandTotal,0)}+'원'"></span></div>
         <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(summary.grandTotal*0.05,0)}+'원'"></span></div>
 
-        <!-- 다건 결제용 hidden (JS에서 payload 구성) -->
         <input type="hidden" id="mode" value="cart">
         <button id="payBtn" class="btn" type="button">결제하기</button>
       </div>
@@ -179,7 +175,6 @@
         <div class="summary-row" style="font-weight:800"><span>결제금액</span><span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotalSingle,0)}+'원'"></span></div>
         <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(payTotalSingle*0.05,0)}+'원'"></span></div>
 
-        <!-- 단건 hidden -->
         <input type="hidden" id="mode" value="single">
         <input type="hidden" id="product_id" th:value="${product.id}">
         <input type="hidden" id="qty"        th:value="${qty}">
@@ -208,16 +203,14 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
-            <!-- ✅ 이번 주문만 적용 -->
             <button type="button" id="addrModalApply" class="btn btn-dark">선택한 주소 사용</button>
-            <!-- 기존: 기본배송지 변경 -->
             <button type="button" id="addrModalSet" class="btn btn-outline-secondary">기본 배송지로 설정</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 새 주소 등록 모달 (기본배송지 저장은 옵션) -->
+    <!-- 새 주소 등록 모달 -->
     <div class="modal fade" id="addAddrModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
@@ -255,7 +248,7 @@
                   <input type="text" class="form-control form-control-sm" id="f_detailAddress" placeholder="상세주소" required>
                 </div>
 
-                <!-- ✅ 기본배송지 저장 옵션 -->
+                <!-- 기본배송지 저장 옵션 -->
                 <div class="col-12 form-check mt-2">
                   <input class="form-check-input" type="checkbox" id="f_isDefault">
                   <label class="form-check-label" for="f_isDefault">이 주소를 기본 배송지로 저장</label>
@@ -283,6 +276,23 @@
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+
+    <!-- ✅ 전역: 모달이 모두 닫히면 스크롤 잠금/백드롭 확실히 해제 -->
+    <script>
+      (function(){
+        function fullyUnlockScroll(){
+          if ($('.modal.show').length === 0) {
+            $('body').removeClass('modal-open overlay-lock')
+                     .css({ overflow: '', 'padding-right': '' });
+            $('.modal-backdrop').remove();
+            $('#payOverlay').hide();
+          }
+        }
+        document.addEventListener('hidden.bs.modal', fullyUnlockScroll);
+        window.addEventListener('resize', function(){ setTimeout(fullyUnlockScroll, 0); });
+        window._unlockAfterAddressChange = function(){ setTimeout(fullyUnlockScroll, 50); };
+      })();
+    </script>
 
     <script th:inline="javascript">
     $(function(){
@@ -327,7 +337,7 @@
       $("#btnUseAllPoint").on("click", ()=> recalc(Math.min(owned, baseSum)));
       $("#usePoint").on("input change", function(){ recalc(this.value); });
 
-      /* ================== (선택) 배송요청사항 UI ================== */
+      /* ================== 배송요청사항 ================== */
       const $memoSel = $("#deliveryMemoSelect");
       const $memoInp = $("#deliveryMemoInput");
       const $memoPreview = $("#deliveryMemoPreview");
@@ -374,7 +384,7 @@
           $.get("/mypage/address/list")
             .done(function(res){
               const arr = (res && res.addresses) || [];
-              __addrCache = arr; // ✅ 캐시
+              __addrCache = arr;
 
               const def = arr.find(a => a.isDefault === 'Y');
               if (def) {
@@ -405,7 +415,7 @@
             .fail(() => { $("#addrList").html('<div class="text-danger">주소를 불러오지 못했습니다.</div>'); });
         }
 
-        // ✅ 이번 주문만 적용 (기본배송지 변경 없음)
+        // 이번 주문만 적용
         $("#addrModalApply").on("click", function(){
           const $sel = $("input[name=addrChoice]:checked");
           if ($sel.length === 0) { alert("주소를 선택해 주세요."); return; }
@@ -414,9 +424,10 @@
           if (!a) { alert("주소 정보를 찾을 수 없습니다."); return; }
           applyAddressToView(a);
           bootstrap.Modal.getInstance(addrModalEl).hide();
+          window._unlockAfterAddressChange(); // 스크롤 복구
         });
 
-        // 기존: 기본 배송지로 설정(서버 호출)
+        // 기본 배송지로 설정(서버)
         $("#addrModalSet").on("click", function(){
           const $sel = $("input[name=addrChoice]:checked");
           if ($sel.length === 0) { alert("주소를 선택해 주세요."); return; }
@@ -434,8 +445,9 @@
           .done(function(res){
             if (!res || !res.ok || !res.address) { alert("설정에 실패했습니다."); return; }
             const a = res.address;
-            applyAddressToView(a); // 기본도 바뀌었으니 화면 반영
+            applyAddressToView(a);
             bootstrap.Modal.getInstance(addrModalEl).hide();
+            window._unlockAfterAddressChange(); // 스크롤 복구
           })
           .fail(function(xhr){ alert("설정에 실패했습니다. ("+xhr.status+")"); });
         });
@@ -477,7 +489,7 @@
             zonecode:      $("#f_zonecode").val().trim(),
             roadAddress:   $("#f_roadAddress").val().trim(),
             detailAddress: $("#f_detailAddress").val().trim(),
-            isDefault:     $("#f_isDefault").is(":checked") // ✅ 체크시에만 기본 변경
+            isDefault:     $("#f_isDefault").is(":checked")
           };
           if (!data.addressName || !data.recipient || !data.phone || !data.zonecode || !data.roadAddress) {
             alert("필수 항목을 입력해 주세요."); return;
@@ -487,7 +499,7 @@
           $.ajax({
             type: "POST",
             url:  "/mypage/address/new",
-            data, // x-www-form-urlencoded 로 전송 (백엔드 폼 바인딩 가정)
+            data,
             beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
             dataType: "json"
           })
@@ -495,14 +507,15 @@
             if (!res || !res.ok || !res.address) { alert("등록에 실패했습니다."); return; }
             const a = res.address;
 
-            // 👉 기본체크 여부와 무관하게, 이번 주문 화면에는 방금 주소를 즉시 반영
+            // 기본 체크 여부와 무관하게 이번 주문 화면엔 즉시 적용
             applyAddressToView(a);
 
-            // 모달 닫기
             const addModalInst  = bootstrap.Modal.getInstance(addAddrModalEl);
             if (addModalInst) addModalInst.hide();
             const addrModalInst = bootstrap.Modal.getInstance(document.getElementById('addrModal'));
             if (addrModalInst) addrModalInst.hide();
+
+            window._unlockAfterAddressChange(); // 스크롤 복구
           })
           .fail(function(xhr){ alert("등록 실패 ("+xhr.status+")"); });
         });
