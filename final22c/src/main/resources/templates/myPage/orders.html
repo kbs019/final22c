@@ -65,7 +65,9 @@
   /* 취소 주문 표시(선택) */
   .badge-canceled{display:inline-block;padding:4px 8px;border-radius:8px;background:#fee2e2;color:#991b1b;font-weight:600;font-size:12px;margin-left:8px}
   .order-card.is-canceled{opacity:.9}
-
+  
+  /* 주문 확정 */
+  .badge-confirmed{background:#e5f3ff;color:#1d4ed8}
   /* 좁은 화면 대응 */
   @media (max-width: 900px){
     .order-card{ grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
@@ -124,6 +126,8 @@
         <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
         <span th:if="${restCnt==0 && first != null}" th:text="${' ' + first.quantity + '개'}"></span>
         <span th:if="${o.status=='CANCELED'}" class="badge-canceled">주문취소</span>
+        <span th:if="${o.status=='PAID' and o.deliveryStatus=='CONFIRMED'}"
+        class="badge badge-confirmed">주문확정</span>
       </div>
 
       <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
@@ -136,8 +140,8 @@
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
     <div class="stepper"
-         th:if="${o.status=='PAID' and o.status=='PENDING' and o.deliveryStatus == 'DELIVERED' and o.deliveryStatus == 'ORDERED'}"
-         th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
+        th:if="${o.status=='PAID' and (o.deliveryStatus=='ORDERED' or o.deliveryStatus=='SHIPPING' or o.deliveryStatus=='DELIVERED')}"
+        th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
       <div class="step"><div class="dot"></div><div>배송완료</div></div>
@@ -163,13 +167,10 @@
   <!-- 페이지네이션 (경로 주의: 단수 /mypage/order) -->
   <div style="margin-top:12px" th:if="${orders.totalPages > 1}">
     <a th:each="i : ${#numbers.sequence(0, orders.totalPages - 1)}"
-       th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
-       th:text="${i + 1}"
-       th:classappend="${i == orders.number} ? 'active' : ''"
-       style="margin-right:8px">
-    </a>
-       th:classappend="${i == orders.number} ? ' active' : ''"
-       style="margin-right:8px"></a>
+      th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
+      th:text="${i + 1}"
+      th:classappend="${i == orders.number} ? ' active' : ''"
+      style="margin-right:8px"></a>
   </div>
 </section>
 
@@ -199,8 +200,8 @@
   <div class="cm-modal__content">
     <button type="button" id="orderDetailClose" style="float:right;">X</button>
     <h3>주문 상세</h3>
-    <div th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}"></div> /
-    <div th:text="${o.regDate}"></div>
+    <div id="od-date"></div>
+    <div id="od-body"></div>
   </div>
 </div>
 
@@ -273,74 +274,79 @@
 
   /* 확인 모달 '예' 처리 */
   $confirmYes.addEventListener('click', async () => {
-    closeConfirm();
-    try {
-      let url;
-      if (pendingAction === 'cancel')  url = `/pay/cancel-paid/${targetOrderId}`;
-      if (pendingAction === 'confirm') url = `/pay/${targetOrderId}/confirm`;
-      if (pendingAction === 'refund')  url = `/pay/${targetOrderId}/refund`;
+  closeConfirm();
+  try {
+    let url;
+    if (pendingAction === 'cancel')  url = `/pay/cancel-paid/${targetOrderId}`;
+    if (pendingAction === 'confirm') url = `/pay/${targetOrderId}/confirm`;
+    if (pendingAction === 'refund')  url = `/pay/${targetOrderId}/refund`;
 
-      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
-      let data = {};
-      try { data = await res.json(); } catch(_) {}
-      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+    if (!url) throw new Error('지원하지 않는 작업입니다.');
 
-      const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
+    $confirmYes.disabled = true; // 중복 클릭 방지
+    const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}', credentials:'same-origin' });
 
-      if (pendingAction === 'cancel') {
-        // 취소: 상태 배지/스텝퍼/버튼 숨김
-        card?.classList.add('is-canceled');
-
-        // 버튼 그룹 전부 숨김 (여러 개 있을 수 있음)
-        card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
-
-        // 진행바 제거
-        card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
-
-        // 제목 옆 배지 추가
-        const title = card?.querySelector('.order-title');
-        if (title && !title.querySelector('.badge-canceled')) {
-          const b = document.createElement('span');
-          b.className='badge-canceled'; b.textContent='주문취소';
-          title.appendChild(b);
-        }
-      }
-
-      if (pendingAction === 'confirm') {
-        // ✅ 주문 확정: 버튼 전부 숨기고, 진행바 제거
-        card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
-        card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
-
-        // (선택) 확정 배지 붙이고 싶다면
-        const title = card?.querySelector('.order-title');
-        if (title && !title.querySelector('.badge-confirmed')) {
-          const b = document.createElement('span');
-          b.className='badge-confirmed';
-          b.style.cssText='display:inline-block;padding:4px 8px;border-radius:8px;background:#e5f3ff;color:#1d4ed8;font-weight:600;font-size:12px;margin-left:8px';
-          b.textContent='주문확정';
-          title.appendChild(b);
-        }
-      }
-      openResult(data.message || '처리가 완료되었습니다.');
-    } catch (e) {
-      console.error(e);
-      openResult('처리 중 오류가 발생했습니다.');
+    // 401 → 로그인
+    if (res.status === 401) {
+      window.location.href = '/user/login';
+      return;
     }
-  });
-  // ">" 링크 클릭 → 모달 열기
-  document.querySelectorAll('.order-card .more').forEach(link=>{
-    link.addEventListener('click', e=>{
-      e.preventDefault();
-      document.getElementById('orderDetailModal').classList.add('is-open');
-      document.body.style.overflow = 'hidden';
-    });
-  });
 
-  // 닫기 버튼 → 모달 닫기
-  document.getElementById('orderDetailClose').addEventListener('click', ()=>{
-    document.getElementById('orderDetailModal').classList.remove('is-open');
-    document.body.style.overflow = '';
-  });
+    let data = {};
+    try { data = await res.json(); } catch(_) {}
+    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+
+    const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
+
+    if (pendingAction === 'cancel') {
+      card?.classList.add('is-canceled');
+      card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
+      card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
+      const title = card?.querySelector('.order-title');
+      if (title && !title.querySelector('.badge-canceled')) {
+        const b = document.createElement('span');
+        b.className='badge-canceled'; b.textContent='주문취소';
+        title.appendChild(b);
+      }
+    }
+
+  if (pendingAction === 'confirm') {
+    // 버튼/스텝퍼 숨김
+    card?.querySelectorAll('.order-actions')?.forEach(el => el.style.display = 'none');
+    card?.querySelectorAll('.stepper')?.forEach(el => el.remove());
+
+    // 상품명 옆에 "주문확정" 배지
+    const title = card?.querySelector('.order-title') || card?.querySelector('.order-info');
+    if (title && !title.querySelector('.badge-confirmed')) {
+      const b = document.createElement('span');
+      b.className = 'badge badge-confirmed';
+      b.textContent = '주문확정';
+      title.appendChild(b);
+    }
+
+    // 응답 메시지 표시
+    const added   = (data && typeof data.mileage === 'number') ? data.mileage : 0;
+    const balance = (data && typeof data.pointBalance === 'number') ? data.pointBalance : null;
+
+    let msg = data.message || '주문이 확정되었습니다.';
+    if (added > 0)       msg += ` (+${added}P 적립)`;
+    if (balance != null) msg += ` / 보유 포인트: ${balance}P`;
+
+    openResult(msg);
+    return;
+  }
+
+    openResult(data.message || '처리가 완료되었습니다.');
+  } catch (e) {
+    console.error(e);
+    openResult(e.message || '처리 중 오류가 발생했습니다.');
+  } finally {
+    $confirmYes.disabled = false;
+    // 필요시 초기화
+    // pendingAction = null;
+    // targetOrderId = null;
+  }
+});
 </script>
 </div>
 </html>

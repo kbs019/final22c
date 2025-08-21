@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,11 +22,14 @@ import com.ex.final22c.data.cart.CartView;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.dto.PayCartRequest;
 import com.ex.final22c.data.payment.dto.PaySingleRequest;
+import com.ex.final22c.data.user.Users;
 import com.ex.final22c.service.KakaoApiService;
 import com.ex.final22c.service.cart.CartService;
+import com.ex.final22c.service.order.MyOrderService;
 import com.ex.final22c.service.order.OrderService;
 import com.ex.final22c.service.payment.PayCancelService;
 import com.ex.final22c.service.payment.PaymentService;
+import com.ex.final22c.service.user.UsersService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +43,9 @@ public class PayController {
     private final PaymentService paymentService;
     private final PayCancelService payCancelService;
     private final CartService cartService;
+
+    private final MyOrderService myOrderService;
+    private final UsersService usersService;
 
     private static final int SHIPPING_FEE = 3000;
 
@@ -151,4 +158,40 @@ public class PayController {
         var result = payCancelService.cancelPaid(orderId, reason);
         return Map.of("ok", true, "pg", result);
     }
+
+    /* ================= 마일리지 적립 ================= */
+    @PostMapping("/{orderId}/confirm")
+    public ResponseEntity<?> confirm(@PathVariable Long orderId, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+        try {
+            // 1) 확정 + 적립(서비스에서 처리)
+            Order order = myOrderService.confirmOrderAndAwardMileage(principal.getName(), orderId);
+
+            // 2) 프론트 노출용 계산값
+            int earnBase = Math.max(0, order.getTotalAmount() - order.getUsedPoint());
+            int mileage  = (int) Math.floor(earnBase * 0.05);
+
+            // 3) 보유 포인트 재조회(필드명은 프로젝트에 맞게)
+            Users me = usersService.getUser(principal.getName());
+            int pointBalance = me.getMileage(); // 또는 getPoint()
+
+            return ResponseEntity.ok(Map.of(
+                "ok", true,
+                "message", "주문을 확정했어요.",
+                "mileage", mileage,
+                "pointBalance", pointBalance,
+                "orderId", order.getOrderId()
+            ));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("ok", false, "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("ok", false, "message", "처리 중 오류가 발생했습니다."));
+        }
+    }
+
 }
