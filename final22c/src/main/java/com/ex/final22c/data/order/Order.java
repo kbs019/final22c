@@ -33,7 +33,7 @@ public class Order {
     private int totalAmount;        // 결제요청 시 최종 결제금(스냅샷)
 
     @Column(name="status", length=20, nullable=false)
-    private String status;          // PENDING/PAID/CANCELED...
+    private String status;          // PENDING/PAID/CANCELED/FAILED...
 
     @Column(name="regDate", nullable=false)
     private LocalDateTime regDate;
@@ -59,6 +59,13 @@ public class Order {
         d.setOrder(this);
         details.add(d);
     }
-    public boolean isPending() { return "PENDING".equals(status); }
-    public void markPaid() { this.status = "PAID"; }
+    /* ===== 상태 헬퍼 ===== */
+    public boolean isPending()  { return "PENDING".equalsIgnoreCase(status); }
+    public boolean isPaid()     { return "PAID".equalsIgnoreCase(status); }
+    public boolean isCanceled() { return "CANCELED".equalsIgnoreCase(status); }
+    public boolean isFailed()   { return "FAILED".equalsIgnoreCase(status); }
+
+    public void markPaid()      { this.status = "PAID"; }
+    public void markCanceled()  { this.status = "CANCELED"; } // 결제 후 환불/취소
+    public void markFailed()    { this.status = "FAILED"; }   // 결제창 단계 실패/중단
 }
