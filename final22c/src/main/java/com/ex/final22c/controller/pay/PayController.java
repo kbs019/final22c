@@ -22,6 +22,7 @@ import com.ex.final22c.data.cart.CartView;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.dto.PayCartRequest;
 import com.ex.final22c.data.payment.dto.PaySingleRequest;
+import com.ex.final22c.data.payment.dto.ShipSnapshotReq;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.service.KakaoApiService;
 import com.ex.final22c.service.cart.CartService;
@@ -30,7 +31,6 @@ import com.ex.final22c.service.order.OrderService;
 import com.ex.final22c.service.payment.PayCancelService;
 import com.ex.final22c.service.payment.PaymentService;
 import com.ex.final22c.service.user.UsersService;
-
 import lombok.RequiredArgsConstructor;
 
 @Controller
@@ -58,9 +58,11 @@ public class PayController {
         final long productId  = req.productId();
         final int qty         = Math.max(1, req.quantity() == null ? 1 : req.quantity());
         final int usedPoint   = Math.max(0, req.usedPoint() == null ? 0 : req.usedPoint());
+        final ShipSnapshotReq ship = req.ship();
 
-        Order order = orderService.createPendingOrder(userId, productId, qty, usedPoint);
+        Order order = orderService.createPendingOrder(userId, productId, qty, usedPoint, ship);
         var ready = kakaoApiService.readySingle(productId, qty, userId, order);
+        
         return Map.of(
                 "next_redirect_pc_url", ready.get("next_redirect_pc_url"),
                 "orderId", order.getOrderId()
@@ -74,6 +76,7 @@ public class PayController {
         if (principal == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         final String userId = principal.getName();
         final int usedPoint = Math.max(0, req.usedPoint() == null ? 0 : req.usedPoint());
+        final ShipSnapshotReq ship = req.ship();
 
         var selection = req.items().stream()
                 .map(i -> new CartService.SelectionItem(
@@ -90,7 +93,7 @@ public class PayController {
         int shipping   = SHIPPING_FEE;
         int payable    = Math.max(0, itemsTotal + shipping - usedPoint);
 
-        Order order = orderService.createCartPendingOrder(userId, lines, itemsTotal, shipping, usedPoint, payable);
+        Order order = orderService.createCartPendingOrder(userId, lines, itemsTotal, shipping, usedPoint, payable, ship);
         var ready = kakaoApiService.readyCart(order);
 
         return Map.of(
