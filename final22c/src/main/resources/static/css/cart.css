@@ -73,3 +73,20 @@ input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
+
+.dlg{position:fixed;inset:0;z-index:1050;display:none}
+.dlg__scrim{position:absolute;inset:0;background:rgba(0,0,0,.2);backdrop-filter:blur(2px)}
+.dlg__card{
+    position:relative; margin:auto; top:15vh;
+    width:min(480px, calc(100% - 32px));
+    background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.15);
+    overflow:hidden; font-size:14px;
+}
+.dlg__header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eee}
+.dlg__close{border:0;background:transparent;font-size:16px;opacity:.6;cursor:pointer}
+.dlg__close:hover{opacity:1}
+.dlg__body{padding:16px;line-height:1.6;color:#333}
+.dlg__footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #f0f0f0}
+.dlg__btn{padding:8px 12px;border-radius:8px;border:1px solid #d0d5dd;background:#fff;cursor:pointer}
+.dlg__btn--primary{background:#6b7280;color:#fff;border-color:#6b7280} /* 회색 버튼(스샷 톤) */
+.dlg__btn:disabled{opacity:.6;cursor:not-allowed}
