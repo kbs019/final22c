@@ -95,15 +95,11 @@ public class MyOrderService {
         }
         return order;
     }
-
+ 
     @Transactional(readOnly = true)
-    public Order findMyOrderWithDetails(String username, Long orderId){
-        Users me = usersService.getUser(username);
-        Order o = orderRepository.findOneWithDetails(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
-        if (!o.getUser().getUserNo().equals(me.getUserNo())) {
-            throw new IllegalStateException("본인 주문만 조회할 수 있습니다.");
-        }
-        return o;
+    public Order findMyOrderWithDetails(String username, Long orderId) {
+        return orderRepository.findOneWithDetailsAndProductByUser(username, orderId)
+            .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
     }
+
 }
