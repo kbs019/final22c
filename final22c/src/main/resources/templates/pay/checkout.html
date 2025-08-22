@@ -104,7 +104,7 @@
         <div class="summary-row">
           <strong>주문상품</strong>
           <span class="muted" th:text="${'총 ' + items.size() + '개'}">총 n개</span>
-        </div>0
+        </div>
 
         <div th:each="it : ${items}" class="line">
           <div class="thumb">
@@ -294,6 +294,7 @@
       })();
     </script>
 
+    <!-- ✅ 결제 로직 -->
     <script th:inline="javascript">
     $(function(){
       /* ================== 안전한 서버 변수 바인딩 ================== */
@@ -340,7 +341,7 @@
       /* ================== 배송요청사항 ================== */
       const $memoSel = $("#deliveryMemoSelect");
       const $memoInp = $("#deliveryMemoInput");
-      function currentMemo(){                         // ★
+      function currentMemo(){
         const v = $memoSel.val();
         return (v === "자유입력") ? ($memoInp.val() || "") : (v || "");
       }
@@ -426,7 +427,7 @@
           if (!a) { alert("주소 정보를 찾을 수 없습니다."); return; }
           applyAddressToView(a);
           bootstrap.Modal.getInstance(addrModalEl).hide();
-          window._unlockAfterAddressChange(); // 스크롤 복구
+          window._unlockAfterAddressChange();
         });
 
         // 기본 배송지로 설정(서버)
@@ -449,7 +450,7 @@
             const a = res.address;
             applyAddressToView(a);
             bootstrap.Modal.getInstance(addrModalEl).hide();
-            window._unlockAfterAddressChange(); // 스크롤 복구
+            window._unlockAfterAddressChange();
           })
           .fail(function(xhr){ alert("설정에 실패했습니다. ("+xhr.status+")"); });
         });
@@ -517,7 +518,7 @@
             const addrModalInst = bootstrap.Modal.getInstance(document.getElementById('addrModal'));
             if (addrModalInst) addrModalInst.hide();
 
-            window._unlockAfterAddressChange(); // 스크롤 복구
+            window._unlockAfterAddressChange();
           })
           .fail(function(xhr){ alert("등록 실패 ("+xhr.status+")"); });
         });
@@ -548,9 +549,27 @@
                 .done(function(res){
                   const st = (res && res.status || '').toUpperCase();
                   hideOverlay();
-                  if (st === 'PAID')           window.location.href = '/main/list';
-                  else if (st === 'PENDING')   alert('결제가 완료되지 않았습니다. 다시 시도하거나 취소할 수 있어요.');
-                  else                         alert('결제가 취소되었습니다.');
+                  if (st === 'PAID') {
+                    window.location.href = '/main/list';
+                  } else if (st === 'PENDING') {
+                	  const token  = $('meta[name="_csrf"]').attr('content');
+                	  const header = $('meta[name="_csrf_header"]').attr('content');
+
+                	  $.ajax({
+                	    type: "POST",
+                	    url:  "/pay/cancel-pending",
+                	    data: { orderId: orderId },
+                	    beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); }
+                	  })
+                	  .done(function(){ alert('결제가 취소되었어요. 다시 시도해 주세요.'); })
+                	  .fail(function(xhr){ 
+                	    alert('취소 처리 실패 (' + xhr.status + '). 새로고침 후 다시 시도해 주세요.'); 
+                	  });       
+                  } else if (st === 'FAILED') {
+                    alert('결제가 취소되었거나 실패했어요.');
+                  } else {
+                    alert('결제가 취소되었습니다.');  // (CANCELED 등)
+                  }
                 })
                 .fail(function(){ hideOverlay(); alert('결과 확인 실패. 잠시 후 새로고침해 주세요.'); });
             }, 1000);
@@ -559,7 +578,7 @@
       }
 
       /* ================== ★ 배송지 스냅샷 헬퍼 ================== */
-      function getShipSnapshot(){                               // ★ 추가
+      function getShipSnapshot(){
         return {
           addressNo:     Number($("#currentAddressNo").val()) || null,
           addressName:   $("#addrName").text().trim(),
@@ -568,9 +587,46 @@
           zonecode:      $("#addrZone").text().trim(),
           roadAddress:   $("#addrRoad").text().trim(),
           detailAddress: $("#addrDetail").text().trim(),
-          memo:          currentMemo()
+          memo:          (function(){ const v=$("#deliveryMemoSelect").val(); return v==="자유입력"?($("#deliveryMemoInput").val()||""):(v||""); })()
         };
       }
+
+      /* ================== postMessage 결제 결과 수신 리스너 (1회 등록) ================== */
+      (function attachPayResultListener(){
+        if (window.__payListenerAttached) return;
+        window.__payListenerAttached = true;
+
+        function csrfHdr(xhr){
+          const token  = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+          const header = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+          if (token && header) xhr.setRequestHeader(header, token);
+        }
+
+        window.addEventListener('message', function(event){
+          if (event.origin !== window.location.origin) return;
+          const d = event.data || {};
+          if (d.type !== 'PAY_RESULT') return;
+
+          hideOverlay();
+
+          if (d.status === 'success') {
+            window.location.href = '/main/list';
+            return;
+          }
+          if (d.orderId) {
+            $.ajax({
+              type: "POST",
+              url:  "/pay/order/" + d.orderId,
+              data: { reason: d.reason || 'FAIL' },
+              beforeSend: csrfHdr
+            }).always(function(){
+              alert('결제가 실패/취소되었어요. 다시 시도해 주세요.');
+            });
+          } else {
+            alert('결제가 실패/취소되었어요. 다시 시도해 주세요.');
+          }
+        });
+      })();
 
       /* ================== 결제 버튼 ================== */
       $("#payBtn").on("click", function(e){
@@ -578,7 +634,7 @@
         const usedPoint = Number($("#_usedPoint").val()) || 0;
         const token  = $('meta[name="_csrf"]').attr('content');
         const header = $('meta[name="_csrf_header"]').attr('content');
-        const ship   = getShipSnapshot();                        // ★ 추가
+        const ship   = getShipSnapshot();
 
         if (isCartMode) {
           const payload = (safeCartItems || []).map(it => ({
@@ -590,7 +646,7 @@
           $.ajax({
             type: "POST",
             url:  "/pay/ready/cart",
-            data: JSON.stringify({ usedPoint, items: payload, ship }), // ★ ship 포함
+            data: JSON.stringify({ usedPoint, items: payload, ship }),
             contentType: "application/json; charset=UTF-8",
             beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
             success: onReadyOk,
@@ -603,7 +659,7 @@
           $.ajax({
             type: "POST",
             url:  "/pay/ready/single",
-            data: JSON.stringify({ productId, quantity: qty, usedPoint, ship }), // ★ ship 포함
+            data: JSON.stringify({ productId, quantity: qty, usedPoint, ship }),
             contentType: "application/json; charset=UTF-8",
             beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
             success: onReadyOk,
