@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+  <title>리뷰 작성</title>
+  <th:block layout:fragment="css">
+    <style>
+      .rating-wrap{ --bar-size:34px; --bar-gap:10px; }
+      .rating-bars{
+        display:grid; grid-auto-flow:column; grid-auto-columns:var(--bar-size);
+        gap:var(--bar-gap); height:calc(var(--bar-size)*1.8); cursor:pointer;
+      }
+      .rating-bars .cell{ box-shadow: inset 0 0 0 2px #222; border-radius:4px; }
+      .rating-bars .cell.filled{ background:#222; }
+      textarea.form-control{ min-height: 140px; }
+    </style>
+  </th:block>
+</head>
+<body>
+<div layout:fragment="content" class="container py-4">
+  <h3 class="mb-4">리뷰 작성</h3>
+
+  <form method="post" th:action="@{/main/etc/review}">
+    <input type="hidden" name="productId" th:value="${product.id}">
+    <input type="hidden" name="rating" id="rating" value="5">
+
+    <div class="mb-3">
+      <div class="mb-2">평점</div>
+      <div class="rating-wrap">
+        <div id="rating-bars" class="rating-bars">
+          <div class="cell filled" data-v="1"></div>
+          <div class="cell filled" data-v="2"></div>
+          <div class="cell filled" data-v="3"></div>
+          <div class="cell filled" data-v="4"></div>
+          <div class="cell filled" data-v="5"></div>
+        </div>
+        <div class="small text-muted mt-1">클릭하여 1~5점 선택</div>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">내용</label>
+      <textarea class="form-control" name="content" maxlength="4000" required
+                placeholder="상품에 대한 솔직한 사용 후기를 남겨주세요."></textarea>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a th:href="@{|/main/content/${product.id}|}" class="btn btn-outline-secondary">취소</a>
+      <button type="submit" class="btn btn-dark">저장</button>
+    </div>
+  </form>
+</div>
+
+<th:block layout:fragment="script">
+<script>
+  // 로그인 상태에서만 접근되도록(템플릿 접근은 시큐리티 설정에 따르되, 혹시 모를 직접 URL 접근 방지)
+  /* 서버 단에서 인증 필터로 막는 것을 권장합니다. */
+
+  const bars = document.getElementById('rating-bars');
+  const ratingInput = document.getElementById('rating');
+  bars?.addEventListener('click', (e)=>{
+    const cell = e.target.closest('.cell');
+    if(!cell) return;
+    const v = parseInt(cell.dataset.v,10);
+    ratingInput.value = v;
+    [...bars.children].forEach(c => c.classList.toggle('filled', parseInt(c.dataset.v,10) <= v));
+  });
+</script>
+</th:block>
+</body>
+</html>
