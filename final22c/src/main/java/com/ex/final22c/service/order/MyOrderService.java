@@ -32,7 +32,7 @@ public class MyOrderService {
     private final PaymentRepository paymentRepository;
 
     /**
-     * 마이페이지 목록(페이징): PENDING 제외하고(PAID + CANCELED) 최신순
+     * 마이페이지 목록(페이징): PENDINGm, failed 제외하고(PAID + CANCELED + REFUND) 최신순
      */
 
     @Transactional(readOnly = true)
@@ -40,9 +40,10 @@ public class MyOrderService {
         Users me = usersService.getUser(username);
         Pageable pageable = PageRequest.of(page, size, Sort.by("regDate").descending());
 
-
-        return orderRepository.findByUser_UserNoAndStatusNotOrderByRegDateDesc(
-            me.getUserNo(), "PENDING", pageable);
+        // 화면에 노출할 상태만 지정
+        List<String> visible = List.of("PAID", "REFUND", "CANCELED"); // 필요시 "CONFIRMED" 추가
+        return orderRepository.findByUser_UserNoAndStatusInOrderByRegDateDesc(
+                me.getUserNo(), visible, pageable);
     }
 
     /**
