@@ -89,4 +89,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "WHERE o.orderId = :orderId AND o.user.userNo = :userNo")
     int updateToConfirmed(@Param("orderId") Long orderId,
                           @Param("userNo")   Long userNo);
+    
+    /* ===== 사용자별 단건 조회 (details + product fetch) ===== */
+    @Query("""
+    	    select o
+    	    from Order o
+    	    left join fetch o.details d
+    	    left join fetch d.product p
+    	    where o.orderId = :orderId
+    	      and o.user.userName = :username
+    	""")
+    	Optional<Order> findOneWithDetailsAndProductByUser(@Param("username") String username,
+    	                                                   @Param("orderId") Long orderId);
   }

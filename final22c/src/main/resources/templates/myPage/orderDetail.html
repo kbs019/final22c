@@ -10,8 +10,7 @@
         </div>
 
         <hr style="margin:12px 0">
-
-        <!-- 주문상품 정보 -->
+        <!-- 주문상품 정보 -->    
         <h4 style="margin:0 0 8px">주문상품 정보</h4>
 
         <ul style="list-style:none; padding:0; margin:0; display:grid; gap:8px">
@@ -24,6 +23,27 @@
                 </span>
             </li>
         </ul>
+        <!-- 배송지 출력 -->
+       <!-- 배송지 정보 -->
+		<h4 style="margin:14px 0 8px">배송지</h4>
+		
+		<div th:if="${order.shippingSnapshot != null}">
+		  <div style="font-weight:600" th:text="${order.shippingSnapshot.addressName}">배송지명</div>
+		  <div>
+		    <span th:text="${order.shippingSnapshot.recipient}">받는분</span>
+		    &nbsp;/&nbsp;
+		    <span th:text="${order.shippingSnapshot.phone}">010...</span>
+		  </div>
+		  <div>
+		    (<span th:text="${order.shippingSnapshot.zonecode}">00000</span>)
+		    <span th:text="${order.shippingSnapshot.roadAddress}">도로명</span>
+		    <span th:text="${order.shippingSnapshot.detailAddress}">상세</span>
+		  </div>
+		  <div class="text-muted"
+		       th:if="${order.shippingSnapshot.memo != null and !#strings.isEmpty(order.shippingSnapshot.memo)}">
+		    요청사항: <span th:text="${order.shippingSnapshot.memo}"></span>
+		  </div>
+		</div>
         <div>
             <!-- 결제정보 / 수단 = 그냥 이름만 h태그등 뭐든 그냥 띄우기,
             최종 금액 주문내역의 최종 가격마냥 띄우기. -->

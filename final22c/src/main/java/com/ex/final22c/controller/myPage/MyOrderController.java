@@ -83,7 +83,7 @@ public class MyOrderController {
 	}
 
 	@GetMapping("/order/{id}/fragment")
-	public String orderItemsFragment(@PathVariable Long id,
+	public String orderItemsFragment(@PathVariable("id") Long id,
 									Principal principal,
 									Model model) {
 		if (principal == null) return "redirect:/user/login";
