@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -24,6 +26,7 @@ import com.ex.final22c.data.product.Grade;
 import com.ex.final22c.data.product.MainNote;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Volume;
+import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.repository.productRepository.BrandRepository;
@@ -31,6 +34,7 @@ import com.ex.final22c.repository.productRepository.GradeRepository;
 import com.ex.final22c.repository.productRepository.MainNoteRepository;
 import com.ex.final22c.repository.productRepository.ProductRepository;
 import com.ex.final22c.repository.productRepository.VolumeRepository;
+import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
 import com.ex.final22c.repository.user.UserRepository;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -50,6 +54,7 @@ public class AdminService {
 	private final GradeRepository gradeRepository;
 	private final MainNoteRepository mainNoteRepository;
 	private final VolumeRepository volumeRepository;
+	private final PurchaseRequestRepository purchaseRequestRepository;
 	
 	// 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
@@ -125,12 +130,10 @@ public class AdminService {
     }
 
     // 상품 목록
-    public Page<Product> getItemList(int page,String kw){
-    	List<Sort.Order> sorts = new ArrayList<>();
-    	sorts.add(Sort.Order.desc("id"));
-    	PageRequest pageable = PageRequest.of(page,10,Sort.by(sorts));
+    public List<Product> getItemList(String kw){
+
     	Specification<Product> spec = proSearch(kw);
-    	return this.productRepository.findAll(spec,pageable);
+    	return this.productRepository.findAll(spec);
     }
     
     // 상품 추출
@@ -219,7 +222,6 @@ public class AdminService {
 
     	    // 공통 필드 세팅
     	    product.setName(dto.getName());
-    	    product.setCount(dto.getCount());
     	    product.setPrice(dto.getPrice());
     	    product.setDiscount(dto.getDiscount());
     	    product.setDescription(dto.getDescription());
@@ -360,29 +362,18 @@ public class AdminService {
         };
     }
     // 상품 필터
-    public Page<Product> getItemList(
-            int page,
+    public List<Product> getItemList(
             String kw,
             List<Long> brandIds,
             String isPicked,  // radio로 하나만 선택
-            String status,    // radio로 하나만 선택
-            String sortStock, // "asc" / "desc" / null
-            String sortPrice  // "asc" / "desc" / null
+            String status    // radio로 하나만 선택
     ) {
         List<Sort.Order> sorts = new ArrayList<>();
 
-        // 재고 정렬
-        if ("asc".equals(sortStock)) sorts.add(Sort.Order.asc("count"));
-        else if ("desc".equals(sortStock)) sorts.add(Sort.Order.desc("count"));
-
-        // 가격 정렬
-        if ("asc".equals(sortPrice)) sorts.add(Sort.Order.asc("price"));
-        else if ("desc".equals(sortPrice)) sorts.add(Sort.Order.desc("price"));
 
         // 정렬이 없으면 기본 id DESC
         if (sorts.isEmpty()) sorts.add(Sort.Order.desc("id"));
 
-        PageRequest pageable = PageRequest.of(page, 10, Sort.by(sorts));
 
         // 동적 필터
         List<String> isPickedList = isPicked == null || isPicked.isEmpty() ? null : List.of(isPicked);
@@ -390,6 +381,74 @@ public class AdminService {
 
         Specification<Product> spec = proFilter(kw, brandIds, isPickedList, statusList);
 
-        return productRepository.findAll(spec, pageable);
+        return productRepository.findAll(spec);
+    }
+    
+    // 동적 필터
+    private Specification<Product> proFilter(
+            String kw,
+            List<Long> brandIds
+    ) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // 검색 (상품명 LIKE)
+            if (kw != null && !kw.isBlank()) {
+                predicates.add(cb.like(root.get("name"), "%" + kw + "%"));
+            }
+
+            // 브랜드 필터
+            if (brandIds != null && !brandIds.isEmpty()) {
+                Join<Product, Brand> brandJoin = root.join("brand", JoinType.LEFT);
+                predicates.add(brandJoin.get("id").in(brandIds));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    // 상품 필터
+    public List<Product> getItemList(
+            String kw,
+            List<Long> brandIds
+    ) {
+        List<Sort.Order> sorts = new ArrayList<>();
+
+        // 정렬이 없으면 기본 id DESC
+        if (sorts.isEmpty()) sorts.add(Sort.Order.desc("id"));
+
+        // 동적 필터
+        Specification<Product> spec = proFilter(kw, brandIds);
+
+        return productRepository.findAll(spec, Sort.by(sorts));
+    }
+    
+    // 발주 신청 목록 추가
+    public Map<String, Object> addToPurchaseRequest(Map<String, Object> payload) {
+    	 Map<String, Object> response = new HashMap<>();
+         try {
+             Long productId = Long.valueOf(payload.get("productId").toString());
+             int qty = Integer.parseInt(payload.get("qty").toString());
+
+             Product product = productRepository.findById(productId)
+                     .orElseThrow(() -> new RuntimeException("상품이 존재하지 않습니다"));
+
+             PurchaseRequest pr = new PurchaseRequest();
+             pr.setProduct(product);
+             pr.setQty(qty);
+
+             this.purchaseRequestRepository.save(pr);
+
+             response.put("success", true);
+         } catch (Exception e) {
+             response.put("success", false);
+             response.put("message", e.getMessage());
+         }
+         return response;
+    }
+    
+    // 발주 신청 목록
+    public List<PurchaseRequest> getPr(){
+    	return this.purchaseRequestRepository.findAll();
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.service.admin.AdminService;
@@ -55,24 +56,17 @@ public class AdminController {
 	@GetMapping("productList")
 	public String productList(
 	        Model model,
-	        @RequestParam(value="page", defaultValue="0") int page,
 	        @RequestParam(value="kw", defaultValue="") String kw,
 	        @RequestParam(value="brand", required=false) List<Long> brandIds,
 	        @RequestParam(value="isPicked", required=false) String isPicked,
-	        @RequestParam(value="status", required=false) String status,
-	        @RequestParam(value="sortStock", required=false) String sortStock,
-	        @RequestParam(value="sortPrice", required=false) String sortPrice
+	        @RequestParam(value="status", required=false) String status
 	) {
-	    Page<Product> paging = adminService.getItemList(page, kw, brandIds, isPicked, status, sortStock, sortPrice);
+	    List<Product> paging = adminService.getItemList( kw, brandIds, isPicked, status);
 
-	    int pageSize = 10;
-	    int currentBlock = paging.getNumber() / pageSize;
 
 	    List<Brand> brands = adminService.getBrand();
 
 	    model.addAttribute("brands", brands);
-	    model.addAttribute("pageSize", pageSize);
-	    model.addAttribute("currentBlock", currentBlock);
 	    model.addAttribute("paging", paging);
 
 	    // 선택된 필터/정렬값 다시 모델에 전달
@@ -80,8 +74,6 @@ public class AdminController {
 	    model.addAttribute("brand", brandIds);
 	    model.addAttribute("isPicked", isPicked);
 	    model.addAttribute("status", status);
-	    model.addAttribute("sortStock", sortStock);
-	    model.addAttribute("sortPrice", sortPrice);
 
 	    return "admin/productList";
 	}
@@ -137,7 +129,6 @@ public class AdminController {
 	public String updatePick(@RequestBody Map<String, Object> request) {
 	    Long id = Long.valueOf(request.get("id").toString());
 	    String isPicked = request.get("isPicked").toString();
-
 	    adminService.updatePick(id, isPicked);
 	    return "OK";
 	}
@@ -145,13 +136,39 @@ public class AdminController {
 	// 상품 상태 변경
 	@PostMapping("productStatus/{id}")
 	public ResponseEntity<?> changeStatus(@PathVariable("id") Long id, @RequestParam("status") String status) {
-	
 	    this.adminService.productStatus(id, status);
 	    return ResponseEntity.ok().build();
 	}
-
+	
+	// 주문 관리
 	@GetMapping("orderList")
 	public String orderList() {
 		return "admin/orderList";
+	}
+	
+	// 발주 신청 페이지
+	@GetMapping("purchaseOrder")
+	public String purchaseOrde( Model model,
+	        @RequestParam(value="kw", defaultValue="") String kw,
+	        @RequestParam(value="brand", required=false) List<Long> brandIds) {
+	    List<Product> list = adminService.getItemList( kw, brandIds);
+	    List<Brand> brands = adminService.getBrand();
+	    List<PurchaseRequest> pr = this.adminService.getPr();
+	    
+	    model.addAttribute("pr",pr);
+	    model.addAttribute("brands", brands);
+	    model.addAttribute("list", list);
+
+	    // 선택된 필터/정렬값 다시 모델에 전달
+	    model.addAttribute("kw", kw);
+	    model.addAttribute("brand", brandIds);
+		return "admin/purchaseOrder";
+	}
+	
+	// 발주 신청 목록 추가
+	@PostMapping("add")
+	@ResponseBody
+	public Map<String, Object> addToPurchaseRequest(@RequestBody Map<String, Object> payload) {
+		return this.adminService.addToPurchaseRequest(payload);
 	}
 }
