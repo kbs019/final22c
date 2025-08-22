@@ -47,6 +47,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @EntityGraph(attributePaths = {"details", "details.product"})
     Page<Order> findByUser_UserNoOrderByRegDateDesc(Long userNo, Pageable pageable);
+    
+    @EntityGraph(attributePaths = {"details", "details.product"})
+    Page<Order> findByUser_UserNoAndStatusNotInOrderByRegDateDesc(
+            Long userNo, Collection<String> statuses, Pageable pageable);
 
     /** 단건 조회: 주문 + 상세 + 상품까지 fetch-join (결제승인/취소 등 트랜잭션 로직에서 사용) */
     @Query("""
@@ -101,4 +105,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     	""")
     	Optional<Order> findOneWithDetailsAndProductByUser(@Param("username") String username,
     	                                                   @Param("orderId") Long orderId);
+    /* == 결제 대기중인 상태가 지속됐을때 failed로 변경 == */
+    @Modifying
+    @Query("""
+      update Order o
+         set o.status = 'FAILED'
+       where o.status = 'PENDING'
+         and o.regDate <= :threshold
+    """)
+    int failOldPendings(@Param("threshold") LocalDateTime threshold);
   }
