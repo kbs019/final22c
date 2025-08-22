@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
+import com.ex.final22c.repository.payment.PaymentRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.user.UsersService;
 
@@ -27,9 +29,10 @@ public class MyOrderService {
     private final UsersService usersService;
     private final OrderRepository orderRepository;
     private final UserRepository usersRepository;
+    private final PaymentRepository paymentRepository;
 
     /**
-     * 마이페이지 목록(페이징): PENDING 제외하고(PAID + CANCELED) 최신순
+     * 마이페이지 목록(페이징): PENDINGm, failed 제외하고(PAID + CANCELED + REFUND) 최신순
      */
 
     @Transactional(readOnly = true)
@@ -37,9 +40,10 @@ public class MyOrderService {
         Users me = usersService.getUser(username);
         Pageable pageable = PageRequest.of(page, size, Sort.by("regDate").descending());
 
-
-        return orderRepository.findByUser_UserNoAndStatusNotOrderByRegDateDesc(
-            me.getUserNo(), "PENDING", pageable);
+        // 화면에 노출할 상태만 지정
+        List<String> visible = List.of("PAID", "REFUND", "CANCELED"); // 필요시 "CONFIRMED" 추가
+        return orderRepository.findByUser_UserNoAndStatusInOrderByRegDateDesc(
+                me.getUserNo(), visible, pageable);
     }
 
     /**
@@ -102,4 +106,8 @@ public class MyOrderService {
             .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
     }
 
+    @Transactional(readOnly = true)
+    public List<Payment> findPaymentsofOrder(Long orderId) {
+        return paymentRepository.findByOrder_OrderId(orderId);
+    }
 }

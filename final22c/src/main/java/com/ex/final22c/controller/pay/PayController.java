@@ -95,7 +95,7 @@ public class PayController {
 
         Order order = orderService.createCartPendingOrder(userId, lines, itemsTotal, shipping, usedPoint, payable, ship);
         var ready = kakaoApiService.readyCart(order);
-        paymentService.saveReady(order, order.getTotalAmount(), (String) ready.get("tid"));
+
 
         return Map.of(
                 "next_redirect_pc_url", ready.get("next_redirect_pc_url"),

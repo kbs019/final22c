@@ -51,6 +51,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @EntityGraph(attributePaths = {"details", "details.product"})
     Page<Order> findByUser_UserNoAndStatusNotInOrderByRegDateDesc(
             Long userNo, Collection<String> statuses, Pageable pageable);
+    
+    @EntityGraph(attributePaths = {"details", "details.product"})
+    Page<Order> findByUser_UserNoAndStatusInOrderByRegDateDesc(
+            Long userNo,
+            Collection<String> statuses,
+            Pageable pageable
+    );
 
     /** 단건 조회: 주문 + 상세 + 상품까지 fetch-join (결제승인/취소 등 트랜잭션 로직에서 사용) */
     @Query("""

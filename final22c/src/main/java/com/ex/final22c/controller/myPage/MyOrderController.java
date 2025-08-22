@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.service.order.MyOrderService;
 
 import lombok.RequiredArgsConstructor;
@@ -84,12 +85,12 @@ public class MyOrderController {
 
 	@GetMapping("/order/{id}/fragment")
 	public String orderItemsFragment(@PathVariable("id") Long id,
-									Principal principal,
-									Model model) {
-		if (principal == null) return "redirect:/user/login";
+									Principal principal, Model model) {
 
 		Order order = myOrderService.findMyOrderWithDetails(principal.getName(), id);
+		List<Payment> payments = myOrderService.findPaymentsofOrder(id);
 		model.addAttribute("order", order);
+		model.addAttribute("payments", payments);
 		return "mypage/orderDetail :: items";
 	}
 }
