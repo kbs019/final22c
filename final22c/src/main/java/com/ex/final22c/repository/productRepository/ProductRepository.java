@@ -1,5 +1,7 @@
 package com.ex.final22c.repository.productRepository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -11,7 +13,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.product.Product;
-import com.ex.final22c.data.user.Users;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
@@ -38,5 +39,5 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 	int increaseStock(@Param("productId") Long productId, @Param("qty") int qty);
 	
 	// 상품목록 (페이징,검색)
-    Page<Product> findAll(Specification<Product> spec, Pageable pageable);
+    List<Product> findAll(Specification<Product> spec);
 }
