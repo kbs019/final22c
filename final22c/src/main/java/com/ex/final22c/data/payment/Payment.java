@@ -33,7 +33,7 @@ public class Payment {
     @Column(name = "status", length = 20, nullable = false)
     private String status; // 성공, 실패, 취소 등
 
-    @Column(name = "tid", length = 100)
+    @Column(name = "tid", length = 100, unique=true)
     private String tid; // 카카오페이 결제 고유번호
 
     @Column(name = "aid", length = 100)

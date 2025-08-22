@@ -1,6 +1,6 @@
 <!-- templates/mypage/orderDetail.html -->
 <div th:fragment="items">
-    <div style="text-align:left">
+    <div style="text-align:left; font-weight:600; margin-bottom:4px">
 
         <!-- 주문날짜 / 주문번호 -->
         <div style="font-weight:600; margin-bottom:4px;">
@@ -14,36 +14,51 @@
         <h4 style="margin:0 0 8px">주문상품 정보</h4>
 
         <ul style="list-style:none; padding:0; margin:0; display:grid; gap:8px">
-        <li th:each="d : ${order.details}"
-            style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-bottom:1px solid #eee; padding:6px 0;">
-            <span style="flex:1">[[${d.product != null ? d.product.name : '상품'}]]</span>
-            <span>[[${d.quantity}]]개</span>
-            <span th:if="${d.product != null}">
-            [[${#numbers.formatInteger(d.product.sellPrice, 0)}]]원
-            </span>
-        </li>
+            <li th:each="d : ${order.details}"
+                style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-bottom:1px solid #eee; padding:6px 0;">
+                <span style="flex:1">[[${d.product != null ? d.product.name : '상품'}]]</span>
+                <span>[[${d.quantity}]]개</span>
+                <span th:if="${d.product != null}">
+                [[${#numbers.formatInteger(d.product.sellPrice * d.quantity, 0)}]]원
+                </span>
+                
+            </li>
         </ul>
-        <!-- 배송지 출력 -->
-       <!-- 배송지 정보 -->
-		<h4 style="margin:14px 0 8px">배송지</h4>
-		
-		<div th:if="${order.shippingSnapshot != null}">
-		  <div style="font-weight:600" th:text="${order.shippingSnapshot.addressName}">배송지명</div>
-		  <div>
-		    <span th:text="${order.shippingSnapshot.recipient}">받는분</span>
-		    &nbsp;/&nbsp;
-		    <span th:text="${order.shippingSnapshot.phone}">010...</span>
-		  </div>
-		  <div>
-		    (<span th:text="${order.shippingSnapshot.zonecode}">00000</span>)
-		    <span th:text="${order.shippingSnapshot.roadAddress}">도로명</span>
-		    <span th:text="${order.shippingSnapshot.detailAddress}">상세</span>
-		  </div>
-		  <div class="text-muted"
-		       th:if="${order.shippingSnapshot.memo != null and !#strings.isEmpty(order.shippingSnapshot.memo)}">
-		    요청사항: <span th:text="${order.shippingSnapshot.memo}"></span>
-		  </div>
-		</div>
 
-    </div>
+        <hr style="margin:12px 0">
+        <!-- 배송지 정보 -->
+        <h4 style="margin:14px 0 8px">배송지</h4>
+        
+        <div th:if="${order.shippingSnapshot != null}">
+            <div style="font-weight:600" th:text="${order.shippingSnapshot.addressName}">배송지명</div>
+            <div>
+                <span th:text="${order.shippingSnapshot.recipient}">받는분</span>
+                &nbsp;/&nbsp;
+                <span th:text="${order.shippingSnapshot.phone}">010...</span>
+            </div>
+            <div>
+                (<span th:text="${order.shippingSnapshot.zonecode}">00000</span>)
+                <span th:text="${order.shippingSnapshot.roadAddress}">도로명</span>
+                <span th:text="${order.shippingSnapshot.detailAddress}">상세</span>
+            </div>
+            <div class="text-muted"
+                th:if="${order.shippingSnapshot.memo != null and !#strings.isEmpty(order.shippingSnapshot.memo)}">
+                요청사항: <span th:text="${order.shippingSnapshot.memo}"></span>
+            </div>
+        </div>
+
+        <hr style="margin:12px 0">
+        <!-- 결제내역이 있다면 -->
+        <div th:if="${payments != null and !payments.isEmpty()}">
+        <ul style="list-style:none; padding:0; margin:0; display:grid; gap:6px">
+            <li th:each="p : ${payments}">
+            결제번호 [[${p.paymentId}]] 
+            <br>
+            <span>결제 수단 : 카카오페이</span>
+            <br>
+            총 결제 금액 : [[${#numbers.formatInteger(p.amount,0)}]]원
+            </li>
+        </ul>
+        </div>
+    </div> 
 </div>
