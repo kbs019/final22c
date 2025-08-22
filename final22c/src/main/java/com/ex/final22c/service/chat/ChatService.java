@@ -1,107 +1,106 @@
 package com.ex.final22c.service.chat;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.List;
+import java.util.Map;
+
+//ChatService.java
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ChatService {
+ private final WebClient aiWebClient;
 
-    @Value("${deepseek.api.base-url}")
-    private String baseUrl;
+ @Value("${deepseek.api.model:deepseek-chat}") // ← DeepSeek native면 이게 맞음
+ private String model;
 
-    @Value("${deepseek.api.path}")
-    private String path;
+ @Value("${deepseek.api.path:/chat/completions}")
+ private String path;
 
-    @Value("${deepseek.api.key:}")
-    private String apiKey;
+ private Map call(Map<String,Object> body) {
+     try {
+         return aiWebClient.post().uri(path)
+                 .header("Content-Type", "application/json")
+                 .bodyValue(body)
+                 .retrieve()
+                 .onStatus(s -> s.value() >= 400, r -> r.bodyToMono(String.class)
+                     .map(msg -> new RuntimeException("DeepSeek HTTP " + r.statusCode() + ": " + msg)))
+                 .bodyToMono(Map.class)
+                 .block();
+     } catch (Exception e) {
+         log.error("[AI CALL FAIL] {}", e.toString(), e);
+         // 실패 원인을 그대로 문자열로 돌려주기 위해 Map으로 감쌈
+         return Map.of("error", e.getMessage());
+     }
+ }
 
-    @Value("${deepseek.api.model:deepseek-chat}")
-    private String model;
+ public String ask(String userMsg){
+     var body = Map.of(
+         "model", model,
+         "messages", List.of(
+             Map.of("role","system","content","간결하게 한국어로 답하세요."),
+             Map.of("role","user","content", userMsg)
+         ),
+         "temperature", 0.3
+     );
+     var resp = call(body);
+     return extract(resp);
+ }
 
-    private final HttpClient http = HttpClient.newHttpClient();
+ public String generateSql(String question, String schemaDoc){
+     var sys = """
+         너는 Oracle SQL 생성기다.
+         - 오직 단일 SELECT 한 개만.
+         - 허용 테이블: USERS, ORDERS, ORDERDETAIL, PAYMENT.
+         - 결과는 최대 50행: 없으면 'FETCH FIRST 50 ROWS ONLY'.
+         - 반드시 ```sql ... ``` 코드블록 한 개만 출력.
+         """;
+     var user = "스키마 요약:\n" + schemaDoc + "\n\n질문:\n" + question + "\n\n반드시 코드블록으로 SQL만 출력.";
+     var body = Map.of(
+         "model", model,
+         "messages", List.of(
+             Map.of("role","system","content", sys),
+             Map.of("role","user","content", user)
+         ),
+         "temperature", 0.1
+     );
+     var resp = call(body);
+     return extract(resp);
+ }
 
-    public String ask(String userMessage) {
-        if (apiKey == null || apiKey.isBlank()) {
-            // 키가 없을 때는 친절한 에러 메시지
-            return "서버에 DeepSeek API Key가 설정되지 않았습니다. 관리자에게 문의하세요.";
-        }
+ public String summarize(String question, String sql, String table){
+     var body = Map.of(
+         "model", model,
+         "messages", List.of(
+             Map.of("role","system","content","한 줄로 아주 간단히 한국어 요약."),
+             Map.of("role","user","content","질문: "+question+"\nSQL:\n"+sql+"\n결과표:\n"+table)
+         ),
+         "temperature", 0.3
+     );
+     var resp = call(body);
+     return extract(resp);
+ }
 
-        // OpenAI 호환 Chat Completions 요청 바디 (필요시 조정)
-        String body = """
-        {
-          "model": "%s",
-          "messages": [
-            {"role": "system", "content": "You are a helpful assistant for a shopping site."},
-            {"role": "user", "content": %s}
-          ],
-          "stream": false,
-          "temperature": 0.7
-        }
-        """.formatted(model, jsonString(userMessage));
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + path))
-                .header("Authorization", "Bearer " + apiKey)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build();
-
-        try {
-            HttpResponse<String> res = http.send(request, HttpResponse.BodyHandlers.ofString());
-            if (res.statusCode() / 100 != 2) {
-                return "[DeepSeek 오류] HTTP " + res.statusCode() + " - " + res.body();
-            }
-            // 응답 JSON에서 assistant 메시지 텍스트만 안전하게 뽑기
-            return extractAssistantText(res.body());
-        } catch (IOException | InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return "[DeepSeek 호출 예외] " + e.getMessage();
-        }
-    }
-
-    // 아주 간단한 JSON 이스케이프 (따옴표만 처리)
-    private static String jsonString(String s) {
-        if (s == null) return "\"\"";
-        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-    }
-
-    /**
-     * 응답 예(일반형):
-     * {
-     *   "id":"...","object":"chat.completion",
-     *   "choices":[{"index":0,"message":{"role":"assistant","content":"..."},"finish_reason":"stop"}],
-     *   "usage":{...}
-     * }
-     *
-     * 파서 없이 단순 추출 (프로덕션에선 Jackson/Gson 권장)
-     */
-    private static String extractAssistantText(String json) {
-        // "message":{"role":"assistant","content":"..."} 에서 content 값만 단순 추출
-        String key = "\"content\":";
-        int i = json.indexOf(key);
-        if (i < 0) return "[파싱 실패] " + json;
-        int start = json.indexOf('"', i + key.length());
-        if (start < 0) return "[파싱 실패] " + json;
-        int end = findStringEnd(json, start + 1);
-        if (end < 0) return "[파싱 실패] " + json;
-        String raw = json.substring(start + 1, end);
-        return raw.replace("\\n", "\n").replace("\\\"", "\"");
-    }
-
-    private static int findStringEnd(String s, int from) {
-        boolean esc = false;
-        for (int i = from; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (esc) { esc = false; continue; }
-            if (c == '\\') { esc = true; continue; }
-            if (c == '"') return i;
-        }
-        return -1;
-    }
+ @SuppressWarnings("unchecked")
+ private String extract(Map resp){
+     if (resp == null) return "(응답 없음)";
+     if (resp.containsKey("error")) {
+         return "(API 오류) " + resp.get("error");
+     }
+     try {
+         var choices = (List<Map>) resp.get("choices");
+         var msg = (Map) choices.get(0).get("message");
+         String content = String.valueOf(msg.getOrDefault("content", ""));
+         if (content.isBlank()) return "(빈 응답) raw=" + resp;
+         return content;
+     } catch (Exception e) {
+         return "(파싱 실패) raw=" + resp;
+     }
+ }
 }
