@@ -95,7 +95,7 @@ public class Product {
     public void prePersist() {
         if (this.isPicked == null) { this.isPicked = "N"; } // DB DEFAULT 대신 자바에서 보장
         if ( this.imgPath == null ) { this.imgPath = "/img/"; }
-        if (this.status == null) {this.status = "active";}
+        if (this.status == null) {this.status = "wait";}
         recalcPrices();
     }
 
