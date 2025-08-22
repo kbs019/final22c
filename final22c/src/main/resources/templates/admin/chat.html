@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      layout:decorate="~{layout/adminLayout}">
+<head>
+  <meta charset="UTF-8">
+  <title>22°C | Chat</title>
+
+  <!-- 페이지 전용 CSS -->
+  <th:block layout:fragment="css">
+    <!-- 필요시 chat.css 추가 -->
+    <!-- <link rel="stylesheet" th:href="@{/css/chat.css}"> -->
+  </th:block>
+</head>
+
+<body>
+  <!-- 레이아웃의 content 블록 -->
+  <th:block layout:fragment="content">
+    <h1 class="mb-4">Chat 페이지</h1>
+    <p class="text-muted">1단계: 화면 골격만 확인합니다. 아직 챗봇 응답은 없습니다.</p>
+
+    <!-- 채팅 카드 -->
+    <div id="chat-card" class="card shadow-sm">
+      <div class="card-body">
+        <!-- 채팅 로그 -->
+        <div id="chat-log" class="mb-3" 
+             style="height: 320px; overflow-y: auto; border: 1px solid #e9ecef; padding: 12px; border-radius: 6px;">
+          <div class="text-muted">아직 대화가 없습니다.</div>
+        </div>
+
+        <!-- 입력창 -->
+        <div class="d-flex gap-2">
+          <input id="chat-input" type="text" class="form-control" placeholder="메시지를 입력하세요" />
+          <button id="chat-send" class="btn btn-primary">전송</button>
+        </div>
+      </div>
+    </div>
+  </th:block>
+
+  <!-- 페이지 전용 JS -->
+  <th:block layout:fragment="script">
+    <script th:src="@{/js/chat.js}"></script>
+  </th:block>
+</body>
+</html>

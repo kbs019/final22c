@@ -1,21 +1,24 @@
-<html layout:decorate="~{/layout/layout}">
-<div layout:fragment="content" class="container">
-	<div class="container my-4">
-	    <h2>상품관리</h2>
-<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded" >
-		    <!-- 왼쪽: 필터 토글 (항목 이름들, 전부 같은 collapse target) -->
-		    <div class="d-flex flex-grow-1 gap-3">
-		        <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#filterBox">
-		            필터
-		        </button>
-		    </div>
- <div class="collapse" id="filterBox">
-    <div class="card card-body mb-2">
 
-    <!-- 브랜드 필터 -->
-    <div class="mb-3">
-        <label class="form-label">브랜드</label>
-        <div class="d-flex flex-wrap">
+<html layout:decorate="~{/layout/adminLayout}">
+
+<div layout:fragment="content">
+<div class="container my-4">
+          
+	 <h2>상품관리</h2>
+	<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded" >
+		    <!-- 왼쪽: 필터 토글 (항목 이름들, 전부 같은 collapse target) -->
+		<div class="d-flex flex-grow-1 gap-3">
+			<button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#filterBox">
+		        필터
+		    </button>
+		    </div>
+	<div class="collapse" id="filterBox">
+    	<div class="card card-body mb-2">
+
+    		<!-- 브랜드 필터 -->
+    		<div class="mb-3">
+		        <label class="form-label">브랜드</label>
+		        <div class="d-flex flex-wrap">
             <div th:each="b : ${brands}" class="form-check me-3">
                 <input class="form-check-input" type="checkbox" name="brand" th:value="${b.id}" th:checked="${brand != null and brand.contains(b.id)}" id="brand__${b.id}">
                 <label class="form-check-label" th:for="'brand__' + ${b.id}">[[${b.brandName}]]</label>
@@ -62,45 +65,11 @@
 	    </div>
 	</div>
 
-    <!-- 정렬 -->
-    <div class="mb-3">
-        <label class="form-label">재고 정렬</label>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="sortStock" value="asc" th:checked="${sortStock == 'asc'}" id="sortStockAsc">
-            <label class="form-check-label" for="sortStockAsc">낮은순</label>
-        </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="sortStock" value="desc" th:checked="${sortStock == 'desc'}" id="sortStockDesc">
-            <label class="form-check-label" for="sortStockDesc">많은순</label>
-        </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="sortStock" value="" th:checked="${sortStock == null}" id="sortStockNone">
-            <label class="form-check-label" for="sortStockNone">정렬 없음</label>
-        </div>
-    </div>
 
-    <div class="mb-3">
-        <label class="form-label">가격 정렬</label>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="sortPrice" value="asc" th:checked="${sortPrice == 'asc'}" id="sortPriceAsc">
-            <label class="form-check-label" for="sortPriceAsc">낮은순</label>
-        </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="sortPrice" value="desc" th:checked="${sortPrice == 'desc'}" id="sortPriceDesc">
-            <label class="form-check-label" for="sortPriceDesc">높은순</label>
-        </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="sortPrice" value="" th:checked="${sortPrice == null}" id="sortPriceNone">
-            <label class="form-check-label" for="sortPriceNone">정렬 없음</label>
-        </div>
-            <!-- 검색 -->
     <div class="mb-3">
         
         <input type="text" class="form-control" placeholder="상품명 입력" name="kw" th:value="${kw}" id="search_kw">
     </div>
-    </div>
-	    <!-- 페이지 hidden -->
-    <input type="hidden" name="page" id="page" th:value="${paging.number}"/>
     <!-- 버튼 -->
     <div class="d-flex gap-2">
         <button type="submit" class="btn btn-primary">필터 적용</button>
@@ -109,17 +78,17 @@
     </div></div>
 </form>
 
-		<div class="d-flex mb-3 align-items-center">
-
-
-		  <!--상품등록 버튼 -->
-		  <a href="/admin/selectBrand" class="btn btn-primary ms-auto">상품등록</a>
-		</div>
-		
-
 	    <!-- 상품 리스트 테이블 -->
-	    <table class="table table-bordered align-middle text-center" >
-	        <thead class="table-light">
+
+	    
+	    <div class="card mb-4">
+                            <div class="card-header">
+                                <i class="fas fa-table me-1"></i>
+                                상품리스트
+                            </div>
+                            <div class="card-body">
+                                <table id="datatablesSimple">
+                                    <thead>
 	            <tr>
 	                <th scope="col">상품번호</th>
 	                <th scope="col">상품명</th>
@@ -131,9 +100,21 @@
 	                <th scope="col">관리자픽</th>
 	                <th scope="col">관리</th>
 	            </tr>
-	        </thead>
-	        <tbody id="productList">
-	            <!-- 상품 리스트 -->
+                                    </thead>
+                                    <tfoot>
+   	            <tr>
+	                <th scope="col">상품번호</th>
+	                <th scope="col">상품명</th>
+	                <th scope="col">브랜드</th>
+	                <th scope="col">정가</th>
+	                <th scope="col">할인율(%)</th>
+	                <th scope="col">재고</th>
+	                <th scope="col">상태</th>
+	                <th scope="col">관리자픽</th>
+	                <th scope="col">관리</th>
+	            </tr>
+                                    </tfoot>
+                                    <tbody id="productList">
 	            <tr th:each="list : ${paging}" th:fragment="productRow">
 	                <td th:text="${list.id}"></td>
 	                <td th:text="${list.name}"></td>
@@ -154,30 +135,13 @@
 						<a th:href="@{/admin/productForm(id=${list.id}, brandId=${list.brand.id})}" class="btn btn-sm btn-outline-secondary">수정</a>
 	                </td>
 	            </tr>
-	        </tbody>
-	    </table>
-	</div>
-
-	<div th:if="${!paging.isEmpty()}">
-<ul class="pagination justify-content-center">
-    <ul class="pagination">
-        <li class="page-item" th:classappend="${currentBlock == 0} ? 'disabled'">
-            <a href="#" class="page-link" th:data-page="${(currentBlock > 0) ? (currentBlock-1)*pageSize : 0}" onclick="goPage(this)">이전</a>
-        </li>
-
-        <li class="page-item" th:each="pageNum : ${#numbers.sequence(currentBlock*pageSize, ((currentBlock+1)*pageSize-1 < paging.totalPages-1 ? (currentBlock+1)*pageSize-1 : paging.totalPages-1))}" th:classappend="${pageNum == paging.number} ? 'active'">
-            <a href="#" class="page-link" th:data-page="${pageNum}" th:text="${pageNum+1}" onclick="goPage(this)"></a>
-        </li>
-
-        <li class="page-item" th:classappend="${(currentBlock+1)*pageSize >= paging.totalPages} ? 'disabled'">
-            <a href="#" class="page-link" th:data-page="${((currentBlock+1)*pageSize < paging.totalPages) ? (currentBlock+1)*pageSize : paging.totalPages-1}" onclick="goPage(this)">다음</a>
-        </li>
-    </ul>
-</ul>
-	</div>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+</div>
 	<form th:action="@{/admin/productList}" method="get" id="searchForm">
 		<input type="hidden" id="kw" name="kw" th:value="${kw}" />
-		<input type="hidden" id="page" name="page" th:value="${paging.number}" />
 	</form>
 	<!-- 상태 변경 확인 모달 -->
 	<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
@@ -198,6 +162,7 @@
 	  </div>
 	</div>
 </div>
+
 <script layout:fragment="script" type="text/javascript">
 //=========================
 //상품 상태 변경 (활성화/비활성화) 모달
