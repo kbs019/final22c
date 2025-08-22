@@ -1,5 +1,6 @@
 package com.ex.final22c.service.order;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
 
@@ -9,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.user.Users;
@@ -24,9 +27,6 @@ public class MyOrderService {
     private final UsersService usersService;
     private final OrderRepository orderRepository;
     private final UserRepository usersRepository;
-
-
-    
 
     /**
      * 마이페이지 목록(페이징): PENDING 제외하고(PAID + CANCELED) 최신순
@@ -65,6 +65,7 @@ public class MyOrderService {
         );
     }
 
+    // 주문 확정
     @Transactional
     public void confirmOrder(String username, Long orderId) {
         Users me = usersService.getUser(username);
@@ -75,6 +76,7 @@ public class MyOrderService {
         }
     }
     
+    // 주문 확정시 마일리지 지급
     @Transactional
     public Order confirmOrderAndAwardMileage(String username, Long orderId) {
         Users me = usersService.getUser(username);
@@ -93,4 +95,11 @@ public class MyOrderService {
         }
         return order;
     }
+ 
+    @Transactional(readOnly = true)
+    public Order findMyOrderWithDetails(String username, Long orderId) {
+        return orderRepository.findOneWithDetailsAndProductByUser(username, orderId)
+            .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+    }
+
 }
