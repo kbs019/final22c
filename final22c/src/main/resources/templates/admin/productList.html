@@ -2,7 +2,15 @@
 <div layout:fragment="content" class="container">
 	<div class="container my-4">
 	    <h2>상품관리</h2>
-<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded">
+<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded" >
+		    <!-- 왼쪽: 필터 토글 (항목 이름들, 전부 같은 collapse target) -->
+		    <div class="d-flex flex-grow-1 gap-3">
+		        <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#filterBox">
+		            필터
+		        </button>
+		    </div>
+ <div class="collapse" id="filterBox">
+    <div class="card card-body mb-2">
 
     <!-- 브랜드 필터 -->
     <div class="mb-3">
@@ -98,8 +106,9 @@
         <button type="submit" class="btn btn-primary">필터 적용</button>
         <a href="/admin/productList" class="btn btn-secondary">필터 초기화</a>
     </div>
-
+    </div></div>
 </form>
+
 		<div class="d-flex mb-3 align-items-center">
 
 
@@ -244,6 +253,12 @@ function goPage(a) {
     const page = a.getAttribute('data-page');
     document.getElementById('page').value = page;
     document.getElementById('filterForm').submit();
+}
+
+// 필터
+function toggleFilter() {
+    const box = document.getElementById("filterBox");
+    box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
 }
 </script>
 </html>
