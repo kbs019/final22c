@@ -541,41 +541,65 @@
       }
 
       function watchPopupClose(win, orderId){
-        const timer = setInterval(function(){
-          if (!win || win.closed) {
-            clearInterval(timer);
-            setTimeout(function(){
-              $.get('/pay/order/' + orderId + '/status')
-                .done(function(res){
-                  const st = (res && res.status || '').toUpperCase();
-                  hideOverlay();
-                  if (st === 'PAID') {
-                    window.location.href = '/main/list';
-                  } else if (st === 'PENDING') {
-                	  const token  = $('meta[name="_csrf"]').attr('content');
-                	  const header = $('meta[name="_csrf_header"]').attr('content');
+    	    const token  = $('meta[name="_csrf"]').attr('content');
+    	    const header = $('meta[name="_csrf_header"]').attr('content');
 
-                	  $.ajax({
-                	    type: "POST",
-                	    url:  "/pay/cancel-pending",
-                	    data: { orderId: orderId },
-                	    beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); }
-                	  })
-                	  .done(function(){ alert('결제가 취소되었어요. 다시 시도해 주세요.'); })
-                	  .fail(function(xhr){ 
-                	    alert('취소 처리 실패 (' + xhr.status + '). 새로고침 후 다시 시도해 주세요.'); 
-                	  });       
-                  } else if (st === 'FAILED') {
-                    alert('결제가 취소되었거나 실패했어요.');
-                  } else {
-                    alert('결제가 취소되었습니다.');  // (CANCELED 등)
-                  }
-                })
-                .fail(function(){ hideOverlay(); alert('결과 확인 실패. 잠시 후 새로고침해 주세요.'); });
-            }, 1000);
-          }
-        }, 300);
-      }
+    	    const RETRIES = 10;      // 총 재시도 횟수 (약 6~8초 버퍼)
+    	    const DELAY   = 700;     // 시도 간격(ms)
+    	    let tries = 0;
+
+    	    const timer = setInterval(function(){
+    	      if (!win || win.closed) {
+    	        clearInterval(timer);
+
+    	        // 승인 콜백이 도착할 시간을 조금 더 줌
+    	        function checkOnce(){
+    	          $.get('/pay/order/' + orderId + '/status')
+    	            .done(function(res){
+    	              const st = (res && res.status || '').toUpperCase();
+
+    	              if (st === 'PAID') {
+    	                hideOverlay();
+    	                // 성공 경로
+    	                window.location.href = '/main/list';
+    	                return;
+    	              }
+    	              if (st === 'FAILED' || st === 'CANCELED') {
+    	                hideOverlay();
+    	                alert('결제가 실패/취소되었어요.');
+    	                return;
+    	              }
+
+    	              // 아직도 PENDING이면 재시도
+    	              tries++;
+    	              if (tries < RETRIES) {
+    	                setTimeout(checkOnce, DELAY);
+    	              } else {
+    	                // 충분히 기다렸는데도 PENDING → 이제 취소 처리
+    	                $.ajax({
+    	                  type: "POST",
+    	                  url:  "/pay/cancel-pending",
+    	                  data: { orderId },
+    	                  beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); }
+    	                })
+    	                .always(function(){
+    	                  hideOverlay();
+    	                  alert('결제가 완료되지 않았습니다. 다시 시도해 주세요.');
+    	                });
+    	              }
+    	            })
+    	            .fail(function(){
+    	              tries++;
+    	              if (tries < RETRIES) setTimeout(checkOnce, DELAY);
+    	              else { hideOverlay(); alert('결과 확인 실패. 잠시 후 새로고침해 주세요.'); }
+    	            });
+    	        }
+
+    	        // 첫 체크를 약간 늦춰 승인 콜백 도착 여유를 줌
+    	        setTimeout(checkOnce, 700);
+    	      }
+    	    }, 300);
+    	  }
 
       /* ================== ★ 배송지 스냅샷 헬퍼 ================== */
       function getShipSnapshot(){
