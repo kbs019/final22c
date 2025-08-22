@@ -39,6 +39,9 @@ public class OrderDetail {
     @Column(name = "totalPrice", nullable = false)
     private Integer totalPrice; // quantity * sellPrice
 
+    @Column(name = "confirmQuantity", nullable = false)
+    private Integer confirmQuantity;
+
     @PrePersist
     public void prePersist() {
         if (quantity == null || quantity < 1)
@@ -47,6 +50,8 @@ public class OrderDetail {
             sellPrice = 0;
         if (totalPrice == null)
             totalPrice = quantity * sellPrice;
+        if (confirmQuantity == null)
+            confirmQuantity = 0;
     }
 
 
