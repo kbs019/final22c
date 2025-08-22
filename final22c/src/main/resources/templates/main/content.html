@@ -166,31 +166,87 @@
         <!-- 하단의 향 소개 부분 끝 -->
 
         <!-- 리뷰 통계 부분 시작 -->
+        <div id="review-section" class="mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">Review</h2>
+            <!-- 로그인 상태: 리뷰 작성 버튼 / 비로그인: 경고 후 로그인 -->
+            <div>
+            <a class="btn btn-outline-dark" 
+                th:href="@{|/main/etc/review/new?productId=${product.id}|}"
+                sec:authorize="isAuthenticated()">리뷰 작성</a>
+
+            <button class="btn btn-outline-dark"
+                    id="btn-review-need-login"
+                    sec:authorize="isAnonymous()">리뷰 작성</button>
+            </div>
+        </div>
+
+        <!-- 평균 평점 -->
+        <div class="mb-4">
+            <div class="mb-2 fw-semibold">평균 평점</div>
+            <div class="d-flex align-items-center gap-3">
+            <div class="rating-bars" 
+                th:with="filled=${T(java.lang.Math).round(reviewAvg)}">
+                <div th:each="i : ${#numbers.sequence(1,5)}"
+                    th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')"></div>
+            </div>
+            <span th:text="${#numbers.formatDecimal(reviewAvg,1,1)}">0.0</span>
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- 전체 개수 + 정렬 -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="fw-semibold">전체 리뷰 
+            <span th:text="${reviewCount}">0</span>개
+            </div>
+            <form method="get" th:action="@{|/main/content/${product.id}|}">
+            <select class="form-select form-select-sm w-auto d-inline-block" name="sort" onchange="this.form.submit()">
+                <option value="best"  th:selected="${sort=='best'}">추천순</option>
+                <option value="recent" th:selected="${sort=='recent'}">최신순</option>
+            </select>
+            </form>
+        </div>
+
+        <!-- 리스트 -->
+        <div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">
+            작성된 리뷰가 없습니다.
+        </div>
+
+        <div th:each="rv : ${reviews}" class="py-4 border-top">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-3">
+                <div class="user-mask fw-semibold" 
+                    th:with="len=${#strings.length(rv.writer.userName)}"
+                    th:text="${len <= 3} ? ${rv.writer.userName} : ${#strings.substring(rv.writer.userName,0,2)} + ${'*'.repeat(len-2)}">kv**</div>
+                <div class="bar-5 small" th:attr="data-filled=${rv.rating}"></div>
+            </div>
+            <div class="text-muted small" 
+                th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
+            </div>
+
+            <div class="mb-2" th:text="${rv.content}">내용</div>
+
+            <div class="text-muted">
+            <i class="fa-regular fa-thumbs-up me-1"></i>
+            <span th:text="${#lists.size(rv.likers)}">0</span>
+            </div>
+        </div>
+        </div>
         <!-- 리뷰 통계 부분 끝 -->
-
-        <!-- 리뷰 리스트 시작 -->
-        <!-- <div>
-            <h2>리뷰 리스트</h2>
-            <div th:if="${#lists.isEmpty(product.reviewList)}">
-                <h3>작성된 리뷰가 없습니다.</h3>
-            </div>
-            <div th:unless="${#lists.isEmpty(product.reviewList)}">
-                <div th:each="review : ${product.reviewList}">
-                    <div th:text="${review.gradePoint}"></div>
-                    <div th:text="${review.content}"></div>
-                    <div th:text="${review.user.username}"></div>
-                    <span th:text="${#temporals.format( review.createDate, 'yy-MM-dd HH:mm' )}"></span>
-                    <span th:text="${#lists.size(review.recs)}"></span>
-                </div>
-            </div>
-        </div> -->
-        <!-- 리뷰 리스트 끝 -->
     </div>
-
 </div>
+
 <!-- ajax 부분 설정 추가  -->
 <th:block layout:fragment="script">
     <script th:inline="javascript">
+        // 비로그인자가 '리뷰 작성' 클릭 시
+        document.getElementById('btn-review-need-login')?.addEventListener('click', function () {
+            alert('로그인이 필요한 서비스입니다.');
+            location.href = '/user/login';
+        });
+
         // Bootstrap Modal 준비
         const cartModalEl = document.getElementById('cartModal');
         const cartModal = cartModalEl ? new bootstrap.Modal(cartModalEl) : null;
