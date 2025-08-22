@@ -66,6 +66,11 @@
   .badge-canceled{display:inline-block;padding:4px 8px;border-radius:8px;background:#fee2e2;color:#991b1b;font-weight:600;font-size:12px;margin-left:8px}
   .order-card.is-canceled{opacity:.9}
 
+  .badge-confirmed{
+    display:inline-block;padding:4px 8px;border-radius:8px;background:#fee2e2;color:#41d63c;font-weight:600;font-size:12px;margin-left:8px;
+  }
+
+
   /* 좁은 화면 대응 */
   @media (max-width: 900px){
     .order-card{ grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
@@ -122,15 +127,16 @@
       <div class="order-title">
         <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
         <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
-        <span th:if="${restCnt==0 && first != null}" th:text="${' ' + first.quantity + '개'}"></span>
+        <span th:if="${#strings.equalsIgnoreCase(#strings.trim(o.deliveryStatus),'CONFIRMED')}"
+        class="badge-confirmed">주문확정</span>
         <span th:if="${o.status=='CANCELED'}" class="badge-canceled">주문취소</span>
       </div>
       <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
     </div>
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
-    <div class="stepper"
-         th:if="${o.status!='CANCELED' and o.status!='FAILED'}"
+<div class="stepper"
+     th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.deliveryStatus!='CONFIRMED'}"
          th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
@@ -140,7 +146,8 @@
     <!-- 우측 상단 버튼 -->
     <div class="order-actions">
       <!-- ORDERED & PAID → 주문취소만 -->
-      <button th:if="${o.status=='PAID' and o.status!='FAILED' and o.deliveryStatus=='ORDERED'}"
+      <button th:if="${o.status=='PAID' and o.status!='FAILED' 
+      and o.deliveryStatus !='CONFIRMED' and o.deliveryStatus !='DELIVERED'}"
               class="cancel-btn btn-cancel" type="button">주문취소</button>
 
       <!-- DELIVERED & PAID → 주문확정 / 환불요청 -->
@@ -278,28 +285,23 @@ $confirmYes.addEventListener('click', async () => {
     try { data = await res.json(); } catch(_) {}
     if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
 
-    // UI 반영(가벼운 처리)
     const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
+
     if (pendingAction === 'cancel') {
-      // 취소: 상태 배지/스텝퍼/버튼 숨김
       card?.classList.add('is-canceled');
-      const actions = card?.querySelector('.order-actions');
-      if (actions) actions.style.display = 'none';
-      const stepper = card?.querySelector('.stepper');
-      if (stepper) stepper.remove();
-      // 제목 옆 배지 추가(이미 서버에서 CANCELED면 다음 렌더시 자동 표시)
+      card?.querySelector('.order-actions')?.remove();
+      card?.querySelector('.stepper')?.remove();
       const title = card?.querySelector('.order-title');
       if (title && !title.querySelector('.badge-canceled')) {
         const b = document.createElement('span');
-        b.className='badge-canceled'; b.textContent='주문취소';
+        b.className = 'badge-canceled';
+        b.textContent = '주문취소';
         title.appendChild(b);
       }
+    } else if (pendingAction === 'confirm') {
+      updateCardToConfirmed(card);
     }
-    if (pendingAction === 'confirm') {
-      // 확정 시 버튼 숨기기(필요 시)
-      const actions = card?.querySelector('.order-actions');
-      if (actions) actions.style.display = 'none';
-    }
+    // refund 분기 필요시 여기에
 
     openResult(data.message || '처리가 완료되었습니다.');
   } catch (e) {
@@ -307,6 +309,31 @@ $confirmYes.addEventListener('click', async () => {
     openResult('처리 중 오류가 발생했습니다.');
   }
 });
+
+function updateCardToConfirmed(card){
+  if (!card) return;
+
+  // 버튼 숨김/제거
+  card.querySelector('.order-actions')?.remove();
+  card.querySelector('.btn-cancel')?.remove();
+  card.querySelector('.btn-confirm')?.remove();
+  card.querySelector('.btn-refund')?.remove();
+
+  // 진행바 제거
+  card.querySelector('.stepper')?.remove();
+
+  // "주문확정" 배지 추가 (중복 방지)
+  const title = card.querySelector('.order-title');
+  if (title && !title.querySelector('.badge-confirmed')) {
+    const b = document.createElement('span');
+    b.className = 'badge-confirmed'; // CSS는 이미 있음(주문취소와 같은 핑크 pill)
+    b.textContent = '주문확정';
+    title.appendChild(b);
+  }
+
+  // (선택) 디버깅/후속 로직용 데이터 표시 갱신
+  card.setAttribute('data-delivery-status', 'CONFIRMED');
+}
 
 (function(){
   const modal = document.getElementById('orderItemsModal');
