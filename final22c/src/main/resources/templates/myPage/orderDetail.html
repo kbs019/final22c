@@ -15,15 +15,21 @@
         <h4 style="margin:0 0 8px">주문상품 정보</h4>
 
         <ul style="list-style:none; padding:0; margin:0; display:grid; gap:8px">
-        <li th:each="d : ${order.details}"
-            style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-bottom:1px solid #eee; padding:6px 0;">
-            <span style="flex:1">[[${d.product != null ? d.product.name : '상품'}]]</span>
-            <span>[[${d.quantity}]]개</span>
-            <span th:if="${d.product != null}">
-            [[${#numbers.formatInteger(d.product.sellPrice, 0)}]]원
-            </span>
-        </li>
+            <li th:each="d : ${order.details}"
+                style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-bottom:1px solid #eee; padding:6px 0;">
+                <span style="flex:1">[[${d.product != null ? d.product.name : '상품'}]]</span>
+                <span>[[${d.quantity}]]개</span>
+                <span th:if="${d.product != null}">
+                [[${#numbers.formatInteger(d.product.sellPrice, 0)}]]원
+                </span>
+            </li>
         </ul>
-
+        <div>
+            <!-- 결제정보 / 수단 = 그냥 이름만 h태그등 뭐든 그냥 띄우기,
+            최종 금액 주문내역의 최종 가격마냥 띄우기. -->
+            <div style="font-weight:600; margin-bottom:4px;">
+                카카오페이
+            </div>
+        </div> 
     </div>
 </div>
