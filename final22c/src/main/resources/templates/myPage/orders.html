@@ -130,7 +130,7 @@
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
     <div class="stepper"
-         th:if="${o.status!='CANCELED'}"
+         th:if="${o.status!='CANCELED' and o.status!='FAILED'}"
          th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
@@ -140,7 +140,7 @@
     <!-- 우측 상단 버튼 -->
     <div class="order-actions">
       <!-- ORDERED & PAID → 주문취소만 -->
-      <button th:if="${o.status=='PAID' and o.deliveryStatus=='ORDERED'}"
+      <button th:if="${o.status=='PAID' and o.status!='FAILED' and o.deliveryStatus=='ORDERED'}"
               class="cancel-btn btn-cancel" type="button">주문취소</button>
 
       <!-- DELIVERED & PAID → 주문확정 / 환불요청 -->
