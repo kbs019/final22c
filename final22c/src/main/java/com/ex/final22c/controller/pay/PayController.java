@@ -95,6 +95,7 @@ public class PayController {
 
         Order order = orderService.createCartPendingOrder(userId, lines, itemsTotal, shipping, usedPoint, payable, ship);
         var ready = kakaoApiService.readyCart(order);
+        paymentService.saveReady(order, order.getTotalAmount(), (String) ready.get("tid"));
 
         return Map.of(
                 "next_redirect_pc_url", ready.get("next_redirect_pc_url"),
@@ -126,12 +127,14 @@ public class PayController {
 
     @GetMapping("/cancel")
     public String cancel(@RequestParam("orderId") Long orderId, Model model) {
+    	orderService.markFailedPending(orderId);
         model.addAttribute("orderId", orderId);
         return "pay/cancel-popup";
     }
 
     @GetMapping("/fail")
     public String fail(@RequestParam("orderId") Long orderId, Model model) {
+    	orderService.markFailedPending(orderId) ; 
         model.addAttribute("orderId", orderId);
         return "pay/fail-popup";
     }
@@ -139,11 +142,19 @@ public class PayController {
     /* ================= 팝업 닫힘 시 상태 처리/조회 ================= */
     @PostMapping("/cancel-pending")
     @ResponseBody
-    public void cancelPendingInternal(@RequestParam("orderId") Long orderId) {
+    public Map<String, Object> cancelPendingInternal(@RequestParam("orderId") Long orderId) {
         Order o = orderService.get(orderId);
-        if (o == null) return;
-        if ("PAID".equalsIgnoreCase(o.getStatus())) return;
-        if ("PENDING".equalsIgnoreCase(o.getStatus())) orderService.markCanceled(orderId);
+        if (o == null) {
+            return Map.of("ok", false, "message", "order not found");
+        }
+        if ("PAID".equalsIgnoreCase(o.getStatus())) {
+            return Map.of("ok", false, "message", "already paid");
+        }
+        if ("PENDING".equalsIgnoreCase(o.getStatus())) {
+            orderService.markFailedPending(orderId);
+            return Map.of("ok", true, "status", "FAILED");
+        }
+        return Map.of("ok", true, "status", o.getStatus());
     }
 
     @GetMapping("/order/{orderId}/status")
