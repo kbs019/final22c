@@ -135,6 +135,18 @@ public class OrderService {
     	order.setStatus("CANCELED");
     	orderRepository.saveAndFlush(order);
     }
+    
+    // 결제 실패(잔액 부족일때와 결제 대기상태에서 지속될 경우
+    @Transactional
+    public void markFailedPending(Long orderId) {
+        Order o = get(orderId);
+        if ("PAID".equalsIgnoreCase(o.getStatus())) return;   // 이미 결제됨 → 무시
+        if ("PENDING".equalsIgnoreCase(o.getStatus())) {
+            o.setStatus("FAILED");                            // 결제창 단계 실패/중단
+            // 재고/포인트는 아직 미반영 상태라 롤백할 것 없음
+            // 필요하면 로그 남기기
+        }
+    }
     /** 장바구니(다건) 결제 대기 주문 생성 */
     @Transactional
     public Order createCartPendingOrder(String userId,
