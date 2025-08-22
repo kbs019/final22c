@@ -87,7 +87,7 @@
             <div class="d-flex gap-2 flex-wrap align-items-center">
               <label class="addr-label d-block mb-1" style="min-width:120px;">배송 시 요청사항</label>
               <select id="deliveryMemoSelect" class="form-select form-select-sm" style="max-width: 240px;">
-                <option value="" selected>선택해 주세요</option>
+                <option value="" selected>없음</option>
                 <option value="문 앞에 놓아주세요">문 앞에 놓아주세요</option>
                 <option value="경비실에 맡겨주세요">경비실에 맡겨주세요</option>
                 <option value="자유입력">자유입력</option>
@@ -340,16 +340,18 @@
       /* ================== 배송요청사항 ================== */
       const $memoSel = $("#deliveryMemoSelect");
       const $memoInp = $("#deliveryMemoInput");
-      const $memoPreview = $("#deliveryMemoPreview");
+      function currentMemo(){                         // ★
+        const v = $memoSel.val();
+        return (v === "자유입력") ? ($memoInp.val() || "") : (v || "");
+      }
       function syncDeliveryMemo(){
         if (!$memoSel.length) return;
         const v = $memoSel.val();
-        if (v === "자유입력") { $memoInp.show().focus(); $memoPreview.text($memoInp.val()?.trim() ? $memoInp.val() : "(직접 입력)"); }
-        else { $memoInp.hide().val(""); $memoPreview.text(v ? v : "(요청사항 없음)"); }
+        if (v === "자유입력") { $memoInp.show().focus(); }
+        else { $memoInp.hide().val(""); }
       }
       if ($memoSel.length) {
         $memoSel.on("change", syncDeliveryMemo);
-        $memoInp.on("input", function(){ if ($memoSel.val() === "자유입력") $memoPreview.text(this.value.trim() ? this.value : "(직접 입력)"); });
         syncDeliveryMemo();
       }
 
@@ -556,12 +558,27 @@
         }, 300);
       }
 
+      /* ================== ★ 배송지 스냅샷 헬퍼 ================== */
+      function getShipSnapshot(){                               // ★ 추가
+        return {
+          addressNo:     Number($("#currentAddressNo").val()) || null,
+          addressName:   $("#addrName").text().trim(),
+          recipient:     $("#addrRecipient").text().trim(),
+          phone:         $("#addrPhone").text().trim(),
+          zonecode:      $("#addrZone").text().trim(),
+          roadAddress:   $("#addrRoad").text().trim(),
+          detailAddress: $("#addrDetail").text().trim(),
+          memo:          currentMemo()
+        };
+      }
+
       /* ================== 결제 버튼 ================== */
       $("#payBtn").on("click", function(e){
         e.preventDefault();
         const usedPoint = Number($("#_usedPoint").val()) || 0;
         const token  = $('meta[name="_csrf"]').attr('content');
         const header = $('meta[name="_csrf_header"]').attr('content');
+        const ship   = getShipSnapshot();                        // ★ 추가
 
         if (isCartMode) {
           const payload = (safeCartItems || []).map(it => ({
@@ -573,7 +590,7 @@
           $.ajax({
             type: "POST",
             url:  "/pay/ready/cart",
-            data: JSON.stringify({ usedPoint, items: payload }),
+            data: JSON.stringify({ usedPoint, items: payload, ship }), // ★ ship 포함
             contentType: "application/json; charset=UTF-8",
             beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
             success: onReadyOk,
@@ -586,7 +603,7 @@
           $.ajax({
             type: "POST",
             url:  "/pay/ready/single",
-            data: JSON.stringify({ productId, quantity: qty, usedPoint }),
+            data: JSON.stringify({ productId, quantity: qty, usedPoint, ship }), // ★ ship 포함
             contentType: "application/json; charset=UTF-8",
             beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
             success: onReadyOk,
