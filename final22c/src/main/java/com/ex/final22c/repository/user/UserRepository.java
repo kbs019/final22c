@@ -22,7 +22,10 @@ public interface UserRepository extends JpaRepository<Users, Long> {
 
     Optional<Users> findByPhone(String phone);
 
-    Optional<Users> findById(Long userNo);    
+    Optional<Users> findById(Long userNo);  
+    
+    boolean existsByEmail(String email);
+    boolean existsByPhone(String phone);
     
     // 유저목록 (페이징,검색)
     Page<Users> findAll(Specification<Users> spec, Pageable pageable);

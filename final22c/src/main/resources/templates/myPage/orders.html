@@ -135,7 +135,7 @@
     </div>
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
-<div class="stepper"
+    <div class="stepper"
      th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.deliveryStatus!='CONFIRMED'}"
          th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
