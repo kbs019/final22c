@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ex.final22c.ShippingSnapshotJsonConverter;
+import com.ex.final22c.data.payment.dto.ShipSnapshotReq;
 import com.ex.final22c.data.user.Users;
 
 import jakarta.persistence.*;
@@ -41,6 +43,11 @@ public class Order {
     
     @Column(name="deliveryStatus")
     private String deliveryStatus;
+    
+    @Lob
+    @Column(name = "shippingSnapshot")
+    @Convert(converter = ShippingSnapshotJsonConverter.class)
+    private ShipSnapshotReq shippingSnapshot;
 
     @PrePersist
     public void prePersist() {

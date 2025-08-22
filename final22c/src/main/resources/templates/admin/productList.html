@@ -2,13 +2,15 @@
 <div layout:fragment="content" class="container">
 	<div class="container my-4">
 	    <h2>상품관리</h2>
-<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded">
-
-    <!-- 검색 -->
-    <div class="mb-3">
-        <label class="form-label">검색</label>
-        <input type="text" class="form-control" placeholder="상품명 입력" name="kw" th:value="${kw}" id="search_kw">
-    </div>
+<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded" >
+		    <!-- 왼쪽: 필터 토글 (항목 이름들, 전부 같은 collapse target) -->
+		    <div class="d-flex flex-grow-1 gap-3">
+		        <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#filterBox">
+		            필터
+		        </button>
+		    </div>
+ <div class="collapse" id="filterBox">
+    <div class="card card-body mb-2">
 
     <!-- 브랜드 필터 -->
     <div class="mb-3">
@@ -91,6 +93,11 @@
             <input class="form-check-input" type="radio" name="sortPrice" value="" th:checked="${sortPrice == null}" id="sortPriceNone">
             <label class="form-check-label" for="sortPriceNone">정렬 없음</label>
         </div>
+            <!-- 검색 -->
+    <div class="mb-3">
+        
+        <input type="text" class="form-control" placeholder="상품명 입력" name="kw" th:value="${kw}" id="search_kw">
+    </div>
     </div>
 	    <!-- 페이지 hidden -->
     <input type="hidden" name="page" id="page" th:value="${paging.number}"/>
@@ -99,8 +106,9 @@
         <button type="submit" class="btn btn-primary">필터 적용</button>
         <a href="/admin/productList" class="btn btn-secondary">필터 초기화</a>
     </div>
-
+    </div></div>
 </form>
+
 		<div class="d-flex mb-3 align-items-center">
 
 
@@ -245,6 +253,12 @@ function goPage(a) {
     const page = a.getAttribute('data-page');
     document.getElementById('page').value = page;
     document.getElementById('filterForm').submit();
+}
+
+// 필터
+function toggleFilter() {
+    const box = document.getElementById("filterBox");
+    box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
 }
 </script>
 </html>

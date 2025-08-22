@@ -3,6 +3,7 @@ package com.ex.final22c.service.order;
 import com.ex.final22c.data.cart.CartLine;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.order.OrderDetail;
+import com.ex.final22c.data.payment.dto.ShipSnapshotReq;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
@@ -28,7 +29,7 @@ public class OrderService {
     private static final int SHIPPING_FEE = 3000;
     /** 결제 대기 주문 생성 (포인트/배송비 반영) */
     @Transactional
-    public Order createPendingOrder(String userId, long productId, int qty, int usedPoint) {
+    public Order createPendingOrder(String userId, long productId, int qty, int usedPoint, ShipSnapshotReq ship) {
         Users user = usersRepository.findByUserName(userId)
                 .orElseThrow(() -> new IllegalStateException("로그인이 필요합니다. userId=" + userId));
 
@@ -49,6 +50,9 @@ public class OrderService {
         order.setUsedPoint(use);
         order.setTotalAmount(payable);     // 스냅샷
         // status, regDate 는 @PrePersist 로 PENDING/now 자동 세팅
+        
+        // 배송지 스냅샷 저장
+        order.setShippingSnapshot(ship);
 
         OrderDetail d = new OrderDetail();
         d.setProduct(p);
@@ -62,8 +66,8 @@ public class OrderService {
 
     /** 하위호환 */
     @Transactional
-    public Order createPendingOrder(String userId, long productId, int qty) {
-        return createPendingOrder(userId, productId, qty, 0);
+    public Order createPendingOrder(String userId, long productId, int qty, int usedPoint) {
+        return createPendingOrder(userId, productId, qty, usedPoint, null);
     }
 
     /** 단건 조회 */
@@ -138,7 +142,8 @@ public class OrderService {
                                         int itemsTotal,   // 상품 합계(서버 재계산 값)
                                         int shipping,     // 일반적으로 3000
                                         int usedPoint,    // 사용 포인트(서버에서 클램프)
-                                        int payableHint   // 프론트 계산 값(참고만, 서버가 재계산)
+                                        int payableHint,   // 프론트 계산 값(참고만, 서버가 재계산)
+                                        ShipSnapshotReq ship // 배송지
     ) {
         if (lines == null || lines.isEmpty()) {
             throw new IllegalArgumentException("선택된 상품이 없습니다.");
@@ -149,16 +154,19 @@ public class OrderService {
 
         // --- 포인트/결제금액 서버 재계산(신뢰 근거)
         int owned = Objects.requireNonNullElse(user.getMileage(), 0);
-        int ship  = Math.max(0, shipping);            // 보통 3000 (비어있으면 0)
-        int maxUsable = Math.min(owned, itemsTotal + ship);
+        int shipfee  = Math.max(0, shipping);            // 보통 3000 (비어있으면 0)
+        int maxUsable = Math.min(owned, itemsTotal + shipfee);
         int use = Math.max(0, Math.min(usedPoint, maxUsable));
-        int payable = Math.max(0, itemsTotal + ship - use);
+        int payable = Math.max(0, itemsTotal + shipfee - use);
 
         Order order = new Order();
         order.setUser(user);
         order.setUsedPoint(use);
         order.setTotalAmount(payable);   // 스냅샷 결제금액
         // status/regDate 는 엔티티의 @PrePersist 로 PENDING/now 설정된다고 가정
+        
+        // 배송지 스냅샷 추가
+        order.setShippingSnapshot(ship);
 
         // --- 라인 스냅샷 저장
         for (CartLine l : lines) {
