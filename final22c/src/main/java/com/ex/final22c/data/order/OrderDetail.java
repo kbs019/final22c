@@ -33,11 +33,12 @@ public class OrderDetail {
     @Column(name = "quantity", nullable = false)
     private Integer quantity; // 사용자 입력 수량(1 이상, 재고 초과 불가)
 
-    @Column(name = "sellPrice", nullable = false)
-    private Integer sellPrice; // 판매가
+    // 가격 스냅샷(주문 생성 시 고정)
+    @Column(name = "sellPrice", nullable = false, updatable = false)
+    private Integer sellPrice; // 결제 시점 단가 스냅샷
 
-    @Column(name = "totalPrice", nullable = false)
-    private Integer totalPrice; // quantity * sellPrice
+    @Column(name = "totalPrice", nullable = false, updatable = false)
+    private Integer totalPrice; // quantity * sellPrice 스냅샷
 
     @Column(name = "confirmQuantity", nullable = false)
     private Integer confirmQuantity;
@@ -55,13 +56,13 @@ public class OrderDetail {
     }
 
     // 편의 생성자 (가격 계산 포함)
+    // 주문 생성 시점의 "스냅샷" 가격을 고정 저장
     public static OrderDetail of(Product product, int qty) {
         OrderDetail d = new OrderDetail();
         d.setProduct(product);
         d.setQuantity(Math.max(1, qty));
-        // 실제 판매가 사용 (필요 시 할인 로직은 서비스에서 계산 후 전달)
-        d.setSellPrice(product.getSellPrice());
-        d.setTotalPrice(d.getQuantity() * d.getSellPrice());
+        d.setSellPrice(product.getSellPrice());      // 스냅샷
+        d.setTotalPrice(d.getQuantity() * d.getSellPrice()); // 스냅샷
         return d;
     }
 }
