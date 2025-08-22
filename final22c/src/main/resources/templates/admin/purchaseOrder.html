@@ -1,0 +1,236 @@
+<html layout:decorate="~{/layout/adminLayout}">
+<div layout:fragment="content" class="container">
+<div class="container my-4">
+          
+	 <h2>상품관리</h2>
+	<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded" >
+		    <!-- 왼쪽: 필터 토글 (항목 이름들, 전부 같은 collapse target) -->
+		<div class="d-flex flex-grow-1 gap-3">
+			<button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#filterBox">
+		        필터
+		    </button>
+		    </div>
+	<div class="collapse" id="filterBox">
+    	<div class="card card-body mb-2">
+
+    		<!-- 브랜드 필터 -->
+    		<div class="mb-3">
+		        <label class="form-label">브랜드</label>
+		        <div class="d-flex flex-wrap">
+            <div th:each="b : ${brands}" class="form-check me-3">
+                <input class="form-check-input" type="checkbox" name="brand" th:value="${b.id}" th:checked="${brand != null and brand.contains(b.id)}" id="brand__${b.id}">
+                <label class="form-check-label" th:for="'brand__' + ${b.id}">[[${b.brandName}]]</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        
+        <input type="text" class="form-control" placeholder="상품명 입력" name="kw" th:value="${kw}" id="search_kw">
+    </div>
+    <!-- 버튼 -->
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">필터 적용</button>
+        <a href="/admin/productList" class="btn btn-secondary">필터 초기화</a>
+    </div>
+    </div></div>
+</form>
+
+	    <div class="card mb-4">
+                            <div class="card-header">
+                                <i class="fas fa-table me-1"></i>
+                                상품리스트
+                            </div>
+                            <div class="card-body">
+                                <table id="datatablesSimple">
+                                    <thead>
+	            <tr>
+	                <th scope="col">상품번호</th>
+	                <th scope="col">상품명</th>
+	                <th scope="col">브랜드</th>
+	                <th scope="col">단가</th>
+	                <th scope="col">할인율(%)</th>
+	                <th scope="col">재고</th>
+	                <th scope="col">발주</th>
+	            </tr>
+                                    </thead>
+                                    <tfoot>
+   	            <tr>
+	                <th scope="col">상품번호</th>
+	                <th scope="col">상품명</th>
+	                <th scope="col">브랜드</th>
+	                <th scope="col">단가</th>
+	                <th scope="col">할인율(%)</th>
+	                <th scope="col">재고</th>
+	                <th scope="col">발주</th>
+	            </tr>
+                                    </tfoot>
+                                    <tbody id="productList">
+	            <tr th:each="list : ${list}" th:fragment="productRow">
+	                <td th:text="${list.id}"></td>
+	                <td th:text="${list.name}"></td>
+	                <td th:text="${list.brand.brandName}"></td>
+					<td th:text="${#numbers.formatInteger(list.costPrice, 3, 'COMMA')}"></td>
+					<td th:text="${#numbers.formatInteger(list.discount, 0)}"></td>
+	                <td th:text="${list.count}"></td>
+					<td style="width: 120px;">
+					  <div class="d-flex gap-1 align-items-center">
+					    수량
+					    <input type="number" min="1" class="form-control form-control-sm order-qty"
+					           th:attr="data-id=${list.id}"
+					           style="width: 60px; font-size: 0.8rem;">
+					    <button type="button" class="btn btn-sm btn-success add-order">추가</button>
+					  </div>
+					</td>
+	            </tr>
+             </tbody>
+         </table>
+     </div>
+ </div>
+
+</div>
+<!-- 테이블 아래 발주 버튼 -->
+<div class="mt-3">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#purchaseModal">
+        발주하기
+    </button>
+</div>
+
+<!-- 발주 모달 -->
+<div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="purchaseModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="purchaseModalLabel">발주신청 목록</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>상품번호</th>
+                    <th>상품명</th>
+                    <th>수량</th>
+                </tr>
+            </thead>
+            <tbody id="purchaseList">
+                <tr th:each="pr:${pr}">
+                	<td th:text="${pr.product.id}"></td>
+                	<td th:text="${pr.product.name}"></td>
+                	<td th:text="${pr.qty}"></td>
+                </tr>
+            </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" id="confirmPurchase">발주 확정</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 알림 영역 -->
+<div id="alertPlaceholder" style="position: fixed; top: 20px; right: 20px; z-index: 1050;"></div>
+</div>
+
+<script layout:fragment="script" type="text/javascript">
+
+document.addEventListener('DOMContentLoaded', () => {
+	document.addEventListener('DOMContentLoaded', () => {
+	    const purchaseListEl = document.getElementById('purchaseList');
+
+	    // 모달 열릴 때 AJAX로 발주신청 목록 가져오기
+	    const purchaseModal = document.getElementById('purchaseModal');
+	    purchaseModal.addEventListener('show.bs.modal', () => {
+	        fetch('/admin/getPurchaseRequest')
+	            .then(res => res.json())
+	            .then(data => {
+	                purchaseListEl.innerHTML = '';
+	                data.forEach(item => {
+	                    const tr = document.createElement('tr');
+	                    tr.innerHTML = `
+	                        <td>${item.product.id}</td>
+	                        <td>${item.product.name}</td>
+	                        <td>${item.qty}</td>
+	                    `;
+	                    purchaseListEl.appendChild(tr);
+	                });
+	            });
+	    });
+
+	    // 발주 완료 버튼
+	    document.getElementById('confirmPurchase').addEventListener('click', () => {
+	        fetch('/admin/confirmPurchase', { method: 'POST' })
+	            .then(res => res.json())
+	            .then(data => {
+	                if(data.success) {
+	                    alert('발주가 완료되었습니다!');
+	                    purchaseModal.querySelector('.btn-close').click(); // 모달 닫기
+	                } else {
+	                    alert('발주 실패: ' + data.message);
+	                }
+	            });
+	    });
+	});
+	
+	// 알림창
+    const alertPlaceholder = document.getElementById('alertPlaceholder');
+    if (!alertPlaceholder) {
+        console.warn('alertPlaceholder가 존재하지 않습니다!');
+        return;
+    }
+
+    function showAlert(message, type = 'success', duration = 2000) {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+            </div>
+        `;
+        alertPlaceholder.append(wrapper);
+        setTimeout(() => wrapper.remove(), duration);
+    }
+
+    // DataTables 초기화
+    const table = new simpleDatatables.DataTable('#datatablesSimple');
+
+    // document 단위 이벤트 위임
+    document.addEventListener('click', e => {
+        if (e.target && e.target.classList.contains('add-order')) {
+            const parentDiv = e.target.closest('.d-flex');
+            const input = parentDiv.querySelector('.order-qty');
+            const qty = input.value;
+            const productId = input.dataset.id;
+
+            if (!qty || qty <= 0) {
+                showAlert('수량을 입력해주세요', 'warning');
+                return;
+            }
+
+            // AJAX 호출
+            fetch('/admin/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: productId, qty: qty })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('추가되었습니다', 'success');
+                    input.value = 1; // 수량 초기화
+                } else {
+                    showAlert(data.message || '추가 실패', 'danger');
+                }
+            })
+            .catch(err => {
+                showAlert('서버 오류', 'danger');
+                console.error(err);
+            });
+        }
+    });
+});
+</script>
+
+</html>
