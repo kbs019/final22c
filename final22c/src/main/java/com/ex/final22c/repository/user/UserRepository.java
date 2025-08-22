@@ -37,7 +37,8 @@ public interface UserRepository extends JpaRepository<Users, Long> {
            AND u.mileage >= :used
     """)
     int deductMileage(@Param("userNo") Long userNo, @Param("used") int used);
-
+    
+    // 결제 취소시 마일리지 복구
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE Users u
@@ -46,6 +47,13 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     """)
     int addMileage(@Param("userNo") Long userNo, @Param("amount") int amount);
 
+    // 주문 확정시 마일리지 적립
+    @Modifying
+    @Query("""
+        UPDATE Users u
+           SET u.mileage = u.mileage + :mileage
+         WHERE u.userNo = :userNo
+    """)
+    int addPoint(@Param("userNo") Long userNo, @Param("mileage") int mileage);
+
 }
-
-
