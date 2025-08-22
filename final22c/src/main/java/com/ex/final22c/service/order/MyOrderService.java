@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
+import com.ex.final22c.repository.payment.PaymentRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.user.UsersService;
 
@@ -27,6 +29,7 @@ public class MyOrderService {
     private final UsersService usersService;
     private final OrderRepository orderRepository;
     private final UserRepository usersRepository;
+    private final PaymentRepository paymentRepository;
 
     /**
      * 마이페이지 목록(페이징): PENDING 제외하고(PAID + CANCELED) 최신순
@@ -102,4 +105,8 @@ public class MyOrderService {
             .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
     }
 
+    @Transactional(readOnly = true)
+    public List<Payment> findPaymentsofOrder(Long orderId) {
+        return paymentRepository.findByOrder_OrderId(orderId);
+    }
 }
