@@ -37,7 +37,7 @@ public class Product {
     private String imgPath;
 
     @Column(name = "price")
-    private int price;
+    private int price;                                          // 정가
     
     @Column(name = "count")
     private int count;
@@ -87,10 +87,10 @@ public class Product {
     private int sellPrice;
 
     @Column(name = "discount")
-    private Double discount;
+    private Double discount;                                    
 
     @Column(name = "costPrice")
-    private int costPrice;
+    private int costPrice;                                      // 원가 (발주 시)
     
     // 기본값 및 파생값 계산
     // insert 시 매번 실행되는 메서드 실행 ( count 가 0 이라면, count 에 10 대입 (default) / isPicked 가 null 이라면, 기본값 "N" 을 대입 / 이후, 가격 계산해주기 )
@@ -146,5 +146,6 @@ public class Product {
         }
 
         this.sellPrice = (int) Math.floor(this.price * effectiveRate);
+        this.costPrice = (int) Math.floor(this.price * 0.05);
     }
 }

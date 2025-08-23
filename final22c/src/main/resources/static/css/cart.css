@@ -9,13 +9,52 @@
     align-items: start;
 }
 
+/* 하나의 행에 대한 css */
 .cart-row {
     display: grid;
     grid-template-columns: 32px 96px 1fr auto;
     gap: 12px;
     align-items: center;
     padding: 12px 0;
-    border-bottom: 1px solid #eee
+    border-bottom: 1px solid #eee;
+    position: relative;
+}
+
+/* 재고 0인 행에서는 수량 영역과 라인 합계(총 가격)를 숨김 */
+.cart-row[data-stock="0"] .qty-wrap,
+.cart-row[data-stock="0"] .line-total {
+    display: none !important;
+}
+
+/* 품절 안내 문구는 눈에 잘 띄게 */
+.cart-row[data-stock="0"] .soldout-note {
+    color: #d33;
+    margin-top: 4px;
+}
+
+/* 하나의 상품 cartDetail 에 존재하는 X 버튼 */
+.btnRowRemove{
+    position:absolute;
+    top:6px;
+    right:6px;
+    border:none;
+    background:transparent;
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    opacity:.6;
+    padding:4px;
+    border-radius:6px;
+}
+
+.btnRowRemove:hover{ 
+    opacity:1; 
+    background:#f2f2f2; 
+}
+
+.btnRowRemove:disabled{ 
+    opacity:.35; 
+    cursor:default; 
 }
 
 .qty-wrap {
@@ -74,6 +113,7 @@ input[type=number]::-webkit-outer-spin-button {
     margin: 0;
 }
 
+/* 모달창 css */
 .dlg{position:fixed;inset:0;z-index:1050;display:none}
 .dlg__scrim{position:absolute;inset:0;background:rgba(0,0,0,.2);backdrop-filter:blur(2px)}
 .dlg__card{

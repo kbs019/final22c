@@ -6,16 +6,18 @@
 <th:block layout:fragment="content">
     <div class="container cart-wrap" style="margin-top:16px">
 
-        <!-- 좌측: 리스트 -->
+        <!-- 좌측: 리스트 (액션바: 처음엔 상품이 없으면 숨김) -->
         <section>
-            <div class="actions" th:if="${products != null and !products.isEmpty()}">
+            <div class="actions" id="actionsBar"
+                th:style="${products == null or products.isEmpty()} ? 'display:none' : ''">
                 <label><input type="checkbox" id="checkAll">전체선택</label>
                 <button type="button" id="btnRemove" class="btn btn-outline-secondary btn-sm">선택 삭제</button>
             </div>
 
             <div id="cartList">
                 <!-- 비어있을 때 -->
-                <div class="empty" th:if="${products == null or products.isEmpty()}">
+                <div id="emptyMsg" class="empty"
+                    th:style="${products != null and !products.isEmpty()} ? 'display:none' : ''">
                     장바구니가 비어 있습니다.
                 </div>
 
@@ -25,6 +27,9 @@
                     th:data-stock="${cartItem.stock}">
                     <!-- 체크 -->
                     <input type="checkbox" class="row-check" th:disabled="${cartItem.stock == 0}">
+
+                    <!-- 행 개별 삭제 버튼 -->
+                    <button type="button" class="btnRowRemove" title="이 항목 삭제" aria-label="이 항목 삭제">✕</button>
 
                     <!-- 이미지/링크 -->
                     <a th:href="@{|/main/content/${cartItem.id}|}">
@@ -59,8 +64,8 @@
                             <button type="button" class="qty-btn btnPlus">+</button>
                         </div>
 
-                        <div class="muted" th:if="${cartItem.stock == 0}" style="color:#d33; margin-top:4px;">
-                            품절되어 수량 변경 및 결제가 제한됩니다.
+                        <div class="muted soldout-note" th:if="${cartItem.stock == 0}">
+                            <strong style="font-size: 16px;">품절된 상품입니다.</strong>
                         </div>
 
                         <div style="margin-top:6px">
@@ -164,6 +169,25 @@
         //         $backdrop.addEventListener('click', onDim);
         //     });
         // }
+
+        function updateEmptyState() {
+            const rowsCnt = $list.querySelectorAll('.cart-row').length;
+            const $actions = document.getElementById('actionsBar');
+            const $empty = document.getElementById('emptyMsg');
+
+            if (rowsCnt === 0) {
+                // 체크박스 상태 초기화(있다면)
+                if ($checkAll) $checkAll.checked = false;
+
+                // 액션바 숨기고 빈 문구 표시
+                if ($actions) $actions.style.display = 'none';
+                if ($empty) $empty.style.display = 'block';
+            } else {
+                // 액션바 표시, 빈 문구 숨김
+                if ($actions) $actions.style.display = '';
+                if ($empty) $empty.style.display = 'none';
+            }
+        }
 
         function showDialog(options = {}) {
             return new Promise(resolve => {
@@ -350,7 +374,7 @@
 
                 // ok 가 false면(예: 초과 요청) 사용자에게 알리고 합계/버튼상태 재계산
                 if (!data.ok) {                                                             // 서버 판단상 정상 처리 아님(초과 등)
-                    showDialog({ title:'장바구니', message:'선택 수량이 재고를 초과하여 최대 수량으로 조정되었습니다.' });         // 보정 사실 안내
+                    showDialog({ title: '장바구니', message: '선택 수량이 재고를 초과하여 최대 수량으로 조정되었습니다.' });         // 보정 사실 안내
                     refreshSummary();                                                       // 합계/버튼 상태 등 UI 재계산
                 }
             }
@@ -385,6 +409,64 @@
                     // 증가시킨 값이 max(해당 상품의 재고)보다 커지지 않도록 제한
                     syncQty(row);               // 해당행을 디바운스 진행 (250ms 사이에 들어오는 같은 작업은 하나로 간주)
                     refreshSummary();           // 합계/버튼 상태 등 UI 재계산
+                }
+
+                // 개별 행 삭제 (확인 모달)
+                if (e.target.classList.contains('btnRowRemove')) {
+                    const row = e.target.closest('.cart-row');
+                    if (!row) return;
+
+                    const id = row.dataset.id;
+
+                    showDialog({
+                        title: '장바구니',
+                        message: '이 상품을 장바구니에서 삭제할까요?',
+                        buttons: [
+                            { label: '취소' },
+                            {
+                                label: '삭제',
+                                role: 'primary',
+                                onClick: async () => {
+                                    // 중복 클릭 방지
+                                    e.target.disabled = true;
+
+                                    try {
+                                        const res = await fetch('/cart/remove', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ ids: [id] })
+                                        });
+
+                                        if (res.ok) {
+                                            // DOM에서 제거 후 합계 갱신
+                                            row.remove();
+                                            refreshSummary();
+                                            updateEmptyState();
+
+                                            // 전체선택 체크박스 상태 동기화
+                                            const rows = Array.from($list.querySelectorAll('.cart-row')).filter(isSellable);
+                                            const allChecked = rows.length > 0 && rows.every(r => r.querySelector('.row-check')?.checked);
+                                            if ($checkAll) $checkAll.checked = allChecked;
+
+                                            // 남은 행 없으면 비어있음 메시지 노출
+                                            if ($list.querySelectorAll('.cart-row').length === 0) {
+                                                const empty = document.querySelector('#cartList .empty');
+                                                if (empty) empty.style.display = 'block';
+                                            }
+                                        } else {
+                                            showDialog({ title: '장바구니', message: '삭제 중 문제가 발생했습니다.' });
+                                            e.target.disabled = false;
+                                        }
+                                    } catch {
+                                        showDialog({ title: '장바구니', message: '네트워크 오류로 삭제에 실패했습니다.' });
+                                        e.target.disabled = false;
+                                    }
+                                }
+                            }
+                        ]
+                    });
+
+                    return; // 이 분기 처리 후 다른 분기 로직은 건너뜀
                 }
             });
 
@@ -444,7 +526,7 @@
                     .filter(r => r.querySelector('.row-check')?.checked)                // 해당 요소들 중 row-check 라는 이름의 class 명을 가진 요소가 checked 된 행을 필터링(checked 인 행만 남김)
                     .map(r => r.dataset.id);                                            // 해당 요소를 key 로 하여 해당 행의 th:data-id 값을 value 로 하여 map 객체로 변환
 
-                if (ids.length === 0) { showDialog({ title:'장바구니', message:'선택된 항목이 없습니다.' }); return; }         // ids 라는 변수에 들어있는 배열 속 값의 갯수가 0 이라면, alert 창을 띄우고 return 시킨다.
+                if (ids.length === 0) { showDialog({ title: '장바구니', message: '선택된 항목이 없습니다.' }); return; }         // ids 라는 변수에 들어있는 배열 속 값의 갯수가 0 이라면, alert 창을 띄우고 return 시킨다.
 
                 // const { token, header } = getCsrf();
 
@@ -453,9 +535,23 @@
                     headers: { 'Content-Type': 'application/json' },    // 서버에 보내는 데이터가 JSON 형식
                     body: JSON.stringify({ ids })                       // ids 변수에 들어있는 배열을 JSON 구조의 문자열로 변환해서 전송
                 })
-                    .then(res => {                                          // fetch 는 Promise 를 반환하므로, 응답이 오면 res 객체로 처리
-                        if (res.ok) { location.reload(); }                  // res 가 ok(이상없이 실행되었다면) 라면, 페이지 새로고침
-                        else { showDialog({ title:'장바구니', message:'삭제 중 문제가 발생했습니다.' }); }       // 실패 시, 사용자에게 알림창을 표시
+                    // .then(res => {                                          // fetch 는 Promise 를 반환하므로, 응답이 오면 res 객체로 처리
+                    //     if (res.ok) { location.reload(); }                  // res 가 ok(이상없이 실행되었다면) 라면, 페이지 새로고침
+                    //     else { showDialog({ title: '장바구니', message: '삭제 중 문제가 발생했습니다.' }); }       // 실패 시, 사용자에게 알림창을 표시
+                    // });
+                    .then(res => {
+                        if (res.ok) {
+                            // 성공 시 DOM에서 해당 행 제거
+                            ids.forEach(id => {
+                                const row = $list.querySelector(`.cart-row[data-id="${id}"]`);
+                                if (row) row.remove();
+                            });
+
+                            refreshSummary();   // 합계/버튼 상태 갱신
+                            updateEmptyState(); // ✅ 전체선택/empty 메시지 표시 갱신
+                        } else {
+                            showDialog({ title: '장바구니', message: '삭제 중 문제가 발생했습니다.' });
+                        }
                     });
             });
         }
@@ -466,7 +562,7 @@
             $btnCheckout.addEventListener('click', () => {                          // $btnCheckout 변수에 click 이벤트 설정
                 const rows = Array.from($list.querySelectorAll('.cart-row'));                       // 장바구니 전체 페이지에서 cart-row 라는 class 선택자를 가진 요소를 조회하여 배열로 생성하여 rows 변수로 설정
                 const selectedRows = rows.filter(r => r.querySelector('.row-check')?.checked);      // rows 변수에 들어있는 배열의 row-check 라는 class 선택자를 가진 요소 중 checked 인 것만 추출하여 serlectedRows 변수로 설정
-                if (selectedRows.length === 0) { showDialog({ title:'결제', message:'선택된 상품이 없습니다.' }); return; };            // selectedRows 변수에 들어있는 값의 갯수가 0 이라면, 알림창을 표시하고 리턴시킴
+                if (selectedRows.length === 0) { showDialog({ title: '결제', message: '선택된 상품이 없습니다.' }); return; };            // selectedRows 변수에 들어있는 값의 갯수가 0 이라면, 알림창을 표시하고 리턴시킴
 
                 // 품절 선택 여부 검사
                 const invalid = selectedRows.filter(r => !isSellable(r));       // selectedRows 변수에 들어있는 배열에서 판매가 불가능한 제품들을 추출하여 invalid 변수로 설정
@@ -478,7 +574,7 @@
 
                     refreshSummary();           // 합계/버튼 상태 등 UI 재계산
 
-                    showDialog({ title:'결제', message:'품절된 상품이 포함되어 있어 결제할 수 없습니다.' });       // alert 를 사용하여 알림창 표시
+                    showDialog({ title: '결제', message: '품절된 상품이 포함되어 있어 결제할 수 없습니다.' });       // alert 를 사용하여 알림창 표시
 
                     return;
                 }
@@ -510,8 +606,9 @@
             });
         }
 
-        // 초기 합계
+        // 초기 합계 & 초기 상태 update
         refreshSummary();
+        updateEmptyState();
 
         window.addEventListener('beforeunload', () => {
             // 페이지 떠날 때 현재 장바구니 DOM을 localStorage에 저장
@@ -521,6 +618,7 @@
         // 뒤로/앞으로 복귀 시 합계 재계산 (bfcache 복원 대응)
         window.addEventListener('pageshow', () => {
             refreshSummary();
+            updateEmptyState();
         });
     </script>
 </th:block>
