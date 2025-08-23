@@ -155,6 +155,12 @@ public class AdminController {
 	    List<Brand> brands = adminService.getBrand();
 	    List<PurchaseRequest> pr = this.adminService.getPr();
 	    
+	    int totalAmount = pr.stream()
+	            .mapToInt(p -> p.getProduct().getCostPrice() * p.getQty())
+	            .sum();
+
+	    model.addAttribute("totalAmount", totalAmount);
+	    
 	    model.addAttribute("pr",pr);
 	    model.addAttribute("brands", brands);
 	    model.addAttribute("list", list);
@@ -163,6 +169,12 @@ public class AdminController {
 	    model.addAttribute("kw", kw);
 	    model.addAttribute("brand", brandIds);
 		return "admin/purchaseOrder";
+	}
+	
+	// 주문 관리
+	@GetMapping("chat")
+	public String chatAI() {
+		return "admin/chat";
 	}
 	
 	// 발주 신청 목록 추가
