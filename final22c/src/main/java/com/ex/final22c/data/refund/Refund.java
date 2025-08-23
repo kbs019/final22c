@@ -88,5 +88,5 @@ public class Refund {
     public void addDetail(RefundDetail d) {
         this.details.add(d);
         d.setRefund(this);
-    }
+    } 
 }

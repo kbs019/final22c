@@ -91,7 +91,7 @@ public class RefundService {
             if (m == null) continue;
 
             Long odId = toLong(m.get("orderDetailId"));
-            Integer qty = toInt(m.get("refundQty"));
+            Integer qty = toInt(m.get("quantity"));
             if (odId == null || qty == null) continue;
 
             OrderDetail od = orderDetailRepository.findById(odId)
