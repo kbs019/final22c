@@ -44,7 +44,7 @@ public class Refund {
     private Order order;                                        // 어떤 주문의 환불인가
     
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "userId", nullable = false)
+    @JoinColumn(name = "userNo", nullable = false)
     private Users user;                                         // 환불 요청자
 
     @OneToMany(mappedBy = "refund", cascade = CascadeType.ALL, orphanRemoval = true)
