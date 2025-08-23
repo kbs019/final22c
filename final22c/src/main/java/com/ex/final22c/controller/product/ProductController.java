@@ -3,6 +3,8 @@ package com.ex.final22c.controller.product;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -11,6 +13,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
@@ -35,20 +40,47 @@ public class ProductController {
     public String productContent(
             @PathVariable("id") long id,
             @RequestParam(value = "sort", defaultValue = "best") String sort,
+            @AuthenticationPrincipal UserDetails principal,
             Model model) {
 
         Product product = productService.getProduct(id);
 
         long reviewCount = reviewService.count(product);
         double avg = reviewService.avg(product);
+        List<Review> reviews = reviewService.getReviews(product, sort);
+
+        // 로그인 사용자가 누른 리뷰 id 세트(템플릿에서 상태 표시용)
+        Set<Long> likedReviewIds = new HashSet<>();
+        if (principal != null) {
+            String me = principal.getUsername();
+            for (Review rv : reviews) {
+                if (rv.getLikers().stream().anyMatch(u -> me.equals(u.getUserName()))) {
+                    likedReviewIds.add(rv.getReviewId());
+                }
+            }
+        }
 
         model.addAttribute("product", product);
-        model.addAttribute("reviews", reviewService.getReviews(product, sort));
+        model.addAttribute("reviews", reviews);
         model.addAttribute("reviewCount", reviewCount);
         model.addAttribute("reviewAvg", avg);
         model.addAttribute("sort", sort);
+        model.addAttribute("likedReviewIds", likedReviewIds);
 
         return "main/content";
+    }
+
+    // 좋아요 토글
+    @PostMapping("/etc/review/{reviewId}/like")
+    @PreAuthorize("isAuthenticated()")
+    @ResponseBody
+    public Map<String, Object> toggleLike(@PathVariable("reviewId") Long reviewId,
+                                        @AuthenticationPrincipal UserDetails principal) {
+        Users actor = userRepository.findByUserName(principal.getUsername())
+                .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
+        boolean liked = reviewService.toggleLike(reviewId, actor);
+        long count = reviewService.getLikeCount(reviewId);
+        return Map.of("liked", liked, "count", count);
     }
 
     // 리뷰 작성 폼 (비로그인 접근 차단)
@@ -86,6 +118,56 @@ public class ProductController {
 
         ra.addFlashAttribute("msg", "후기가 등록되었습니다.");
         return "redirect:/main/content/" + product.getId();
+    }
+
+    // 리뷰 수정 폼
+    @GetMapping("/etc/review/{reviewId}/edit")
+    @PreAuthorize("isAuthenticated()")
+    public String reviewEditForm(@PathVariable("reviewId") Long reviewId,
+                                 @RequestParam("productId") long productId,
+                                 @AuthenticationPrincipal UserDetails principal,
+                                 Model model) {
+        Users actor = userRepository.findByUserName(principal.getUsername())
+                .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
+        Review review = reviewService.get(reviewId); // 권한은 폼에서만 표시되지만 서버에서도 체크
+        // 소유/관리자 여부 서버에서 한 번 걸러두는 편
+        // (폼 진입 자체를 제한하고 싶으시면 reviewService.update의 authorize 로직을 재사용)
+        Product product = productService.getProduct(productId);
+
+        model.addAttribute("product", product);
+        model.addAttribute("review", review);
+        return "main/etc/review-edit";
+    }
+
+    // 리뷰 수정 처리
+    @PostMapping("/etc/review/{reviewId}/edit")
+    @PreAuthorize("isAuthenticated()")
+    public String reviewEdit(@PathVariable("reviewId") Long reviewId,
+                             @RequestParam("productId") long productId,
+                             @RequestParam("rating") int rating,
+                             @RequestParam("content") String content,
+                             @AuthenticationPrincipal UserDetails principal,
+                             RedirectAttributes ra) {
+        Users actor = userRepository.findByUserName(principal.getUsername())
+                .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
+        reviewService.update(reviewId, actor, rating, content);
+        ra.addFlashAttribute("msg", "후기가 수정되었습니다.");
+        return "redirect:/main/content/" + productId;
+    }
+
+    // 리뷰 삭제
+    @PostMapping("/etc/review/{reviewId}/delete")
+    @PreAuthorize("isAuthenticated()")
+    public String reviewDelete(@PathVariable("reviewId") Long reviewId,
+                               @RequestParam("productId") long productId,
+                               @AuthenticationPrincipal UserDetails principal,
+                               RedirectAttributes ra) {
+        Users actor = userRepository.findByUserName(principal.getUsername())
+                .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
+        // service.delete에서 productId를 반환하도록 만들었지만 명시적 파라미터로도 받습니다.
+        reviewService.delete(reviewId, actor);
+        ra.addFlashAttribute("msg", "후기가 삭제되었습니다.");
+        return "redirect:/main/content/" + productId;
     }
 
     // 리스트

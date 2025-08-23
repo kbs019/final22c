@@ -21,6 +21,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -44,7 +45,7 @@ public class Refund {
     private Order order;                                        // 어떤 주문의 환불인가
     
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "userId", nullable = false)
+    @JoinColumn(name = "userNo", nullable = false)
     private Users user;                                         // 환불 요청자
 
     @OneToMany(mappedBy = "refund", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -52,6 +53,7 @@ public class Refund {
 
     @Column(length = 20, nullable = false)
     private String status;                                      // 환불신청 -- 환불완료
+                                                                // REQUESTED / REFUNDED
 
     @Column(name = "totalRefundAmount")
     private int totalRefundAmount;        // 환급 총액(스냅샷)
@@ -77,6 +79,11 @@ public class Refund {
     @UpdateTimestamp
     @Column(name = "updateDate")
     private LocalDateTime updateDate;   // 환급 완료 시각
+
+    @PrePersist
+    void insertRefund(){
+        if( this.status == null ){ this.status = "REQUESTED"; }
+    }
 
     public void addDetail(RefundDetail d) {
         this.details.add(d);
