@@ -143,12 +143,14 @@
       <div class="step"><div class="dot"></div><div>배송완료</div></div>
     </div>
 
-    <!-- 우측 상단 버튼 -->
+
+	<!-- 주문접수(ORDERED) 상태에서만 주문취소 허용 -->
     <div class="order-actions">
-      <!-- ORDERED & PAID → 주문취소만 -->
-      <button th:if="${o.status=='PAID' and o.status!='FAILED' 
-      and o.deliveryStatus !='CONFIRMED' and o.deliveryStatus !='DELIVERED'}"
-              class="cancel-btn btn-cancel" type="button">주문취소</button>
+	  <button th:if="${o.status=='PAID'
+      and o.status!='FAILED'
+      and #strings.equalsIgnoreCase(#strings.trim(o.deliveryStatus),'ORDERED')}"
+	          class="cancel-btn btn-cancel" type="button">주문취소</button>
+
 
       <!-- DELIVERED & PAID → 주문확정 / 환불요청 -->
       <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}"
