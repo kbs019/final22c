@@ -40,8 +40,8 @@ public class OrderDetail {
     @Column(name = "totalPrice", nullable = false, updatable = false)
     private Integer totalPrice; // quantity * sellPrice 스냅샷
 
-    @Column(name = "confirmQuantity")
-    private int confirmQuantity;                    // 주문 확정 수량
+    @Column(name = "confirmQuantity", nullable = false)
+    private Integer confirmQuantity;
 
     @PrePersist
     public void prePersist() {
@@ -51,6 +51,8 @@ public class OrderDetail {
             sellPrice = 0;
         if (totalPrice == null)
             totalPrice = quantity * sellPrice;
+        if (confirmQuantity == null)
+            confirmQuantity = 0;
     }
 
     // 편의 생성자 (가격 계산 포함)

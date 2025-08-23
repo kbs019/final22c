@@ -287,8 +287,11 @@ $confirmYes.addEventListener('click', async () => {
 
     const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
 
+
     if (pendingAction === 'cancel') {
       card?.classList.add('is-canceled');
+      card?.querySelector('.order-actions')?.remove();
+      card?.querySelector('.stepper')?.remove();
       card?.querySelector('.order-actions')?.remove();
       card?.querySelector('.stepper')?.remove();
       const title = card?.querySelector('.order-title');
@@ -296,8 +299,14 @@ $confirmYes.addEventListener('click', async () => {
         const b = document.createElement('span');
         b.className = 'badge-canceled';
         b.textContent = '주문취소';
+        b.className = 'badge-canceled';
+        b.textContent = '주문취소';
         title.appendChild(b);
       }
+    } else if (pendingAction === 'confirm') {
+      updateCardToConfirmed(card);
+    }
+    // refund 분기 필요시 여기에
     } else if (pendingAction === 'confirm') {
       updateCardToConfirmed(card);
     }
@@ -309,6 +318,31 @@ $confirmYes.addEventListener('click', async () => {
     openResult('처리 중 오류가 발생했습니다.');
   }
 });
+
+function updateCardToConfirmed(card){
+  if (!card) return;
+
+  // 버튼 숨김/제거
+  card.querySelector('.order-actions')?.remove();
+  card.querySelector('.btn-cancel')?.remove();
+  card.querySelector('.btn-confirm')?.remove();
+  card.querySelector('.btn-refund')?.remove();
+
+  // 진행바 제거
+  card.querySelector('.stepper')?.remove();
+
+  // "주문확정" 배지 추가 (중복 방지)
+  const title = card.querySelector('.order-title');
+  if (title && !title.querySelector('.badge-confirmed')) {
+    const b = document.createElement('span');
+    b.className = 'badge-confirmed'; // CSS는 이미 있음(주문취소와 같은 핑크 pill)
+    b.textContent = '주문확정';
+    title.appendChild(b);
+  }
+
+  // (선택) 디버깅/후속 로직용 데이터 표시 갱신
+  card.setAttribute('data-delivery-status', 'CONFIRMED');
+}
 
 function updateCardToConfirmed(card){
   if (!card) return;
