@@ -91,14 +91,11 @@ public class MyOrderService {
         int updated = orderRepository.updateToConfirmed(orderId, me.getUserNo());
         if (updated == 0) throw new IllegalStateException("확정 불가 상태이거나 주문을 찾을 수 없습니다.");
 
-        // 2) 확정 성공했으니 상세에 confirm_quantity = quantity (한 번만 세팅)
-        orderDetailRepository.fillConfirmQtyOnce(orderId);
-
-        // 3) 프론트 계산용으로 주문 재조회
+        // 2) 프론트 계산용으로 주문 재조회
         Order order = orderRepository.findOneWithDetails(orderId)
                 .orElseThrow(() -> new IllegalStateException("주문을 찾을 수 없습니다."));
 
-        // 4) 마일리지 적립
+        // 3) 마일리지 적립
         int earnBase = Math.max(0, order.getTotalAmount() - order.getUsedPoint());
         int mileage  = (int) Math.floor(earnBase * 0.05);
         if (mileage > 0) {
