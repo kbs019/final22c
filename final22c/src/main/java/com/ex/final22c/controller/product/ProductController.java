@@ -74,7 +74,7 @@ public class ProductController {
     @PostMapping("/etc/review/{reviewId}/like")
     @PreAuthorize("isAuthenticated()")
     @ResponseBody
-    public Map<String, Object> toggleLike(@PathVariable Long reviewId,
+    public Map<String, Object> toggleLike(@PathVariable("reviewId") Long reviewId,
                                         @AuthenticationPrincipal UserDetails principal) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
