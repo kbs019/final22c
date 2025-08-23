@@ -42,8 +42,8 @@ public class MyOrderService {
         Users me = usersService.getUser(username);
         Pageable pageable = PageRequest.of(page, size, Sort.by("regDate").descending());
 
-        // 화면에 노출할 상태만 지정
-        List<String> visible = List.of("PAID", "REFUND", "CANCELED"); // 필요시 "CONFIRMED" 추가
+        // 확정건 포함
+        List<String> visible = List.of("PAID", "CONFIRMED", "REFUNDED", "CANCELED");
         return orderRepository.findByUser_UserNoAndStatusInOrderByRegDateDesc(
                 me.getUserNo(), visible, pageable);
     }
