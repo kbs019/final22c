@@ -1,3 +1,4 @@
+<!-- templates/mypage/orders.html -->
 <html layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
 <style>
@@ -62,14 +63,10 @@
   .step.active .dot{background:#111827}
   .step.active::before{background:#111827}
 
-  /* 취소 주문 표시(선택) */
+  /* 배지 */
   .badge-canceled{display:inline-block;padding:4px 8px;border-radius:8px;background:#fee2e2;color:#991b1b;font-weight:600;font-size:12px;margin-left:8px}
   .order-card.is-canceled{opacity:.9}
-
-  .badge-confirmed{
-    display:inline-block;padding:4px 8px;border-radius:8px;background:#fee2e2;color:#41d63c;font-weight:600;font-size:12px;margin-left:8px;
-  }
-
+  .badge-confirmed{display:inline-block;padding:4px 8px;border-radius:8px;background:#dcfce7;color:#166534;font-weight:600;font-size:12px;margin-left:8px}
 
   /* 좁은 화면 대응 */
   @media (max-width: 900px){
@@ -101,25 +98,30 @@
   }
   .cm-btn--primary{ background:#111827; color:#fff; border-color:#111827; }
   .cm-btn:focus{ outline:2px solid #111827; outline-offset:2px; }
+
+  /* ✅ 모달 열릴 때만 스크롤 잠금 + 우측 패딩 보정 */
+  body.lock-scroll{
+    overflow:hidden;
+    padding-right: var(--sbw, 0px);
+  }
 </style>
 
-<!-- templates/mypage/orders.html -->
 <section>
   <h2>주문내역</h2>
 
   <div th:if="${orders.content.isEmpty()}">주문 내역이 없습니다.</div>
 
   <div th:each="o : ${orders.content}"
-      class="order-card"
-      th:classappend="${o.status=='CANCELED'} ? ' is-canceled'"
-      th:attr="data-order-id=${o.orderId}"
-      th:with="
-        first=${#lists.isEmpty(o.details) ? null : o.details[0]},
-        restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1},
-        step=${
-          #strings.equalsIgnoreCase(o.deliveryStatus,'DELIVERED') ? 3 :
-          (#strings.equalsIgnoreCase(o.deliveryStatus,'SHIPPING')  ? 2 : 1)
-        }">
+       class="order-card"
+       th:classappend="${o.status=='CANCELED'} ? ' is-canceled'"
+       th:attr="data-order-id=${o.orderId}"
+       th:with="
+         first=${#lists.isEmpty(o.details) ? null : o.details[0]},
+         restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1},
+         step=${
+           #strings.equalsIgnoreCase(o.deliveryStatus,'DELIVERED') ? 3 :
+           (#strings.equalsIgnoreCase(o.deliveryStatus,'SHIPPING')  ? 2 : 1)
+         }">
 
     <!-- 좌: 주문정보 -->
     <div class="order-info">
@@ -128,7 +130,7 @@
         <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
         <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
         <span th:if="${#strings.equalsIgnoreCase(#strings.trim(o.deliveryStatus),'CONFIRMED')}"
-        class="badge-confirmed">주문확정</span>
+              class="badge-confirmed">주문확정</span>
         <span th:if="${o.status=='CANCELED'}" class="badge-canceled">주문취소</span>
       </div>
       <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
@@ -136,21 +138,20 @@
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
     <div class="stepper"
-     th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.deliveryStatus!='CONFIRMED'}"
+         th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.deliveryStatus!='CONFIRMED'}"
          th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
       <div class="step"><div class="dot"></div><div>배송완료</div></div>
     </div>
 
-
-	<!-- 주문접수(ORDERED) 상태에서만 주문취소 허용 -->
+    <!-- 우측 상단 버튼 -->
     <div class="order-actions">
-	  <button th:if="${o.status=='PAID'
-      and o.status!='FAILED'
-      and #strings.equalsIgnoreCase(#strings.trim(o.deliveryStatus),'ORDERED')}"
-	          class="cancel-btn btn-cancel" type="button">주문취소</button>
-
+      <!-- ORDERED & PAID → 주문취소만 -->
+      <button th:if="${o.status=='PAID'
+        and o.status!='FAILED'
+        and #strings.equalsIgnoreCase(#strings.trim(o.deliveryStatus),'ORDERED')}"
+        class="cancel-btn btn-cancel" type="button">주문취소</button>
 
       <!-- DELIVERED & PAID → 주문확정 / 환불요청 -->
       <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}"
@@ -205,12 +206,33 @@
   </div>
 </div>
 
-
 <script>
-/* ===== 스텝퍼 표시(고정) =====
-   - data-step(1/2/3)에 맞춰 active만 반영
-   - 자동진행 없음
-*/
+/* ===== 스크롤 잠금/보정 유틸 ===== */
+function scrollbarWidth(){
+  return window.innerWidth - document.documentElement.clientWidth;
+}
+function lockScroll(){
+  const sw = scrollbarWidth();
+  if (sw > 0) document.documentElement.style.setProperty('--sbw', sw + 'px');
+  document.body.classList.add('lock-scroll');
+}
+function unlockScroll(){
+  document.body.classList.remove('lock-scroll');
+  document.documentElement.style.removeProperty('--sbw');
+}
+function openModal(el){
+  el.classList.add('is-open');
+  lockScroll();
+}
+function closeModal(el){
+  el.classList.remove('is-open');
+  // 열려있는 모달이 더 없으면 스크롤 해제
+  if (document.querySelectorAll('.cm-modal.is-open').length === 0) {
+    unlockScroll();
+  }
+}
+
+/* ===== 스텝퍼 표시(고정) ===== */
 (function(){
   function render(stepper, n){
     const steps = stepper.querySelectorAll('.step');
@@ -221,7 +243,7 @@
     const n = parseInt(stepper.dataset.step || '1', 10);
     render(stepper, n);
   });
-  window.stepperRender = render; // 필요 시 수동 갱신
+  window.stepperRender = render;
 })();
 
 /* ===== 모달 공통 ===== */
@@ -236,9 +258,6 @@ const $resultOk    = document.getElementById('resultOk');
 
 let targetOrderId = null;
 let pendingAction = null; // 'cancel' | 'confirm' | 'refund'
-
-function openModal(el){ el.classList.add('is-open'); document.body.style.overflow='hidden'; }
-function closeModal(el){ el.classList.remove('is-open'); document.body.style.overflow=''; }
 
 function openConfirm(orderId, action, message){
   targetOrderId = orderId;
@@ -349,25 +368,21 @@ function updateCardToConfirmed(card){
 function updateCardToConfirmed(card){
   if (!card) return;
 
-  // 버튼 숨김/제거
+  // 버튼/진행바 제거
   card.querySelector('.order-actions')?.remove();
   card.querySelector('.btn-cancel')?.remove();
   card.querySelector('.btn-confirm')?.remove();
   card.querySelector('.btn-refund')?.remove();
-
-  // 진행바 제거
   card.querySelector('.stepper')?.remove();
 
-  // "주문확정" 배지 추가 (중복 방지)
+  // "주문확정" 배지 추가
   const title = card.querySelector('.order-title');
   if (title && !title.querySelector('.badge-confirmed')) {
     const b = document.createElement('span');
-    b.className = 'badge-confirmed'; // CSS는 이미 있음(주문취소와 같은 핑크 pill)
+    b.className = 'badge-confirmed';
     b.textContent = '주문확정';
     title.appendChild(b);
   }
-
-  // (선택) 디버깅/후속 로직용 데이터 표시 갱신
   card.setAttribute('data-delivery-status', 'CONFIRMED');
 }
 
@@ -376,8 +391,8 @@ function updateCardToConfirmed(card){
   const body  = document.getElementById('orderItemsBody');
   const closeBtn = document.getElementById('orderItemsClose');
 
-  function open(){ modal?.classList.add('is-open'); }
-  function close(){ modal?.classList.remove('is-open'); }
+  function open(){ openModal(modal); }
+  function close(){ closeModal(modal); }
 
   // ">" 링크 클릭 시: 모달 열고 fragment 로딩
   document.addEventListener('click', async (e) => {
@@ -397,7 +412,7 @@ function updateCardToConfirmed(card){
         headers: { 'X-Requested-With':'XMLHttpRequest' }
       });
       if (!res.ok) throw new Error('HTTP '+res.status);
-      body.innerHTML = await res.text(); // orderDetail.html :: items 삽입
+      body.innerHTML = await res.text();
     } catch (err) {
       console.error(err);
       body.innerHTML = '<div style="color:#ef4444">상세를 불러오지 못했습니다.</div>';
@@ -406,7 +421,6 @@ function updateCardToConfirmed(card){
 
   closeBtn?.addEventListener('click', close);
 })();
-
 </script>
 </div>
 </html>
