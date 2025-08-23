@@ -99,23 +99,23 @@
     </div>
     
     <!-- 비로그인 전용: 바로결제 로그인 안내 모달 -->
-	<div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-hidden="true" sec:authorize="isAnonymous()">
-	  <div class="modal-dialog modal-dialog-centered">
-	    <div class="modal-content">
-	      <div class="modal-header">
-	        <h5 class="modal-title">바로결제</h5>
-	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-	      </div>
-	      <div class="modal-body">
-	        로그인이 필요합니다.
-	      </div>
-	      <div class="modal-footer">
-	        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
-	        <a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
-	      </div>
-	    </div>
-	  </div>
-	</div>
+   <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-hidden="true" sec:authorize="isAnonymous()">
+     <div class="modal-dialog modal-dialog-centered">
+       <div class="modal-content">
+         <div class="modal-header">
+           <h5 class="modal-title">바로결제</h5>
+           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+         </div>
+         <div class="modal-body">
+           로그인이 필요합니다.
+         </div>
+         <div class="modal-footer">
+           <button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
+           <a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
+         </div>
+       </div>
+     </div>
+   </div>
 
     <!-- 하단의 향 소개 부분 시작 -->
     <div class="productDescription">
@@ -220,7 +220,12 @@
                 <div class="user-mask fw-semibold" 
                     th:with="len=${#strings.length(rv.writer.userName)}"
                     th:text="${len <= 3} ? ${rv.writer.userName} : ${#strings.substring(rv.writer.userName,0,2)} + ${'*'.repeat(len-2)}">kv**</div>
-                <div class="bar-5 small" th:attr="data-filled=${rv.rating}"></div>
+                
+                <div class="rating-bars rating-bars--sm" th:with="filled=${rv.rating}">
+                <div th:each="i : ${#numbers.sequence(1,5)}"
+                    th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')"></div>
+                </div>
+
             </div>
             <div class="text-muted small" 
                 th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
@@ -234,7 +239,7 @@
             </div>
         </div>
         </div>
-        <!-- 리뷰 통계 부분 끝 -->
+        <!-- 리뷰 부분 끝 -->
     </div>
 </div>
 
@@ -312,23 +317,23 @@
         });
     </script>
     
-	<!-- 비로그인일 때만 로드되어 buy-form 제출을 막고 모달을 띄움 -->
-	<script sec:authorize="isAnonymous()">
-	  (function () {
-	    const form   = document.getElementById('buy-form');
-	    const modalEl= document.getElementById('loginRequiredModal');
-	    if (!form || !modalEl || typeof bootstrap === 'undefined') return;
-	    const modal  = new bootstrap.Modal(modalEl);
-	
-	    form.addEventListener('submit', function (e) {
-	      // 비로그인: 기본 제출 막고 모달 오픈
-	      e.preventDefault();
-	      const btn = e.submitter;
-	      if (btn) { btn.disabled = true; setTimeout(() => btn.disabled = false, 1200); }
-	      modal.show();
-	    });
-	  })();
-	</script>
+   <!-- 비로그인일 때만 로드되어 buy-form 제출을 막고 모달을 띄움 -->
+   <script sec:authorize="isAnonymous()">
+     (function () {
+       const form   = document.getElementById('buy-form');
+       const modalEl= document.getElementById('loginRequiredModal');
+       if (!form || !modalEl || typeof bootstrap === 'undefined') return;
+       const modal  = new bootstrap.Modal(modalEl);
+   
+       form.addEventListener('submit', function (e) {
+         // 비로그인: 기본 제출 막고 모달 오픈
+         e.preventDefault();
+         const btn = e.submitter;
+         if (btn) { btn.disabled = true; setTimeout(() => btn.disabled = false, 1200); }
+         modal.show();
+       });
+     })();
+   </script>
     <script th:inline="javascript">
         document.querySelectorAll('#buy-qty-wrap').forEach(container => {
             // 컨테이너별 DOM 잡기

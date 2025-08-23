@@ -148,7 +148,7 @@ public class AdminController {
 	
 	// 발주 신청 페이지
 	@GetMapping("purchaseOrder")
-	public String purchaseOrde( Model model,
+	public String purchaseOrder( Model model,
 	        @RequestParam(value="kw", defaultValue="") String kw,
 	        @RequestParam(value="brand", required=false) List<Long> brandIds) {
 	    List<Product> list = adminService.getItemList( kw, brandIds);
@@ -182,5 +182,19 @@ public class AdminController {
 	@ResponseBody
 	public Map<String, Object> addToPurchaseRequest(@RequestBody Map<String, Object> payload) {
 		return this.adminService.addToPurchaseRequest(payload);
+	}
+	
+	// 발주 신청 목록 (모달용)
+	@GetMapping("/getPurchaseRequest")
+	@ResponseBody
+    public List<Map<String, Object>> getPurchaseRequest() {
+        return adminService.getPurchaseRequest();
+    }
+	
+	// 발주 신청 목록 삭제
+	@PostMapping("deletePurchaseRequest")
+	@ResponseBody
+	public Map<String,Object> deletePurchaseRequest(@RequestBody Map<String,Object> payload){
+		return this.adminService.deletePurchaseRequest(payload);
 	}
 }

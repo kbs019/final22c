@@ -49,7 +49,6 @@
 	                <th scope="col">상품명</th>
 	                <th scope="col">브랜드</th>
 	                <th scope="col">단가</th>
-	                <th scope="col">할인율(%)</th>
 	                <th scope="col">재고</th>
 	                <th scope="col">발주</th>
 	            </tr>
@@ -60,7 +59,6 @@
 	                <th scope="col">상품명</th>
 	                <th scope="col">브랜드</th>
 	                <th scope="col">단가</th>
-	                <th scope="col">할인율(%)</th>
 	                <th scope="col">재고</th>
 	                <th scope="col">발주</th>
 	            </tr>
@@ -71,7 +69,6 @@
 	                <td th:text="${list.name}"></td>
 	                <td th:text="${list.brand.brandName}"></td>
 					<td th:text="${#numbers.formatInteger(list.costPrice, 3, 'COMMA')}"></td>
-					<td th:text="${#numbers.formatInteger(list.discount, 0)}"></td>
 	                <td th:text="${list.count}"></td>
 					<td style="width: 120px;">
 					  <div class="d-flex gap-1 align-items-center">
@@ -117,7 +114,7 @@
 					<th></th>
                 </tr>
             </thead>
-            <tbody id="purchaseList" th:with="sum=0">
+            <tbody id="purchaseList" >
                 <tr th:each="pr:${pr}" >
                 	<td th:text="${pr.product.id}"></td>
                 	<td th:text="${pr.product.name}"></td>
@@ -127,7 +124,7 @@
                 	<td th:text="${#numbers.formatInteger(pr.product.costPrice * pr.qty, 3, 'COMMA')}"></td>
 					<td>
 					    <button type="button" class="btn btn-sm btn-danger delete-order"
-					            th:attr="data-id=${pr.product.id}">X</button>
+					            th:attr="data-prid=${pr.prId}">X</button>
 					</td>
                 </tr>
             </tbody>
@@ -156,100 +153,137 @@
 
 <script layout:fragment="script" type="text/javascript">
 
-document.addEventListener('DOMContentLoaded', () => {
-	document.addEventListener('DOMContentLoaded', () => {
-	    const purchaseListEl = document.getElementById('purchaseList');
+	let purchaseListEl;
+	let totalAmountEl;
 
-	    // 모달 열릴 때 AJAX로 발주신청 목록 가져오기
-	    const purchaseModal = document.getElementById('purchaseModal');
-	    purchaseModal.addEventListener('show.bs.modal', () => {
-	        fetch('/admin/getPurchaseRequest')
-	            .then(res => res.json())
-	            .then(data => {
-	                purchaseListEl.innerHTML = '';
-	                data.forEach(item => {
-	                    const tr = document.createElement('tr');
-	                    tr.innerHTML = `
-	                        <td>${item.product.id}</td>
-	                        <td>${item.product.name}</td>
-	                        <td>${item.qty}</td>
-	                    `;
-	                    purchaseListEl.appendChild(tr);
-	                });
+	function loadPurchaseList() {
+	    fetch('/admin/getPurchaseRequest')
+	        .then(res => res.json())
+	        .then(data => {
+	            purchaseListEl.innerHTML = '';
+	            let totalAmount = 0;
+	            data.forEach(item => {
+	                const sum = item.product.costPrice * item.qty;
+	                totalAmount += sum;
+
+	                const tr = document.createElement('tr');
+	                tr.innerHTML = `
+	                    <td>${item.product.id}</td>
+	                    <td>${item.product.name}</td>
+	                    <td>${item.product.brand.brandName}</td>
+	                    <td>${item.product.costPrice.toLocaleString()}</td>
+	                    <td>${item.qty}</td>
+	                    <td>${sum.toLocaleString()}</td>
+	                    <td>
+	                        <button type="button" class="btn btn-sm btn-danger delete-order" 
+	                            data-prid="${item.prId}">X</button>
+	                    </td>
+	                `;
+	                purchaseListEl.appendChild(tr);
 	            });
-	    });
+	        });
+	}
 
-	    // 발주 완료 버튼
+	document.addEventListener('DOMContentLoaded', () => {
+	    purchaseListEl = document.getElementById('purchaseList');
+	    totalAmountEl = document.querySelector('#purchaseModal tfoot td.fw-bold');
+
+	    const purchaseModal = document.getElementById('purchaseModal');
+	    purchaseModal.addEventListener('show.bs.modal', loadPurchaseList);
+	});
+
+	    // 발주 확정 버튼
 	    document.getElementById('confirmPurchase').addEventListener('click', () => {
 	        fetch('/admin/confirmPurchase', { method: 'POST' })
 	            .then(res => res.json())
 	            .then(data => {
-	                if(data.success) {
-	                    alert('발주가 완료되었습니다!');
-	                    purchaseModal.querySelector('.btn-close').click(); // 모달 닫기
+	                if(data.success){
+	                    alert('발주 완료!');
+	                    purchaseModal.querySelector('.btn-close').click();
 	                } else {
 	                    alert('발주 실패: ' + data.message);
 	                }
 	            });
 	    });
-	});
+
+	    // 삭제 버튼 위임
+	    document.addEventListener('click', e => {
+	        if(e.target.classList.contains('delete-order')){
+	            const prId = e.target.dataset.prid;
+				console.log(prId); // 먼저 콘솔로 확인
+	            fetch('/admin/deletePurchaseRequest', {
+	                method: 'POST',
+	                headers: { 'Content-Type': 'application/json' },
+	                body: JSON.stringify({ prId: prId })
+	            })
+	            .then(res => res.json())
+	            .then(data => {
+	                if(data.success){
+	                    alert('삭제 완료!');
+	                    loadPurchaseList(); // 삭제 후 최신화
+	                } else {
+	                    alert('삭제 실패: ' + data.message);
+	                }
+	            });
+	        }
+	    });
+
 	
 	// 알림창
-    const alertPlaceholder = document.getElementById('alertPlaceholder');
-    if (!alertPlaceholder) {
-        console.warn('alertPlaceholder가 존재하지 않습니다!');
-        return;
-    }
-
-    function showAlert(message, type = 'success', duration = 2000) {
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = `
-            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                ${message}
-            </div>
-        `;
-        alertPlaceholder.append(wrapper);
-        setTimeout(() => wrapper.remove(), duration);
-    }
+	const alertPlaceholder = document.getElementById('alertPlaceholder');
+	if (!alertPlaceholder) {
+	    console.warn('alertPlaceholder가 존재하지 않습니다!');
+	    // 그냥 종료하고 싶으면 함수로 감싸거나 if문 밖에서 아무 동작 안함
+	} else {
+	    function showAlert(message, type = 'success', duration = 2000) {
+	        const wrapper = document.createElement('div');
+	        wrapper.innerHTML = `
+	            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+	                ${message}
+	            </div>
+	        `;
+	        alertPlaceholder.append(wrapper);
+	        setTimeout(() => wrapper.remove(), duration);
+	    }
+	}
 
     // DataTables 초기화
     const table = new simpleDatatables.DataTable('#datatablesSimple');
 
     // document 단위 이벤트 위임
-    document.addEventListener('click', e => {
-        if (e.target && e.target.classList.contains('add-order')) {
-            const parentDiv = e.target.closest('.d-flex');
-            const input = parentDiv.querySelector('.order-qty');
-            const qty = input.value;
-            const productId = input.dataset.id;
+	document.addEventListener('click', e => {
+	    if (e.target && e.target.classList.contains('add-order')) {
+	        const parentDiv = e.target.closest('.d-flex');
+	        const input = parentDiv.querySelector('.order-qty');
+	        const qty = input.value;
+	        const productId = input.dataset.id;
 
-            if (!qty || qty <= 0) {
-                showAlert('수량을 입력해주세요', 'warning');
-                return;
-            }
+	        if (!qty || qty <= 0) {
+	            showAlert('수량을 입력해주세요', 'warning');
+	            return;
+	        }
 
-            // AJAX 호출
-            fetch('/admin/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productId: productId, qty: qty })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert('추가되었습니다', 'success');
-                    input.value = 0; // 수량 초기화
-                } else {
-                    showAlert(data.message || '추가 실패', 'danger');
-                }
-            })
-            .catch(err => {
-                showAlert('서버 오류', 'danger');
-                console.error(err);
-            });
-        }
-    });
-});
+			fetch('/admin/add', {  // URL은 컨트롤러 매핑에 맞게
+			    method: 'POST',
+			    headers: { 'Content-Type': 'application/json' },
+			    body: JSON.stringify({ productId: productId, qty: qty })
+			})
+			.then(res => res.json())
+			.then(data => {
+			    if (data.success) {
+			        showAlert('추가되었습니다', 'success');
+			        input.value = 0; 
+			        loadPurchaseList(); // 추가 후 모달 최신화
+			    } else {
+			        showAlert(data.message || '추가 실패', 'danger');
+			    }
+			})
+			.catch(err => {
+			    showAlert('서버 오류', 'danger');
+			    console.error(err);
+			});
+	    }
+	});
 </script>
 
 </html>

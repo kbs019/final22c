@@ -150,3 +150,9 @@ input[type=number]::-webkit-outer-spin-button{
   background:#000;
 }
 
+/* 개인 리뷰용: 더 작게 보이도록 */
+.rating-bars--sm{
+  --bar-size: 10px;    /* 필요 시 18~22px로 조절 */
+  --bar-gap: 3px;
+  height: calc(var(--bar-size) * 1.2);
+}
