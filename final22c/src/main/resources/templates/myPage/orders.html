@@ -129,16 +129,15 @@
       <div class="order-title">
         <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
         <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
-        <span th:if="${#strings.equalsIgnoreCase(#strings.trim(o.deliveryStatus),'CONFIRMED')}"
-              class="badge-confirmed">주문확정</span>
+		<span th:if="${o.status=='CONFIRMED'}" class="badge-confirmed">주문확정</span>
         <span th:if="${o.status=='CANCELED'}" class="badge-canceled">주문취소</span>
       </div>
       <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
     </div>
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
-    <div class="stepper"
-         th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.deliveryStatus!='CONFIRMED'}"
+	<div class="stepper"
+	     th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.status!='CONFIRMED'}"
          th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
@@ -334,6 +333,9 @@ $confirmYes.addEventListener('click', async () => {
 function updateCardToConfirmed(card){
   if (!card) return;
 
+  // ✅ 주문 상태 플래그를 status로 표시 (delivery-status 사용 X)
+  card.dataset.status = 'CONFIRMED';
+
   // 버튼/진행바 제거
   card.querySelector('.order-actions')?.remove();
   card.querySelector('.btn-cancel')?.remove();
@@ -341,7 +343,7 @@ function updateCardToConfirmed(card){
   card.querySelector('.btn-refund')?.remove();
   card.querySelector('.stepper')?.remove();
 
-  // "주문확정" 배지 추가
+  // "주문확정" 배지 추가 (중복 방지)
   const title = card.querySelector('.order-title');
   if (title && !title.querySelector('.badge-confirmed')) {
     const b = document.createElement('span');
@@ -349,9 +351,7 @@ function updateCardToConfirmed(card){
     b.textContent = '주문확정';
     title.appendChild(b);
   }
-  card.setAttribute('data-delivery-status', 'CONFIRMED');
 }
-
 /* ===== 주문상품 모달: 동일한 스크롤락 로직 사용 ===== */
 (function(){
   const modal = document.getElementById('orderItemsModal');
