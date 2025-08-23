@@ -9,13 +9,10 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> {
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-        update OrderDetail d
-           set d.confirmQuantity = d.quantity
-         where d.order.orderId = :orderId
-           and coalesce(d.confirmQuantity, 0) = 0
-    """)
-    int fillConfirmQtyOnce(@Param("orderId") Long orderId);
+	// 1) 결제 승인 직후: quantity = confirmQuantity
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query(value = "UPDATE OrderDetail SET confirmQuantity = quantity WHERE orderId = :orderId",
+	       nativeQuery = true)
+	int fillConfirmQtyToQuantity(@Param("orderId") Long orderId);
 }
 
