@@ -196,5 +196,13 @@ public class AdminController {
 	@ResponseBody
 	public Map<String,Object> deletePurchaseRequest(@RequestBody Map<String,Object> payload){
 		return this.adminService.deletePurchaseRequest(payload);
+
+	// 주문관리 -> 환불 내역 페이지로 이동
+	@GetMapping("refundList")
+	public String getRefundList( Model model ){
+
+		model.addAttribute( "refundList", adminService.getRefundList() );
+
+		return "admin/refundList";
 	}
 }
