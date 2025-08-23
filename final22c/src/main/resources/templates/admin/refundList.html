@@ -1,0 +1,52 @@
+<html layout:decorate="~{/layout/adminLayout}">
+<div layout:fragment="content" class="container">
+    <br>
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-table me-1"></i>
+            환불 내역
+        </div>
+        <div class="card-body">
+            <table id="datatablesSimple">
+                <thead>
+                    <tr>
+                        <th scope="col">구분</th>
+                        <th scope="col">요청자ID</th>
+                        <th scope="col">주문번호</th>
+                        <th scope="col">환불신청날짜</th>
+                        <th scope="col">상태</th>
+                        <th scope="col">환급된 금액</th>
+                        <th scope="col">환불처리날짜</th>
+                        <th scope="col">관리</th>
+                    </tr>
+                </thead>
+                <tbody id="refundList">
+                    <tr th:each="list : ${refundList}" th:fragment="productRow">
+                        <td th:text="${list.refundId}"></td>
+                        <td th:text="${list.user.userName}"></td>
+                        <td th:text="${list.order.orderId}"></td>
+                        <td th:text="${#temparols.format(list.createDate, 'yyyy-MM-dd HH:mm')}"></td>
+                        <td>
+                            <span th:if="${list.status == 'REQUESTED'}">환불요청됨</span>
+                            <span th:if="${list.status == 'REFUNDED'}">환불처리됨</span>
+                        </td>
+                        <td>
+                            <span th:if="${list.totalRefundAmount == 0}"> - </span>
+                            <span th:if="${list.totalRefundAmount != 0}" th:text="${list.totalRefundAmount}"></span>
+                        </td>
+                        <td>
+                            <span th:if="${list.status == 'REQUESTED'}"> - </span>
+                            <span th:if="${list.status == 'REFUNDED'}" th:text="${list.updateDate}"></span>
+                        </td>
+                        <td>
+                            <button class="showRefundDetail btn btn-sm btn-outline-secondary">상세내역보기</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+
+</html>
