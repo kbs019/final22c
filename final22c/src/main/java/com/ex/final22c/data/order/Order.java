@@ -33,7 +33,7 @@ public class Order {
     private int totalAmount;        // 결제요청 시 최종 결제금(스냅샷)
 
     @Column(name="status", length=20, nullable=false)
-    private String status;          // PENDING/PAID/CANCELED/FAILED...
+    private String status;          // PENDING / PAID / CANCELED / FAILED / CONFIRMED / REQUESTED / REFUNDED
 
     @Column(name="regDate", nullable=false)
     private LocalDateTime regDate;
@@ -42,7 +42,7 @@ public class Order {
     private List<OrderDetail> details = new ArrayList<>();
     
     @Column(name="deliveryStatus")
-    private String deliveryStatus;
+    private String deliveryStatus;          // ORDERED / SHIPPING / DELIVERED 
     
     @Lob
     @Column(name = "shippingSnapshot")
