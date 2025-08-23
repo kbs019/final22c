@@ -30,7 +30,9 @@ import com.ex.final22c.service.order.MyOrderService;
 import com.ex.final22c.service.order.OrderService;
 import com.ex.final22c.service.payment.PayCancelService;
 import com.ex.final22c.service.payment.PaymentService;
+import com.ex.final22c.service.refund.RefundService;
 import com.ex.final22c.service.user.UsersService;
+
 import lombok.RequiredArgsConstructor;
 
 @Controller
@@ -48,6 +50,7 @@ public class PayController {
     private final UsersService usersService;
 
     private static final int SHIPPING_FEE = 3000;
+    private final RefundService refundService;
 
     /* ================= 단건 결제 (JSON) ================= */
     @PostMapping(value = "/ready/single", consumes = "application/json", produces = "application/json")
@@ -208,4 +211,25 @@ public class PayController {
         }
     }
 
+
+    /** order.html에서 모달 "요청하기"가 호출 */
+    @PostMapping("/{orderId}/refund")
+    public ResponseEntity<?> requestRefund(@PathVariable long orderId,
+                                           @RequestBody Map<String, Object> body,
+                                           Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "로그인이 필요합니다."));
+        }
+
+        String reason = String.valueOf(body.getOrDefault("reason", "")).trim();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("items"); // null 가능
+
+        Long refundId = refundService.requestRefund(orderId, principal.getName(), reason, items);
+
+        return ResponseEntity.ok(Map.of(
+            "message", "환불 요청이 접수되었습니다.",
+            "refundId", refundId
+        ));
+    }
 }
