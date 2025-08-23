@@ -115,97 +115,44 @@ input[type=number]::-webkit-outer-spin-button{
     }
 }
 
-/* 공통 바 스타일 - 테두리 두께를 변수로 통일 */
-.rating-bars{
-  --bar-size: 34px;
-  --bar-gap: 10px;
-  --bar-height: calc(var(--bar-size)*1.8);
-  --bar-stroke: 2px;           /* 기본(평균평점) 테두리 두께 */
-  display: grid;
+/* 5칸 세로 직사형 막대 평점 */
+.bar-5{
+  --bar-size: 26px;        /* 한 칸 크기 */
+  --bar-gap: 8px;
+  display: inline-grid;
   grid-auto-flow: column;
   grid-auto-columns: var(--bar-size);
   gap: var(--bar-gap);
-  height: var(--bar-height);
+  height: calc(var(--bar-size) * 1.8); /* 길게 보이도록 */
+}
+.bar-5::before{
+  content: "";
+  grid-column: 1 / -1;
+}
+.bar-5 > i,
+.bar-5::before{
+  /* 빈 틀 */
+  box-shadow: inset 0 0 0 2px #222;
+  border-radius: 4px;
+  background:
+    linear-gradient(to bottom, transparent 0 0) no-repeat;
+}
+
+.rating-bars{
+  display:flex; gap:8px;
 }
 .rating-bars .cell{
-  border: 0;                    /* 혹시 있을지 모를 border 제거 */
-  border-radius: 4px;
-  box-shadow: inset 0 0 0 var(--bar-stroke) #222;   /* ← 여기가 테두리 */
+  width:24px; height:48px;
+  border:2px solid #000;
+  border-radius:2px;
 }
-.rating-bars .cell.filled{ background:#222; }
-
-
-/* 리스트용 미니 바 */
-.rating-bars.rating-bars--item{
-  --bar-size: 10px;      /* 가로폭 유지 */
-  --bar-gap: 3px;        /* 간격 유지 */
-  --bar-height: 16px;    /* ★ 세로만 +4px (원래 12px) */
-  --bar-stroke: 1px;     /* 테두리 얇게 유지 */
-}
-.rating-bars.rating-bars--item .cell{ border-radius: 2px; }
-
-/* 우측 날짜/액션 컬럼: 가로폭 살짝 확보해 줄바꿈 최소화 */
-.review-right{ display:flex; flex-direction:column; align-items:flex-end; min-width:116px; }
-
-/* 액션 공통(크기/간격) */
-.review-actions{ line-height:1; }
-.review-actions .ra-link,
-.review-actions .ra-box{
-  font-size: 11px;   /* ★ 기존 13px → 11px로 축소 */
-  margin-left: 8px;  /* 간격도 살짝 줄임 */
+.rating-bars .cell.filled{
+  background:#000;
 }
 
-/* 1) 언더라인 호버형 (기본): 레이아웃 흔들림 없는 밑줄 */
-.ra-link{
-  appearance:none; background:none; border:0; padding:0;
-  color:#666; text-decoration:none; cursor:pointer;
-  background-image: linear-gradient(currentColor, currentColor);
-  background-position: 0 100%;
-  background-size: 0% 1px;            /* 밑줄 두께 */
-  background-repeat: no-repeat;
-  transition: background-size .18s ease, color .18s ease;
+/* 개인 리뷰용: 더 작게 보이도록 */
+.rating-bars--sm{
+  --bar-size: 10px;    /* 필요 시 18~22px로 조절 */
+  --bar-gap: 3px;
+  height: calc(var(--bar-size) * 1.2);
 }
-.ra-link:hover{ color:#111; background-size: 100% 1px; }
-.ra-danger{ color:#b55; }
-.ra-danger:hover{ color:#922; background-size:100% 1px; }
-
-/* 2) 박스 버튼형 (원하면 사용) */
-.ra-box{
-  appearance:none; background:#fff; color:#444;
-  border:1px solid #ddd; border-radius:6px;
-  padding:3px 8px; cursor:pointer;
-  transition: border-color .18s ease, background-color .18s ease, color .18s ease;
-}
-.ra-box:hover{ border-color:#bbb; background:#f6f6f6; color:#111; }
-.ra-box.ra-danger{ color:#a44; border-color:#e1c7c7; }
-.ra-box.ra-danger:hover{ color:#811; background:#f7eded; border-color:#d9b3b3; }
-
-/* 링크/버튼 파란색 방지 (브라우저 기본 스타일 제거) */
-.review-actions a:visited{ color:inherit; }
-.review-actions button{ font:inherit; }
-
-/* 좋아요 영역 */
-.like-wrap{
-  display:inline-flex; align-items:center; gap:6px;
-  color:#666;
-}
-.like-wrap .btn-like{
-  appearance:none; border:0; background:none; padding:0 2px;
-  cursor:pointer; line-height:1;
-  color:inherit;
-  background-image: linear-gradient(currentColor,currentColor);
-  background-position: 0 100%;
-  background-size: 0% 1px;
-  background-repeat:no-repeat;
-  transition: background-size .18s ease, color .18s ease, transform .06s ease;
-  font-size: 12px;
-}
-.like-wrap .btn-like:hover{ color:#111; background-size:100% 1px; }
-.like-wrap .btn-like:active{ transform: scale(0.96); }
-
-.like-wrap .like-count{ font-size:12px; color:#444; }
-
-/* 눌린 상태 표시(무채색 유지) */
-.like-wrap.is-liked{ color:#111; }
-.like-wrap.is-liked .btn-like i{ font-weight: 900; }  /* 아이콘 진하게 */
-
