@@ -461,4 +461,46 @@ public class AdminService {
     public List<PurchaseRequest> getPr(){
        return this.purchaseRequestRepository.findAll();
     }
+    
+    // 모달용 발주 신청 목록 DTO 생성
+    public List<Map<String, Object>> getPurchaseRequest() {
+        List<PurchaseRequest> prList = purchaseRequestRepository.findAll(); // 필요한 조건이 있으면 추가
+
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (PurchaseRequest pr : prList) {
+            Map<String, Object> prMap = new HashMap<>();
+            prMap.put("qty", pr.getQty());
+            prMap.put("prId", pr.getPrId());
+
+            Map<String, Object> productMap = new HashMap<>();
+            productMap.put("id", pr.getProduct().getId());
+            productMap.put("name", pr.getProduct().getName());
+            productMap.put("costPrice", pr.getProduct().getCostPrice());
+
+            Map<String, Object> brandMap = new HashMap<>();
+            brandMap.put("brandName", pr.getProduct().getBrand().getBrandName());
+
+            productMap.put("brand", brandMap);
+            prMap.put("product", productMap);
+
+            result.add(prMap);
+        }
+
+        return result;
+    }
+    
+    // 발주 신청 목록 삭제
+    public Map<String,Object> deletePurchaseRequest( Map<String,Object> payload){
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Long prId = Long.valueOf(payload.get("prId").toString()); // prId 키 확인
+            purchaseRequestRepository.deleteById(prId); // PK로 삭제
+            response.put("success", true);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+        }
+        return response;
+    }
 }
