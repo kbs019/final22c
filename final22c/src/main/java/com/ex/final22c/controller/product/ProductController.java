@@ -123,7 +123,7 @@ public class ProductController {
     // 리뷰 수정 폼
     @GetMapping("/etc/review/{reviewId}/edit")
     @PreAuthorize("isAuthenticated()")
-    public String reviewEditForm(@PathVariable Long reviewId,
+    public String reviewEditForm(@PathVariable("reviewId") Long reviewId,
                                  @RequestParam("productId") long productId,
                                  @AuthenticationPrincipal UserDetails principal,
                                  Model model) {
@@ -142,7 +142,7 @@ public class ProductController {
     // 리뷰 수정 처리
     @PostMapping("/etc/review/{reviewId}/edit")
     @PreAuthorize("isAuthenticated()")
-    public String reviewEdit(@PathVariable Long reviewId,
+    public String reviewEdit(@PathVariable("reviewId") Long reviewId,
                              @RequestParam("productId") long productId,
                              @RequestParam("rating") int rating,
                              @RequestParam("content") String content,
@@ -158,7 +158,7 @@ public class ProductController {
     // 리뷰 삭제
     @PostMapping("/etc/review/{reviewId}/delete")
     @PreAuthorize("isAuthenticated()")
-    public String reviewDelete(@PathVariable Long reviewId,
+    public String reviewDelete(@PathVariable("reviewId") Long reviewId,
                                @RequestParam("productId") long productId,
                                @AuthenticationPrincipal UserDetails principal,
                                RedirectAttributes ra) {
