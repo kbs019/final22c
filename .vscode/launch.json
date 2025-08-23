@@ -9,6 +9,16 @@
             "projectName": "final22c",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-Application<final22c>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.ex.final22c.Application",
+            "projectName": "final22c",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
