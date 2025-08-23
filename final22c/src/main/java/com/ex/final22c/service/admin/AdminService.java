@@ -423,28 +423,38 @@ public class AdminService {
         return productRepository.findAll(spec, Sort.by(sorts));
     }
     
-    // 발주 신청 목록 추가
+ // 발주 신청 목록 추가
     public Map<String, Object> addToPurchaseRequest(Map<String, Object> payload) {
-    	 Map<String, Object> response = new HashMap<>();
-         try {
-             Long productId = Long.valueOf(payload.get("productId").toString());
-             int qty = Integer.parseInt(payload.get("qty").toString());
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Long productId = Long.valueOf(payload.get("productId").toString());
+            int qty = Integer.parseInt(payload.get("qty").toString());
 
-             Product product = productRepository.findById(productId)
-                     .orElseThrow(() -> new RuntimeException("상품이 존재하지 않습니다"));
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new RuntimeException("상품이 존재하지 않습니다"));
 
-             PurchaseRequest pr = new PurchaseRequest();
-             pr.setProduct(product);
-             pr.setQty(qty);
+            // ✅ 같은 상품이 이미 발주신청목록에 있는지 확인
+            Optional<PurchaseRequest> existingPr = purchaseRequestRepository.findByProduct(product);
 
-             this.purchaseRequestRepository.save(pr);
+            if (existingPr.isPresent()) {
+                // 이미 있으면 → 수량만 증가
+                PurchaseRequest pr = existingPr.get();
+                pr.setQty(pr.getQty() + qty);
+                purchaseRequestRepository.save(pr);
+            } else {
+                // 없으면 → 새로 추가
+                PurchaseRequest pr = new PurchaseRequest();
+                pr.setProduct(product);
+                pr.setQty(qty);
+                purchaseRequestRepository.save(pr);
+            }
 
-             response.put("success", true);
-         } catch (Exception e) {
-             response.put("success", false);
-             response.put("message", e.getMessage());
-         }
-         return response;
+            response.put("success", true);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+        }
+        return response;
     }
     
     // 발주 신청 목록
