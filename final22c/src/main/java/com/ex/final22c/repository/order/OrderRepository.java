@@ -95,12 +95,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     );   
             
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Order o " +
-           "SET o.deliveryStatus = 'CONFIRMED' " +
-           "WHERE o.orderId = :orderId AND o.user.userNo = :userNo")
-    int updateToConfirmed(@Param("orderId") Long orderId,
-                          @Param("userNo")   Long userNo);
-    
+    @Query("""
+    	      update Order o
+    	         set o.deliveryStatus = 'CONFIRMED'
+    	       where o.orderId = :orderId
+    	         and o.user.userNo = :userNo
+    	         and o.status = 'PAID'
+    	         and o.deliveryStatus = 'DELIVERED'
+    	    """)
+    	    int updateToConfirmed(@Param("orderId") Long orderId,
+    	                          @Param("userNo")   Long userNo);
     /* ===== 사용자별 단건 조회 (details + product fetch) ===== */
     @Query("""
     	    select o
