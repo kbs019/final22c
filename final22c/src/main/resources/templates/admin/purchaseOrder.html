@@ -110,17 +110,31 @@
                 <tr>
                     <th>상품번호</th>
                     <th>상품명</th>
+                    <th>브랜드</th>
+                    <th>단가</th>
                     <th>수량</th>
+                    <th>합계</th>
                 </tr>
             </thead>
-            <tbody id="purchaseList">
-                <tr th:each="pr:${pr}">
+            <tbody id="purchaseList" th:with="sum=0">
+                <tr th:each="pr:${pr}" >
                 	<td th:text="${pr.product.id}"></td>
                 	<td th:text="${pr.product.name}"></td>
+                	<td th:text="${pr.product.brand.brandName}"></td>
+                	<td th:text="${#numbers.formatInteger(pr.product.costPrice, 3, 'COMMA')}"></td>
                 	<td th:text="${pr.qty}"></td>
+                	<td th:text="${#numbers.formatInteger(pr.product.costPrice * pr.qty, 3, 'COMMA')}"></td>
                 </tr>
             </tbody>
+                    <tfoot>
+            <tr>
+                <td colspan="5" class="text-end fw-bold">총금액</td>
+                 <td class="fw-bold" th:text="${#numbers.formatInteger(totalAmount, 3, 'COMMA')}"></td>
+            </tr>
+        </tfoot>
+            
         </table>
+        
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-success" id="confirmPurchase">발주 확정</button>
@@ -219,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 if (data.success) {
                     showAlert('추가되었습니다', 'success');
-                    input.value = 1; // 수량 초기화
+                    input.value = 0; // 수량 초기화
                 } else {
                     showAlert(data.message || '추가 실패', 'danger');
                 }

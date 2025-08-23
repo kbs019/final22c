@@ -1,7 +1,8 @@
 package com.ex.final22c.data.product;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -22,30 +23,32 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Review {
+
     @Id
     @GeneratedValue( strategy = GenerationType.SEQUENCE, generator = "review_seq_gen" )
     @SequenceGenerator( name = "review_seq_gen", sequenceName = "review_seq", allocationSize = 1 )
     @Column(name = "reviewId")
     private Long reviewId;
 
-    // 상품에 대한 리뷰 - N:1 (FK : product_id)
+    // 상품 (N:1)
     @ManyToOne
     private Product product;
 
-    // 리뷰를 쓴 사용자 - N:1 (FK : writer_id)
+    // 작성자 (N:1)
     @ManyToOne
     private Users writer;
 
-    @Column(length = 4000)
+    @Column(length = 4000, nullable = false)
     private String content;
 
     @CreationTimestamp
     private LocalDateTime createDate;
 
-    @Column(name = "rating")
+    // 1~5
+    @Column(name = "rating", nullable = false)
     private int rating;
 
-    // 리뷰에 공감한 사용자들 - N:N (조인 테이블 생성 - 컬럼: review_id, users_id)
+    // 공감(좋아요) N:N
     @ManyToMany
     private Set<Users> likers = new HashSet<>();
 }
