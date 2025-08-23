@@ -328,10 +328,6 @@ $confirmYes.addEventListener('click', async () => {
       updateCardToConfirmed(card);
     }
     // refund 분기 필요시 여기에
-    } else if (pendingAction === 'confirm') {
-      updateCardToConfirmed(card);
-    }
-    // refund 분기 필요시 여기에
 
     openResult(data.message || '처리가 완료되었습니다.');
   } catch (e) {
