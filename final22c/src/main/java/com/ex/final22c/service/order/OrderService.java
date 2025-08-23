@@ -13,6 +13,7 @@ import com.ex.final22c.data.payment.dto.ShipSnapshotReq;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
+import com.ex.final22c.repository.orderDetail.OrderDetailRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.ProductService;
 
@@ -25,6 +26,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductService productService;
     private final UserRepository usersRepository;
+    private final OrderDetailRepository orderDetailRepository;
 
     private static final int SHIPPING_FEE = 3000;
 
@@ -110,6 +112,9 @@ public class OrderService {
         o.setStatus("PAID");
         o.setDeliveryStatus("ORDERED");
         orderRepository.save(o);
+        
+        // 4) PAID시 quantity만큼 confirmquantity에 추가
+        orderDetailRepository.fillConfirmQtyToQuantity(orderId);
     }
 
     /**
