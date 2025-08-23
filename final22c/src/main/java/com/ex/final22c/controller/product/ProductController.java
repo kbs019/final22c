@@ -4,15 +4,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
@@ -27,11 +25,11 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/main")
 @RequiredArgsConstructor
 public class ProductController {
-    
+
     private final ProductService productService;
     private final ReviewService reviewService;
     private final UserRepository userRepository;
-    
+
     // 상세
     @GetMapping("/content/{id}")
     public String productContent(
@@ -41,9 +39,9 @@ public class ProductController {
 
         Product product = productService.getProduct(id);
 
-        // 리뷰 통계 & 목록
         long reviewCount = reviewService.count(product);
-        double avg = reviewService.avg(product);      // 0.0 ~ 5.0
+        double avg = reviewService.avg(product);
+
         model.addAttribute("product", product);
         model.addAttribute("reviews", reviewService.getReviews(product, sort));
         model.addAttribute("reviewCount", reviewCount);
@@ -53,30 +51,41 @@ public class ProductController {
         return "main/content";
     }
 
-    // 리뷰 작성 폼 (로그인 전 접근 차단은 템플릿/시큐리티로 처리)
+    // 리뷰 작성 폼 (비로그인 접근 차단)
     @GetMapping("/etc/review/new")
-    public String reviewNew(@RequestParam("productId") long productId, Model model) {
+    @PreAuthorize("isAuthenticated()")
+    public String reviewNew(@RequestParam("productId") long productId,
+                            Model model) {
         Product product = productService.getProduct(productId);
         model.addAttribute("product", product);
         return "main/etc/review-form";
     }
 
-    // 리뷰 저장
+    // 리뷰 저장 (인증 보장 + 널 안전)
     @PostMapping("/etc/review")
+    @PreAuthorize("isAuthenticated()")
     public String reviewCreate(
             @RequestParam("productId") long productId,
             @RequestParam("rating") int rating,
             @RequestParam("content") String content,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal UserDetails principal,
+            RedirectAttributes ra) {
+
+        // 혹시 모를 널 방지 (필요 시 로그인으로 유도)
+        if (principal == null) {
+            return "redirect:/login?required&redirect=/main/content/" + productId;
+        }
 
         Product product = productService.getProduct(productId);
 
-        // 로그인 사용자 → Users 매핑 (실프로젝트의 인증 구조에 맞게 조정)
+        // 로그인 사용자 → Users 매핑
         Users writer = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
 
         Review saved = reviewService.write(product, writer, rating, content);
-        return "redirect:/main/content/" + product.getId(); // 저장 후 상세로 복귀
+
+        ra.addFlashAttribute("msg", "후기가 등록되었습니다.");
+        return "redirect:/main/content/" + product.getId();
     }
 
     // 리스트
@@ -88,7 +97,6 @@ public class ProductController {
                            @RequestParam(name = "q",           required = false) String keyword,
                            Model model) {
 
-        // 옵션(좌측 필터 UI용) 유지
         model.addAttribute("brands",    productService.getBrandOptions());
         model.addAttribute("grades",    productService.getGradeOptions());
         model.addAttribute("mainNotes", productService.getMainNoteOptions());
@@ -123,15 +131,15 @@ public class ProductController {
         return "main/brand";
     }
 
-    // ===== 브랜드 상세(= 리스트 카드 + 브랜드 필터만 적용) =====
+    // ===== 브랜드 상세 =====
     @GetMapping("/brand/{brandNo}")
     public String brandDetail(@PathVariable("brandNo") Long brandNo, Model model) {
         Map<String, Object> brand = productService.getBrand(brandNo);
 
         Map<String, Object> res = productService.getProducts(
-                Collections.singletonList(brandNo), // brandIds
-                null, null, null,                   // grade/mainNote/volume
-                null                                // keyword
+                Collections.singletonList(brandNo),
+                null, null, null,
+                null
         );
 
         model.addAttribute("brand", brand);
