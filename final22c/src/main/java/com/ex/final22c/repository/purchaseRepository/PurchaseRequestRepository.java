@@ -9,5 +9,6 @@ import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.purchase.PurchaseRequest;
 @Repository
 public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest,Long>{
-    Optional<PurchaseRequest> findByProduct(Product product);
+
+	Optional<PurchaseRequest> findByProduct(Product product);
 }
