@@ -35,6 +35,9 @@ public class RefundDetail {
     @Column(name = "quantity")
     private int quantity;
 
+    @Column(name = "quantity")
+    private int quantity;                                       // 한 행에대한 환불요청수량
+
     @Column(name = "refundQty")
     private int refundQty;                                      // 몇 개를 환불했는가
     
