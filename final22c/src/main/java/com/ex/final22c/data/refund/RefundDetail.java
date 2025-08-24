@@ -32,6 +32,9 @@ public class RefundDetail {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private OrderDetail orderDetail;                            // 어떤 주문상세내역에 대한 환불인가
 
+    @Column(name = "quantity")
+    private int quantity;                                       // 한 행에대한 환불요청수량
+
     @Column(name = "refundQty")
     private int refundQty;                                      // 몇 개를 환불했는가
     
