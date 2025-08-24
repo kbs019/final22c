@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.purchase.PurchaseRequest;
+
 @Repository
 public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest,Long>{
 
