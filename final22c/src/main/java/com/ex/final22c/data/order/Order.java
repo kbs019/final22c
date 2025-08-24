@@ -11,7 +11,6 @@ import com.ex.final22c.data.user.Users;
 import jakarta.persistence.*;
 import lombok.*;
 
-
 @Entity
 @Table(name = "orders")
 @Getter @Setter
