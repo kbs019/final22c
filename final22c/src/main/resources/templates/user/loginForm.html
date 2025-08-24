@@ -1,19 +1,111 @@
 <!-- <htm layout:decorate="~{layout}">
 <div layout:fragment="content"> -->
-<html>
-<div>
-    <h1>로그인</h1>
-    <form th:action="@{/user/login}" method="post">
-        <div>
-            <label for="username">아이디:</label>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: #f9fafb;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .login-container {
+        background: #fff;
+        padding: 40px 32px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0,0,0,.1);
+        width: 360px;
+        text-align: center;
+    }
+
+    .login-title {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 28px;
+        color: #111827;
+    }
+
+    .login-form .form-group {
+        text-align: left;
+        margin-bottom: 18px;
+    }
+
+    .login-form label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #374151;
+    }
+
+    .login-form input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        font-size: 14px;
+    }
+
+    .btn-login {
+        margin-top: 12px;
+        width: 100%;
+        padding: 12px;
+        background: #111827;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: opacity .2s;
+    }
+    .btn-login:hover {
+        opacity: .9;
+    }
+
+    .login-links {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 18px;
+        font-size: 14px;
+    }
+
+    .login-links .link {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .login-links .link:hover {
+        text-decoration: underline;
+    }
+
+</style>
+<head>
+    <meta charset="UTF-8">
+    <title>로그인</title>
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1 class="login-title">Login</h1>
+
+        <form th:action="@{/user/login}" method="post" class="login-form">
+        <div class="form-group">
+            <label for="username">ID</label>
             <input type="text" id="username" name="username" required>
         </div>
-        <div>
-            <label for="password">비밀번호:</label>
+        <div class="form-group">
+            <label for="password">PW</label>
             <input type="password" id="password" name="password" required>
         </div>
-        <button type="submit">로그인</button>
-        <a th:href="@{/user/create}">회원가입</a>
-    </form>
-</div>
+
+        <button type="submit" class="btn-login">로그인</button>
+        </form>
+
+        <div class="login-links">
+        <a th:href="@{/user/find}" class="link">아이디/비밀번호 찾기</a>
+        <a th:href="@{/user/create}" class="link">회원가입</a>
+        </div>
+    </div>
+</body>
 </html>
