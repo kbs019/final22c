@@ -42,15 +42,23 @@ public class PayCancelService {
 	    if (!"SUCCESS".equalsIgnoreCase(pay.getStatus())) {
 	        throw new IllegalStateException("취소 불가 상태(결제가 SUCCESS 아님)");
 	    }
+	    
+	    // 2) 0원 결제일 경우 / PG 미사용 
+	    if (pay.getAmount() == 0) {
+	    	// 포인트 환불 + 주문 상태 CANCELED 처리
+	    	orderService.applyCancel(order, 0, reason);
+	    	paymentService.markCanceledByTid(reason);
+	    	return Map.of("ok", true, "message", "0원 결제건 환불 완료(포인트 복구)");
+	    }
 
-	    // 2) PG 취소 (전액취소만 지원)
+	    // 3) PG 취소 (전액취소만 지원)
 	    final int amountToCancel = order.getTotalAmount(); // 부분취소 미지원
 	    Map<String, Object> pgResp = kakaoApiService.cancel(pay.getTid(), amountToCancel, reason);
 
-	    // 3) DB 취소 처리 (마일리지/재고 복구 + 주문 상태 업데이트)
+	    // 4) DB 취소 처리 (마일리지/재고 복구 + 주문 상태 업데이트)
 	    orderService.applyCancel(order, amountToCancel, reason);
 
-	    // 4) 결제 상태도 CANCELED로 표시
+	    // 5) 결제 상태도 CANCELED로 표시
 	    paymentService.markCanceledByTid(pay.getTid());
 
 	    return pgResp;

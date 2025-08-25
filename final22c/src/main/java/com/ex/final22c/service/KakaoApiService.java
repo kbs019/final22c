@@ -37,7 +37,7 @@ public class KakaoApiService {
     public Map<String, Object> readySingle(long productId, int qty, String userId, Order order) {
         if (order == null) throw new IllegalArgumentException("order가 null입니다.");
         int payable = order.getTotalAmount();
-        if (payable <= 0) throw new IllegalStateException("결제 총액이 0원 이하입니다.");
+        if (payable < 0) throw new IllegalStateException("결제 총액이 0원 미만입니다.");
 
         Product p = productService.getProduct(productId);
         if (p == null) throw new IllegalArgumentException("상품 없음: " + productId);
