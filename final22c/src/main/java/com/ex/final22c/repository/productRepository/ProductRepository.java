@@ -40,4 +40,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 	
 	// 상품목록 (페이징,검색)
     List<Product> findAll(Specification<Product> spec);
+
+	List<Product> findByIsPickedOrderByIdDesc(String isPicked, Pageable pageable);
 }

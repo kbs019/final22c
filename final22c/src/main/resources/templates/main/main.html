@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+  <meta charset="UTF-8">
+  <title>22°C – Main</title>
+
+  <!-- 페이지 전용 CSS -->
+  <th:block layout:fragment="css">
+    <style>
+      /* 페이지 래퍼는 레이아웃의 .container를 사용하므로 섹션 단위 여백만 정의 */
+      .banner{width:100%;height:280px;border:2px solid #ccc;border-radius:12px;overflow:hidden;margin:12px 0}
+      .banner img{width:100%;height:100%;object-fit:cover}
+
+      .section-title{font-weight:700;margin:24px 0 12px}
+      .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+      @media (max-width: 992px){ .grid{grid-template-columns:repeat(4,1fr);} }
+      @media (max-width: 768px){ .grid{grid-template-columns:repeat(3,1fr);} }
+      @media (max-width: 576px){ .grid{grid-template-columns:repeat(2,1fr);} }
+
+      .card--pd{border:1px solid #dee2e6;border-radius:.75rem;padding:10px;text-align:center;background:#fff}
+      .thumb{width:100%;aspect-ratio:1/1;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#fafafa}
+      .thumb img{width:100%;height:100%;object-fit:cover}
+      .name{margin-top:8px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .price{margin-top:2px;font-weight:700}
+
+      /* Pick Carousel */
+      .carousel-wrap{position:relative}
+      .carousel{display:flex;gap:16px;overflow:hidden;scroll-behavior:smooth}
+      .carousel .card--pd{min-width:calc(25% - 12px)} /* 4개씩 보이기 */
+      .nav-btn{position:absolute;top:40%;transform:translateY(-50%);background:#fff;border:1px solid #ddd;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+      .nav-prev{left:-12px}.nav-next{right:-12px}
+      .muted{color:#6c757d;font-size:12px}
+    </style>
+  </th:block>
+</head>
+
+<body>
+  <!-- 본문 영역 -->
+  <th:block layout:fragment="content">
+
+    <h1 class="h3 mb-2">Main</h1>
+
+    <!-- 배너 -->
+    <div class="banner">
+      <img th:src="@{${bannerSrc}}" alt="banner">
+    </div>
+
+    <!-- Pick (isPicked=1) -->
+    <section class="mt-4">
+      <div class="section-title">Pick</div>
+      <div class="carousel-wrap">
+        <button class="nav-btn nav-prev" type="button" aria-label="prev">&#9664;</button>
+
+        <div id="pickCarousel" class="carousel">
+          <div class="card--pd" th:each="p : ${picks}">
+            <a class="thumb d-block" th:href="@{'/product/content/' + ${p.id}}">
+              <img th:src="@{${p.imgPath} + ${p.imgName}}" th:alt="${p.name}">
+            </a>
+            <div class="name" th:text="${p.name}">상품명</div>
+            <div class="price" th:text="${#numbers.formatInteger(p.sellPrice, 0)} + '원'">0원</div>
+          </div>
+        </div>
+
+        <button class="nav-btn nav-next" type="button" aria-label="next">&#9654;</button>
+      </div>
+      <div class="muted mt-1">좌우 버튼으로 4개씩 넘겨보세요</div>
+    </section>
+
+    <!-- ALL BEST -->
+    <section class="mt-5">
+      <div class="section-title">ALL BEST</div>
+      <div class="grid">
+        <div class="card--pd" th:each="v : ${bestAll}">
+          <a class="thumb d-block" th:href="@{'/product/content/' + ${v.product.id}}">
+            <img th:src="@{${v.product.imgPath} + ${v.product.imgName}}" th:alt="${v.product.name}">
+          </a>
+          <div class="name" th:text="${v.product.name}">상품명</div>
+          <div class="price" th:text="${#numbers.formatInteger(v.product.sellPrice, 0)} + '원'">0원</div>
+          <div class="muted" th:text="'판매량 ' + ${v.sales}">판매량</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WOMAN BEST -->
+    <section class="mt-5">
+      <div class="section-title">WOMAN BEST</div>
+      <div class="grid">
+        <div class="card--pd" th:each="v : ${bestWomen}">
+          <a class="thumb d-block" th:href="@{'/product/content/' + ${v.product.id}}">
+            <img th:src="@{${v.product.imgPath} + ${v.product.imgName}}" th:alt="${v.product.name}">
+          </a>
+          <div class="name" th:text="${v.product.name}">상품명</div>
+          <div class="price" th:text="${#numbers.formatInteger(v.product.sellPrice, 0)} + '원'">0원</div>
+          <div class="muted" th:text="'판매량 ' + ${v.sales}">판매량</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAN BEST -->
+    <section class="mt-5">
+      <div class="section-title">MAN BEST</div>
+      <div class="grid">
+        <div class="card--pd" th:each="v : ${bestMen}">
+          <a class="thumb d-block" th:href="@{'/product/content/' + ${v.product.id}}">
+            <img th:src="@{${v.product.imgPath} + ${v.product.imgName}}" th:alt="${v.product.name}">
+          </a>
+          <div class="name" th:text="${v.product.name}">상품명</div>
+          <div class="price" th:text="${#numbers.formatInteger(v.product.sellPrice, 0)} + '원'">0원</div>
+          <div class="muted" th:text="'판매량 ' + ${v.sales}">판매량</div>
+        </div>
+      </div>
+    </section>
+
+  </th:block>
+
+  <!-- 페이지 전용 스크립트 -->
+  <th:block layout:fragment="script">
+    <script>
+      (function(){
+        const wrap = document.querySelector('.carousel-wrap');
+        if(!wrap) return;
+        const carousel = document.getElementById('pickCarousel');
+        const prev = wrap.querySelector('.nav-prev');
+        const next = wrap.querySelector('.nav-next');
+
+        function scrollByItems(n){
+          const card = carousel.querySelector('.card--pd');
+          if(!card) return;
+          const style = getComputedStyle(carousel);
+          const gap = parseFloat(style.columnGap || style.gap || 16);
+          const width = card.getBoundingClientRect().width + gap; // gap 포함
+          carousel.scrollBy({left: n * width, behavior: 'smooth'});
+        }
+        prev.addEventListener('click', ()=>scrollByItems(-4));
+        next.addEventListener('click', ()=>scrollByItems(+4));
+      })();
+    </script>
+  </th:block>
+</body>
+</html>
