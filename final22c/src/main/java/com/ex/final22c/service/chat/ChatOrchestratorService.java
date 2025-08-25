@@ -43,7 +43,7 @@ public class ChatOrchestratorService {
         String safe;
         try {
             // 가드 + 50행 안전 제한
-            safe = SqlGuard.ensureSelectOnly(sqlGen);
+        	safe = SqlGuard.ensureSelect(sqlGen);
             safe = SqlGuard.ensureLimit(safe, 50);
         } catch (Exception e){
             // 가드에 걸리면 일반 챗으로 폴백
