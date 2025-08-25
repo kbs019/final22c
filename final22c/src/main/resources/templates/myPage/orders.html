@@ -1,8 +1,6 @@
-<!-- templates/mypage/orders.html -->
 <html layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
 <style>
-   /* 안녕하세요 */
   /* 카드: 2행 그리드 (1행: 정보/버튼, 2행: 진행바) */
   .order-card{
     position: relative;
@@ -68,6 +66,16 @@
   .badge-canceled{display:inline-block;padding:4px 8px;border-radius:8px;background:#fee2e2;color:#991b1b;font-weight:600;font-size:12px;margin-left:8px}
   .order-card.is-canceled{opacity:.9}
   .badge-confirmed{display:inline-block;padding:4px 8px;border-radius:8px;background:#dcfce7;color:#166534;font-weight:600;font-size:12px;margin-left:8px}
+  .badge-requested {
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:8px;
+  background:#fef9c3;   /* 노란색 톤 */
+  color:#854d0e;
+  font-weight:600;
+  font-size:12px;
+  margin-left:8px;
+}
 
   /* 좁은 화면 대응 */
   @media (max-width: 900px){
@@ -100,7 +108,7 @@
   .cm-btn--primary{ background:#111827; color:#fff; border-color:#111827; }
   .cm-btn:focus{ outline:2px solid #111827; outline-offset:2px; }
 
-  /* ✅ 모달 열릴 때만 스크롤 잠금 + 우측 패딩 보정 */
+  /* 모달 열릴 때만 스크롤 잠금 + 우측 패딩 보정 */
   body.lock-scroll{
     overflow:hidden;
     padding-right: var(--sbw, 0px);
@@ -130,15 +138,16 @@
       <div class="order-title">
         <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
         <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
-      <span th:if="${o.status=='CONFIRMED'}" class="badge-confirmed">주문확정</span>
-        <span th:if="${o.status=='CANCELED'}" class="badge-canceled">주문취소</span>
+        <span th:if="${o.status=='REQUESTED'}" class="badge-requested">환불요청</span>
+        <span th:if="${o.status=='CONFIRMED' and o.status!='REQUESTED'}" class="badge-confirmed">주문확정</span>
+        <span th:if="${o.status=='CANCELED' and o.status!='REQUESTED'}" class="badge-canceled">주문취소</span>
       </div>
       <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
     </div>
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
    <div class="stepper"
-        th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.status!='CONFIRMED'}"
+        th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.status!='CONFIRMED' and o.status!='REQUESTED'}"
          th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
@@ -163,7 +172,7 @@
     <!-- 우측 중앙 > -->
     <a class="more" th:href="@{/mypage/order/{id}(id=${o.orderId})}">&gt;</a>
 
-    <!-- ✅ 환불 모달로 복사할 숨김 리스트(데이터만 담아두기) -->
+    <!-- 환불 모달로 복사할 숨김 리스트(데이터만 담아두기) -->
     <div class="refund-items-src" th:attr="data-order-id=${o.orderId}" hidden>
       <ul>
         <li th:each="d : ${o.details}"
@@ -345,7 +354,7 @@ document.querySelectorAll('.order-card').forEach(card=>{
   btnConfirm?.addEventListener('click', ()=>{
     openConfirm(id,'confirm','주문을 확정하시겠습니까?');
   });
-  // ✅ 환불은 확인모달 대신 전용 모달 사용
+  // 환불은 확인모달 대신 전용 모달 사용
   btnRefund?.addEventListener('click', ()=>{
      openRefundModalFromCard(card);
   });
@@ -581,6 +590,27 @@ function fmt(n){ return (n||0).toLocaleString() + '원'; }
       // 환불 버튼 비활성
       const card = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
       card?.querySelector('.btn-refund')?.setAttribute('disabled','disabled');
+
+        // 주문 상태 'REQUESTED' 반영
+    if (card) {
+      // stepper 제거 (환불 진행중이면 배송상태 불필요)
+      card.querySelector('.stepper')?.remove();
+
+      // 우측 버튼 영역 제거
+      card.querySelector('.order-actions')?.remove();
+
+      // 제목 영역에 '환불요청' 배지 추가
+      const title = card.querySelector('.order-title');
+      if (title && !title.querySelector('.badge-requested')) {
+        const b = document.createElement('span');
+        b.className = 'badge-requested';
+        b.textContent = '환불요청';
+        title.appendChild(b);
+      }
+
+      // dataset.status 속성도 갱신해두면 추후 활용 가능
+      card.dataset.status = 'REQUESTED';
+    }
 
       close();
       if (typeof openResult === 'function') {

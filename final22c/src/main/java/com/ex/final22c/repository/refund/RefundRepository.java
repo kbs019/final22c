@@ -31,4 +31,12 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
         where r.refundId = :refundId
     """)
     Optional<Refund> findGraphById(@Param("refundId") Long refundId);
+
+    @Query("""
+      select distinct r.order.orderId
+      from Refund r
+      where r.status = :status and r.order.orderId in :orderIds
+    """)
+    List<Long> findRequestedOrderIds(@Param("orderIds") List<Long> orderIds,
+                                     @Param("status") String status);
 }
