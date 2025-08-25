@@ -34,7 +34,7 @@ public class MyOrderService {
     private final OrderDetailRepository orderDetailRepository; 
 
     /**
-     * 마이페이지 목록(페이징): PENDINGm, failed 제외하고(PAID + CANCELED + REFUND) 최신순
+     * 마이페이지 목록(페이징): PENDING, failed 제외하고(PAID + CANCELED + REFUND) 최신순
      */
 
     @Transactional(readOnly = true)
