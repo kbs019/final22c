@@ -93,4 +93,6 @@ public class MyOrderController {
 		model.addAttribute("payments", payments);
 		return "mypage/orderDetail :: items";
 	}
+
+	
 }

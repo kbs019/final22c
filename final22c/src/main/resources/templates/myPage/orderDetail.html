@@ -54,6 +54,7 @@
             <li th:each="p : ${payments}">
             결제번호 [[${p.paymentId}]] 
             <br>
+            <span th:if="${isPointOnly}">결제 수단 : 마일리지 전액 결제</span>
             <span>결제 수단 : 카카오페이</span>
             <br>
             총 결제 금액 : [[${#numbers.formatInteger(p.amount,0)}]]원
