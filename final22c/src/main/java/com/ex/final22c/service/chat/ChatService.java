@@ -3,6 +3,7 @@ package com.ex.final22c.service.chat;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,10 +13,13 @@ import java.util.Map;
 
 //ChatService.java
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ChatService {
     private final WebClient aiWebClient;
+    
+    public ChatService(@Qualifier("aiWebClient") WebClient aiWebClient) {
+        this.aiWebClient = aiWebClient;
+    }
 
     @Value("${deepseek.api.model:deepseek-chat}") // ← DeepSeek native면 이게 맞음
     private String model;
@@ -52,13 +56,18 @@ public class ChatService {
     }
 
     public String generateSql(String question, String schemaDoc) {
-        var sys = """
-                너는 Oracle SQL 생성기다.
-                - 오직 단일 SELECT 한 개만..
-                - 허용 테이블: USERS, ORDERS, ORDERDETAIL, PAYMENT.
-                - 결과는 최대 50행: 없으면 'FETCH FIRST 50 ROWS ONLY'.
-                - 반드시 ```sql ... ``` 코드블록 한 개만 출력.
-                """;
+    	var sys = """
+    			너는 Oracle SQL 생성기다.
+    			- 오직 단일 SELECT 한 개만. DUAL/DML/DDL 금지.
+    			- 허용 테이블: USERS, ORDERS, ORDERDETAIL, PAYMENT, PRODUCT.
+    			- 텍스트 비교는 항상 대소문자 무시: UPPER(컬럼) = UPPER(:v) 또는 REGEXP_LIKE(...,'i').
+    			- ✅ '성비/남녀비율' 질의 등 GENDER는 동의어를 코드로 정규화해서 집계:
+    			  예) 남/남자/남성/M/Male → 'M', 여/여자/여성/F/Female → 'F'
+    			  집계 예시:
+    			    SUM(CASE WHEN REGEXP_LIKE(GENDER,'^(M|MALE|남|남자|남성)$','i') THEN 1 ELSE 0 END) AS MALE_COUNT
+    			- 바인딩 변수 사용 (:userNo, :limit 등). 값 인라인 금지.
+    			- 최대 50행 제한. 반드시 ```sql ... ``` 코드블록 한 개만 출력.
+    			""";
         var user = "스키마 요약:\n" + schemaDoc + "\n\n질문:\n" + question + "\n\n반드시 코드블록으로 SQL만 출력.";
         var body = Map.of(
                 "model", model,
