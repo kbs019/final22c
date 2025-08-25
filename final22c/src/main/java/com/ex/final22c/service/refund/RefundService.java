@@ -147,54 +147,60 @@ public class RefundService {
      */
     @Transactional
     public Long requestRefund(long orderId,
-                              String principalName,
-                              String reasonText,
-                              List<Map<String, Object>> items // null 가능
-    ) {
-        // 1) 사용자
+                            String principalName,
+                            String reasonText,
+                            List<Map<String, Object>> items) {
+
+        // 1) 사용자 확인 (email → userName 순으로)
         Users user = userRepository.findByEmail(principalName)
                 .or(() -> userRepository.findByUserName(principalName))
                 .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
 
-        // 2) 주문 (잠금 조회 권장)
-        Order order = orderRepository.findByIdForUpdate(orderId) // findById로 대체 가능
+        // 2) 주문 조회 (잠금 메서드가 있으면 findByIdForUpdate 사용)
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
 
+        // 본인 주문인지 검증
         if (order.getUser() == null || !order.getUser().getUserNo().equals(user.getUserNo())) {
             throw new IllegalStateException("본인 주문에 대해서만 환불을 요청할 수 있습니다.");
         }
+        // 상태 검증
         if (!"PAID".equalsIgnoreCase(order.getStatus())) {
             throw new IllegalStateException("결제 완료 상태에서만 환불 요청이 가능합니다.");
         }
         if (!"DELIVERED".equalsIgnoreCase(order.getDeliveryStatus())) {
             throw new IllegalStateException("배송완료 상태에서만 환불 요청이 가능합니다.");
         }
+        // 이미 진행 중인 환불요청 존재 여부
         if (refundRepository.existsByOrderAndStatus(order, "REQUESTED")) {
             throw new IllegalStateException("이미 처리 중인 환불 요청이 있습니다.");
         }
 
-        // 3) 결제
-        Payment payment = paymentRepository.findTopByOrder_OrderIdOrderByPaymentIdDesc(orderId)
+        // 3) 최신 결제 조회
+        Payment payment = paymentRepository
+                .findTopByOrder_OrderIdOrderByPaymentIdDesc(orderId)
                 .orElseThrow(() -> new IllegalStateException("주문 결제 정보를 찾을 수 없습니다."));
 
-        // 4) Refund 생성
+        // 4) 환불 본문 생성
         if (reasonText == null || reasonText.isBlank()) {
             throw new IllegalArgumentException("환불 사유를 입력해주세요.");
         }
+
         Refund refund = new Refund();
         refund.setOrder(order);
         refund.setUser(user);
         refund.setPayment(payment);
-        refund.setStatus("REQUESTED");
+        refund.setStatus("REQUESTED");                 // 표준화
         refund.setReasonText(reasonText.trim());
         refund.setPgRefundId(null);
         refund.setPgPayloadJson(null);
-        refund.setCreateDate(LocalDateTime.now());
+        refund.setCreateDate(LocalDateTime.now());     // @CreationTimestamp 있어도 무방
 
-        // 5) 부분환불 항목
+        // 5) 환불 상세 생성 (부분환불 가능)
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("환불 수량을 1개 이상 선택하세요.");
         }
+
         int requestedCountSum = 0;
 
         for (Map<String, Object> m : items) {
@@ -207,28 +213,30 @@ public class RefundService {
             OrderDetail od = orderDetailRepository.findById(odId)
                     .orElseThrow(() -> new IllegalArgumentException("주문상세를 찾을 수 없습니다."));
 
+            // 같은 주문의 상세인지 검증
             if (od.getOrder() == null || od.getOrder().getOrderId() != orderId) {
                 throw new IllegalStateException("해당 주문의 상세만 환불할 수 있습니다.");
             }
 
-            int max = od.getQuantity();
+            int max = od.getQuantity();                 // 구매 당시 수량
             if (qty < 0 || qty > max) {
                 throw new IllegalArgumentException("환불 수량이 유효하지 않습니다. (0 ~ " + max + ")");
             }
             if (qty == 0) continue;
 
+            // 단가 스냅샷: sellPrice 우선, 없으면 총액/수량
             Integer unit = od.getSellPrice();
             if (unit == null) {
                 unit = Math.round((float) od.getTotalPrice() / Math.max(1, max));
             }
 
             RefundDetail rd = new RefundDetail();
-            rd.setRefund(refund);
+            rd.setRefund(refund);                       // 양방향 연결(아래 addDetail로도 보강)
             rd.setOrderDetail(od);
-            rd.setQuantity(qty);                  // 신청 수량
-            rd.setRefundQty(0);                   // 승인 수량(초기 0)
-            rd.setUnitRefundAmount(unit);         // 단가(스냅샷)
-            rd.setDetailRefundAmount(qty * unit); // 승인 금액(초기 계산값)
+            rd.setQuantity(qty);                        // "신청" 수량
+            rd.setRefundQty(0);                         // "승인" 수량(초기 0)
+            rd.setUnitRefundAmount(unit);               // 단가 스냅샷
+            rd.setDetailRefundAmount(qty * unit);       // 초기 합계
 
             refund.addDetail(rd);
             requestedCountSum += qty;
@@ -237,13 +245,21 @@ public class RefundService {
         if (requestedCountSum <= 0) {
             throw new IllegalArgumentException("환불 수량을 1개 이상 선택하세요.");
         }
-        refund.setTotalRefundAmount(0);
 
-        // ▶ 핵심: 주문 상태 DB 반영 (트랜잭션 더티체크)
+        refund.setTotalRefundAmount(0);                 // 승인 합계는 심사 시 재계산
+
+        // 6) 주문 상태 갱신 (더티체크로 반영)
         order.setStatus("REQUESTED");
 
-        // 6) 저장
-        return refundRepository.save(refund).getRefundId();
+        // 7) 저장(한 번만)
+        Long refundId = refundRepository.save(refund).getRefundId();
+
+        // 디버그(선택)
+        System.out.println("[refund-save] orderId=" + orderId +
+                ", refundId=" + refundId +
+                ", status=" + refund.getStatus());
+
+        return refundId;
     }
 
     // ===== 헬퍼 =====
