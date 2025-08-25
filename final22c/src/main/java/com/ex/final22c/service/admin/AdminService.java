@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +28,8 @@ import com.ex.final22c.data.product.Grade;
 import com.ex.final22c.data.product.MainNote;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Volume;
+import com.ex.final22c.data.purchase.Purchase;
+import com.ex.final22c.data.purchase.PurchaseDetail;
 import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.user.Users;
@@ -35,6 +39,8 @@ import com.ex.final22c.repository.productRepository.GradeRepository;
 import com.ex.final22c.repository.productRepository.MainNoteRepository;
 import com.ex.final22c.repository.productRepository.ProductRepository;
 import com.ex.final22c.repository.productRepository.VolumeRepository;
+import com.ex.final22c.repository.purchaseRepository.PurchaseDetailRepository;
+import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.user.UserRepository;
@@ -58,6 +64,8 @@ public class AdminService {
     private final VolumeRepository volumeRepository;
     private final PurchaseRequestRepository purchaseRequestRepository;
     private final RefundRepository refundRepository;
+    private final PurchaseRepository purchaseRepository;
+    private final PurchaseDetailRepository purchaseDetailRepository;
 
     // 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
@@ -437,18 +445,14 @@ public class AdminService {
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new RuntimeException("상품이 존재하지 않습니다"));
 
-            // ✅ 같은 상품이 이미 발주신청목록에 있는지 확인
             Optional<PurchaseRequest> existingPr = purchaseRequestRepository.findByProduct(product);
-
             if (existingPr.isPresent()) {
-                // 이미 있으면 → 수량만 증가
                 PurchaseRequest pr = existingPr.get();
                 pr.setQty(pr.getQty() + qty);
                 purchaseRequestRepository.save(pr);
             } else {
-                // 없으면 → 새로 추가
                 PurchaseRequest pr = new PurchaseRequest();
-                pr.setProduct(product);
+                pr.setProduct(product); // Product 객체(FK) 바인딩
                 pr.setQty(qty);
                 purchaseRequestRepository.save(pr);
             }
@@ -511,5 +515,79 @@ public class AdminService {
             response.put("message", e.getMessage());
         }
         return response;
+    }
+    
+    // 발주 신청
+    @Transactional
+    public void confirmPurchase(List<Map<String, Object>> items) {
+        // 1. 발주 마스터 생성
+        Purchase purchase = new Purchase();
+        purchase.setReg(LocalDateTime.now());
+        purchaseRepository.save(purchase);
+
+        int totalPrice = 0; 
+        // 2. 발주 상세 생성
+        for (Map<String, Object> item : items) {
+        	Object productIdObj = item.get("productId");
+            Object qtyObj = item.get("qty");
+
+            if (productIdObj == null || qtyObj == null) {
+                throw new RuntimeException("productId 또는 qty 값이 없습니다.");
+            }
+            Long productId = Long.valueOf(item.get("productId").toString());
+            int qty = Integer.valueOf(item.get("qty").toString());
+
+            Product product = productRepository.findById(productId)
+                                .orElseThrow(() -> new RuntimeException("상품 없음"));
+
+            PurchaseDetail detail = new PurchaseDetail();
+            detail.setProduct(product);
+            detail.setQty(qty);
+            detail.setPurchase(purchase);
+            detail.setTotalPrice(product.getCostPrice()*qty);
+            purchaseDetailRepository.save(detail);
+            
+            // 재고 업데이트
+            product.setCount(product.getCount() + qty);
+            productRepository.save(product); // 변경된 재고 저장
+            
+            // 총금액 계산
+            totalPrice += product.getCostPrice() * qty;
+        }
+     // 발주 품목 개수 계산
+        purchase.setCount(items.size());
+        purchase.setTotalPrice(totalPrice);
+        purchaseRepository.save(purchase);
+
+      // 3. 발주신청목록 전체 삭제
+       purchaseRequestRepository.deleteAll();
+    }
+    
+    // 발주 목록
+    public List<Purchase> getPurchase(){
+    	return this.purchaseRepository.findAll();
+    }
+    
+    // 발주 상세 내역
+    public Map<String, Object> getPurchaseDetail(Long purchaseId) {
+        Purchase purchase = purchaseRepository.findById(purchaseId)
+                .orElseThrow(() -> new RuntimeException("발주 없음"));
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (PurchaseDetail d : purchase.getPurchaseDetail()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("productId", d.getProduct().getId()); // 오타 주의
+            item.put("productName", d.getProduct().getName());
+            item.put("qty", d.getQty());
+            item.put("price", d.getProduct().getCostPrice());                   // 단가
+            item.put("total", d.getTotalPrice());      // 합계
+            items.add(item);
+        }
+
+        return Map.of(
+            "reg", purchase.getReg().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+            "totalPrice", purchase.getTotalPrice(),
+            "items", items
+        );
     }
 }
