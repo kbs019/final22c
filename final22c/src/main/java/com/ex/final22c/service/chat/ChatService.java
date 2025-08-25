@@ -54,7 +54,7 @@ public class ChatService {
     public String generateSql(String question, String schemaDoc) {
         var sys = """
                 너는 Oracle SQL 생성기다.
-                - 오직 단일 SELECT 한 개만.
+                - 오직 단일 SELECT 한 개만..
                 - 허용 테이블: USERS, ORDERS, ORDERDETAIL, PAYMENT.
                 - 결과는 최대 50행: 없으면 'FETCH FIRST 50 ROWS ONLY'.
                 - 반드시 ```sql ... ``` 코드블록 한 개만 출력.

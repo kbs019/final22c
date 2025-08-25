@@ -4,29 +4,38 @@ public final class SqlGuard {
     private SqlGuard(){}
 
     /** 기본 검사: SELECT만 + 금지어 + 허용 테이블 */
-    public static String ensureSelectOnly(String sql){
+    public static String ensureSelect(String sql){
         if (sql == null || sql.isBlank()) throw new IllegalArgumentException("SQL이 비어 있습니다.");
         String s = stripCodeFence(sql).trim();
         s = stripTrailingSemicolon(s);
         String u = s.toUpperCase();
 
-        if (!u.startsWith("SELECT")) throw new IllegalArgumentException("SELECT만 허용됩니다.");
+        boolean isSelect = u.startsWith("SELECT");
 
-        String[] banned = {" UPDATE ", " DELETE ", " INSERT ", " MERGE ", " DROP ", " ALTER ", " CREATE ", " TRUNCATE "};
-        for (String b : banned) if (u.contains(b)) throw new IllegalArgumentException("금지된 문구: " + b.trim());
+        if (!isSelect) 
+            throw new IllegalArgumentException("SELECT만 허용됩니다.");
 
-        // 허용 테이블: USERS, ORDERS, ORDERDETAIL, PAYMENT
-        for (String tok : new String[]{" FROM ", " JOIN "}) {
-            int idx = -1;
-            while ((idx = u.indexOf(tok, idx + 1)) >= 0) {
-                String after = u.substring(idx + tok.length()).trim();
-                if (after.isEmpty()) continue;
-                String table = after.split("[\\s\\(]")[0].replace("\"","");
-                if (!(table.equals("USERS") || table.equals("ORDERS") || table.equals("ORDERDETAIL") || table.equals("PAYMENT"))) {
-                    throw new IllegalArgumentException("허용되지 않은 테이블 접근: " + table);
+        String[] banned = {" UPDATE ", " DELETE ", "INSERT", " MERGE ", " DROP ", " ALTER ", " CREATE ", " TRUNCATE "};
+        for (String b : banned) {
+            if (u.contains(b)) throw new IllegalArgumentException("금지된 문구: " + b.trim());
+        }
+
+        // 테이블 허용 체크
+        if (isSelect) {
+            for (String tok : new String[]{" FROM ", " JOIN "}) {
+                int idx = -1;
+                while ((idx = u.indexOf(tok, idx + 1)) >= 0) {
+                    String after = u.substring(idx + tok.length()).trim();
+                    if (after.isEmpty()) continue;
+                    String table = after.split("[\\s\\(]")[0].replace("\"","");
+                    if (!(table.equals("USERS") || table.equals("ORDERS") || table.equals("ORDERDETAIL") || table.equals("PAYMENT"))) {
+                        throw new IllegalArgumentException("허용되지 않은 테이블 접근: " + table);
+                    }
                 }
             }
+         
         }
+
         return s;
     }
 

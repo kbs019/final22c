@@ -1,0 +1,107 @@
+<html layout:decorate="~{/layout/adminLayout}">
+<div layout:fragment="content" class="container">
+	<div class="container my-3">
+		<h2>발주목록</h2>
+	  <!-- 발주내역 박스 -->
+	  <div class="d-flex justify-content-between align-items-center border rounded p-3 mb-2" th:each="pur:${purList}">
+	    <div>
+	      <div class="fw-bold">발주번호: PO[[${#temporals.format(pur.reg, 'yyyyMMdd')}]]-[[${pur.purchaseId}]]</div>
+	      <div>발주일: [[${#temporals.format(pur.reg, 'yyyy-MM-dd HH:mm')}]]</div>
+	      <div>품목개수: [[${pur.count}]]종</div>
+	    </div>
+	    <div>
+			<a href="javascript:void(0);" 
+			   class="btn btn-link fs-4 text-dark view-purchase"
+			   th:attr="data-purid=${pur.purchaseId}"
+			   style="text-decoration: none; color: inherit;">&gt;</a>
+	    </div>
+	  </div>
+	</div>
+	
+	<!-- 발주 상세 모달 -->
+	<div class="modal fade" id="purchaseDetailModal" tabindex="-1" aria-hidden="true">
+	  <div class="modal-dialog modal-lg">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <h5 class="modal-title">발주 상세</h5>
+	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+	      </div>
+	      <div class="modal-body">
+	        <!-- 발주 기본정보 -->
+	        <div id="modalPurchaseInfo" class="mb-3">
+	          <div>발주일: <span id="modalReg"></span></div>
+	          <div>발주처: <span>홍석범부</span></div>
+	        </div>
+	
+	        <!-- 발주상품 테이블 -->
+	        <table class="table table-bordered">
+	          <thead>
+	            <tr>
+					<th>상품ID</th>
+					<th>상품명</th>
+					<th>수량</th>
+					<th>단가</th>
+					<th>합계</th>
+	            </tr>
+	          </thead>
+	          <tbody id="modalPurchaseList">
+	            <!-- JS에서 동적으로 삽입 -->
+	          </tbody>
+				<tfoot>
+					<tr>
+						<td colspan="4" class="text-end fw-bold">총 금액</td>
+						<td id="modalTotal" class="fw-bold"></td>
+					</tr>
+				</tfoot>
+	        </table>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+</div>
+<script layout:fragment="script" type="text/javascript">
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('view-purchase')) {
+        const purchaseId = e.target.dataset.purid;
+
+        fetch(`/admin/getPurchaseDetail/${purchaseId}`)
+            .then(res => {
+                if (!res.ok) throw new Error("서버 오류");
+                return res.json();
+            })
+            .then(data => {
+                // 발주일만 표시
+                document.getElementById('modalReg').textContent = data.reg;
+
+                // 상품 테이블
+                const tbody = document.getElementById('modalPurchaseList');
+                tbody.innerHTML = '';
+
+                const items = data.items || []; // undefined 방지
+                items.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${item.productId}</td>
+                        <td>${item.productName}</td>
+                        <td>${item.qty}</td>
+                        <td>${item.price.toLocaleString()}원</td>
+                        <td>${item.total.toLocaleString()}원</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            	// 총 금액 표시 (purchase 컬럼 값)
+                document.getElementById('modalTotal').textContent = data.totalPrice.toLocaleString() + "원";
+
+                // 모달 띄우기
+                const modalEl = document.getElementById('purchaseDetailModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            })
+            .catch(err => {
+                console.error(err);
+                alert("발주 상세 정보를 불러오는 중 오류가 발생했습니다.");
+            });
+    }
+});
+</script>
+</html>
