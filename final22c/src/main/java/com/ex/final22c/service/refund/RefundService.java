@@ -60,8 +60,7 @@ public class RefundService {
         }
 
         // 3) 결제
-        Payment payment = paymentRepository.findTopByOrderOrderId(orderId)
-                // .or(() -> paymentRepository.findTopByOrderId(orderId)) // 매핑에 맞게
+        Payment payment = paymentRepository.findTopByOrder_OrderIdOrderByPaymentIdDesc(orderId)
                 .orElseThrow(() -> new IllegalStateException("주문 결제 정보를 찾을 수 없습니다."));
 
         // 4) Refund 생성 (reasonText ↦ Refund.reasonText)

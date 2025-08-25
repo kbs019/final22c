@@ -45,7 +45,7 @@ public class OrderService {
         int unitPrice = p.getSellPrice();     // ← 가격 스냅샷 단가
         int lineTotal = unitPrice * quantity; // ← 가격 스냅샷 합계
 
-        // 포인트 계산(서버에서 클램프)
+        // 마일리지 계산(서버에서 클램프)
         int owned = (user.getMileage() == null) ? 0 : user.getMileage();
         int maxUsable = Math.min(owned, lineTotal + SHIPPING_FEE);
         int use   = Math.max(0, Math.min(usedPoint, maxUsable));
@@ -89,7 +89,7 @@ public class OrderService {
     /**
      * 결제 성공(승인) — 멱등
      * 재고는 이미 PENDING 시점에 예약(감소)했으므로 여기서 추가 차감은 하지 않습니다.
-     * 포인트만 차감하고 상태만 PAID로 변경합니다.
+     * 마일리지만 차감하고 상태만 PAID로 변경합니다.
      */
     @Transactional
     public void markPaid(Long orderId) {
@@ -141,7 +141,7 @@ public class OrderService {
 
     /**
      * 결제 후 취소(환불) 적용
-     * - 포인트 복구
+     * - 마일리지 복구
      * - (전액 환불 시) 재고 복구
      * - 상태: PAID -> CANCELED
      */
@@ -212,7 +212,7 @@ public class OrderService {
         Users user = usersRepository.findByUserName(userId)
                 .orElseThrow(() -> new IllegalStateException("로그인이 필요합니다. userId=" + userId));
 
-        // 서버 기준 포인트/결제금액 재계산
+        // 서버 기준 마일리지/결제금액 재계산
         int owned = Objects.requireNonNullElse(user.getMileage(), 0);
         int shipfee  = Math.max(0, shipping);
         int maxUsable = Math.min(owned, itemsTotal + shipfee);
