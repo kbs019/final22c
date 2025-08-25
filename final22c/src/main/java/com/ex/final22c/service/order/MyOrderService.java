@@ -43,7 +43,7 @@ public class MyOrderService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("regDate").descending());
 
         // 확정건 포함
-        List<String> visible = List.of("PAID", "CONFIRMED", "REFUNDED", "CANCELED");
+        List<String> visible = List.of("PAID", "CONFIRMED", "REFUNDED", "CANCELED", "REQUESTED");
         return orderRepository.findByUser_UserNoAndStatusInOrderByRegDateDesc(
                 me.getUserNo(), visible, pageable);
     }
