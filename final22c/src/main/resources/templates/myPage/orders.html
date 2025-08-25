@@ -2,7 +2,7 @@
 <html layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
 <style>
-	/* 안녕하세요 */
+   /* 안녕하세요 */
   /* 카드: 2행 그리드 (1행: 정보/버튼, 2행: 진행바) */
   .order-card{
     position: relative;
@@ -100,7 +100,7 @@
   .cm-btn--primary{ background:#111827; color:#fff; border-color:#111827; }
   .cm-btn:focus{ outline:2px solid #111827; outline-offset:2px; }
 
-  /* 모달 열릴 때만 스크롤 잠금 + 우측 패딩 보정 */
+  /* ✅ 모달 열릴 때만 스크롤 잠금 + 우측 패딩 보정 */
   body.lock-scroll{
     overflow:hidden;
     padding-right: var(--sbw, 0px);
@@ -113,16 +113,16 @@
   <div th:if="${orders.content.isEmpty()}">주문 내역이 없습니다.</div>
 
   <div th:each="o : ${orders.content}"
-      class="order-card"
-      th:classappend="${o.status=='CANCELED'} ? ' is-canceled'"
-      th:attr="data-order-id=${o.orderId}"
-      th:with="
-        first=${#lists.isEmpty(o.details) ? null : o.details[0]},
-        restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1},
-        step=${
-          #strings.equalsIgnoreCase(o.deliveryStatus,'DELIVERED') ? 3 :
-          (#strings.equalsIgnoreCase(o.deliveryStatus,'SHIPPING')  ? 2 : 1)
-        }">
+       class="order-card"
+       th:classappend="${o.status=='CANCELED'} ? ' is-canceled'"
+       th:attr="data-order-id=${o.orderId}"
+       th:with="
+         first=${#lists.isEmpty(o.details) ? null : o.details[0]},
+         restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1},
+         step=${
+           #strings.equalsIgnoreCase(o.deliveryStatus,'DELIVERED') ? 3 :
+           (#strings.equalsIgnoreCase(o.deliveryStatus,'SHIPPING')  ? 2 : 1)
+         }">
 
     <!-- 좌: 주문정보 -->
     <div class="order-info">
@@ -130,16 +130,16 @@
       <div class="order-title">
         <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
         <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
-		<span th:if="${o.status=='CONFIRMED'}" class="badge-confirmed">주문확정</span>
+      <span th:if="${o.status=='CONFIRMED'}" class="badge-confirmed">주문확정</span>
         <span th:if="${o.status=='CANCELED'}" class="badge-canceled">주문취소</span>
       </div>
       <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
     </div>
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
-	<div class="stepper"
-	      th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.status!='CONFIRMED'}"
-        th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
+   <div class="stepper"
+        th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.status!='CONFIRMED'}"
+         th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
       <div class="step"><div class="dot"></div><div>배송완료</div></div>
@@ -154,7 +154,6 @@
         class="cancel-btn btn-cancel" type="button">주문취소</button>
 
       <!-- DELIVERED & PAID → 주문확정 / 환불요청 -->
-      
       <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}"
               class="order-btn btn-confirm" type="button">주문확정</button>
       <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}"
@@ -164,7 +163,7 @@
     <!-- 우측 중앙 > -->
     <a class="more" th:href="@{/mypage/order/{id}(id=${o.orderId})}">&gt;</a>
 
-    <!-- 환불 모달로 복사할 숨김 리스트(데이터만 담아두기) -->
+    <!-- ✅ 환불 모달로 복사할 숨김 리스트(데이터만 담아두기) -->
     <div class="refund-items-src" th:attr="data-order-id=${o.orderId}" hidden>
       <ul>
         <li th:each="d : ${o.details}"
@@ -183,10 +182,10 @@
   <!-- 페이지네이션 (경로 주의: 단수 /mypage/order) -->
   <div style="margin-top:12px" th:if="${orders.totalPages > 1}">
     <a th:each="i : ${#numbers.sequence(0, orders.totalPages-1)}"
-      th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
-      th:text="${i + 1}"
-      th:classappend="${i == orders.number} ? ' active' : ''"
-      style="margin-right:8px"></a>
+       th:href="@{/mypage/order(page=${i}, size=${orders.size})}"
+       th:text="${i + 1}"
+       th:classappend="${i == orders.number} ? ' active' : ''"
+       style="margin-right:8px"></a>
   </div>
 </section>
 
@@ -254,7 +253,7 @@
     <!-- 환불 사유 -->
     <div style="text-align:left; margin:12px 0">
       <label for="refundReason" style="display:block; font-weight:700; margin-bottom:6px">환불사유</label>
-      <textarea id="refundReason" rows="4" placeholder="환불 사유를 입력하세요" resize: none
+      <textarea id="refundReason" rows="4" placeholder="환불 사유를 입력하세요"
         style="width:100%; border:1px solid #e5e7eb; border-radius:10px; padding:12px; resize:vertical"></textarea>
     </div>
 
@@ -346,9 +345,9 @@ document.querySelectorAll('.order-card').forEach(card=>{
   btnConfirm?.addEventListener('click', ()=>{
     openConfirm(id,'confirm','주문을 확정하시겠습니까?');
   });
-  //  환불은 확인모달 대신 전용 모달 사용
+  // ✅ 환불은 확인모달 대신 전용 모달 사용
   btnRefund?.addEventListener('click', ()=>{
-    openRefundModalFromCard(card);
+     openRefundModalFromCard(card);
   });
 });
 
@@ -458,7 +457,7 @@ function fmt(n){ return (n||0).toLocaleString() + '원'; }
         <div style="display:inline-flex; align-items:center; gap:6px;">
           <button type="button" class="qminus" style="width:32px; height:32px; border:1px solid #e5e7eb; border-radius:8px;">-</button>
           <input type="number" class="qinput" value="0" min="0" max="${max}" 
-                style="width:64px; text-align:center; border:1px solid #e5e7eb; border-radius:8px; height:32px;">
+                 style="width:64px; text-align:center; border:1px solid #e5e7eb; border-radius:8px; height:32px;">
           <button type="button" class="qplus"  style="width:32px; height:32px; border:1px solid #e5e7eb; border-radius:8px;">+</button>
         </div>
       </td>
@@ -600,30 +599,6 @@ function fmt(n){ return (n||0).toLocaleString() + '원'; }
     }
   });
 })();
-
-/* ===== 확정 후 카드 갱신 ===== */
-function updateCardToConfirmed(card, data){
-  if (!card) return;
-
-  // 진행바/버튼 제거
-  card.querySelector('.stepper')?.remove();
-  card.querySelector('.order-actions')?.remove();
-
-  // 배지 추가 (중복 방지)
-  const title = card.querySelector('.order-title');
-  if (title && !title.querySelector('.badge-confirmed')) {
-    const b = document.createElement('span');
-    b.className = 'badge-confirmed';
-    b.textContent = '주문확정';
-    title.appendChild(b);
-  }
-
-  // (옵션) 포인트/메시지 반영
-  if (data?.pointBalance != null) {
-    document.querySelector('.my-point-balance')
-      ?.replaceChildren(document.createTextNode(String(data.pointBalance)));
-  }
-}
 </script>
 </div>
 </html>
