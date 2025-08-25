@@ -23,15 +23,15 @@ public class ChatApiController {
 
     // 🔴 네 엔티티에 맞춘 "스키마 요약" (그냥 이대로 쓰면 됨)
     private static final String SCHEMA_DOC = """
-        -- Oracle / 화이트리스트 스키마 요약 (대문자 기준)
-        -- USERS(USERNO PK, USERNAME, NAME, EMAIL, PHONE, STATUS, ROLE, REG)
-        -- ORDERS(ORDERID PK, USERNO FK->USERS.USERNO, TOTALAMOUNT, USEDPOINT, STATUS, REGDATE, DELIVERYSTATUS)
-        -- ORDERDETAIL(ORDERDETAILID PK, ORDERID FK->ORDERS.ORDERID, ID(=PRODUCT.ID), QUANTITY, SELLPRICE, TOTALPRICE, CONFIRMQUANTITY)
-        -- PAYMENT(PAYMENTID PK, ORDERID FK->ORDERS.ORDERID, AMOUNT, STATUS, TID, AID, APPROVEDAT, REG)
-        -- 조인: ORDERS.USERNO=USERS.USERNO / ORDERDETAIL.ORDERID=ORDERS.ORDERID / PAYMENT.ORDERID=ORDERS.ORDERID
-        -- 자주 쓰는 조건: ORDERS.STATUS='PAID'
-        -- 규칙: 단일 SELECT / 허용 테이블만 / 최대 50행
-        """;
+    	    -- Oracle / 화이트리스트 스키마 요약 (대문자 기준)
+    	    -- USERS(USERNO PK, USERNAME, NAME, EMAIL, PHONE, STATUS, ROLE, REG)
+    	    -- ORDERS(ORDERID PK, USERNO FK->USERS.USERNO, TOTALAMOUNT, USEDPOINT, STATUS, REGDATE, DELIVERYSTATUS)
+    	    -- ORDERDETAIL(ORDERDETAILID PK, ORDERID FK->ORDERS.ORDERID, ID(=PRODUCT.ID), QUANTITY, SELLPRICE, TOTALPRICE, CONFIRMQUANTITY)
+    	    -- PAYMENT(PAYMENTID PK, ORDERID FK->ORDERS.ORDERID, AMOUNT, STATUS, TID, AID, APPROVEDAT, REG)
+    	    -- 조인: ORDERS.USERNO=USERS.USERNO / ORDERDETAIL.ORDERID=ORDERS.ORDERID / PAYMENT.ORDERID=ORDERS.ORDERID
+    	    -- 자주 쓰는 조건: ORDERS.STATUS='PAID'
+    	    -- 규칙: 단일 SELECT / 허용 테이블만 / 최대 50행 /
+    	    """;
 
     private static final Pattern P_SQL_BLOCK =
             Pattern.compile("```sql\\s*(.+?)```", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
@@ -52,7 +52,7 @@ public class ChatApiController {
 
         // 2) 간단 가드 + 최대 50행 보장
         try {
-            sql = SqlGuard.ensureSelectOnly(sql);
+            sql = SqlGuard.ensureSelect(sql);
             sql = SqlGuard.ensureLimit(sql, 50);
         } catch (IllegalArgumentException e) {
             return new ChatResponse("생성된 SQL이 안전하지 않습니다:\n" + e.getMessage() + "\n```sql\n" + sql + "\n```");

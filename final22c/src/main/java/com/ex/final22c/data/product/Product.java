@@ -113,6 +113,7 @@ public class Product {
     // price 변수에 대한 set() 를 수정
     public void setPrice(int price) {
         this.price = price;
+        this.costPrice = (int) Math.floor(this.price * 0.05);
         recalcPrices();
     }
 
@@ -147,6 +148,5 @@ public class Product {
         }
 
         this.sellPrice = (int) Math.floor(this.price * effectiveRate);
-        this.costPrice = (int) Math.floor(this.price * 0.05);
     }
 }
