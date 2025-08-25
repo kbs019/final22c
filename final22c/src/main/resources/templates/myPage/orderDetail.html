@@ -49,16 +49,20 @@
 
         <hr style="margin:12px 0">
         <!-- 결제내역이 있다면 -->
-        <div th:if="${payments != null and !payments.isEmpty()}">
-        <ul style="list-style:none; padding:0; margin:0; display:grid; gap:6px">
-            <li th:each="p : ${payments}">
-            결제번호 [[${p.paymentId}]] 
-            <br>
-            <span>결제 수단 : 카카오페이</span>
-            <br>
-            총 결제 금액 : [[${#numbers.formatInteger(p.amount,0)}]]원
-            </li>
-        </ul>
-        </div>
+		<div th:if="${payments != null and !payments.isEmpty()}">
+		  <ul style="list-style:none; padding:0; margin:0; display:grid; gap:6px">
+		    <li th:each="p : ${payments}" th:with="isPointOnly=${p.amount == 0 or p.tid == null}">
+		      결제번호 [[${p.paymentId}]]<br>
+		
+		      <!-- 결제 수단 -->
+		      <span th:if="${isPointOnly}">결제 수단 : 마일리지 전액 결제</span>
+		      <span th:unless="${isPointOnly}">
+		        결제 수단 : 카카오페이
+		      </span>
+		      <br>
+		      총 결제 금액 : [[${#numbers.formatInteger(p.amount, 0)}]]원
+		    </li>
+		  </ul>
+		</div>
     </div> 
 </div>
