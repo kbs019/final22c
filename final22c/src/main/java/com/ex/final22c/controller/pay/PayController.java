@@ -198,7 +198,8 @@ public class PayController {
                 "message", "주문을 확정했어요.",
                 "mileage", mileage,
                 "pointBalance", pointBalance,
-                "orderId", order.getOrderId()
+                "orderId", order.getOrderId(),
+                "status", order.getStatus()
             ));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
