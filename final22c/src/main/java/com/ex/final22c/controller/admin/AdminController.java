@@ -3,6 +3,7 @@ package com.ex.final22c.controller.admin;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,7 +23,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
@@ -35,7 +35,6 @@ import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.service.admin.AdminService;
 import com.ex.final22c.service.refund.RefundService;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Controller
@@ -173,7 +172,7 @@ public class AdminController {
 
 		model.addAttribute("totalAmount", totalAmount);
 
-		model.addAttribute("pr", pr);
+		model.addAttribute("prList", pr);
 		model.addAttribute("brands", brands);
 		model.addAttribute("list", list);
 
@@ -279,4 +278,35 @@ public class AdminController {
         Payment p = refund.getPayment();
         return (p == null) ? null : p.getTid();   // 네 Payment 엔티티에 tid 게터가 있다고 가정
     }
+    
+	// 발주 목록
+	@GetMapping("purchaseList")
+	public String purchaseList(Model model) {
+		
+		model.addAttribute("purList",this.adminService.getPurchase());
+		return "admin/purchaseList";
+	}
+	
+	// 발주 신청
+	@PostMapping("confirmPurchase")
+	@ResponseBody
+	public Map<String, Object> confirmPurchase(@RequestBody Map<String, List<Map<String, Object>>> payload) {
+	    List<Map<String, Object>> items = payload.get("items");
+	    Map<String, Object> result = new HashMap<>();
+	    try {
+	        adminService.confirmPurchase(items);
+	        result.put("success", true);
+	    } catch (Exception e) {
+	        result.put("success", false);
+	        result.put("message", e.getMessage());
+	    }
+	    return result;
+	}
+	
+	// 발주 상세 내역
+	@GetMapping("getPurchaseDetail/{purchaseId}")
+	@ResponseBody
+	public Map<String, Object> getPurchaseDetail(@PathVariable("purchaseId") Long purchaseId) {
+		return this.adminService.getPurchaseDetail(purchaseId);
+	}
 }
