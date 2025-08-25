@@ -127,6 +127,25 @@
     <!-- 중앙 리스트 -->
     <section class="col-12 col-md-9 col-lg-10">
 
+ 
+	<!-- 🔵 [추가] 날씨 카드 시작 -->
+<!--       <div id="wx-card" class="card shadow-sm mb-3" style="max-width:620px;">
+        <div class="card-body">
+          <div id="wx-status" class="text-muted">현재 위치로 날씨를 불러오는 중...</div>
+
+          <div id="wx-data" style="display:none">
+            <div class="d-flex align-items-baseline gap-2">
+              <div id="wx-temp" style="font-size:38px;font-weight:700">--°C</div>
+              <span id="wx-cond" class="badge text-bg-secondary">--</span>
+            </div>
+            <div class="mt-2 small text-secondary">
+              습도 <span id="wx-hum">--</span>% · 강수량 <span id="wx-pr">--</span>mm · 운량 <span id="wx-cloud">--</span>%
+            </div>
+          </div>
+        </div>
+      </div> -->
+ 
+    
       <!-- 상단 검색창 추가 -->
       <div class="search-wrap my-2">
         <form id="search-form" class="search-box" action="javascript:void(0);" role="search">
@@ -170,6 +189,69 @@
 
 <!-- jQuery만 사용 -->
 <th:block layout:fragment="script">
+
+
+<!-- 🔵 [추가] 날씨 위젯 스크립트 시작 : jQuery와 독립
+<script>
+(function(){
+  const statusEl = document.getElementById('wx-status');
+  const dataBox  = document.getElementById('wx-data');
+  const els = {
+    temp:  document.getElementById('wx-temp'),
+    cond:  document.getElementById('wx-cond'),
+    hum:   document.getElementById('wx-hum'),
+    pr:    document.getElementById('wx-pr'),
+    cloud: document.getElementById('wx-cloud'),
+  };
+
+  function condKo(c){
+    switch((c||'').toUpperCase()){
+      case 'RAIN':   return '비';
+      case 'HOT':    return '더움';
+      case 'COLD':   return '추움';
+      case 'HUMID':  return '습함';
+      case 'CLOUDY': return '구름';
+      case 'MILD':   return '온화';
+      default:       return c || '--';
+    }
+  }
+
+  async function load(lat, lon){
+    try{
+      const res = await fetch(`/api/weather/now?lat=${lat}&lon=${lon}`);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const d = await res.json();
+
+      els.temp.textContent  = (d.tempC ?? 0).toFixed(1) + '°C';
+      els.cond.textContent  = condKo(d.condition);
+      els.hum.textContent   = d.humidity ?? '--';
+      els.pr.textContent    = (d.precipitation ?? 0).toFixed(1);
+      els.cloud.textContent = d.cloud ?? '--';
+
+      statusEl.style.display = 'none';
+      dataBox.style.display  = '';
+    }catch(e){
+      statusEl.textContent = '날씨 정보를 불러오지 못했습니다.';
+      console.error('[weather]', e);
+    }
+  }
+
+  // 브라우저 위치 권한 요청 → 실패 시 서울 시청 좌표 폴백
+  const fallback = () => load(37.5665, 126.9780);
+  if ('geolocation' in navigator){
+    navigator.geolocation.getCurrentPosition(
+      p => load(p.coords.latitude, p.coords.longitude),
+      _ => fallback(),
+      { timeout: 5000 }
+    );
+  } else {
+    fallback();
+  }
+})();
+</script> -->
+
+
+
 <script>
 (function(){
 
