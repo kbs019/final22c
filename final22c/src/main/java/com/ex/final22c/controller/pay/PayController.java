@@ -305,8 +305,29 @@ public class PayController {
         }
     }
 
-    /** order.html에서 모달 "요청하기"가 호출 */
-    @PostMapping("/{orderId}/refund")
+
+    // @PostMapping("/{orderId}/refund")
+    // public ResponseEntity<?> requestRefund(@PathVariable("orderId") long orderId,
+    //                                        @RequestBody Map<String, Object> body,
+    //                                        Principal principal) {
+
+    //     if (principal == null) {
+    //         return ResponseEntity.status(401).body(Map.of("message", "로그인이 필요합니다."));
+    //     }
+
+    //     String reason = String.valueOf(body.getOrDefault("reason", "")).trim();
+    //     @SuppressWarnings("unchecked")
+    //     List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("items"); // null 가능
+
+    //     Long refundId = refundService.requestRefund(orderId, principal.getName(), reason, items);
+
+    //     return ResponseEntity.ok(Map.of(
+    //         "message", "환불 요청이 접수되었습니다.",
+    //         "refundId", refundId
+    //     ));
+    // }
+
+    @PostMapping(value="/{orderId}/refund", consumes="application/json", produces="application/json")
     public ResponseEntity<?> requestRefund(@PathVariable("orderId") long orderId,
                                            @RequestBody Map<String, Object> body,
                                            Principal principal) {
@@ -314,14 +335,26 @@ public class PayController {
             return ResponseEntity.status(401).body(Map.of("message", "로그인이 필요합니다."));
         }
 
+        // body: { reason: string, items: [{orderDetailId, quantity}, ...] }
         String reason = String.valueOf(body.getOrDefault("reason", "")).trim();
+
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("items"); // null 가능
 
+        // 간단 검증(선택): 서비스에서도 검증하지만, 프론트 빠른 피드백용
+        if (reason.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "환불 사유를 입력해주세요."));
+        }
+        if (items == null || items.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "환불 수량을 1개 이상 선택하세요."));
+        }
+
         Long refundId = refundService.requestRefund(orderId, principal.getName(), reason, items);
 
+        // 프론트가 즉시 UI 갱신할 수 있도록 status 포함
         return ResponseEntity.ok(Map.of(
-            "message", "환불 요청이 접수되었습니다.",
+            "message",  "환불 요청이 접수되었습니다.",
+            "status",   "REQUESTED", // ← 이 값으로 JS에서 배지/버튼/스텝퍼 바로 갱신
             "refundId", refundId
         ));
     }
