@@ -57,8 +57,8 @@ public class Refund {
     @Column(name = "totalRefundAmount")
     private int totalRefundAmount;        // 환급 총액(스냅샷)
 
-    @Column(name = "reasonText")
-    private String reasonText;            // 환불 사유
+    @Column(name = "requestedReason")
+    private String requestedReason;            // 환불 요청 사유
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "paymentId", nullable = false)
@@ -70,6 +70,9 @@ public class Refund {
     @Lob
     @Column(name = "pgPayloadJson")
     private String pgPayloadJson;                   // pg 응답 원문(JSON) - CLOB 매핑
+
+    @Column(name = "rejectedReason")
+    private String rejectedReason;          // 환불 거절 사유
 
     @CreationTimestamp
     @Column(name = "createDate")
