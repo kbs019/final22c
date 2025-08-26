@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ex.final22c.DataNotFoundException;
+import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Grade;
 import com.ex.final22c.data.product.MainNote;
@@ -34,6 +35,7 @@ import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
+import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.repository.productRepository.BrandRepository;
 import com.ex.final22c.repository.productRepository.GradeRepository;
 import com.ex.final22c.repository.productRepository.MainNoteRepository;
@@ -66,6 +68,7 @@ public class AdminService {
     private final RefundRepository refundRepository;
     private final PurchaseRepository purchaseRepository;
     private final PurchaseDetailRepository purchaseDetailRepository;
+    private final OrderRepository orderRepository;
 
     // 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
@@ -589,5 +592,10 @@ public class AdminService {
             "totalPrice", purchase.getTotalPrice(),
             "items", items
         );
+    }
+    
+    // 주문 내역
+    public List<Order> getOrders(){
+    	return this.orderRepository.findAll();
     }
 }
