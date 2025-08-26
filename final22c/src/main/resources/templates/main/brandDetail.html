@@ -34,8 +34,22 @@
           <div class="card-body p-2">
             <div class="small text-secondary" th:text="${p['brandName']}">Brand</div>
             <div class="fw-semibold text-truncate" th:title="${p['name']}" th:text="${p['name']}">Name</div>
-            <div class="d-flex justify-content-between align-items-center mt-1">
-              <div class="fw-bold" th:text="${#numbers.formatInteger(p['sellPrice'],3,'COMMA')} + '원'">0원</div>
+            <!-- 가격영역: 얇은 레드 % + 굵은 판매가 + 바로 옆 정가(취소선) -->
+            <div class="price-row mt-1">
+              <!-- 할인률(텍스트, 얇게) -->
+              <span class="disc"
+                    th:if="${p['discount'] != null and p['discount'] > 0}"
+                    th:text="${#numbers.formatInteger(p['discount'],0)} + '%'">10%</span>
+
+              <!-- 판매가(굵게) -->
+              <span class="sale"
+                    th:text="${#numbers.formatInteger(p['sellPrice'],3,'COMMA')} + '원'">0원</span>
+
+              <!-- 정가(판매가 바로 옆, 취소선) -->
+              <span class="list"
+                    th:if="${p['price'] != null and p['price'] > p['sellPrice']}"
+                    th:text="${#numbers.formatInteger(p['price'],3,'COMMA')} + '원'">0원</span>
+
               <a class="stretched-link" th:href="@{'/main/content/' + ${p['id']}}"></a>
             </div>
           </div>

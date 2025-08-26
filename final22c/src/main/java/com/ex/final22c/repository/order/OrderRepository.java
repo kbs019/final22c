@@ -139,5 +139,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("update Order o set o.status = :status where o.orderId = :id")
   int updateStatus(@Param("id") Long id, @Param("status") String status);
-  
+
+  Optional<Order> findByOrderIdAndUser_UserName(long orderId, String userName);
 }

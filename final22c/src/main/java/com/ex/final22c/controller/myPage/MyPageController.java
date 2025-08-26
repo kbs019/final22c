@@ -37,7 +37,6 @@ public class MyPageController {
     private final UserAddressRepository userAddressRepository;
     private final UserAddressService userAddressService;
     
-    
     // 주문페이지 뷰에서 필요한 정보만 가져오기 위해서 만듬
     public record AddressDto(
         Long addressNo,
@@ -157,15 +156,6 @@ public class MyPageController {
     	            "address", AddressDto.from(saved)
     	    ));
     }
-
-
-	// 활동내역
-	@GetMapping("activity")
-	public String activityPage(Model model, Principal principal){
-		if (principal == null) return "redirect:/user/login";
-		model.addAttribute("section", "activity");
-		return "mypage/activity";
-	}
 
 	// 찜목록
 	@GetMapping("wishlist")

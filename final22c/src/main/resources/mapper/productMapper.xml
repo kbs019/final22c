@@ -95,6 +95,8 @@
             p.ID   AS "id",
             p.NAME AS "name",
             p.SELLPRICE AS "sellPrice",
+            p.PRICE     AS "price",
+            TRUNC(p.DISCOUNT) AS "discount",
             (NVL(p.IMGPATH, '/img/') || NVL(p.IMGNAME, 'default.png')) AS "imgUrl",
             b.BRANDNAME AS "brandName"
         FROM PRODUCT p
