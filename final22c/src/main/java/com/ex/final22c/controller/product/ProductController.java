@@ -32,7 +32,7 @@ public class ProductController {
     private final ReviewService reviewService;
     private final UserRepository userRepository;
 
-    @GetMapping({""})
+    @GetMapping("")
     public String main(Model model) {
 
         // 배너(이미지 경로는 필요 시 변경)
