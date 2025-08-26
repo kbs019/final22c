@@ -279,10 +279,10 @@ public class RefundService {
         }
         int usedPoint=0;
         if(order.getUsedPoint()>0) {
-        	usedPoint = order.getUsedPoint();
-        	Users user = refund.getUser();
-        	user.setMileage(usedPoint);
-        	this.userRepository.save(user);
+            usedPoint = order.getUsedPoint();
+            Users user = refund.getUser();
+            user.setMileage(usedPoint);
+            this.userRepository.save(user);
         }
         // 5) PG 환불 (총액 > 0이면 필수)
         int shippingRefund = (approvedQtyTotal > 0) ? FIXED_SHIPPING_REFUND : 0;

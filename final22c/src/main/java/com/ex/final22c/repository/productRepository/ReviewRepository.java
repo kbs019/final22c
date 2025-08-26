@@ -25,14 +25,14 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     // 내가 쓴 리뷰
      @EntityGraph(attributePaths = {"product", "product.brand"})
-    Page<Review> findByWriter_UserNo(Long userNo, Pageable pageable);
+    Page<Review> findByWriter_UserNo(@Param("userNo") Long userNo, Pageable pageable);
 
     // 내가 공감한 리뷰(likers M:N)
     @EntityGraph(attributePaths = {"product", "product.brand"})
-    Page<Review> findByLikers_UserNo(Long userNo, Pageable pageable);
+    Page<Review> findByLikers_UserNo(@Param("userNo") Long userNo, Pageable pageable);
     
     // 내가 쓴 리뷰, 공감
-    Optional<Review> findByReviewIdAndLikers_UserNo(Long reviewId, Long userNo);
+    Optional<Review> findByReviewIdAndLikers_UserNo(@Param("reviewId") Long reviewId, @Param("userNo") Long userNo);
 
      // 내가 쓴 리뷰 (product/brand 미리 로딩)
     @Query("""
@@ -55,5 +55,5 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     """)
     Page<Review> findMyLikedReviews(@Param("userNo") Long userNo, Pageable pageable);
 
-    Optional<Review> findByReviewIdAndWriter_UserNo(Long reviewId, Long userNo);
+    Optional<Review> findByReviewIdAndWriter_UserNo(@Param("reviewId") Long reviewId, @Param("userNo") Long userNo);
 }
