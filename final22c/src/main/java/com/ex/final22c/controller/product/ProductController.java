@@ -13,9 +13,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
@@ -34,6 +31,25 @@ public class ProductController {
     private final ProductService productService;
     private final ReviewService reviewService;
     private final UserRepository userRepository;
+
+    @GetMapping({""})
+    public String main(Model model) {
+
+        // 배너(이미지 경로는 필요 시 변경)
+        model.addAttribute("bannerUrl", "/img/banner/main-banner.jpg");
+
+        // PICK 캐러셀(4개씩)
+        model.addAttribute("pickSlides", productService.getPickSlides(4));
+
+        // 전체 베스트 TOP10
+        model.addAttribute("allBest", productService.getAllBest(10));
+
+        // 여성/남성 베스트 TOP10 (Users.gender: 1=남, 2=여)
+        model.addAttribute("womanBest", productService.getGenderBest("F", 10));  // ✅ 여성 = F
+        model.addAttribute("manBest",   productService.getGenderBest("M", 10));  // ✅ 남성 = M
+
+        return "main/main";
+    }
 
     // 상세
     @GetMapping("/content/{id}")

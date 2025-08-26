@@ -42,4 +42,42 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     List<Product> findAll(Specification<Product> spec);
 
 	List<Product> findByIsPickedOrderByIdDesc(String isPicked, Pageable pageable);
+
+	// PICK 상품: isPicked == '1' 또는 'Y'
+    @Query("""
+        select p
+          from Product p
+         where p.isPicked in ('1','Y','y','T','true')
+         order by p.id desc
+    """)
+    List<Product> findPicked(Pageable pageable);
+
+    // 집계 프로젝션(상품 + 판매량)
+    interface ProductSalesProjection {
+        Product getProduct();
+        Long getSold();   // alias 'sold' 와 매칭
+    }
+
+    // 전체 베스트(판매량 TOP N)
+    @Query("""
+        select p as product, coalesce(sum(od.confirmQuantity),0) as sold
+          from OrderDetail od
+          join od.product p
+         group by p
+         order by sold desc, p.id desc
+    """)
+    List<ProductSalesProjection> findTopAllBest(Pageable pageable);
+
+    // 성별 베스트(판매량 TOP N)
+    @Query("""
+		select p as product, coalesce(sum(od.confirmQuantity),0) as sold
+		from com.ex.final22c.data.order.OrderDetail od
+		join od.product p
+		join od.order o
+		join o.user u
+		where lower(u.gender) = lower(:gender)
+		group by p
+		order by sold desc, p.id desc
+	""")
+    List<ProductSalesProjection> findTopByGender(String gender, Pageable pageable);
 }

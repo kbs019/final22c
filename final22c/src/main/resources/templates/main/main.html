@@ -1,143 +1,187 @@
 <!DOCTYPE html>
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/layout}">
 <head>
-  <meta charset="UTF-8">
-  <title>22°C – Main</title>
-
-  <!-- 페이지 전용 CSS -->
+  <title>22°C | Main</title>
   <th:block layout:fragment="css">
-    <style>
-      /* 페이지 래퍼는 레이아웃의 .container를 사용하므로 섹션 단위 여백만 정의 */
-      .banner{width:100%;height:280px;border:2px solid #ccc;border-radius:12px;overflow:hidden;margin:12px 0}
-      .banner img{width:100%;height:100%;object-fit:cover}
-
-      .section-title{font-weight:700;margin:24px 0 12px}
-      .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
-      @media (max-width: 992px){ .grid{grid-template-columns:repeat(4,1fr);} }
-      @media (max-width: 768px){ .grid{grid-template-columns:repeat(3,1fr);} }
-      @media (max-width: 576px){ .grid{grid-template-columns:repeat(2,1fr);} }
-
-      .card--pd{border:1px solid #dee2e6;border-radius:.75rem;padding:10px;text-align:center;background:#fff}
-      .thumb{width:100%;aspect-ratio:1/1;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#fafafa}
-      .thumb img{width:100%;height:100%;object-fit:cover}
-      .name{margin-top:8px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .price{margin-top:2px;font-weight:700}
-
-      /* Pick Carousel */
-      .carousel-wrap{position:relative}
-      .carousel{display:flex;gap:16px;overflow:hidden;scroll-behavior:smooth}
-      .carousel .card--pd{min-width:calc(25% - 12px)} /* 4개씩 보이기 */
-      .nav-btn{position:absolute;top:40%;transform:translateY(-50%);background:#fff;border:1px solid #ddd;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer}
-      .nav-prev{left:-12px}.nav-next{right:-12px}
-      .muted{color:#6c757d;font-size:12px}
-    </style>
+    <link rel="stylesheet" th:href="@{/css/main.css}">
   </th:block>
 </head>
-
 <body>
-  <!-- 본문 영역 -->
-  <th:block layout:fragment="content">
-
-    <h1 class="h3 mb-2">Main</h1>
+<th:block layout:fragment="content">
+  <div class="page-wrap">
 
     <!-- 배너 -->
-    <div class="banner">
-      <img th:src="@{${bannerSrc}}" alt="banner">
-    </div>
+    <section class="mb-4 mb-md-5">
+      <div class="main-banner ratio ratio-21x9 rounded-4 overflow-hidden shadow-sm">
+        <img th:if="${bannerUrl}" th:src="${bannerUrl}" alt="메인 배너" class="w-100 h-100 object-fit-cover">
+      </div>
+    </section>
 
-    <!-- Pick (isPicked=1) -->
-    <section class="mt-4">
-      <div class="section-title">Pick</div>
-      <div class="carousel-wrap">
-        <button class="nav-btn nav-prev" type="button" aria-label="prev">&#9664;</button>
+    <!-- Pick -->
+    <section class="mb-5">
+      <div class="d-flex align-items-end justify-content-between mb-2">
+        <h2 class="section-title">Pick</h2>
+        <div class="small text-muted">에디터 추천</div>
+      </div>
 
-        <div id="pickCarousel" class="carousel">
-          <div class="card--pd" th:each="p : ${picks}">
-            <a class="thumb d-block" th:href="@{'/product/content/' + ${p.id}}">
-              <img th:src="@{${p.imgPath} + ${p.imgName}}" th:alt="${p.name}">
-            </a>
-            <div class="name" th:text="${p.name}">상품명</div>
-            <div class="price" th:text="${#numbers.formatInteger(p.sellPrice, 0)} + '원'">0원</div>
+      <!-- 바깥 화살표 + 캐러셀 : 화살표는 캐러셀 밖에 위치 -->
+      <div class="pick-rail row align-items-center gx-2 gx-md-3">
+        <!-- 왼쪽 바깥 화살표 (배경 없음, 아이콘만) -->
+        <div class="col-auto d-none d-sm-flex">
+          <button class="btn-arrow-minimal" type="button"
+                  data-bs-target="#pickCarousel" data-bs-slide="prev" aria-label="이전">
+            <span class="arrow left"></span>
+          </button>
+        </div>
+
+        <!-- 캐러셀 본체 -->
+        <div class="col">
+          <div id="pickCarousel" class="carousel slide pick-carousel" data-bs-ride="false">
+            <!-- 인디케이터 -->
+            <div class="carousel-indicators">
+              <button type="button" data-bs-target="#pickCarousel" data-bs-slide-to="0"
+                      class="active" aria-current="true" aria-label="1"></button>
+              <button type="button" data-bs-target="#pickCarousel" data-bs-slide-to="1"
+                      aria-label="2" th:if="${#lists.size(pickSlides) > 1}"></button>
+              <button type="button" data-bs-target="#pickCarousel" data-bs-slide-to="2"
+                      aria-label="3" th:if="${#lists.size(pickSlides) > 2}"></button>
+            </div>
+
+            <div class="carousel-inner">
+              <div class="carousel-item" th:classappend="${iter.index == 0} ? ' active'"
+                   th:each="slide, iter : ${pickSlides}">
+                <div class="row g-3 g-md-4 justify-content-center">
+                  <!-- 한 슬라이드에 4장 -->
+                  <div class="col-6 col-md-3 pick-narrow" th:each="p : ${slide}">
+                    <!-- p는 제품 DTO이므로 바로 p.id 사용 -->
+                    <a th:if="${p != null}"
+                       th:href="@{|/main/content/${p.id}|}"
+                       class="card product-card h-100 shadow-sm">
+                      <!-- 납작 방지를 위해 4:5 비율 -->
+                      <div class="ratio ratio-4x5 product-thumb rounded-3">
+                        <img th:src="${p.imgPath + p.imgName}" th:alt="${p.name}">
+                      </div>
+                      <div class="card-body p-2 p-md-3">
+                        <div class="product-name text-truncate" th:text="${p.name}">제품명</div>
+                        <div class="product-price mt-1">
+                          <span class="sell"
+                                th:text="${#numbers.formatInteger(p.sellPrice, 3, 'COMMA')} + '원'">0원</span>
+                          <small class="text-muted ms-1 text-decoration-line-through"
+                                 th:if="${p.sellPrice < p.price}"
+                                 th:text="${#numbers.formatInteger(p.price, 3, 'COMMA')} + '원'"></small>
+                        </div>
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              </div><!-- /carousel-item -->
+            </div>
           </div>
         </div>
 
-        <button class="nav-btn nav-next" type="button" aria-label="next">&#9654;</button>
+        <!-- 오른쪽 바깥 화살표 (배경 없음, 아이콘만) -->
+        <div class="col-auto d-none d-sm-flex">
+          <button class="btn-arrow-minimal" type="button"
+                  data-bs-target="#pickCarousel" data-bs-slide="next" aria-label="다음">
+            <span class="arrow right"></span>
+          </button>
+        </div>
       </div>
-      <div class="muted mt-1">좌우 버튼으로 4개씩 넘겨보세요</div>
     </section>
 
     <!-- ALL BEST -->
-    <section class="mt-5">
-      <div class="section-title">ALL BEST</div>
-      <div class="grid">
-        <div class="card--pd" th:each="v : ${bestAll}">
-          <a class="thumb d-block" th:href="@{'/product/content/' + ${v.product.id}}">
-            <img th:src="@{${v.product.imgPath} + ${v.product.imgName}}" th:alt="${v.product.name}">
+    <section class="mb-5">
+      <h2 class="section-title mb-3">All Best</h2>
+      <div class="row row-cols-2 row-cols-md-5 g-3 g-md-4">
+        <div class="col" th:each="it : ${allBest}">
+          <!-- it.product 가 있을 때만 링크/카드 렌더링 -->
+          <a th:if="${it != null and it.product != null}"
+             th:href="@{|/main/content/${it.product.id}|}"
+             class="card product-card h-100 shadow-sm">
+            <div class="rank-badge" th:text="${it.rank}">1</div>
+            <div class="ratio ratio-1x1 product-thumb">
+              <img th:src="${it.product.imgPath + it.product.imgName}"
+                   th:alt="${it.product.name}"
+                   class="w-100 h-100 object-fit-cover">
+            </div>
+            <div class="card-body p-2 p-md-3">
+              <div class="product-name text-truncate" th:text="${it.product.name}">제품명</div>
+              <div class="product-price mt-1">
+                <span class="sell"
+                      th:text="${#numbers.formatInteger(it.product.sellPrice, 3, 'COMMA')} + '원'">0원</span>
+              </div>
+            </div>
           </a>
-          <div class="name" th:text="${v.product.name}">상품명</div>
-          <div class="price" th:text="${#numbers.formatInteger(v.product.sellPrice, 0)} + '원'">0원</div>
-          <div class="muted" th:text="'판매량 ' + ${v.sales}">판매량</div>
         </div>
       </div>
     </section>
 
     <!-- WOMAN BEST -->
-    <section class="mt-5">
-      <div class="section-title">WOMAN BEST</div>
-      <div class="grid">
-        <div class="card--pd" th:each="v : ${bestWomen}">
-          <a class="thumb d-block" th:href="@{'/product/content/' + ${v.product.id}}">
-            <img th:src="@{${v.product.imgPath} + ${v.product.imgName}}" th:alt="${v.product.name}">
+    <section class="mb-5">
+      <h2 class="section-title mb-3">Woman Best</h2>
+      <div class="row row-cols-2 row-cols-md-5 g-3 g-md-4">
+        <div class="col" th:each="it : ${womanBest}">
+          <a th:if="${it != null and it.product != null}"
+             th:href="@{|/main/content/${it.product.id}|}"
+             class="card product-card h-100 shadow-sm">
+            <div class="rank-badge" th:text="${it.rank}">1</div>
+            <div class="ratio ratio-1x1 product-thumb">
+              <img th:src="${it.product.imgPath + it.product.imgName}"
+                   th:alt="${it.product.name}"
+                   class="w-100 h-100 object-fit-cover">
+            </div>
+            <div class="card-body p-2 p-md-3">
+              <div class="product-name text-truncate" th:text="${it.product.name}">제품명</div>
+              <div class="product-price mt-1">
+                <span class="sell"
+                      th:text="${#numbers.formatInteger(it.product.sellPrice, 3, 'COMMA')} + '원'">0원</span>
+              </div>
+            </div>
           </a>
-          <div class="name" th:text="${v.product.name}">상품명</div>
-          <div class="price" th:text="${#numbers.formatInteger(v.product.sellPrice, 0)} + '원'">0원</div>
-          <div class="muted" th:text="'판매량 ' + ${v.sales}">판매량</div>
         </div>
       </div>
     </section>
 
     <!-- MAN BEST -->
-    <section class="mt-5">
-      <div class="section-title">MAN BEST</div>
-      <div class="grid">
-        <div class="card--pd" th:each="v : ${bestMen}">
-          <a class="thumb d-block" th:href="@{'/product/content/' + ${v.product.id}}">
-            <img th:src="@{${v.product.imgPath} + ${v.product.imgName}}" th:alt="${v.product.name}">
+    <section class="mb-1">
+      <h2 class="section-title mb-3">Man Best</h2>
+      <div class="row row-cols-2 row-cols-md-5 g-3 g-md-4">
+        <div class="col" th:each="it : ${manBest}">
+          <a th:if="${it != null and it.product != null}"
+             th:href="@{|/main/content/${it.product.id}|}"
+             class="card product-card h-100 shadow-sm">
+            <div class="rank-badge" th:text="${it.rank}">1</div>
+            <div class="ratio ratio-1x1 product-thumb">
+              <img th:src="${it.product.imgPath + it.product.imgName}"
+                   th:alt="${it.product.name}"
+                   class="w-100 h-100 object-fit-cover">
+            </div>
+            <div class="card-body p-2 p-md-3">
+              <div class="product-name text-truncate" th:text="${it.product.name}">제품명</div>
+              <div class="product-price mt-1">
+                <span class="sell"
+                      th:text="${#numbers.formatInteger(it.product.sellPrice, 3, 'COMMA')} + '원'">0원</span>
+              </div>
+            </div>
           </a>
-          <div class="name" th:text="${v.product.name}">상품명</div>
-          <div class="price" th:text="${#numbers.formatInteger(v.product.sellPrice, 0)} + '원'">0원</div>
-          <div class="muted" th:text="'판매량 ' + ${v.sales}">판매량</div>
         </div>
       </div>
     </section>
 
-  </th:block>
+  </div>
+</th:block>
 
-  <!-- 페이지 전용 스크립트 -->
-  <th:block layout:fragment="script">
-    <script>
-      (function(){
-        const wrap = document.querySelector('.carousel-wrap');
-        if(!wrap) return;
-        const carousel = document.getElementById('pickCarousel');
-        const prev = wrap.querySelector('.nav-prev');
-        const next = wrap.querySelector('.nav-next');
-
-        function scrollByItems(n){
-          const card = carousel.querySelector('.card--pd');
-          if(!card) return;
-          const style = getComputedStyle(carousel);
-          const gap = parseFloat(style.columnGap || style.gap || 16);
-          const width = card.getBoundingClientRect().width + gap; // gap 포함
-          carousel.scrollBy({left: n * width, behavior: 'smooth'});
-        }
-        prev.addEventListener('click', ()=>scrollByItems(-4));
-        next.addEventListener('click', ()=>scrollByItems(+4));
-      })();
-    </script>
-  </th:block>
+<th:block layout:fragment="script">
+  <script>
+    // 캐러셀은 수동 탐색(자동 롤링 X)
+    const pickCarousel = document.querySelector('#pickCarousel');
+    if (pickCarousel) {
+      const c = new bootstrap.Carousel(pickCarousel, { interval: false, ride: false, pause: true });
+    }
+  </script>
+</th:block>
 </body>
 </html>
