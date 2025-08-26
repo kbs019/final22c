@@ -66,7 +66,7 @@ public class ChatService {
     			  집계 예시:
     			    SUM(CASE WHEN REGEXP_LIKE(GENDER,'^(M|MALE|남|남자|남성)$','i') THEN 1 ELSE 0 END) AS MALE_COUNT
     			- 바인딩 변수 사용 (:userNo, :limit 등). 값 인라인 금지.
-    			- 최대 50행 제한. 반드시 ```sql ... ``` 코드블록 한 개만 출력.
+    			- 최대 300행 제한. 반드시 ```sql ... ``` 코드블록 한 개만 출력.
     			""";
         var user = "스키마 요약:\n" + schemaDoc + "\n\n질문:\n" + question + "\n\n반드시 코드블록으로 SQL만 출력.";
         var body = Map.of(
