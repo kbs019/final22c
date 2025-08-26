@@ -40,7 +40,7 @@ public class MyActivityController {
     // 이미 @Controller + @RequestMapping("/mypage") 인 상태
     @GetMapping("/reviews/{reviewId}")
     @ResponseBody
-    public ResponseEntity<?> getMyReview(@PathVariable Long reviewId, Principal principal){
+    public ResponseEntity<?> getMyReview(@PathVariable("reviewId") Long reviewId, Principal principal){
         Users me = usersService.getLoginUser(principal); // 로그인 필수
         Map<String,Object> body = myActivityService.getMyReviewDetail(me.getUserNo(), reviewId);
         return ResponseEntity.ok(body);
@@ -56,7 +56,7 @@ public class MyActivityController {
     }
 
     @DeleteMapping("/likes/{reviewId}")
-    public ResponseEntity<?> unlike(@PathVariable Long reviewId, Principal principal){
+    public ResponseEntity<?> unlike(@PathVariable("reviewId") Long reviewId, Principal principal){
         Users me = usersService.getLoginUser(principal);
         boolean ok = myActivityService.unlike(me.getUserNo(), reviewId);
         return ResponseEntity.ok(Map.of("ok", ok));
@@ -65,7 +65,7 @@ public class MyActivityController {
     // 내용 수정(필요 시 rating도 같이 받기)
     @PutMapping("/reviews/{reviewId}")
     @ResponseBody
-    public ResponseEntity<?> updateMyReview(@PathVariable Long reviewId,
+    public ResponseEntity<?> updateMyReview(@PathVariable("reviewId") Long reviewId,
                                             @RequestBody Map<String, Object> req,
                                             Principal principal){
         Users me = usersService.getLoginUser(principal);
@@ -81,7 +81,7 @@ public class MyActivityController {
     // 삭제
     @DeleteMapping("/reviews/{reviewId}")
     @ResponseBody
-    public ResponseEntity<?> deleteMyReview(@PathVariable Long reviewId, Principal principal){
+    public ResponseEntity<?> deleteMyReview(@PathVariable("reviewId") Long reviewId, Principal principal){
         Users me = usersService.getLoginUser(principal);
         boolean ok = myActivityService.deleteMyReview(me.getUserNo(), reviewId);
         return ResponseEntity.ok(Map.of("ok", ok));
