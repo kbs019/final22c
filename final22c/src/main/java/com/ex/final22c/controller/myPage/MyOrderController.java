@@ -23,19 +23,6 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/mypage")
 public class MyOrderController {
 	private final MyOrderService myOrderService;
-	
-	// @GetMapping("/order")
-	// public String list(@RequestParam(name = "page", defaultValue = "0") int page,
-	// 				   @RequestParam(name = "size", defaultValue = "10") int size,
-	// 				   Principal principal,
-	// 				   Model model) {
-	// 	if(principal == null) {
-	// 		return "redirect:/user/login";
-	// 	}
-	// 	Page<Order> orders = myOrderService.listMyOrders(principal.getName(), page, size);
-	// 	model.addAttribute("orders",orders);
-	// 	return "mypage/orders";
-	// }
 
 	@GetMapping("/order")
 	public String listFragment(@RequestParam(name= "page", defaultValue = "0") int page,
@@ -52,7 +39,6 @@ public class MyOrderController {
 		return "mypage/orders";
 	}
 
-
 	public String list(@RequestParam(name = "page", defaultValue = "0") int page,
 					   @RequestParam(name = "size", defaultValue = "10") int size,
 					   @RequestParam(name = "statuses", required = false) List<String> statuses,
@@ -67,12 +53,6 @@ public class MyOrderController {
 		orders = myOrderService.listMyOrders(principal.getName(), page, size);
 		model.addAttribute("statusFilter", "EXCEPT_PENDING");
 		} else {
-		// 선택: IN 필터 (PAID/CANCELED 등 명시)
-		// 필요시 서비스에 Page 버전도 만들어 쓰면 됨. 일단 List → 수동 페이징 예시는 생략.
-		// 여기서는 간단하게 템플릿 기본 흐름을 유지하려면 Page가 필요하니,
-		// Page 버전 메서드가 없다면 기본 경로만 쓰고, 탭/필터는 추후 확장.
-		// → 추천: 서비스에 Page버전 listMyOrdersByStatuses(...) 하나 추가해두기.
-		// 임시로는 기본 동작만 사용:
 		orders = myOrderService.listMyOrders(principal.getName(), page, size);
 		model.addAttribute("statusFilter", String.join(",", statuses));
 		}
@@ -93,4 +73,6 @@ public class MyOrderController {
 		model.addAttribute("payments", payments);
 		return "mypage/orderDetail :: items";
 	}
+
+	
 }
