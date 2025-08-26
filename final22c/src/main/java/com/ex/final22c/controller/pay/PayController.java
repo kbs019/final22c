@@ -1,10 +1,12 @@
 package com.ex.final22c.controller.pay;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -357,5 +359,27 @@ public class PayController {
             "status",   "REQUESTED", // ← 이 값으로 JS에서 배지/버튼/스텝퍼 바로 갱신
             "refundId", refundId
         ));
+    }
+
+    @GetMapping(
+        value = "/order/{id}/refund-requests",
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseBody
+    public Map<String,Object> refundRequests(@PathVariable("id") long orderId,
+                                            Principal principal) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        // 서비스: Map 리스트로 조립된 환불요청 목록
+        List<Map<String,Object>> requests =
+                myOrderService.getRefundRequestsOfOrder(orderId, principal.getName());
+
+        // 프런트에서 기대하는 형태: { orderId, requests: [...] }
+        Map<String,Object> result = new HashMap<>();
+        result.put("orderId", orderId);
+        result.put("requests", requests);
+        return result; // → 200 OK JSON
     }
 }
