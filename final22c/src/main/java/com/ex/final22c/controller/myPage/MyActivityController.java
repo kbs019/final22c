@@ -30,8 +30,8 @@ public class MyActivityController {
 
     @GetMapping("/reviews")
     public ResponseEntity<?> myReviews(Principal principal,
-                                       @RequestParam(defaultValue="0") int page,
-                                       @RequestParam(defaultValue="10") int size){
+                                       @RequestParam(name = "page", defaultValue="0") int page,
+                                       @RequestParam(name = "size", defaultValue="10") int size){
         Users me = usersService.getLoginUser(principal);
         Map<String,Object> body = myActivityService.getMyReviews(me.getUserNo(), page, size);
         return ResponseEntity.ok(body);
@@ -48,8 +48,8 @@ public class MyActivityController {
 
     @GetMapping("/likes")
     public ResponseEntity<?> myLikes(Principal principal,
-                                     @RequestParam(defaultValue="0") int page,
-                                     @RequestParam(defaultValue="10") int size){
+                                     @RequestParam(name="page", defaultValue="0") int page,
+                                     @RequestParam(name="size", defaultValue="10") int size){
         Users me = usersService.getLoginUser(principal);
         Map<String,Object> body = myActivityService.getMyLikedReviews(me.getUserNo(), page, size);
         return ResponseEntity.ok(body);
@@ -70,7 +70,7 @@ public class MyActivityController {
                                             Principal principal){
         Users me = usersService.getLoginUser(principal);
         String content = String.valueOf(req.getOrDefault("content","")).trim();
-        Integer rating = null;
+        int rating = 0;
         if (req.get("rating") != null) {
             try { rating = Integer.parseInt(String.valueOf(req.get("rating"))); } catch (Exception ignored){}
         }

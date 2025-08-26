@@ -112,14 +112,14 @@ public class MyActivityService {
     }
 
     @Transactional
-    public Map<String,Object> updateMyReview(Long userNo, Long reviewId, String content, Integer rating){
+    public Map<String,Object> updateMyReview(Long userNo, Long reviewId, String content, int rating){
         Review r = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("리뷰가 존재하지 않습니다."));
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("내용을 입력해 주세요.");
         }
         r.setContent(content);
-        if (rating != null) r.setRating(rating);
+        if (rating != 0) r.setRating(rating);
         // flush는 @Transactional로 커밋 시 반영
 
         Map<String,Object> res = new LinkedHashMap<>();
