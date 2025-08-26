@@ -153,7 +153,9 @@ public class AdminController {
 
 	// 주문 관리
 	@GetMapping("orderList")
-	public String orderList() {
+	public String orderList(Model model) {
+		
+		model.addAttribute("orders",this.adminService.getOrders());
 		return "admin/orderList";
 	}
 

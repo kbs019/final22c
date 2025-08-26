@@ -1,5 +1,30 @@
 <html layout:decorate="~{/layout/adminLayout}">
 <div layout:fragment="content" class="container">
-
+<div class="card mb-4">
+	<div class="card-header">
+		<i class="fas fa-table me-1"></i>
+			상품리스트
+		</div>
+		<div class="card-body">
+			<table id="datatablesSimple">
+				<thead>
+					<tr>
+		                <th scope="col">주문번호</th>
+		                <th scope="col">상품명</th>
+		                <th scope="col">총 금액</th>
+		                <th scope="col">상태</th>
+		                <th scope="col">관리</th>
+					</tr>
+				</thead>
+				<tbody >
+					<tr th:each="list : ${orders}" >
+		                <td th:text="${list.orderId}"></td>
+		                <td th:text="${list.details[0].product.name}"></td>
+		                <td th:
+	            	</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
 </div>
 </html>
