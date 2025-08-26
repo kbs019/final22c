@@ -277,10 +277,16 @@ public class RefundService {
         if ( partial && rejectReason == null ) {
             return ApproveRefundResult.error("부분 환불 시 거절 사유는 필수입니다.");
         }
-
+        int usedPoint=0;
+        if(order.getUsedPoint()>0) {
+            usedPoint = order.getUsedPoint();
+            Users user = refund.getUser();
+            user.setMileage(usedPoint);
+            this.userRepository.save(user);
+        }
         // 5) PG 환불 (총액 > 0이면 필수)
         int shippingRefund = (approvedQtyTotal > 0) ? FIXED_SHIPPING_REFUND : 0;
-        int finalRefundAmount = itemSubtotal + shippingRefund;
+        int finalRefundAmount = (itemSubtotal + shippingRefund)-usedPoint;
 
         String pgRefundId = null;
         String pgPayloadJson = null;
