@@ -16,7 +16,9 @@
     <!-- 배너 -->
     <section class="mb-4 mb-md-5">
       <div class="main-banner ratio ratio-21x9 rounded-4 overflow-hidden shadow-sm">
-        <img th:if="${bannerUrl}" th:src="${bannerUrl}" alt="메인 배너" class="w-100 h-100 object-fit-cover">
+        <a th:href="@{/main/brand/2}">
+          <img src="/img/main.png" alt="메인 배너" class="w-100 h-100 object-fit-cover">
+        </a>
       </div>
     </section>
 
