@@ -6,12 +6,45 @@ document.addEventListener("DOMContentLoaded", () => {
   const sendBtn = document.getElementById("chat-send");
   const log     = document.getElementById("chat-log");
 
-  // Chart.js 인스턴스 (전역 DOM 변수명과 충돌 피하려고 window.* 사용 안함)
+  // Chart.js 인스턴스
   let chartInstance = null;
 
   // (선택) CSRF
   const CSRF_TOKEN  = document.querySelector('meta[name="_csrf"]')?.content;
   const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+  /* ---------- SQL pretty print ---------- */
+  function prettySql(sql) {
+    if (!sql) return "";
+    let s = sql.replace(/\s+/g, " ").trim();
+
+    // SELECT ~ FROM 사이 컬럼 줄바꿈 (JS는 (?s) 미지원 → [\s\S]*? 사용)
+    s = s.replace(/SELECT\s+([\s\S]*?)\s+FROM\s/i, (_m, cols) => {
+      const colsPretty = String(cols).replace(/\s*,\s*/g, ",\n  ");
+      return `SELECT\n  ${colsPretty}\nFROM `;
+    });
+
+    const rules = [
+      { re: /\s+FROM\s+/gi,        to: "\nFROM\n  " },
+      { re: /\s+LEFT\s+JOIN\s+/gi, to: "\n  LEFT JOIN " },
+      { re: /\s+RIGHT\s+JOIN\s+/gi,to: "\n  RIGHT JOIN " },
+      { re: /\s+INNER\s+JOIN\s+/gi,to: "\n  INNER JOIN " },
+      { re: /\s+OUTER\s+JOIN\s+/gi,to: "\n  OUTER JOIN " },
+      { re: /\s+JOIN\s+/gi,        to: "\n  JOIN " },
+      { re: /\s+ON\s+/gi,          to: "\n    ON " },
+      { re: /\s+WHERE\s+/gi,       to: "\nWHERE\n  " },
+      { re: /\s+GROUP\s+BY\s+/gi,  to: "\nGROUP BY\n  " },
+      { re: /\s+HAVING\s+/gi,      to: "\nHAVING\n  " },
+      { re: /\s+ORDER\s+BY\s+/gi,  to: "\nORDER BY\n  " },
+      { re: /\s+UNION\s+ALL\s+/gi, to: "\nUNION ALL\n" },
+      { re: /\s+UNION\s+/gi,       to: "\nUNION\n" },
+      { re: /\s+FETCH\s/gi,        to: "\nFETCH " },
+      { re: /\s+LIMIT\s/gi,        to: "\nLIMIT " },
+      { re: /\s+OFFSET\s/gi,       to: "\nOFFSET " }
+    ];
+    rules.forEach(r => s = s.replace(r.re, r.to));
+    return s;
+  }
 
   /* ---------- 공통 UI ---------- */
   const append = (role, node) => {
@@ -69,7 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // AiResult -> 채팅 영역 렌더
   const showAssistantAnswer = (ans) => {
     // AiResult: { answer, sql, rows, chart }
-    // (레거시 호환) message/tableMd가 오면 fallback
     const message = ans?.answer ?? ans?.message ?? "(응답 없음)";
     const sql     = ans?.sql ?? null;
     const rows    = Array.isArray(ans?.rows) ? ans.rows : null;
@@ -81,10 +113,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sql) {
       const details = document.createElement("details");
       details.className = "mt-2";
-      details.innerHTML = `<summary>실행된 SQL 보기</summary><pre>${sql}</pre>`;
+
+      const summary = document.createElement("summary");
+      summary.textContent = "실행된 SQL 보기";
+
+      const pre = document.createElement("pre");
+      pre.textContent = prettySql(sql);       // ← 포맷팅해서 출력
+
+      details.appendChild(summary);
+      details.appendChild(pre);
       box.appendChild(details);
+
       const sqlBox = document.getElementById("sqlBox");
-      if (sqlBox) sqlBox.textContent = sql;
+      if (sqlBox) sqlBox.textContent = prettySql(sql);
     }
 
     if (rows && rows.length) {
@@ -124,67 +165,96 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------- 차트 렌더 ---------- */
   function drawChart(payload){
-    // payload: { labels, values, quantities, valueCol, title }
-    if (!payload) {
-      console.warn("[chat] chart payload 없음");
-      return;
-    }
+    if (!payload) return;
 
-    // 항상 캔버스를 확보 (없으면 생성)
     const canvas = getOrCreateChartCanvas();
-    if (!canvas) {
-      console.warn("[chat] canvas 생성/획득 실패");
-      return;
-    }
     const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      console.warn("[chat] 2D context 생성 실패");
-      return;
-    }
+    if (chartInstance?.destroy) chartInstance.destroy();
 
-    // 이전 차트 제거 (함수 존재 확인)
-    if (chartInstance && typeof chartInstance.destroy === "function") {
-      chartInstance.destroy();
-    }
+    const type = (payload.type || 'bar').toLowerCase();
+    const horizontal = !!payload.horizontal;
+    const fmt = (payload.format || (payload.valueCol?.includes('원') ? 'currency' : 'count'));
 
     const labels = payload.labels || [];
     const values = (payload.values || []).map(Number);
     const qtys   = (payload.quantities || []).map(Number);
 
-    chartInstance = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [{
-          label: payload.valueCol || "값",
-          data: values
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: { display: !!payload.title, text: payload.title || "" },
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (c) => {
-                const i = c.dataIndex;
-                const v = values[i]?.toLocaleString("ko-KR") ?? "0";
-                const q = Number.isFinite(qtys[i]) ? qtys[i].toLocaleString("ko-KR") : null;
-                const base = `${v}원`;
-                return q != null ? [`${base}`, `수량: ${q}개`] : base;
-              }
+    // ▼ 컬러 팔레트
+    const PALETTE = [
+      "#4F46E5","#06B6D4","#10B981","#F59E0B","#EF4444",
+      "#8B5CF6","#22C55E","#0EA5E9","#F43F5E","#A3E635",
+      "#6366F1","#14B8A6","#F97316","#EC4899","#84CC16"
+    ];
+    const colors = values.map((_, i) => PALETTE[i % PALETTE.length]);
+
+    // 헥사 -> rgba
+    const hexToRgba = (hex, a=1) => {
+      const h = hex.replace('#','');
+      const bigint = parseInt(h, 16);
+      const r = (bigint >> 16) & 255, g = (bigint >> 8) & 255, b = bigint & 255;
+      return `rgba(${r}, ${g}, ${b}, ${a})`;
+    };
+
+    const isPie = (type === 'pie' || type === 'doughnut');
+
+    const dataset = {
+      label: payload.valueCol || '값',
+      data: values,
+      backgroundColor: isPie
+        ? colors.map(c => hexToRgba(c, 0.9))
+        : (type === 'bar'
+            ? colors.map(c => hexToRgba(c, 0.35))
+            : hexToRgba(colors[0], 0.25)),
+      borderColor: isPie
+        ? colors
+        : (type === 'bar' ? colors : colors[0]),
+      borderWidth: (type === 'line') ? 2 : 1,
+      tension: (type === 'line') ? 0.35 : 0,
+      fill: (type === 'line')
+    };
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: horizontal ? 'y' : 'x',
+      plugins: {
+        title: { display: !!payload.title, text: payload.title || '' },
+        legend: { display: isPie }, // 선/막대는 범례 숨김
+        tooltip: {
+          callbacks: {
+            label: (c) => {
+              const i = c.dataIndex;
+              const num = values[i] ?? 0;
+              const q   = qtys[i];
+              let v = Number(num).toLocaleString('ko-KR');
+              if (fmt === 'currency') v += '원';
+              if (fmt === 'percent')  v += '%';
+              return (q != null && isFinite(q))
+                ? [`${v}`, `수량: ${Number(q).toLocaleString('ko-KR')}개`]
+                : v;
             }
           }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { callback: v => v.toLocaleString("ko-KR") }
+        }
+      },
+      scales: isPie ? {} : {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (v) => {
+              let s = Number(v).toLocaleString('ko-KR');
+              if (fmt === 'currency') s += '원';
+              if (fmt === 'percent')  s += '%';
+              return s;
+            }
           }
         }
       }
+    };
+
+    chartInstance = new Chart(ctx, {
+      type,
+      data: { labels, datasets: [ dataset ] },
+      options
     });
   }
 
@@ -220,7 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("[chat] AiResult:", data);
       showAssistantAnswer(data);
 
-      // 차트 있으면 렌더
       if (data.chart) {
         console.log("[chat] chart payload 수신:", data.chart);
         drawChart(data.chart);
@@ -244,6 +313,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 디버그: Chart.js 로드 확인
   console.log("[chat] Chart.js version =", window.Chart?.version);
 });
