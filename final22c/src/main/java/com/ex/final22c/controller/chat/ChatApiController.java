@@ -9,17 +9,19 @@ import java.security.Principal;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/chat")
+@RequestMapping("/api") // 공통 prefix
 public class ChatApiController {
 
     private final ChatOrchestratorService orchestrator;
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ChatOrchestratorService.ChatAnswer chat(@RequestBody ChatRequest req, Principal principal) {
-        // 오케스트레이터에서 SQL 생성/가드/실행/요약까지 모두 처리
-        return orchestrator.handle(req.message(), principal);
+    @PostMapping(
+        path = {"/chat", "/ai/query"},         // ← 두 경로 모두 허용
+        consumes = MediaType.APPLICATION_JSON_VALUE,
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public AiResult ask(@RequestBody ChatRequest req, Principal principal) {
+        return orchestrator.handle(req.message(), principal); // 내부 라우팅 그대로
     }
 
-    // 요청 DTO (필요하면 분리 가능)
     public record ChatRequest(String message) {}
 }

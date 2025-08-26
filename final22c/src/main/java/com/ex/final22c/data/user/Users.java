@@ -1,6 +1,8 @@
 package com.ex.final22c.data.user;
 
 import java.time.LocalDate;
+import java.time.Year;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +28,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -122,6 +125,9 @@ public class Users {
     @Builder.Default
     private Set<Product> zzimedProducts = new HashSet<>();
 
+    @Column(name = "age")
+    private Integer age;
+
     // 사용자가 공감한 리뷰들 - (조인 테이블 생성 - 컬럼: users_id, review_id)
     // @ManyToMany(mappedBy = "likers")
     // @Builder.Default
@@ -134,19 +140,19 @@ public class Users {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAddress> addresses = new ArrayList<>();
-    
+
     // 배송지 주소를 추가할 때 사용
     // UserAddress 객체를 생성하고, 해당 유저에 추가
-    public void addAddress(UserAddress addr){
+    public void addAddress(UserAddress addr) {
         addresses.add(addr);
         addr.setUser(this);
     }
 
     // 배송지 주소를 제거할 때 사용
     // UserAddress 객체를 제거하고, 해당 유저의 참조를 null로 설정
-    public void removeAddress(UserAddress addr){
-    addresses.remove(addr);
-    addr.setUser(null);
+    public void removeAddress(UserAddress addr) {
+        addresses.remove(addr);
+        addr.setUser(null);
     }
 
     @PrePersist
@@ -160,5 +166,20 @@ public class Users {
         if (this.mileage == null) {
             this.mileage = 0;
         }
+        recalcAge();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        recalcAge();
+    }
+
+    private void recalcAge() {
+        if (this.birth == null) {
+            this.age = null;
+            return;
+        }
+        int yearNow = Year.now(ZoneId.of("Asia/Seoul")).getValue();
+        this.age = Math.max(0, yearNow - this.birth.getYear() + 1);
     }
 }
