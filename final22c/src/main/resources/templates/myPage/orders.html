@@ -165,8 +165,20 @@
 
   /* 주문 카드 썸네일 */
   .order-head{ display:flex; gap:12px; align-items:center; }
-  .order-thumb{ width:120px; height:120px; border-radius:12px; overflow:hidden; flex:0 0 120px; }
-  .order-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .order-thumb{
+    width:88px;
+    height:88px;
+    border-radius:10px;   /* 기존 12px → 10px */
+    overflow:hidden;
+    flex:0 0 88px;        /* 그리드/플렉스에서 고정폭 유지 */
+  }
+  .order-thumb img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    background:#f3f4f6;   /* 활동내역 .thumb와 동일한 배경 */
+  }
 </style>
 
 <section>
@@ -189,22 +201,33 @@
     <div class="order-info">
       <div class="order-head">
         <div class="order-thumb">
-          <!-- first가 있고 imgName이 있을 때 -->
-          <img th:if="${first != null and not #strings.isEmpty(first.product.imgName)}"
-               th:src="@{|${
-                   #strings.endsWith(first.product.imgPath,'/')
-                     ? first.product.imgPath
-                     : first.product.imgPath + '/'
-                 }${first.product.imgName}|}" alt="">
-          <!-- 그 외 기본 이미지 -->
-          <img th:if="${first == null or #strings.isEmpty(first.product.imgName)}"
-               th:src="@{/img/noimage.png}" alt="">
+          <!-- ✅ 썸네일을 상품상세 링크로 -->
+          <a th:if="${first != null}"
+            class="order-thumb"
+            th:href="@{|/main/content/${first.product.id}|}">
+            <img th:if="${not #strings.isEmpty(first.product.imgName)}"
+                th:src="@{|${
+                  #strings.endsWith(first.product.imgPath,'/')
+                    ? first.product.imgPath
+                    : first.product.imgPath + '/'
+                }${first.product.imgName}|}" alt="">
+            <img th:if="${#strings.isEmpty(first.product.imgName)}"
+                th:src="@{/img/noimage.png}" alt="">
+          </a>
+          <!-- first가 없을 때 기본 이미지 -->
+          <div th:if="${first == null}" class="order-thumb">
+            <img th:src="@{/img/noimage.png}" alt="">
+          </div>
         </div>
 
         <div>
           <div class="muted" th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}"></div>
           <div class="order-title">
-            <span th:text="${first != null ? first.product.name : '상품'}">상품명</span>
+            <!-- 상품명을 링크로 -->
+            <a th:if="${first != null}"
+               th:href="@{|/main/content/${first.product.id}|}"
+               th:text="${first.product.name}">상품명</a>
+            <span th:if="${first == null}">상품</span>
             <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
             <span th:if="${o.status=='REQUESTED'}" class="badge-requested">환불요청</span>
             <span th:if="${o.status=='CONFIRMED' and o.status!='REQUESTED'}" class="badge-confirmed">주문확정</span>
