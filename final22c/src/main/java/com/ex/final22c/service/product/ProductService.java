@@ -1,9 +1,11 @@
 package com.ex.final22c.service.product;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,5 +75,46 @@ public class ProductService {
         if (qty <= 0) return;
         int updated = productRepository.increaseStock(productId, qty);
         if (updated != 1) throw new IllegalStateException("재고 복구 실패 또는 상품 없음: id=" + productId);
+    }
+
+    // ==== DTO ====
+    public record ProductRank(Product product, long sold, int rank) {}
+
+    // PICK: 최신순 12개 -> 4개씩 슬라이드
+    public List<List<Product>> getPickSlides(int perSlide) {
+        int limit = Math.max(perSlide * 3, perSlide); // 최소 1슬라이드
+        List<Product> picks = productRepository.findPicked(PageRequest.of(0, limit));
+        return chunk(picks, perSlide);
+    }
+
+    // 전체 베스트 TOP N
+    public List<ProductRank> getAllBest(int topN) {
+        var list = productRepository.findTopAllBest(PageRequest.of(0, topN));
+        return toRanks(list);
+    }
+
+    // 여성/남성 베스트 TOP N (여성= "2", 남성= "1")
+    public List<ProductRank> getGenderBest(String gender, int topN) {
+        var list = productRepository.findTopByGender(gender, PageRequest.of(0, topN));
+        return toRanks(list);
+    }
+
+    // ==== helpers ====
+    private List<ProductRank> toRanks(List<ProductRepository.ProductSalesProjection> src) {
+        List<ProductRank> out = new ArrayList<>();
+        int r = 1;
+        for (var it : src) {
+            out.add(new ProductRank(it.getProduct(), it.getSold() == null ? 0L : it.getSold(), r++));
+        }
+        return out;
+    }
+
+    private static <T> List<List<T>> chunk(List<T> list, int size) {
+        List<List<T>> pages = new ArrayList<>();
+        if (list == null || list.isEmpty() || size <= 0) return pages;
+        for (int i = 0; i < list.size(); i += size) {
+            pages.add(list.subList(i, Math.min(i + size, list.size())));
+        }
+        return pages;
     }
 }
