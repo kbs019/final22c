@@ -236,7 +236,7 @@ public class AdminController {
             .userName(refund.getUser().getUserName())
             .orderId(refund.getOrder().getOrderId())
             .createdAt(fmt(refund.getCreateDate()))
-            .reason(refund.getReasonText())
+            .reason(refund.getRequestedReason())
             .status(refund.getStatus())
             .paymentTid(getTidSafe(refund)) // UI에는 안 쓰더라도 전달해둠
             .build();

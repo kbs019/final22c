@@ -1,8 +1,10 @@
 package com.ex.final22c.repository.refund;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +19,22 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
 
     /** 해당 주문에 REQUESTED 상태 환불이 존재하는지 */
     boolean existsByOrderAndStatus(Order order, String status);
+ 
+    // details → orderDetail → product 까지 한 번에 로딩 (Lazy Exception 방지)
+    @EntityGraph(attributePaths = {
+        "details", "details.orderDetail", "details.orderDetail.product"
+    })
+    List<Refund> findByOrder_OrderIdAndStatusOrderByCreateDateDesc(long orderId, String status);
+
+    @EntityGraph(attributePaths = {
+    "details","details.orderDetail","details.orderDetail.product"
+    })
+    List<Refund> findByOrder_OrderIdAndStatusInOrderByCreateDateDesc(long orderId, Collection<String> statuses);
+
+    @EntityGraph(attributePaths = {
+    "details","details.orderDetail","details.orderDetail.product"
+    })
+    List<Refund> findByOrder_OrderIdOrderByCreateDateDesc(long orderId);
 
     /** 관리자 상세 모달에 필요한 연관관계 즉시 로딩 */
     @Query("""
@@ -33,10 +51,21 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
     Optional<Refund> findGraphById(@Param("refundId") Long refundId);
 
     @Query("""
-      select distinct r.order.orderId
-      from Refund r
-      where r.status = :status and r.order.orderId in :orderIds
+        select distinct r.order.orderId
+        from Refund r
+        where r.status = :status and r.order.orderId in :orderIds
     """)
     List<Long> findRequestedOrderIds(@Param("orderIds") List<Long> orderIds,
-                                     @Param("status") String status);
+                                    @Param("status") String status);
+                                    
+    Optional<Refund> findGraphByRefundId(@Param("refundId") Long refundId);
+
+    // 환불 승인용: order, order.payment, details, details.orderDetail 로딩
+    @EntityGraph(attributePaths = {
+        "order",
+        "payment",
+        "details",
+        "details.orderDetail"
+    })
+    Optional<Refund> findByRefundId(Long refundId);
 }

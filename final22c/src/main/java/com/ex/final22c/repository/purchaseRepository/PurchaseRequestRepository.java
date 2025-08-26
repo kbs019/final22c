@@ -12,4 +12,5 @@ import com.ex.final22c.data.purchase.PurchaseRequest;
 public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest,Long>{
 
 	Optional<PurchaseRequest> findByProduct(Product product);
+	Optional<PurchaseRequest> findByProductId(Long productId);
 }

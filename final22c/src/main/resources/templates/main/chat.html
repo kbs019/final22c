@@ -1,3 +1,4 @@
+<!-- src/main/resources/templates/chat/chat.html -->
 <!DOCTYPE html>
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
@@ -7,40 +8,44 @@
   <meta charset="UTF-8">
   <title>22°C | Chat</title>
 
-  <!-- 페이지 전용 CSS -->
   <th:block layout:fragment="css">
-    <!-- 필요시 chat.css 추가 -->
-    <!-- <link rel="stylesheet" th:href="@{/css/chat.css}"> -->
+    <!-- 필요시 전용 css -->
   </th:block>
 </head>
-
 <body>
-  <!-- 레이아웃의 content 블록 -->
-  <th:block layout:fragment="content">
-    <h1 class="mb-4">Chat 페이지</h1>
-    <p class="text-muted">1단계: 화면 골격만 확인합니다. 아직 챗봇 응답은 없습니다.</p>
+<th:block layout:fragment="content">
 
-    <!-- 채팅 카드 -->
-    <div id="chat-card" class="card shadow-sm">
-      <div class="card-body">
-        <!-- 채팅 로그 -->
-        <div id="chat-log" class="mb-3" 
-             style="height: 320px; overflow-y: auto; border: 1px solid #e9ecef; padding: 12px; border-radius: 6px;">
-          <div class="text-muted">아직 대화가 없습니다.</div>
-        </div>
+  <h1 class="mb-3">Chat 페이지</h1>
 
-        <!-- 입력창 -->
-        <div class="d-flex gap-2">
-          <input id="chat-input" type="text" class="form-control" placeholder="메시지를 입력하세요" />
-          <button id="chat-send" class="btn btn-primary">전송</button>
-        </div>
+  <div id="chat-card" class="card shadow-sm">
+    <div class="card-body">
+      <div id="chat-log" class="mb-3"
+           style="height:320px; overflow-y:auto; border:1px solid #e9ecef; padding:12px; border-radius:6px;">
+        <div class="text-muted">아직 대화가 없습니다.</div>
+      </div>
+      <div class="d-flex gap-2">
+        <input id="chat-input" class="form-control" placeholder="메시지를 입력하세요">
+        <button id="chat-send" class="btn btn-primary">전송</button>
       </div>
     </div>
-  </th:block>
+  </div>
 
-  <!-- 페이지 전용 JS -->
-  <th:block layout:fragment="script">
-    <script th:src="@{/js/chat.js}"></script>
-  </th:block>
+  <div class="card mt-3" style="height:320px">
+    <div class="card-body">
+      <canvas id="aiChart" style="max-height:280px;"></canvas>
+    </div>
+  </div>
+
+  <details class="mt-2">
+    <summary>실행된 SQL 보기</summary>
+    <pre id="sqlBox" style="white-space:pre-wrap"></pre>
+  </details>
+
+</th:block>
+
+<th:block layout:fragment="script">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script th:src="@{/js/chat.js(v=${T(java.lang.System).currentTimeMillis()})}"></script>
+</th:block>
 </body>
 </html>
