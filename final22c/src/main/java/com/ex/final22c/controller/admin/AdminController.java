@@ -1,6 +1,7 @@
 package com.ex.final22c.controller.admin;
 
 import java.io.IOException;
+import java.security.Principal;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
@@ -310,5 +312,17 @@ public class AdminController {
 	@ResponseBody
 	public Map<String, Object> getPurchaseDetail(@PathVariable("purchaseId") Long purchaseId) {
 		return this.adminService.getPurchaseDetail(purchaseId);
+	}
+	
+	// 주문 내역 상세
+	@GetMapping("orderList/{id}/fragment")
+	public String orderItemsFragment(@PathVariable("id") Long id,
+									 Model model) {
+
+		Order order = adminService.findMyOrderWithDetails(id);
+		List<Payment> payments = adminService.findPaymentsofOrder(id);
+		model.addAttribute("order", order);
+		model.addAttribute("payments", payments);
+		return "admin/orderDetail :: items";
 	}
 }
