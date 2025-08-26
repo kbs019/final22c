@@ -76,7 +76,7 @@ public class Users {
     @Column(name = "birth")
     private LocalDate birth;
 
-    // 성별 : 1: 남자, 2: 여자
+    // 성별 : M: 남자, F: 여자
     @Column(name = "gender", length = 10)
     private String gender;
 
