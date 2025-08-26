@@ -1,3 +1,70 @@
+/* 컨테이너 */
+.pd-head{
+  padding: 10px 0 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* 1행: 브랜드 — a 기본스타일 제거 + 한 줄 유지 */
+.pd-head .brand-link{
+  display:block;                 /* 1줄 전체 차지 */
+  color:inherit;
+  text-decoration:none;
+  cursor:pointer;
+  margin-bottom:4px;
+}
+.pd-head .brand{
+  color:#2563eb;                 /* 원하면 바꿔도 됨 */
+  font-weight:700;
+  white-space:nowrap;            /* “샤\n넬” 방지 */
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.pd-head .brand-link:hover{
+  text-decoration:underline;
+  text-underline-offset:2px;
+  text-decoration-thickness:2px;
+}
+
+/* 2행: 상품명 — 한 줄 고정 + 살짝 작은 폰트 */
+.pd-head .title{
+  display:block;
+  margin:0;
+  font-weight:800;
+  line-height:1.25;
+  letter-spacing:-0.02em;
+  font-size: clamp(18px, 1.6vw + 6px, 24px);  /* ↓ 기존보다 작게 */
+  white-space:nowrap;                          /* 한 줄 고정 */
+  overflow:hidden;
+  text-overflow:ellipsis;                      /* 길면 … */
+}
+
+/* 3~4행: 가격 영역 — 우측 정렬 */
+.pd-head .price-area{
+  margin-top:10px;               /* 타이틀과 간격 */
+  text-align:right;              /* 우측 정렬 핵심 */
+  font-variant-numeric: tabular-nums; /* 숫자 자리폭 고정 */
+}
+
+/* 3행: 할인률 + 판매가 */
+.pd-head .rate{
+  color:#b91c1c;
+  font-weight:800;
+  margin-right:8px;
+  font-size:20px;
+}
+.pd-head .sale{
+  font-size: 25px;                /* ↓ 살짝 축소 */
+  font-weight:800;
+}
+
+/* 4행: 정가 */
+.pd-head .list{
+  display:block;                 /* 다음 줄(4행)로 */
+  margin-top:4px;
+  color:#9ca3af;
+  font-size:20px;
+}
+
 /* 공통 레이아웃 튜닝 */
 .productInfoWrap{
     /* 기존: position:relative; z-index:2; display:flex; margin... */
