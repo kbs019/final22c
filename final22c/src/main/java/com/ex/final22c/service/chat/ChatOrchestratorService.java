@@ -6,31 +6,55 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class ChatOrchestratorService {
+
     private final RouteService router;
     private final ChatService chat;
     private final SqlExecService sqlExec;
 
-    // TODO: 실제 스키마 introspection으로 대체 가능. 우선 고정 요약.
+    // 🔎 스키마 요약 (DB 실제 컬럼명과 1:1로 맞춤)
     private static final String SCHEMA_DOC = """
-        -- Oracle / 화이트리스트 (대문자 컬럼)
-		-- USERS(USERNO PK, USERNAME, NAME, EMAIL, PHONE, GENDER, STATUS, ROLE, REG)
-		--   GENDER codes: 'M'(남/남자/남성/Male), 'F'(여/여자/여성/Female)
-		--   STATUS codes: 'ACTIVE','INACTIVE' (비교는 대소문자 무시)
-		-- ORDERS(ORDERID PK, USERNO FK->USERS.USERNO, TOTALAMOUNT, USEDPOINT, STATUS, REGDATE, DELIVERYSTATUS)
-		-- ORDERDETAIL(ORDERDETAILID PK, ORDERID FK->ORDERS.ORDERID, ID, QUANTITY, SELLPRICE, TOTALPRICE, CONFIRMQUANTITY)
-		-- PAYMENT(PAYMENTID PK, ORDERID FK->ORDERS.ORDERID, AMOUNT, STATUS, TID, AID, APPROVEDAT, REG)
-		-- 조인: ORDERS.USERNO=USERS.USERNO / ORDERDETAIL.ORDERID=ORDERS.ORDERID / PAYMENT.ORDERID=ORDERS.ORDERID
-		-- 규칙: 단일 SELECT / 허용 테이블만 / 최대 50행
-		""";
+      -- Oracle / 화이트리스트 (대문자 컬럼)
+      -- USERS(USERNO PK, USERNAME, NAME, EMAIL, PHONE, GENDER, STATUS, ROLE, REG)
+      -- ORDERS(ORDERID PK, USERNO FK->USERS.USERNO, TOTALAMOUNT, USEDPOINT, STATUS, REGDATE, DELIVERYSTATUS)
+      -- ORDERDETAIL(ORDERDETAILID PK, ORDERID FK->ORDERS.ORDERID, ID(=PRODUCT.ID), QUANTITY, SELLPRICE, TOTALPRICE, CONFIRMQUANTITY)
+      -- PAYMENT(PAYMENTID PK, ORDERID FK->ORDERS.ORDERID, AMOUNT, STATUS, TID, AID, APPROVEDAT, REG)
+      -- PRODUCT(
+      --   ID PK, NAME, IMGNAME, IMGPATH, PRICE, COUNT, DESCRIPTION, SINGLENOTE, TOPNOTE, MIDDLENOTE, BASENOTE,
+      --   BRAND_BRANDNO FK->BRAND.BRANDNO,
+      --   VOLUME_VOLUMENO FK->VOLUME.VOLUMENO,
+      --   GRADE_GRADENO FK->GRADE.GRADENO,
+      --   MAINNOTE_MAINNOTENO FK->MAINNOTE.MAINNOTENO,
+      --   ISPICKED, STATUS, SELLPRICE, DISCOUNT, COSTPRICE
+      -- )
+      -- BRAND(BRANDNO PK, BRANDNAME, IMGNAME, IMGPATH)
+      -- GRADE(GRADENO PK, GRADENAME)
+      -- MAINNOTE(MAINNOTENO PK, MAINNOTENAME)
+      -- VOLUME(VOLUMENO PK, VOLUMENAME)
+      -- 조인: PRODUCT.BRAND_BRANDNO=BRAND.BRANDNO
+      --     / PRODUCT.GRADE_GRADENO=GRADE.GRADENO
+      --     / PRODUCT.MAINNOTE_MAINNOTENO=MAINNOTE.MAINNOTENO
+      --     / PRODUCT.VOLUME_VOLUMENO=VOLUME.VOLUMENO
+      -- 규칙: 단일 SELECT / 허용 테이블만 / 최대 300행
+      """;
 
+    // ✅ 응답 DTO
     public record ChatAnswer(String message, String sql, String tableMd, List<Map<String,Object>> rows){}
+
+    // ▶ 자주 쓰는 네임드 파라미터 키 목록 (id 계열)
+    private static final Set<String> ID_PARAMS = Set.of(
+        ":id", ":productId", ":orderId", ":paymentId",
+        ":brandNo", ":gradeNo", ":mainNoteNo", ":volumeNo"
+    );
+
+    // 숫자 추출 (예: "237번 제품 가격" → 237)
+    private static final Pattern FIRST_INT = Pattern.compile("\\b\\d+\\b");
 
     public ChatAnswer handle(String userMsg, Principal principal){
         var route = router.route(userMsg);
@@ -38,38 +62,77 @@ public class ChatOrchestratorService {
             return new ChatAnswer(chat.ask(userMsg), null, null, null);
         }
 
-        // === SQL 모드 ===
+        // 1) SQL 생성
         String sqlGen = chat.generateSql(userMsg, SCHEMA_DOC);
+
+        // 2) 가드 + 행 제한
         String safe;
         try {
-            // 가드 + 50행 안전 제한
-        	safe = SqlGuard.ensureSelect(sqlGen);
-            safe = SqlGuard.ensureLimit(safe, 50);
+            safe = SqlGuard.ensureSelect(sqlGen);
+            // (SqlGuard에 rejectPositionalParams를 구현했다면 여기서 호출해도 좋음)
+            // safe = SqlGuard.rejectPositionalParams(safe);
+            safe = SqlGuard.ensureLimit(safe, 300);
         } catch (Exception e){
-            // 가드에 걸리면 일반 챗으로 폴백
             String msg = "생성된 SQL이 안전하지 않습니다: " + e.getMessage() + "\n"
                        + "해당 질문은 대화로 답변합니다.";
             return new ChatAnswer(msg + "\n" + chat.ask(userMsg), null, null, null);
         }
 
-        // 바인딩 필요 시: :userNo, :limit 처리
+        // 3) 네임드 파라미터 바인딩
         var params = new HashMap<String,Object>();
+
+        // 3-1) 로그인 필요한 경우
         if (safe.contains(":userNo")) {
-            Long userNo = (principal == null) ? null : 0L; // 필요 시 실제 userNo 로직 넣기
-            if (userNo == null) {
-                return new ChatAnswer("로그인이 필요한 요청이에요.", null, null, null);
-            }
+            // TODO: principal → userNo 조회 로직으로 교체
+            Long userNo = (principal == null) ? null : 0L;
+            if (userNo == null) return new ChatAnswer("로그인이 필요한 요청이에요.", null, null, null);
             params.put("userNo", userNo);
         }
-        if (safe.contains(":limit")) params.put("limit", 50);
 
+        // 3-2) limit
+        if (safe.contains(":limit")) {
+            params.put("limit", 300);
+        }
+
+        // 3-3) id 계열 자동 바인딩 (질문에서 첫 숫자 사용)
+        if (containsAnyNamedParam(safe, ID_PARAMS)) {
+            Long n = extractFirstNumber(userMsg);
+            if (n == null) {
+                return new ChatAnswer("식별자(ID)가 필요해요. 예: \"제품 237 가격\"", null, null, null);
+            }
+            // 어떤 키가 실제로 쓰였는지 확인 후 일괄 바인딩
+            for (String key : ID_PARAMS) {
+                if (safe.contains(key)) {
+                    params.put(key.substring(1), n); // ':id' → 'id'
+                }
+            }
+        }
+
+        // 4) 실행
         List<Map<String,Object>> rows = params.isEmpty()
                 ? sqlExec.runSelect(safe)
                 : sqlExec.runSelectNamed(safe, params);
 
+        // 5) 결과 변환/요약
         String tableMd = sqlExec.formatAsMarkdownTable(rows);
         String summary = chat.summarize(userMsg, safe, tableMd);
 
+        // 6) 응답
         return new ChatAnswer(summary, safe, tableMd, rows);
+    }
+
+    /* ===== helpers ===== */
+
+    private static boolean containsAnyNamedParam(String sql, Set<String> keys) {
+        for (String k : keys) {
+            if (sql.contains(k)) return true;
+        }
+        return false;
+    }
+
+    private static Long extractFirstNumber(String text) {
+        if (text == null) return null;
+        Matcher m = FIRST_INT.matcher(text);
+        return m.find() ? Long.parseLong(m.group()) : null;
     }
 }
