@@ -95,3 +95,38 @@
   #product-grid .card:hover{ border-color: rgba(255,255,255,.22); }
   .filter-list::-webkit-scrollbar-thumb{ background-color: rgba(255,255,255,.25); }
 }
+
+/* ===== 가격 표시 (톤다운 레드 텍스트 + 인접 취소선 정가) ===== */
+.price-row{
+  display:flex;
+  align-items:baseline;
+  gap:.45rem;              /* 서로 너무 붙지 않게 약간만 간격 */
+  flex-wrap:nowrap;        /* 한 줄 유지 */
+  white-space:nowrap;      /* 줄바꿈 방지 */
+}
+
+.price-row .disc{
+  color:#c85a5a;           /* 톤다운 레드 (#c85a5a ~ #cf6161 계열) */
+  font-weight:500;         /* 얇은 느낌 */
+  font-size:.95rem;
+}
+
+.price-row .sale{
+  font-weight:800;         /* 판매가는 굵게 */
+  font-size:1.05rem;
+  color:#111;
+}
+
+.price-row .list{
+  color:#aeb4bb;           /* 눈부시지 않은 연회색 */
+  text-decoration:line-through;
+  font-size:.95rem;
+  margin-left:.35rem;      /* 판매가 바로 '옆'에 붙도록, 살짝만 여백 */
+}
+
+/* 카드 안 텍스트가 줄바꿈되면 보기 안 좋아서 보정 */
+.card .price-row .sale,
+.card .price-row .disc,
+.card .price-row .list{
+  line-height:1.1;
+}
