@@ -79,5 +79,5 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 		group by p
 		order by sold desc, p.id desc
 	""")
-    List<ProductSalesProjection> findTopByGender(String gender, Pageable pageable);
+    List<ProductSalesProjection> findTopByGender(@Param("gender") String gender, Pageable pageable);
 }
