@@ -3,6 +3,7 @@ package com.ex.final22c.repository.refund;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,5 +31,14 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
             left join fetch od.product pr
         where r.refundId = :refundId
     """)
-    Optional<Refund> findGraphById(@Param("refundId") Long refundId);
+    Optional<Refund> findGraphByRefundId(@Param("refundId") Long refundId);
+
+    // 환불 승인용: order, order.payment, details, details.orderDetail 로딩
+    @EntityGraph(attributePaths = {
+        "order",
+        "payment",
+        "details",
+        "details.orderDetail"
+    })
+    Optional<Refund> findByRefundId(Long refundId);
 }

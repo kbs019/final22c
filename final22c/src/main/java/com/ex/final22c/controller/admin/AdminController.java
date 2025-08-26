@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
@@ -35,7 +34,6 @@ import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.service.admin.AdminService;
 import com.ex.final22c.service.refund.RefundService;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Controller
@@ -233,7 +231,7 @@ public class AdminController {
             .userName(refund.getUser().getUserName())
             .orderId(refund.getOrder().getOrderId())
             .createdAt(fmt(refund.getCreateDate()))
-            .reason(refund.getReasonText())
+            .reason(refund.getRequestedReason())
             .status(refund.getStatus())
             .paymentTid(getTidSafe(refund)) // UI에는 안 쓰더라도 전달해둠
             .build();
