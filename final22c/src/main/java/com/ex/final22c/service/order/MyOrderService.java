@@ -160,7 +160,7 @@ public class MyOrderService {
         Map<String, Object> item = new HashMap<>();
         item.put("refundId",  r.getRefundId());
         item.put("status",    nvl(r.getStatus(), "REQUESTED"));
-        item.put("reason",    nvl(r.getReasonText(), ""));
+        item.put("reason",    nvl(r.getRequestedReason(), ""));
         item.put("createdAt", r.getCreateDate());
 
         List<Map<String, Object>> details = new ArrayList<>();

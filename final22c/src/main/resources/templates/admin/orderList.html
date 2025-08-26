@@ -1,5 +1,73 @@
 <html layout:decorate="~{/layout/adminLayout}">
 <div layout:fragment="content" class="container">
-
+<h2>주문내역</h2>
+<div class="card mb-4">
+	<div class="card-header">
+		<i class="fas fa-table me-1"></i>
+			주문리스트
+		</div>
+		<div class="card-body">
+			<table id="datatablesSimple">
+				<thead>
+					<tr>
+		                <th scope="col">주문번호</th>
+		                <th scope="col">회원</th>
+		                <th scope="col">상품명</th>
+		                <th scope="col">사용마일리지</th>
+		                <th scope="col">총 금액</th>
+		                <th scope="col">주문시간</th>
+		                <th scope="col">상태</th>
+		                <th scope="col">관리</th>
+					</tr>
+				</thead>
+				<tbody >
+					<tr th:each="list : ${orders}" >
+		                <td th:text="${list.orderId}"></td>
+		                <td th:text="${list.user.userName}"></td>
+		                <td th:text="${list.details[0].product.name}"></td>
+		                <td th:text="${list.usedPoint == 0 ? '-' : #numbers.formatInteger(list.usedPoint, 3, 'COMMA')}"></td>
+		                <td th:text="${#numbers.formatInteger(list.totalAmount+list.usedPoint, 3, 'COMMA')}"></td>
+		                <td th:text="${#temporals.format(list.regDate, 'yyyy-MM-dd HH:mm')}"></td>
+		                <td th:text="${list.status}"></td>
+		                <td>
+							<button class="btn btn-primary btn-sm open-order" th:attr="data-id=${list.orderId}">
+								상세보기
+							</button>
+						</td>
+	            	</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<!-- 모달 -->
+	<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+	  <div class="modal-dialog modal-lg">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <h5 class="modal-title" id="orderModalLabel">주문 상세</h5>
+	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+	      </div>
+	      <div class="modal-body">
+	        <!-- 여기에 다른 html 파일을 불러와서 넣을 예정 -->
+	      </div>
+	    </div>
+	  </div>
+	</div>
 </div>
+<script layout:fragment="script" type="text/javascript">
+document.addEventListener("click", function (e) {
+    if (e.target.classList.contains("open-order")) {
+        let id = e.target.getAttribute("data-id");
+
+        fetch(`/admin/orderList/${id}/fragment`)
+            .then(res => res.text())
+            .then(html => {
+                document.querySelector("#orderModal .modal-body").innerHTML = html;
+                const modal = new bootstrap.Modal(document.getElementById('orderModal'));
+                modal.show();
+            })
+            .catch(err => console.error("Fetch error:", err));
+    }
+});
+</script>
 </html>
