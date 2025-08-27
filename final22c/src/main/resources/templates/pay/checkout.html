@@ -114,7 +114,7 @@
             <div class="muted" th:text="${'수량 ' + it.quantity}"></div>
             <div th:text="${it.name}">상품명</div>
           </div>
-          <div style="font-weight:800" th:text="${#numbers.formatInteger(it.lineTotal,0)} + '원'">0원</div>
+          <div style="font-weight:800" th:text="${#numbers.formatInteger(it.lineTotal, 1, 'COMMA')} + '원'">0원</div>
         </div>
       </div>
 
@@ -131,7 +131,7 @@
             <div class="muted" th:text="${'수량 ' + qty}">수량</div>
             <div th:text="${product.name}">상품명</div>
           </div>
-          <div style="font-weight:800" th:text="${#numbers.formatInteger(lineTotal,0)}+'원'">0</div>
+          <div style="font-weight:800" th:text="${#numbers.formatInteger(lineTotal, 1, 'COMMA')} + '원'">0원</div>
         </div>
       </div>
 
@@ -139,7 +139,7 @@
       <div class="card">
         <div class="point-box">
           <strong>마일리지</strong>
-          <span class="point-badge">보유 <span id="ownedPoint" th:text="${#numbers.formatInteger(user.mileage,0)}"></span> 원</span>
+          <span class="point-badge">보유 <span id="ownedPoint" th:text="${#numbers.formatInteger(user.mileage, 1, 'COMMA')} + '원'">
         </div>
         <div class="point-box" style="margin-top:8px;">
           <input id="usePoint" type="text" placeholder="사용할 마일리지" value="0" th:attr="max=${user.mileage}">
@@ -151,11 +151,11 @@
       <div class="card" th:if="${isCartMode}">
         <div class="summary-row">
           <span class="muted">상품금액</span>
-          <span th:text="${#numbers.formatInteger(summary.subtotal,0)}+'원'">0원</span>
+          <span th:text="${#numbers.formatInteger(summary.subtotal, 1, 'COMMA')}+'원'">0원</span>
         </div>
         <div class="summary-row">
           <span class="muted">배송비</span>
-          <span th:text="${#numbers.formatInteger(shippingCart,0)}+'원'">3,000원</span>
+          <span th:text="${#numbers.formatInteger(shippingCart, 1, 'COMMA')}+'원'">3,000원</span>
         </div>
         <div class="summary-row"><span class="muted">사용 마일리지</span><span id="usedPointLabel">0원</span></div>
         <hr style="border:none;border-top:1px solid #eee;margin:10px 0">
@@ -168,8 +168,8 @@
 
       <!-- 결제 상세 (단건 모드) -->
       <div class="card" th:if="${!isCartMode}">
-        <div class="summary-row"><span class="muted">상품금액</span><span th:text="${#numbers.formatInteger(lineTotal,0)}+'원'">0</span></div>
-        <div class="summary-row"><span class="muted">배송비</span><span th:text="${#numbers.formatInteger(shippingSingle,0)}+'원'">3,000</span></div>
+        <div class="summary-row"><span class="muted">상품금액</span><span th:text="${#numbers.formatInteger(lineTotal, 2, 'COMMA')}+'원'">0</span></div>
+        <div class="summary-row"><span class="muted">배송비</span><span th:text="${#numbers.formatInteger(shippingSingle, 1, 'COMMA')}+'원'">3,000</span></div>
         <div class="summary-row"><span class="muted">사용 마일리지</span><span id="usedPointLabel">0원</span></div>
         <hr style="border:none;border-top:1px solid #eee;margin:10px 0">
         <div class="summary-row" style="font-weight:800"><span>결제금액</span><span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotalSingle,0)}+'원'"></span></div>
