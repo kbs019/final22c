@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Grade;
@@ -34,9 +35,11 @@ import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseDetail;
 import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
+import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.repository.order.OrderRepository;
+import com.ex.final22c.repository.orderDetail.OrderDetailRepository;
 import com.ex.final22c.repository.payment.PaymentRepository;
 import com.ex.final22c.repository.productRepository.BrandRepository;
 import com.ex.final22c.repository.productRepository.GradeRepository;
@@ -47,6 +50,7 @@ import com.ex.final22c.repository.purchaseRepository.PurchaseDetailRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
+import com.ex.final22c.repository.refundDetail.RefundDetailRepository;
 import com.ex.final22c.repository.user.UserRepository;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -72,6 +76,8 @@ public class AdminService {
     private final PurchaseDetailRepository purchaseDetailRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
+    private final RefundDetailRepository refundDetailRepository;
+    private final OrderDetailRepository orderDetailRepository;
 
     // 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
@@ -612,4 +618,5 @@ public class AdminService {
     public List<Payment> findPaymentsofOrder(Long orderId) {
         return paymentRepository.findByOrder_OrderId(orderId);
     }
+    
 }

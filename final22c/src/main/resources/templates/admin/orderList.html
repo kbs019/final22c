@@ -28,7 +28,15 @@
 		                <td th:text="${list.usedPoint == 0 ? '-' : #numbers.formatInteger(list.usedPoint, 3, 'COMMA')}"></td>
 		                <td th:text="${#numbers.formatInteger(list.totalAmount+list.usedPoint, 3, 'COMMA')}"></td>
 		                <td th:text="${#temporals.format(list.regDate, 'yyyy-MM-dd HH:mm')}"></td>
-		                <td th:text="${list.status}"></td>
+						<td th:switch="${list.status}">
+						    <span th:case="'PAID'">주문완료</span>
+						    <span th:case="'CANCELED'">주문취소</span>
+						    <span th:case="'REFUNDED'">환불처리완료</span>
+						    <span th:case="'REQUESTED'">환불신청</span>
+						    <span th:case="'CONFIRMED'">주문확정</span>
+						    <span th:case="'FAILED'">결제실패</span>
+						    <span th:case="*">-</span> <!-- 그 외 상태 -->
+						</td>
 		                <td>
 							<button class="btn btn-primary btn-sm open-order" th:attr="data-id=${list.orderId}">
 								상세보기
