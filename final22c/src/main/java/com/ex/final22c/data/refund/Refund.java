@@ -74,6 +74,12 @@ public class Refund {
     @Column(name = "rejectedReason")
     private String rejectedReason;          // 환불 거절 사유
 
+    @Column(name = "refundMileage", nullable = false)
+    private int refundMileage;              // 환급된 마일리지
+
+    @Column(name = "confirmMileage", nullable = false)
+    private int confirmMileage;             // 주문확정 수량에 대하여 지급된 적립 마일리지
+
     @CreationTimestamp
     @Column(name = "createDate")
     private LocalDateTime createDate;   // 환불 신청 시각
@@ -85,6 +91,8 @@ public class Refund {
     @PrePersist
     void insertRefund(){
         if( this.status == null ){ this.status = "REQUESTED"; }
+        if( this.refundMileage == 0 ){ this.refundMileage = 0; }
+        if( this.confirmMileage == 0 ){ this.confirmMileage = 0; }
     }
 
     public void addDetail(RefundDetail d) {

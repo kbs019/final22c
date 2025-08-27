@@ -8,7 +8,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -29,7 +31,8 @@ public class RefundDetail {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Refund refund;                                      // 환불내역 참조
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "orderDetailId", unique = true)
     private OrderDetail orderDetail;                            // 어떤 주문상세내역에 대한 환불인가
 
     @Column(name = "quantity")

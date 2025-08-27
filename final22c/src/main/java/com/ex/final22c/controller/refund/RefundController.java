@@ -59,6 +59,7 @@ public class RefundController {
                 .reason(refund.getRequestedReason())
                 .status(refund.getStatus())
                 .paymentTid(getTidSafe(refund)) // UI에는 안 쓰더라도 전달해둠
+                .usedPoint(nz(refund.getOrder().getUsedPoint())) // 주문 사용 마일리지
                 .build();
 
         // Items 구성
@@ -257,6 +258,8 @@ public class RefundController {
         int itemsSubtotal = items.stream().mapToInt(i -> nz(i.getLineAmount())).sum();
         int shippingRefund = 0; // 필요 시 r.getShippingRefundAmount()로 치환
         int deduction = 0; // 필요 시 r.getDeductionAmount()로 치환
+        int refundMileage = nz(r.getRefundMileage()); // refund 엔티티에 저장해둔 값
+        int confirmMileage = nz(r.getConfirmMileage()); // refund 엔티티에 저장해둔 값
 
         Integer persistedTotal = r.getTotalRefundAmount();
         int totalRefundAmount = (persistedTotal != null) ? persistedTotal
@@ -269,6 +272,8 @@ public class RefundController {
                 .shippingRefund(shippingRefund)
                 .deduction(deduction)
                 .totalRefundAmount(totalRefundAmount)
+                .refundMileage(refundMileage)
+                .confirmMileage(confirmMileage)
                 .build();
 
         // ---- Flags ----

@@ -22,7 +22,6 @@ public class RefundResultResponse {
         private String createdAt;
         private String userReason;
         private String processedAt;
-        private String approver;         // 선택
         private String rejectionReason;  // 공통 거절 사유(부분 환불 시)
     }
 
@@ -34,6 +33,8 @@ public class RefundResultResponse {
         private Integer shippingRefund;
         private Integer deduction;
         private Integer totalRefundAmount;
+        private int refundMileage;   // 환급(복원) 마일리지
+        private int confirmMileage;  // 최종 적립 마일리지
     }
 
     @Getter @Setter @Builder

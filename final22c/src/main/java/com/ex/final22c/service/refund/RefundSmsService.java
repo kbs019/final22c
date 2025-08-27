@@ -25,13 +25,21 @@ public class RefundSmsService {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final NumberFormat WON = NumberFormat.getInstance(Locale.KOREA);
 
+    // 숫자만 추출(하이픈 제거 등)
+    private static String digits(String s) { return s == null ? "" : s.replaceAll("\\D", ""); }
+    private static String fmtW(int v) { return WON.format(v) + "원"; }
+    private static String fmtP(int v) { return WON.format(v) + "P"; }
+
     /** 전체 승인(거절 없음) 전용 메시지 */
     public void sendFullApproval(
             String to,
             String userName,
             Long orderId,
-            int refundAmount,     // 최종 환불 금액
-            int approvedQtySum,    // 승인 수량
+            int refundAmount,       // 최종 환불 금액
+            int refundMileage,      // 환급 마일리지
+            int confirmMileage,     // 최종 적립 마일리지
+            int mileageBalance,     // 현재 보유 마일리지
+            int approvedQtySum,     // 승인 수량
             LocalDateTime approvedAt
     ) {
         Message m = new Message();
@@ -44,7 +52,10 @@ public class RefundSmsService {
             .append("고객: ").append(userName).append('\n')
             .append("주문번호: ").append(orderId).append('\n')
             .append("환불 결과: 전체 승인 (승인 수량 ").append(approvedQtySum).append("개)\n")
-            .append("환불금액: ").append(WON.format(refundAmount)).append("원\n")
+            .append("환불금액: ").append(fmtW(refundAmount)).append('\n')
+            .append("환급 마일리지: ").append(fmtP(refundMileage)).append('\n')
+            .append("적립 마일리지: ").append(fmtP(confirmMileage)).append('\n')
+            .append("현재 보유 마일리지: ").append(fmtP(mileageBalance)).append('\n')
             .append("처리일시: ").append(when.format(FMT)).append('\n')
             .append("문의 02-000-0000")
             .toString();
@@ -59,6 +70,9 @@ public class RefundSmsService {
             String userName,
             Long orderId,
             int refundAmount,        // 최종 환불 금액(승인 총액)
+            int refundMileage,      // 환급(복원) 마일리지
+            int confirmMileage,     // 최종 적립 마일리지
+            int mileageBalance,     // 현재 보유 마일리지(반영 후)
             int approvedQtySum,       // 승인 수량
             int rejectedQtySum,       // 거절 수량
             LocalDateTime approvedAt,
@@ -73,8 +87,11 @@ public class RefundSmsService {
             .append("[환불 처리 안내]\n")
             .append("고객: ").append(userName).append('\n')
             .append("주문번호: ").append(orderId).append('\n')
-            .append("환불 결과: 승인 수량 ").append(approvedQtySum).append("개 / 거절 수량 ").append(rejectedQtySum).append("개\n")
-            .append("환불금액: ").append(WON.format(refundAmount)).append("원\n")
+            .append("환불 결과: 승인 ").append(approvedQtySum).append("개 / 거절 ").append(rejectedQtySum).append("개\n")
+            .append("환불금액: ").append(fmtW(refundAmount)).append('\n')
+            .append("환급 마일리지: ").append(fmtP(refundMileage)).append('\n')
+            .append("적립 마일리지: ").append(fmtP(confirmMileage)).append('\n')
+            .append("현재 보유 마일리지: ").append(fmtP(mileageBalance)).append('\n')
             .append("처리일시: ").append(when.format(FMT));
 
         if (rejectedQtySum > 0 && rejectReason != null && !rejectReason.isBlank()) {
@@ -92,15 +109,18 @@ public class RefundSmsService {
             String userName,
             Long orderId,
             int refundAmount,
+            int refundMileage,
+            int confirmMileage,
+            int mileageBalance,
             int approvedQtySum,
             int rejectedQtySum,
             LocalDateTime approvedAt,
             String rejectReasonOrNull
     ) {
         if (rejectedQtySum == 0) {
-            sendFullApproval(to, userName, orderId, refundAmount, approvedQtySum, approvedAt);
+            sendFullApproval(to, userName, orderId, refundAmount, refundMileage, confirmMileage, mileageBalance, approvedQtySum, approvedAt);
         } else {
-            sendPartialApproval(to, userName, orderId, refundAmount, approvedQtySum, rejectedQtySum, approvedAt, rejectReasonOrNull);
+            sendPartialApproval(to, userName, orderId, refundAmount, refundMileage, confirmMileage, mileageBalance, approvedQtySum, rejectedQtySum, approvedAt, rejectReasonOrNull);
         }
     }
 
@@ -116,10 +136,5 @@ public class RefundSmsService {
         } catch (Exception e) {
             throw new RuntimeException("SMS 전송 중 오류: " + e.getMessage(), e);
         }
-    }
-
-    /** 숫자만 추출(하이픈 제거 등) */
-    private static String digits(String s) {
-        return s == null ? "" : s.replaceAll("\\D", "");
     }
 }
