@@ -1,4 +1,3 @@
-<!-- templates/mypage/orderDetail.html -->
 <div th:fragment="items">
   <div style="text-align:left; font-weight:600; margin-bottom:4px">
 
@@ -17,8 +16,7 @@
     <ul style="list-style:none; padding:0; margin:0; display:grid; gap:8px">
       <li th:each="d : ${order.details}"
           style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-bottom:1px solid #eee; padding:6px 0;">
-
-        <!-- ✅ 상품명: 상품 있을 때만 상세로 링크 -->
+        <!-- 상품명 -->
         <span style="flex:1">
           <a th:if="${d.product != null}"
              th:href="@{|/main/content/${d.product.id}|}"
@@ -27,15 +25,11 @@
           <span th:if="${d.product == null}">상품</span>
         </span>
 
+        <!-- 수량 -->
         <span>[[${d.quantity}]]개</span>
 
-        <!-- 금액: 주문 시점 가격을 쓰려면 d.totalPrice 사용 권장 -->
-        <span th:if="${d.product != null}">
-          [[${#numbers.formatInteger(d.product.sellPrice * d.quantity, 0)}]]원
-          <!-- 또는 더 정확히:
-          [[${#numbers.formatInteger(d.totalPrice, 0)}]]원
-          -->
-        </span>
+        <!-- 금액: 주문 시점 금액 스냅샷(d.totalPrice) 우선 -->
+        <span th:text="${#numbers.formatInteger(d.totalPrice != null ? d.totalPrice : 0, 1, 'COMMA')} + '원'">0원</span>
       </li>
     </ul>
 
@@ -70,7 +64,7 @@
           결제번호 [[${p.paymentId}]]<br>
           <span th:if="${isPointOnly}">결제 수단 : 마일리지 전액 결제</span>
           <span th:unless="${isPointOnly}">결제 수단 : 카카오페이</span><br>
-          총 결제 금액 : [[${#numbers.formatInteger(p.amount, 0)}]]원
+          총 결제 금액 : [[${#numbers.formatInteger(p.amount, 1, 'COMMA')}]]원
         </li>
       </ul>
     </div>
