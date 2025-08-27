@@ -41,7 +41,7 @@ public class OrderDetail {
     private Integer totalPrice; // quantity * sellPrice 스냅샷
 
     @Column(name = "confirmQuantity", nullable = false)
-    private Integer confirmQuantity;
+    private Integer confirmQuantity;    // 확정 수량
 
     @PrePersist
     public void prePersist() {
