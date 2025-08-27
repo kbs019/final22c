@@ -6,10 +6,27 @@ import java.util.List;
 
 import com.ex.final22c.ShippingSnapshotJsonConverter;
 import com.ex.final22c.data.payment.dto.ShipSnapshotReq;
+import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.user.Users;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "orders")
@@ -39,6 +56,9 @@ public class Order {
 
     @OneToMany(mappedBy="order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> details = new ArrayList<>();
+    
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Refund refund;
     
     @Column(name="deliveryStatus")
     private String deliveryStatus;      // ORDERED / SHIPPING / DELIVERED 
