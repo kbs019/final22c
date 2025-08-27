@@ -26,7 +26,7 @@
 		                <td th:text="${list.user.userName}"></td>
 		                <td th:text="${list.details[0].product.name}"></td>
 		                <td th:text="${list.usedPoint == 0 ? '-' : #numbers.formatInteger(list.usedPoint, 3, 'COMMA')}"></td>
-		                <td th:text="${#numbers.formatInteger(list.totalAmount+list.usedPoint, 3, 'COMMA')}"></td>
+		                <td th:text="${#numbers.formatInteger(list.totalAmount+list.usedPoint, 1, 'COMMA')}"></td>
 		                <td th:text="${#temporals.format(list.regDate, 'yyyy-MM-dd HH:mm')}"></td>
 						<td th:switch="${list.status}">
 						    <span th:case="'PAID'">주문완료</span>
