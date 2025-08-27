@@ -30,12 +30,12 @@
                                     <div class="fw-semibold name">[[${d.product.name}]]</div>
                                     <div class="small text-muted">
                                         개당 <span class="unit">[[${#numbers.formatInteger(d.sellPrice, 3, 'COMMA')}]]</span>
-                                        <span th:if="${order.status=='REQUESTED'}" th:text="'· 환불요청 '+${d.refundDetail.quantity}"></span>
-                                         <span th:if="${order.status=='REFUNDED'}" th:text="'· 환불승인 '+${d.refundDetail.refundQty}"></span>
+                                        <span th:if="${order.status=='REQUESTED' and d.refundDetail != null}" th:text="'· 환불요청 '+${d.refundDetail.quantity}"></span>
+                                        <span th:if="${order.status=='REFUNDED' and d.refundDetail != null}" th:text="'· 환불승인 '+${d.refundDetail.refundQty}"></span>
                                     </div>
                                 </div>
                                 <div class="text-end">
-                                    <div class="fw-semibold subtotal">[[${d.quantity}]]개 [[${#numbers.formatInteger(d.totalPrice, 3, 'COMMA')}]]</div>
+                                    <div class="fw-semibold subtotal">[[${d.quantity}]]개 [[${#numbers.formatInteger(d.totalPrice, 1, 'COMMA')}]]</div>
                                 </div>
                             </div>
 
@@ -77,9 +77,31 @@
 		        결제 수단 : 카카오페이
 		      </span>
 		      <br>
-		      총 결제 금액 : [[${#numbers.formatInteger(p.amount, 3, 'COMMA')}]]원
+		      총 결제 금액 : [[${#numbers.formatInteger(p.amount, 1, 'COMMA')}]]원
 		    </li>
 		  </ul>
 		</div>
+		
+		                        <div class="p-3 bg-light rounded" th:if="${order.refund != null}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="fw-semibold">최종 환급 금액</div>
+                                <div class="h5 m-0" id="footTotal">[[${#numbers.formatInteger(order.refund.totalRefundAmount, 1, 'COMMA')}]]</div>
+                            </div>
+
+                            <!-- ▼▼ 여기 추가: 환급/적립 마일리지 -->
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">환급 마일리지</span>
+                                <span id="footRefundMileage" class="fw-semibold">[[${#numbers.formatInteger(order.refund.refundMileage, 1, 'COMMA')}]]</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">적립 마일리지</span>
+                                <span id="footConfirmMileage" class="fw-semibold">[[${#numbers.formatInteger(order.refund.confirmMileage, 1, 'COMMA')}]]</span>
+                            </div>
+                            <!-- ▲▲ 추가 끝 -->
+
+                            <div class="small text-muted mt-1">
+                                처리일시: <span id="footProcessedAt">[[${#temporals.format(order.refund.updateDate, "yyyy-MM-dd HH:mm")}]]</span>
+                            </div>
+                        </div>
     </div> 
 </div>
