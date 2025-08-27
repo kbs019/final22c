@@ -246,4 +246,10 @@ public class ProductController {
 
         return "main/brandDetail";
     }
+    
+    // ==== MY TYPE ====
+    @GetMapping("/myType")
+    public String myType() {
+    	return "main/myType";
+    }
 }

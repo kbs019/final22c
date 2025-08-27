@@ -277,7 +277,7 @@
             crossorigin="anonymous"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
-    <!-- ✅ 전역: 모달이 모두 닫히면 스크롤 잠금/백드롭 확실히 해제 -->
+    <!-- 전역: 모달이 모두 닫히면 스크롤 잠금/백드롭 확실히 해제 -->
     <script>
       (function(){
         function fullyUnlockScroll(){
@@ -294,7 +294,7 @@
       })();
     </script>
 
-    <!-- ✅ 결제 로직 -->
+    <!-- 결제 로직 -->
     <script th:inline="javascript">
     $(function(){
       /* ================== 안전한 서버 변수 바인딩 ================== */
@@ -544,8 +544,8 @@
     	    const token  = $('meta[name="_csrf"]').attr('content');
     	    const header = $('meta[name="_csrf_header"]').attr('content');
 
-    	    const RETRIES = 10;      // 총 재시도 횟수 (약 6~8초 버퍼)
-    	    const DELAY   = 700;     // 시도 간격(ms)
+    	    const RETRIES = 5;      // 총 재시도 횟수 (약 6~8초 버퍼)
+    	    const DELAY   = 350;     // 시도 간격(ms)
     	    let tries = 0;
 
     	    const timer = setInterval(function(){
@@ -561,7 +561,7 @@
     	              if (st === 'PAID') {
     	                hideOverlay();
     	                // 성공 경로
-    	                window.location.href = '/main/list';
+    	                window.location.href = '/mypage/order';
     	                return;
     	              }
     	              if (st === 'FAILED' || st === 'CANCELED') {
@@ -634,7 +634,7 @@
           hideOverlay();
 
           if (d.status === 'success') {
-            window.location.href = '/main/list';
+            window.location.href = '/mypage/order';
             return;
           }
           if (d.orderId) {

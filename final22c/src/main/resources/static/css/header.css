@@ -3,6 +3,11 @@
   border-bottom: 1px solid #eee;
   padding: 10px 40px;
 }
+
+/* (최신 브라우저면) */
+:root {
+  scrollbar-gutter: stable;
+}
 .navbar-brand {
   font-size: 32px;
 }
