@@ -318,7 +318,7 @@ public class AdminController {
 	@GetMapping("orderList/{id}/fragment")
 	public String orderItemsFragment(@PathVariable("id") Long id,
 									 Model model) {
-
+		
 		Order order = adminService.findMyOrderWithDetails(id);
 		List<Payment> payments = adminService.findPaymentsofOrder(id);
 		model.addAttribute("order", order);
