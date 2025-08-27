@@ -58,7 +58,7 @@ public class UsersController {
         if ("ROLE_ADMIN".equals(role)) {
             return "redirect:/admin/userList";
         }
-        return "redirect:/main/list";
+        return "redirect:/main";
 
     }
 }
