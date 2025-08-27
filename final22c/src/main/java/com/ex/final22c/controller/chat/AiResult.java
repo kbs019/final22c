@@ -6,16 +6,20 @@ import java.util.Map;
 
 // ai 응답 DTO
 public record AiResult(
-    String answer,                    // 요약/설명
-    String sql,                       // 실행한 SQL(보기용)
-    List<Map<String,Object>> rows,    // 표 데이터(선택)
-    ChartPayload chart                // 차트 페이로드(있으면 프런트가 Chart.js로 그림)
-) {
-    public record ChartPayload(
-        List<String> labels,
-        List<Number> values,
-        List<Number> quantities,      // 툴팁용(선택)
-        String valueCol,              // y축/범례 라벨 (예: "순매출(원)")
-        String title                  // 차트 제목
-    ) {}
-}
+	    String answer,
+	    String sql,
+	    List<Map<String,Object>> rows,
+	    ChartPayload chart
+	) {
+	    public record ChartPayload(
+	        List<String> labels,
+	        List<Number> values,
+	        List<Number> quantities,
+	        String valueCol,
+	        String title,
+
+	        String type,          // "bar" | "line" | "pie" | "doughnut"
+	        Boolean horizontal,   // true면 가로 막대 (indexAxis:'y')
+	        String format         // "currency" | "count" | "percent" (y축/툴팁 포맷 힌트)
+	    ) {}
+	}
