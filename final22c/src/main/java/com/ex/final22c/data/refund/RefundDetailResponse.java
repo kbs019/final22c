@@ -23,6 +23,7 @@ public class RefundDetailResponse {
         private String reason;
         private String status;
         private String paymentTid; // UI 미표시 가능(추후 PG 환불 시 사용)
+        private int usedPoint;      // 주문 사용 마일리지(승인 모달 summary에서 보여줌)
     }
 
     @Builder @Getter

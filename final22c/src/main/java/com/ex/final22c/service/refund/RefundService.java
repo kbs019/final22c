@@ -58,9 +58,9 @@ public class RefundService {
      */
     @Transactional
     public Long requestRefund(long orderId,
-                            String principalName,
-                            String reasonText,
-                            List<Map<String, Object>> items) {
+            String principalName,
+            String reasonText,
+            List<Map<String, Object>> items) {
 
         // 1) 사용자 확인 (email → userName 순으로)
         Users user = userRepository.findByEmail(principalName)
@@ -105,7 +105,7 @@ public class RefundService {
         refund.setRequestedReason(reasonText.trim());
         refund.setPgRefundId(null);
         refund.setPgPayloadJson(null);
-        refund.setCreateDate(LocalDateTime.now());     // @CreationTimestamp 있어도 무방
+        refund.setCreateDate(LocalDateTime.now()); // @CreationTimestamp 있어도 무방
 
         // 5) 환불 상세 생성 (부분환불 가능)
         if (items == null || items.isEmpty()) {
@@ -162,7 +162,7 @@ public class RefundService {
             throw new IllegalArgumentException("환불 수량을 1개 이상 선택하세요.");
         }
 
-        refund.setTotalRefundAmount(0);                 // 승인 합계는 심사 시 재계산
+        refund.setTotalRefundAmount(0); // 승인 합계는 심사 시 재계산
 
         // 6) 주문 상태 갱신 (더티체크로 반영)
         order.setStatus("REQUESTED");
@@ -224,8 +224,8 @@ public class RefundService {
             return ApproveRefundResult.error("이미 처리된 환불건입니다.");
         }
 
-        Order order = refund.getOrder();                // 상태 표시/문자용
-        Payment payment = refund.getPayment();          // PG 환불용
+        Order order = refund.getOrder(); // 상태 표시/문자용
+        Payment payment = refund.getPayment(); // PG 환불용
 
         // 2) 입력 맵 구성
         Map<Long, Integer> inputQtyMap = Optional.ofNullable(req.getItems())
@@ -234,15 +234,14 @@ public class RefundService {
                 .collect(Collectors.toMap(
                         ApproveRefundRequest.Item::getRefundDetailId,
                         i -> nvl(i.getRefundQty(), 0),
-                        (a, b) -> b
-                ));
+                        (a, b) -> b));
 
         // 3) 상세 계산: 승인/거절 수량 및 금액, 승인/거절 "건수"
-        int itemSubtotal = 0;     // ★ 상품 소계(단가×승인수량 합)
+        int itemSubtotal = 0; // ★ 상품 소계(단가×승인수량 합)
         int approvedLines = 0;
         int rejectedLines = 0;
         int rejectedQtyTotal = 0; // ★ 총 거절 수량
-        int approvedQtyTotal = 0; // ★ 승인 "총 수량" 
+        int approvedQtyTotal = 0; // ★ 승인 "총 수량"
 
         for (RefundDetail d : refund.getDetails()) {
             int requested = nvl(d.getQuantity(), 0);
@@ -264,29 +263,44 @@ public class RefundService {
             if (rejectedQty > 0) {
                 rejectedLines++;
                 OrderDetail od = d.getOrderDetail();
-                od.setConfirmQuantity(nvl(od.getConfirmQuantity(), 0) - approveQty); // confirmQuantity 를 승인 수량만큼 다운시켜서 거절된 수량은 주문확정된 건으로 처리
+                od.setConfirmQuantity(nvl(od.getConfirmQuantity(), 0) - approveQty); // confirmQuantity 를 승인 수량만큼 다운시켜서
+                                                                                     // 거절된 수량은 주문확정된 건으로 처리
                 orderDetailRepository.save(od);
             }
             refundDetailRepository.save(d);
         }
 
-        boolean partial = (rejectedQtyTotal > 0);      // 부분환불 true / 전체환불 false
+        boolean partial = (rejectedQtyTotal > 0); // 부분환불 true / 전체환불 false
 
         // 4) 부분 환불이면 거절사유 필수(요청 레벨 단일 문자열)
         String rejectReason = nullIfBlank(req.getRejectionReason());
-        if ( partial && rejectReason == null ) {
+        if (partial && rejectReason == null) {
             return ApproveRefundResult.error("부분 환불 시 거절 사유는 필수입니다.");
         }
-        int usedPoint=0;
-        if(order.getUsedPoint()>0) {
-            usedPoint = order.getUsedPoint();
-            Users user = refund.getUser();
-            user.setMileage(usedPoint);
-            this.userRepository.save(user);
-        }
+
         // 5) PG 환불 (총액 > 0이면 필수)
-        int shippingRefund = (approvedQtyTotal > 0) ? FIXED_SHIPPING_REFUND : 0;
-        int finalRefundAmount = (itemSubtotal + shippingRefund)-usedPoint;
+        int usedPoint = order.getUsedPoint(); // 유저가 사용한 마일리지 조회
+        int shippingRefund = (approvedQtyTotal > 0) ? FIXED_SHIPPING_REFUND : 0; // 배송비
+        int finalRefundAmount = (itemSubtotal + shippingRefund); // 환불 총 금액
+        int confirmMileage = 0;
+
+        if (finalRefundAmount < usedPoint) { // 사용된 마일리지보다 환급금액이 적을 때
+            confirmMileage = (int) Math.floor(order.getTotalAmount() * 0.05);
+            usedPoint = finalRefundAmount; // 마일리지에 환급금액을 대입
+            finalRefundAmount = 0; // 환급 금액 0 초기화
+        } else { // 환급금액이 사용된 마일리지 보다 많을 때
+            confirmMileage = (int) Math.floor(((order.getTotalAmount() + usedPoint) - finalRefundAmount) * 0.05);
+            finalRefundAmount -= usedPoint; // 환급금액에서 사용된 마일리지 빼기
+        }
+
+        int refundMileage = usedPoint; // 환급 마일리지 확정
+
+        Users user = refund.getUser(); // user 객체 찾고
+        user.setMileage(user.getMileage() + refundMileage + confirmMileage); // 유저의 남은 마일리지 + 환급 마일리지 + 최종 주문 확정에 대한
+                                                                             // 마일리지
+        this.userRepository.save(user); // 저장
+
+        int mileageBalance = user.getMileage(); // 현재 보유 마일리지 (반영 후)
 
         String pgRefundId = null;
         String pgPayloadJson = null;
@@ -307,6 +321,8 @@ public class RefundService {
         // 6) 상위 엔티티 저장 (문자열 status 직접 대입)
         LocalDateTime now = LocalDateTime.now();
         refund.setTotalRefundAmount(finalRefundAmount);
+        refund.setRefundMileage(refundMileage);
+        refund.setConfirmMileage(confirmMileage);
         refund.setPgRefundId(pgRefundId);
         refund.setPgPayloadJson(pgPayloadJson);
         refund.setRejectedReason(partial ? rejectReason : null);
@@ -314,6 +330,7 @@ public class RefundService {
         refund.setUpdateDate(now);
         refundRepository.save(refund);
 
+        order.setConfirmMileage(confirmMileage);
         order.setStatus("REFUNDED"); // ← 문자열 직입력
         orderRepository.save(order);
 
@@ -322,17 +339,28 @@ public class RefundService {
         String userName = (refund.getUser() != null ? safe(refund.getUser().getName()) : "");
         Long orderIdVal = getOrderId(order);
 
-        if (to != null && !to.isBlank()) { 
+        if (to != null && !to.isBlank()) {
             // 거절된 상품이 0 이라면, -- 전체 승인
             if (rejectedLines == 0) {
                 refundSmsService.sendFullApproval(
                         to, userName, orderIdVal,
-                        finalRefundAmount, approvedQtyTotal, now);
-            } else {        // 부분 환불(거절 포함)
+                        finalRefundAmount, // 현금 환불액
+                        refundMileage, // 환급 마일리지
+                        confirmMileage, // 적립 마일리지
+                        mileageBalance, // 현재 보유 마일리지
+                        approvedQtyTotal,
+                        now);
+            } else { // 부분 환불(거절 포함)
                 refundSmsService.sendPartialApproval(
                         to, userName, orderIdVal,
-                        finalRefundAmount, approvedQtyTotal, rejectedQtyTotal,
-                        now, rejectReason);
+                        finalRefundAmount,
+                        refundMileage,
+                        confirmMileage,
+                        mileageBalance,
+                        approvedQtyTotal,
+                        rejectedQtyTotal,
+                        now,
+                        rejectReason);
             }
         }
 
@@ -345,8 +373,7 @@ public class RefundService {
                 approvedQtyTotal,
                 shippingRefund,
                 rejectedQtyTotal,
-                itemSubtotal
-        );
+                itemSubtotal);
     }
 
     // ===== 유틸 =====
