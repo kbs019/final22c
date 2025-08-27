@@ -21,7 +21,7 @@
 					</tr>
 				</thead>
 				<tbody >
-					<tr th:each="list : ${orders}" >
+					<tr th:each="list : ${orders}" th:if="${list.status!='FAILED'}">
 		                <td th:text="${list.orderId}"></td>
 		                <td th:text="${list.user.userName}"></td>
 		                <td th:text="${list.details[0].product.name}"></td>
