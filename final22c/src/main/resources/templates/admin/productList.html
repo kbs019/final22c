@@ -1,229 +1,235 @@
-
 <html layout:decorate="~{/layout/adminLayout}">
 
 <div layout:fragment="content">
-<div class="container my-4">
-          
-	 <h2>상품관리</h2>
-	<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded" >
-		    <!-- 왼쪽: 필터 토글 (항목 이름들, 전부 같은 collapse target) -->
-		<div class="d-flex flex-grow-1 gap-3">
-			<button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#filterBox">
-		        필터
-		    </button>
-		    </div>
-	<div class="collapse" id="filterBox">
-    	<div class="card card-body mb-2">
+	<div class="container my-4">
 
-    		<!-- 브랜드 필터 -->
-    		<div class="mb-3">
-		        <label class="form-label">브랜드</label>
-		        <div class="d-flex flex-wrap">
-            <div th:each="b : ${brands}" class="form-check me-3">
-                <input class="form-check-input" type="checkbox" name="brand" th:value="${b.id}" th:checked="${brand != null and brand.contains(b.id)}" id="brand__${b.id}">
-                <label class="form-check-label" th:for="'brand__' + ${b.id}">[[${b.brandName}]]</label>
-            </div>
-        </div>
-    </div>
+		<h2>상품관리</h2>
+		<form th:action="@{/admin/productList}" method="get" id="filterForm" class="p-3 border rounded">
+			<!-- 왼쪽: 필터 토글 (항목 이름들, 전부 같은 collapse target) -->
+			<div class="d-flex flex-grow-1 gap-3">
+				<button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#filterBox">
+					필터
+				</button>
+			</div>
+			<div class="collapse" id="filterBox">
+				<div class="card card-body mb-2">
 
-    <!-- 상태 필터 -->
-	<div class="mb-3">
-	    <label class="form-label">관리자픽</label>
-	    <div class="form-check form-check-inline">
-	        <input class="form-check-input" type="radio" name="isPicked" value="Y" 
-	               th:checked="${isPicked != null and isPicked.contains('Y')}" id="isPickedYes">
-	        <label class="form-check-label" for="isPickedYes">Y</label>
-	    </div>
-	    <div class="form-check form-check-inline">
-	        <input class="form-check-input" type="radio" name="isPicked" value="N" 
-	               th:checked="${isPicked != null and isPicked.contains('N')}" id="isPickedNo">
-	        <label class="form-check-label" for="isPickedNo">N</label>
-	    </div>
-	    <div class="form-check form-check-inline">
-	        <input class="form-check-input" type="radio" name="isPicked" value="" 
-	               th:checked="${isPicked == null}" id="isPickedNone">
-	        <label class="form-check-label" for="isPickedNone">전체</label>
-	    </div>
+					<!-- 브랜드 필터 -->
+					<div class="mb-3">
+						<label class="form-label">브랜드</label>
+						<div class="d-flex flex-wrap">
+							<div th:each="b : ${brands}" class="form-check me-3">
+								<input class="form-check-input" type="checkbox" name="brand" th:value="${b.id}"
+									th:checked="${brand != null and brand.contains(b.id)}" id="brand__${b.id}">
+								<label class="form-check-label" th:for="'brand__' + ${b.id}">[[${b.brandName}]]</label>
+							</div>
+						</div>
+					</div>
+
+					<!-- 상태 필터 -->
+					<div class="mb-3">
+						<label class="form-label">관리자픽</label>
+						<div class="form-check form-check-inline">
+							<input class="form-check-input" type="radio" name="isPicked" value="Y"
+								th:checked="${isPicked != null and isPicked.contains('Y')}" id="isPickedYes">
+							<label class="form-check-label" for="isPickedYes">Y</label>
+						</div>
+						<div class="form-check form-check-inline">
+							<input class="form-check-input" type="radio" name="isPicked" value="N"
+								th:checked="${isPicked != null and isPicked.contains('N')}" id="isPickedNo">
+							<label class="form-check-label" for="isPickedNo">N</label>
+						</div>
+						<div class="form-check form-check-inline">
+							<input class="form-check-input" type="radio" name="isPicked" value=""
+								th:checked="${isPicked == null}" id="isPickedNone">
+							<label class="form-check-label" for="isPickedNone">전체</label>
+						</div>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label">상태</label>
+						<div class="form-check form-check-inline">
+							<input class="form-check-input" type="radio" name="status" value="active"
+								th:checked="${status != null and status.contains('active')}" id="statusActive">
+							<label class="form-check-label" for="statusActive">활성화</label>
+						</div>
+						<div class="form-check form-check-inline">
+							<input class="form-check-input" type="radio" name="status" value="wait"
+								th:checked="${status != null and status.contains('wait')}" id="statusWait">
+							<label class="form-check-label" for="statusWait">비활성화</label>
+						</div>
+						<div class="form-check form-check-inline">
+							<input class="form-check-input" type="radio" name="status" value=""
+								th:checked="${status == null}" id="statusNone">
+							<label class="form-check-label" for="statusNone">전체</label>
+						</div>
+					</div>
+
+
+					<div class="mb-3">
+
+						<input type="text" class="form-control" placeholder="상품명 입력" name="kw" th:value="${kw}"
+							id="search_kw">
+					</div>
+					<!-- 버튼 -->
+					<div class="d-flex gap-2">
+						<button type="submit" class="btn btn-primary">필터 적용</button>
+						<a href="/admin/productList" class="btn btn-secondary">필터 초기화</a>
+					</div>
+				</div>
+			</div>
+		</form>
+
+		<!-- 상품 리스트 테이블 -->
+
+
+		<div class="card mb-4">
+			<div class="card-header">
+				<i class="fas fa-table me-1"></i>
+				상품리스트
+			</div>
+			<div class="card-body">
+				<table id="datatablesSimple">
+					<thead>
+						<tr>
+							<th scope="col">상품번호</th>
+							<th scope="col">상품명</th>
+							<th scope="col">브랜드</th>
+							<th scope="col">정가</th>
+							<th scope="col">할인율(%)</th>
+							<th scope="col">재고</th>
+							<th scope="col">상태</th>
+							<th scope="col">관리자픽</th>
+							<th scope="col">관리</th>
+						</tr>
+					</thead>
+					<tfoot>
+						<tr>
+							<th scope="col">상품번호</th>
+							<th scope="col">상품명</th>
+							<th scope="col">브랜드</th>
+							<th scope="col">정가</th>
+							<th scope="col">할인율(%)</th>
+							<th scope="col">재고</th>
+							<th scope="col">상태</th>
+							<th scope="col">관리자픽</th>
+							<th scope="col">관리</th>
+						</tr>
+					</tfoot>
+					<tbody id="productList">
+						<tr th:each="list : ${paging}" th:fragment="productRow">
+							<td th:text="${list.id}"></td>
+							<td th:text="${list.name}"></td>
+							<td th:text="${list.brand.brandName}"></td>
+							<td th:text="${#numbers.formatInteger(list.price, 3, 'COMMA')}"></td>
+							<td th:text="${#numbers.formatInteger(list.discount, 0)}"></td>
+							<td th:text="${list.count}"></td>
+							<td th:text="${list.status == 'active' ? '활성화' : '비활성화'}"></td>
+							<td>
+								<select class="form-select form-select-sm" name="isPicked" th:data-id="${list.id}"
+									onchange="updatePick(this)">
+									<option value="Y" th:selected="${list.isPicked == 'Y'}">Y</option>
+									<option value="N" th:selected="${list.isPicked == 'N'}">N</option>
+								</select>
+							</td>
+							<td>
+								<a href="javascript:void(0);" th:data-id="${list.id}" th:data-status="${list.status}"
+									class="status btn btn-sm btn-outline-secondary"
+									th:text="${list.status == 'active' ? '비활성화' : '활성화'}"></a>
+								<a th:href="@{/admin/productForm(id=${list.id}, brandId=${list.brand.id})}"
+									class="btn btn-sm btn-outline-secondary">수정</a>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
 	</div>
-	
-	<div class="mb-3">
-	    <label class="form-label">상태</label>
-	    <div class="form-check form-check-inline">
-	        <input class="form-check-input" type="radio" name="status" value="active" 
-	               th:checked="${status != null and status.contains('active')}" id="statusActive">
-	        <label class="form-check-label" for="statusActive">활성화</label>
-	    </div>
-	    <div class="form-check form-check-inline">
-	        <input class="form-check-input" type="radio" name="status" value="wait" 
-	               th:checked="${status != null and status.contains('wait')}" id="statusWait">
-	        <label class="form-check-label" for="statusWait">비활성화</label>
-	    </div>
-	    <div class="form-check form-check-inline">
-	        <input class="form-check-input" type="radio" name="status" value="" 
-	               th:checked="${status == null}" id="statusNone">
-	        <label class="form-check-label" for="statusNone">전체</label>
-	    </div>
-	</div>
-
-
-    <div class="mb-3">
-        
-        <input type="text" class="form-control" placeholder="상품명 입력" name="kw" th:value="${kw}" id="search_kw">
-    </div>
-    <!-- 버튼 -->
-    <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary">필터 적용</button>
-        <a href="/admin/productList" class="btn btn-secondary">필터 초기화</a>
-    </div>
-    </div></div>
-</form>
-
-	    <!-- 상품 리스트 테이블 -->
-
-	    
-	    <div class="card mb-4">
-                            <div class="card-header">
-                                <i class="fas fa-table me-1"></i>
-                                상품리스트
-                            </div>
-                            <div class="card-body">
-                                <table id="datatablesSimple">
-                                    <thead>
-	            <tr>
-	                <th scope="col">상품번호</th>
-	                <th scope="col">상품명</th>
-	                <th scope="col">브랜드</th>
-	                <th scope="col">정가</th>
-	                <th scope="col">할인율(%)</th>
-	                <th scope="col">재고</th>
-	                <th scope="col">상태</th>
-	                <th scope="col">관리자픽</th>
-	                <th scope="col">관리</th>
-	            </tr>
-                                    </thead>
-                                    <tfoot>
-   	            <tr>
-	                <th scope="col">상품번호</th>
-	                <th scope="col">상품명</th>
-	                <th scope="col">브랜드</th>
-	                <th scope="col">정가</th>
-	                <th scope="col">할인율(%)</th>
-	                <th scope="col">재고</th>
-	                <th scope="col">상태</th>
-	                <th scope="col">관리자픽</th>
-	                <th scope="col">관리</th>
-	            </tr>
-                                    </tfoot>
-                                    <tbody id="productList">
-	            <tr th:each="list : ${paging}" th:fragment="productRow">
-	                <td th:text="${list.id}"></td>
-	                <td th:text="${list.name}"></td>
-	                <td th:text="${list.brand.brandName}"></td>
-					<td th:text="${#numbers.formatInteger(list.price, 3, 'COMMA')}"></td>
-					<td th:text="${#numbers.formatInteger(list.discount, 0)}"></td>
-	                <td th:text="${list.count}"></td>
-	                <td th:text="${list.status == 'active' ? '활성화' : '비활성화'}"></td>
-	                <td>
-						<select class="form-select form-select-sm" name="isPicked" th:data-id="${list.id}" onchange="updatePick(this)">
-						    <option value="Y" th:selected="${list.isPicked == 'Y'}">Y</option>
-						    <option value="N" th:selected="${list.isPicked == 'N'}">N</option>
-						</select>
-	                </td>
-	                <td>
-						<a href="javascript:void(0);" th:data-id="${list.id}" th:data-status="${list.status}" class="status btn btn-sm btn-outline-secondary"
-						   th:text="${list.status == 'active' ? '비활성화' : '활성화'}"></a>
-						<a th:href="@{/admin/productForm(id=${list.id}, brandId=${list.brand.id})}" class="btn btn-sm btn-outline-secondary">수정</a>
-	                </td>
-	            </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-</div>
 	<form th:action="@{/admin/productList}" method="get" id="searchForm">
 		<input type="hidden" id="kw" name="kw" th:value="${kw}" />
 	</form>
 	<!-- 상태 변경 확인 모달 -->
 	<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
-	  <div class="modal-dialog modal-dialog-centered">
-	    <div class="modal-content">
-	      <div class="modal-header">
-	        <h5 class="modal-title">상태 변경 확인</h5>
-	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-	      </div>
-	      <div class="modal-body" id="statusModalBody">
-	        <!-- JS에서 텍스트 삽입 -->
-	      </div>
-	      <div class="modal-footer">
-	        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-	        <button type="button" class="btn btn-primary" id="confirmStatusChange">확인</button>
-	      </div>
-	    </div>
-	  </div>
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">상태 변경 확인</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body" id="statusModalBody">
+					<!-- JS에서 텍스트 삽입 -->
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+					<button type="button" class="btn btn-primary" id="confirmStatusChange">확인</button>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>
 
 <script layout:fragment="script" type="text/javascript">
-//=========================
-//상품 상태 변경 (활성화/비활성화) 모달
-//=========================
-let selectedButton = null;
-let newStatus = '';
+	//=========================
+	//상품 상태 변경 (활성화/비활성화) 모달
+	//=========================
+	let selectedButton = null;
+	let newStatus = '';
 
-$(document).on('click', '.status', function() {
-    selectedButton = this;
-    const currentStatus = $(this).data('status');
-    newStatus = currentStatus === 'active' ? 'wait' : 'active';
+	$(document).on('click', '.status', function () {
+		selectedButton = this;
+		const currentStatus = $(this).data('status');
+		newStatus = currentStatus === 'active' ? 'wait' : 'active';
 
-    $('#statusModalBody').text(`${newStatus === 'active' ? '활성화' : '비활성화'} 하시겠습니까?`);
-    const modal = new bootstrap.Modal($('#statusModal')[0]);
-    modal.show();
-});
+		$('#statusModalBody').text(`${newStatus === 'active' ? '활성화' : '비활성화'} 하시겠습니까?`);
+		const modal = new bootstrap.Modal($('#statusModal')[0]);
+		modal.show();
+	});
 
-$('#confirmStatusChange').on('click', function() {
-    if(selectedButton) {
-        const productId = $(selectedButton).data('id');
-        fetch(`/admin/productStatus/${productId}?status=${newStatus}`, { method: 'POST' })
-            .then(res => {
-                if(res.ok) {
-                    $(selectedButton).data('status', newStatus);
-                    $(selectedButton).text(newStatus === 'active' ? '비활성화' : '활성화');
-                    const modalInstance = bootstrap.Modal.getInstance($('#statusModal')[0]);
-                    modalInstance.hide();
-                } else {
-                    alert('상태 변경 실패');
-                }
-            });
-    }
-});
+	$('#confirmStatusChange').on('click', function () {
+		if (selectedButton) {
+			const productId = $(selectedButton).data('id');
+			fetch(`/admin/productStatus/${productId}?status=${newStatus}`, { method: 'POST' })
+				.then(res => {
+					if (res.ok) {
+						$(selectedButton).data('status', newStatus);
+						$(selectedButton).text(newStatus === 'active' ? '비활성화' : '활성화');
+						const modalInstance = bootstrap.Modal.getInstance($('#statusModal')[0]);
+						modalInstance.hide();
+					} else {
+						alert('상태 변경 실패');
+					}
+				});
+		}
+	});
 
-//=========================
-//관리자픽 변경
-//=========================
-function updatePick(selectBox) {
-    const id = $(selectBox).data('id');
-    const value = selectBox.value;
+	//=========================
+	//관리자픽 변경
+	//=========================
+	function updatePick(selectBox) {
+		const id = $(selectBox).data('id');
+		const value = selectBox.value;
 
-    fetch("/admin/updatePick", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: id, isPicked: value })
-    })
-    .then(res => res.text())
-    .then(msg => console.log("관리자픽 업데이트 성공:", msg))
-    .catch(err => console.error("관리자픽 업데이트 실패:", err));
-}
+		fetch("/admin/updatePick", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ id: id, isPicked: value })
+		})
+			.then(res => res.text())
+			.then(msg => console.log("관리자픽 업데이트 성공:", msg))
+			.catch(err => console.error("관리자픽 업데이트 실패:", err));
+	}
 
-function goPage(a) {
-    const page = a.getAttribute('data-page');
-    document.getElementById('page').value = page;
-    document.getElementById('filterForm').submit();
-}
+	function goPage(a) {
+		const page = a.getAttribute('data-page');
+		document.getElementById('page').value = page;
+		document.getElementById('filterForm').submit();
+	}
 
-// 필터
-function toggleFilter() {
-    const box = document.getElementById("filterBox");
-    box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
-}
+	// 필터
+	function toggleFilter() {
+		const box = document.getElementById("filterBox");
+		box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
+	}
 </script>
+
 </html>
