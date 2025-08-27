@@ -43,6 +43,9 @@ public class Order {
     @Column(name="deliveryStatus")
     private String deliveryStatus;      // ORDERED / SHIPPING / DELIVERED 
     
+    @Column(name = "confirmMileage", nullable = false)
+    private int confirmMileage;
+
     @Lob
     @Column(name = "shippingSnapshot")
     @Convert(converter = ShippingSnapshotJsonConverter.class)
@@ -52,6 +55,7 @@ public class Order {
     public void prePersist() {
         if (regDate == null) regDate = LocalDateTime.now();
         if (status == null)  status  = "PENDING";
+        if ( this.confirmMileage == 0 ) { this.confirmMileage = 0; }
     }
 
     public void addDetail(OrderDetail d) {
