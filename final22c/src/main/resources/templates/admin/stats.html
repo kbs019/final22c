@@ -1,0 +1,89 @@
+<html layout:decorate="~{/layout/adminLayout}">
+
+<div layout:fragment="content">
+    <div class="container my-4">
+
+        <h2>상품 통계</h2>
+        <form th:action="@{/admin/stats}" method="get" id="filterForm" class="p-3 border rounded">
+            <!-- 왼쪽: 필터 토글 (항목 이름들, 전부 같은 collapse target) -->
+            <div class="d-flex flex-grow-1 gap-3">
+                <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#filterBox">
+                    필터
+                </button>
+            </div>
+            <div class="collapse" id="filterBox">
+                <div class="card card-body mb-2">
+
+                    <!-- 브랜드 필터 -->
+                    <div class="mb-3">
+                        <label class="form-label">브랜드</label>
+                        <div class="d-flex flex-wrap">
+                            <div th:each="b : ${brands}" class="form-check me-3">
+                                <input class="form-check-input" type="checkbox" name="brand" th:value="${b.id}"
+                                    th:checked="${brand != null and brand.contains(b.id)}" id="brand__${b.id}">
+                                <label class="form-check-label" th:for="'brand__' + ${b.id}">[[${b.brandName}]]</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" class="form-control" placeholder="상품명 입력" name="kw" th:value="${kw}"
+                            id="search_kw">
+                    </div>
+                    <!-- 버튼 -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">필터 적용</button>
+                        <a href="/admin/stats" class="btn btn-secondary">필터 초기화</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- 상품 리스트 테이블 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-table me-1"></i>
+                상품리스트
+            </div>
+            <div class="card-body">
+                <table id="datatablesSimple">
+                    <thead>
+                        <tr>
+                            <th scope="col">상품번호</th>
+                            <th scope="col">상품명</th>
+                            <th scope="col">브랜드</th>
+                            <th scope="col">매입가</th>
+                            <th scope="col">정가</th>
+                            <th scope="col">판매가</th>
+                            <th scope="col">판매량</th>
+                            <th scope="col">통계</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productList">
+                        <tr th:each="p : ${paging}" th:fragment="productRow">
+                            <td th:text="${p.id}"></td>
+                            <td th:text="${p.name}"></td>
+                            <td th:text="${p.brand.brandName}"></td>
+                            <td th:text="${#numbers.formatInteger(p.costPrice, 3, 'COMMA')}"></td>
+                            <td th:text="${#numbers.formatInteger(p.price, 3, 'COMMA')}"></td>
+                            <td th:text="${#numbers.formatInteger(p.sellPrice, 3, 'COMMA')}"></td>
+                            <td th:text="${confirmedSumMap[p.id]}">0</td>
+                            <td>
+                                <div>
+                                    <a href="javascript:void(0);" class="btn btn-link fs-4 text-dark view-stats"
+                                        th:attr="data-id=${p.id}"
+                                        style="text-decoration: none; color: inherit;">&gt;</a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script layout:fragment="script" type="text/javascript">
+
+</script>
+
+</html>
