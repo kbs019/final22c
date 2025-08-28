@@ -53,4 +53,19 @@ public interface CartDetailRepository extends JpaRepository<CartDetail, Long> {
             and cd.cartDetailId in :ids
         """)
     int deleteByIdsAndOwner(@Param("userName") String userName, @Param("ids") List<Long> ids);
+    
+    // 선택 라인 결제시 삭제
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    		delete from CartDetail cd
+    		where cd.cartDetailId in :ids
+    		and cd.cart.user.userNo = :userNo
+    	""")
+    int deleteByUserNoAndIds(@Param("userNo") Long userNo, @Param("ids") List<Long> ids);
+    		
+
+    
+    
+    
+    
 }

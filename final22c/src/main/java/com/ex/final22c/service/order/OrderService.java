@@ -15,6 +15,7 @@ import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.repository.orderDetail.OrderDetailRepository;
 import com.ex.final22c.repository.user.UserRepository;
+import com.ex.final22c.service.cart.CartService;
 import com.ex.final22c.service.product.ProductService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class OrderService {
     private final ProductService productService;
     private final UserRepository usersRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final CartService cartService;
 
     private static final int SHIPPING_FEE = 3000;
 
@@ -99,6 +101,14 @@ public class OrderService {
 
         if ("PAID".equalsIgnoreCase(o.getStatus())) return; // 멱등
 
+        // 0) 결제 성공했으니까 장바구니에서 삭제해주기
+        var ids = o.getSelectedCartDetailIds();
+        if (ids != null && !ids.isEmpty()) {
+        	String username = o.getUser().getUserName();
+        	cartService.removeAll(username, ids);
+        	o.getSelectedCartDetailIds().clear();  // -> 조인테이블에도 행삭제
+        }
+        
         // 1) 마일리지 차감
         int used = o.getUsedPoint();
         if (used > 0) {
@@ -204,7 +214,8 @@ public class OrderService {
                                         int shipping,      // 보통 3000
                                         int usedPoint,     // 서버 클램프
                                         int payableHint,   // 프론트 계산 값(참고용)
-                                        ShipSnapshotReq ship) {
+                                        ShipSnapshotReq ship,
+                                        List<Long> selectedCartDetailIds) {
         if (lines == null || lines.isEmpty()) {
             throw new IllegalArgumentException("선택된 상품이 없습니다.");
         }
@@ -234,7 +245,9 @@ public class OrderService {
         order.setUsedPoint(use);
         order.setTotalAmount(payable);   // 스냅샷 결제금
         order.setShippingSnapshot(ship); // 배송지 스냅샷
-
+        
+        order.selectedCartDetailIds(selectedCartDetailIds);
+        
         for (CartLine l : lines) {
             Product p = productService.getProduct(l.getId()); // 영속 엔티티
             int qty  = Math.max(1, l.getQuantity());

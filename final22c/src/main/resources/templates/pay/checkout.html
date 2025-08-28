@@ -544,8 +544,8 @@
     	    const token  = $('meta[name="_csrf"]').attr('content');
     	    const header = $('meta[name="_csrf_header"]').attr('content');
 
-    	    const RETRIES = 5;      // 총 재시도 횟수 (약 6~8초 버퍼)
-    	    const DELAY   = 350;     // 시도 간격(ms)
+    	    const RETRIES = 2;      // 총 재시도 횟수 (약 6~8초 버퍼)
+    	    const DELAY   = 200;     // 시도 간격(ms)
     	    let tries = 0;
 
     	    const timer = setInterval(function(){
@@ -596,7 +596,7 @@
     	        }
 
     	        // 첫 체크를 약간 늦춰 승인 콜백 도착 여유를 줌
-    	        setTimeout(checkOnce, 700);
+    	        setTimeout(checkOnce, 200);
     	      }
     	    }, 300);
     	  }

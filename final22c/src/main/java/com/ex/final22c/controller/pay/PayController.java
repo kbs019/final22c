@@ -4,6 +4,7 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -109,7 +110,12 @@ public class PayController {
                         Math.max(1, i.quantity() == null ? 1 : i.quantity())
                 ))
                 .toList();
-
+        // 선택된 cardetatil의 목록을 수정한다
+        List<Long> selectedCartDetailIds = req.items().stream()
+        		.map(PayCartRequest.Item::cartDetailId)
+        		.filter(Objects::nonNull)
+        		.toList();
+        
         CartView view = cartService.prepareCheckoutView(userId, selection);
         List<CartLine> lines = view.getLines();
         if (lines.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선택된 상품이 없습니다.");
@@ -117,8 +123,9 @@ public class PayController {
         int itemsTotal = view.getSubtotal();
         int shipping   = SHIPPING_FEE;
         int payable    = Math.max(0, itemsTotal + shipping - usedPoint);
-
-        Order order = orderService.createCartPendingOrder(userId, lines, itemsTotal, shipping, usedPoint, payable, ship);
+        
+        // 선택된 cardetailId들을 서비스로 넘김
+        Order order = orderService.createCartPendingOrder(userId, lines, itemsTotal, shipping, usedPoint, payable, ship, selectedCartDetailIds);
         // 0원 결제 
         if (payable == 0) {
             paymentService.recordZeroPayment(order.getOrderId());
