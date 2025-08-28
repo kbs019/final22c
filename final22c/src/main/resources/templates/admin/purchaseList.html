@@ -78,7 +78,7 @@
 </div>
 <script layout:fragment="script" type="text/javascript">
 document.addEventListener('click', e => {
-    if (e.target.classList.contains('view-purchase')) {
+    if (e.target.classList.contains('open-order')) {
         const purchaseId = e.target.dataset.purid;
 
         fetch(`/admin/getPurchaseDetail/${purchaseId}`)
