@@ -1,7 +1,6 @@
 package com.ex.final22c.controller.admin;
 
 import java.io.IOException;
-import java.security.Principal;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -28,6 +27,7 @@ import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
@@ -48,12 +48,15 @@ public class AdminController {
 
 	// 회원목록
 	@GetMapping("userList")
-	public String userList(Model model, @RequestParam(value = "page", defaultValue = "0") int page,
-			@RequestParam(value = "kw", defaultValue = "") String kw) {
-		Page<Users> user = adminService.getList(page, kw);
-		model.addAttribute("user", user);
-		model.addAttribute("kw", kw);
-		return "admin/userList";
+	public String userList(Model model,
+	                       @RequestParam(value = "page", defaultValue = "0") int page,
+	                       @RequestParam(value = "kw", defaultValue = "") String kw,
+	                       @RequestParam(value = "filter", defaultValue = "") String filter) {
+	    Page<Users> user = adminService.getList(page, kw, filter);
+	    model.addAttribute("user", user);
+	    model.addAttribute("kw", kw);
+	    model.addAttribute("filter", filter);
+	    return "admin/userList";
 	}
 
 	// 회원 정지
@@ -324,5 +327,13 @@ public class AdminController {
 		model.addAttribute("order", order);
 		model.addAttribute("payments", payments);
 		return "admin/orderDetail :: items";
+	}
+	
+	// 리뷰 관리
+	@GetMapping("reviewList")
+	public String reviewList(@RequestParam(name = "page", defaultValue="0") int page,Model model) {
+		Page<Review> re = this.adminService.getReview(page);
+		model.addAttribute("re",re);
+		return "admin/reviewList";
 	}
 }
