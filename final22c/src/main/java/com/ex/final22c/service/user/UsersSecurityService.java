@@ -1,9 +1,12 @@
 package com.ex.final22c.service.user;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -30,6 +33,7 @@ public class UsersSecurityService implements UserDetailsService {
 			throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
 		}
 		Users users = _users.get();
+
 		// 사용자 권한 객체
 		List<GrantedAuthority> authorities = new ArrayList<>();
 		if("admin".equals(username)) {

@@ -1,0 +1,53 @@
+<html layout:decorate="~{/layout/adminLayout}">
+
+<div layout:fragment="content">
+	<h2>리뷰관리</h2>
+<div id="list" class="list-wrap" aria-live="polite" th:each="re : ${re}">
+    <article class="card mb-2 p-2">
+        <div class="row g-2 align-items-start">
+            
+            <!-- 왼쪽: 썸네일 -->
+            <div class="col-auto">
+                <img class="img-thumbnail" th:src="${re.product.imgPath + re.product.imgName}" 
+                     alt="썸네일" style="width:72px; height:72px; object-fit:cover;">
+            </div>
+
+            <!-- 오른쪽: 텍스트 영역 -->
+            <div class="col">
+                <div class="title mb-1">
+                    <a th:href="@{/product/{id}(id=${re.product.id})}">[[${re.product.name}]]</a>
+                </div>
+                <div class="meta mb-1">
+                    [[${re.product.brand.brandName}]] 
+                    <span class="rating">★ [[${re.rating}]]</span>
+                    <span class="ms-2 date">[[${#temporals.format(re.createDate, 'yyyy-MM-dd HH:mm')}]]</span>
+                </div>
+                <div class="content mb-1">[[${re.content}]]</div>
+                <div class="actions">
+                    <a class="btn btn-sm btn-primary me-1" th:href="@{/review/{id}/edit(id=${re.reviewId})}">숨김</a>
+                </div>
+            </div>
+
+        </div>
+    </article>
+</div>
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center">
+
+    <li class="page-item" th:classappend="${re.first} ? 'disabled'">
+      <a class="page-link" th:href="@{/admin/reviewList(page=${re.number - 1})}">Previous</a>
+    </li>
+
+    <li class="page-item" th:each="i : ${#numbers.sequence(0, re.totalPages - 1)}"
+        th:classappend="${i == re.number} ? 'active'">
+      <a class="page-link" th:href="@{/admin/reviewList(page=${i})}" th:text="${i + 1}">1</a>
+    </li>
+
+    <li class="page-item" th:classappend="${re.last} ? 'disabled'">
+      <a class="page-link" th:href="@{/admin/reviewList(page=${re.number + 1})}">Next</a>
+    </li>
+
+  </ul>
+</nav>
+</div>
+</html>

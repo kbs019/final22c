@@ -1,7 +1,9 @@
 package com.ex.final22c.service.user;
 
 import java.security.Principal;
+import java.time.LocalDate;
 
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -62,5 +64,5 @@ public class UsersService {
             .build();
         this.userRepository.save(user);
         return user;
-    }    
+    }
 }

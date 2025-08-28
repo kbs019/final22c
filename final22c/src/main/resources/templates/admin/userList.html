@@ -8,8 +8,8 @@
 	        <button class="btn btn-outline-secondary" type="button" id="btn_search">검색</button>
 	    </div>
 	    <div class="form-check form-switch">
-	        <input class="form-check-input" type="checkbox" id="filterActive" />
-	        <label class="form-check-label" for="filterActive">정지 회원</label>
+	        <input class="form-check-input" type="checkbox" id="filterActive" th:checked="${filter == 'suspended'}" />
+			<label class="form-check-label" for="filterActive">정지 회원</label>
 	    </div>
 	</div>
 	
@@ -78,6 +78,7 @@
 	<form th:action="@{/admin/userList}" method="get" id="searchForm">
 		<input type="hidden" id="kw" name="kw" th:value="${kw}" />
 		<input type="hidden" id="page" name="page" th:value="${user.number}" />
+		<input type="hidden" id="filter" name="filter" th:value="${filter}" /> 
 	</form>
 	<!-- 상태 변경 성공 모달 -->
 	<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
@@ -145,23 +146,12 @@
 		});
 		
 		// 정지 체크박스
-		document.getElementById('filterActive').addEventListener('change', function() {
-		  const checked = this.checked;
-		  const rows = document.querySelectorAll('#userTable tbody tr'); // 회원 리스트가 테이블이라면
-
-		  rows.forEach(row => {
-		    const status = row.dataset.status; // 예: <tr data-status="suspended">
-		    if (checked) {
-		      if (status === 'suspended' || status === 'banned') {
-		        row.style.display = '';  // 보여줌
-		      } else {
-		        row.style.display = 'none'; // 숨김
-		      }
-		    } else {
-		      row.style.display = ''; // 필터 해제 시 모두 보여줌
-		    }
-		  });
-		});
+document.getElementById('filterActive').addEventListener('change', function() {
+  const filterInput = document.getElementById('filter');
+  filterInput.value = this.checked ? 'suspended' : '';
+  document.getElementById('page').value = 0; 
+  document.getElementById('searchForm').submit();
+});
 </script>
 
 </html>
