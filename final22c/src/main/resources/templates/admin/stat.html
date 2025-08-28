@@ -2,21 +2,66 @@
 <th:block layout:fragment="css">
   <style>
     /* 세그먼트형 라디오 (중앙 정렬) */
-    .segmented .btn{
-      padding:.42rem 1rem;
-      border-color:#d0d3d9;
-      background:#fff; color:#222; font-weight:600;
+    .segmented .btn {
+      padding: .42rem 1rem;
+      border-color: #d0d3d9;
+      background: #fff;
+      color: #222;
+      font-weight: 600;
     }
-    .segmented .btn:first-of-type{ border-top-left-radius:999px; border-bottom-left-radius:999px; }
-    .segmented .btn:last-of-type{  border-top-right-radius:999px; border-bottom-right-radius:999px; }
-    .segmented .btn + .btn{ margin-left:-1px; }
-    .btn-check:checked + .btn{ background:#111;border-color:#111;color:#fff;box-shadow: inset 0 2px 8px rgba(0,0,0,.2); }
+
+    .segmented .btn:first-of-type {
+      border-top-left-radius: 999px;
+      border-bottom-left-radius: 999px;
+    }
+
+    .segmented .btn:last-of-type {
+      border-top-right-radius: 999px;
+      border-bottom-right-radius: 999px;
+    }
+
+    .segmented .btn+.btn {
+      margin-left: -1px;
+    }
+
+    .btn-check:checked+.btn {
+      background: #111;
+      border-color: #111;
+      color: #fff;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, .2);
+    }
 
     /* 카드 & 차트 영역 */
-    .chart-card{ border:1px solid #e6e8eb;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);overflow:hidden; }
-    .chart-card .card-body{ background:#f6f7f9; padding:1.25rem; }
-    .chart-wrap{ position:relative; height:400px; }
-    .chart-wrap canvas{ width:100% !important; height:100% !important; display:block; }
+    .chart-card {
+      border: 1px solid #e6e8eb;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
+      overflow: hidden;
+    }
+
+    .chart-card .card-body {
+      background: #f6f7f9;
+      padding: 1.25rem;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 400px;
+    }
+
+    .chart-wrap canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    .placeholder {
+      height: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888
+    }
   </style>
 </th:block>
 
@@ -26,9 +71,8 @@
 
     <!-- 상품 정보 -->
     <div class="d-flex align-items-center gap-3">
-      <img th:src="${p.imgPath + p.imgName}" alt=""
-           style="width:56px;height:56px;object-fit:cover;border-radius:10px"
-           onerror="this.style.display='none'">
+      <img th:src="${p.imgPath + p.imgName}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px"
+        onerror="this.style.display='none'">
       <div>
         <div class="fw-semibold" th:text="${p.name}">상품명</div>
         <div class="text-muted small">
@@ -42,17 +86,38 @@
     <div class="w-100 d-flex justify-content-center my-3" id="statRoot" th:attr="data-product-id=${p.id}">
       <div class="btn-group segmented" role="group" aria-label="통계 탭">
         <input type="radio" class="btn-check" name="mode" id="modeSales" value="sales">
-        <label class="btn" for="modeSales">매출</label>
+        <label class="btn" for="modeSales">판매량</label>
 
         <input type="radio" class="btn-check" name="mode" id="modeBuyers" value="buyers" checked>
         <label class="btn" for="modeBuyers">구매자</label>
       </div>
     </div>
 
-    <!-- 매출 패널 (비워둠) -->
-    <div id="panel-sales" class="chart-card d-none">
+    <!-- 매출 패널 -->
+    <div id="panel-sales" class="card chart-card d-none">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>판매량</span>
+        <div class="d-flex align-items-center gap-2">
+          <select id="unitSelect" class="form-select form-select-sm" style="width:auto">
+            <option value="DAY">일간</option>
+            <option value="WEEK">주간</option>
+            <option value="MONTH">월간</option>
+            <option value="YEAR">연간</option>
+          </select>
+
+          <!-- DAY -->
+          <input type="date" id="dateInput" class="form-control form-control-sm" style="width:auto">
+
+          <!-- WEEK (YYYY-MM) -->
+          <input type="month" id="monthInput" class="form-control form-control-sm d-none" style="width:auto">
+
+          <!-- MONTH (YYYY) -->
+          <input type="number" id="yearInput" class="form-control form-control-sm d-none" style="width:110px" min="2000"
+            max="2100" step="1">
+        </div>
+      </div>
       <div class="card-body">
-        <div class="text-center text-muted py-5">매출 통계는 준비 중입니다.</div>
+        <div class="chart-wrap"><canvas id="salesChart" aria-label="판매량 추이"></canvas></div>
       </div>
     </div>
 
@@ -80,139 +145,266 @@
 <script layout:fragment="script" type="text/javascript"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script layout:fragment="script" type="text/javascript">
-(() => {
-  const root = document.getElementById('statRoot');
-  const productId = root?.dataset?.productId;
+  (() => {
+    const root = document.getElementById('statRoot');
+    const productId = root?.dataset?.productId;
 
-  // 입체감(그림자)
-  const shadowPlugin = {
-    id: 'softShadow',
-    beforeDatasetsDraw(chart){ const {ctx}=chart; ctx.save(); ctx.shadowColor='rgba(0,0,0,0.25)'; ctx.shadowBlur=10; ctx.shadowOffsetY=6; },
-    afterDatasetsDraw(chart){ chart.ctx.restore(); }
-  };
+    // 입체감(그림자)
+    const shadowPlugin = {
+      id: 'softShadow',
+      beforeDatasetsDraw(chart) { const { ctx } = chart; ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 6; },
+      afterDatasetsDraw(chart) { chart.ctx.restore(); }
+    };
 
-  // 막대그래프 범례를 강제로 숨기는 전용 플러그인 (안전장치)
-  const hideLegendForBar = {
-    id: 'hideLegendForBar',
-    beforeInit(chart) {
-      if (chart.config.type === 'bar') {
-        chart.options.plugins = chart.options.plugins || {};
-        chart.options.plugins.legend = chart.options.plugins.legend || {};
-        chart.options.plugins.legend.display = false;
-        chart.options.plugins.legend.labels = { generateLabels: () => [] };
+    // 막대그래프 범례를 강제로 숨기는 전용 플러그인 (안전장치)
+    const hideLegendForBar = {
+      id: 'hideLegendForBar',
+      beforeInit(chart) {
+        if (chart.config.type === 'bar') {
+          chart.options.plugins = chart.options.plugins || {};
+          chart.options.plugins.legend = chart.options.plugins.legend || {};
+          chart.options.plugins.legend.display = false;
+          chart.options.plugins.legend.labels = { generateLabels: () => [] };
+        }
       }
-    }
-  };
+    };
 
-  let genderChart, ageChart;
+    let genderChart, ageChart;
 
-  async function loadBuyers(){
-    const res = await fetch(`/admin/stats/${productId}/buyers`, { headers:{Accept:'application/json'} });
-    const data = await res.json();
+    async function loadBuyers() {
+      const res = await fetch(`/admin/stats/${productId}/buyers`, { headers: { Accept: 'application/json' } });
+      const data = await res.json();
 
-    // --- 성별 파이 ---
-    const gMale = data?.gender?.male ?? 0;
-    const gFemale = data?.gender?.female ?? 0;
-    const gUnknown = data?.gender?.unknown ?? 0;
+      // --- 성별 파이 ---
+      const gMale = data?.gender?.male ?? 0;
+      const gFemale = data?.gender?.female ?? 0;
+      const gUnknown = data?.gender?.unknown ?? 0;
 
-    const genderCtx = document.getElementById('genderChart').getContext('2d');
-    const femaleFill  = '#ffffff';  // 여성: 흰색
-    const maleFill    = '#111111';  // 남성: 검정
-    const unknownFill = '#9e9e9e';  // 기타: 회색
+      const genderCtx = document.getElementById('genderChart').getContext('2d');
+      const femaleFill = '#ffffff';  // 여성: 흰색
+      const maleFill = '#111111';  // 남성: 검정
+      const unknownFill = '#9e9e9e';  // 기타: 회색
 
-    genderChart?.destroy();
-    genderChart = new Chart(genderCtx, {
-      type:'pie',
-      data:{
-        labels:(gUnknown>0)?['여성','남성','기타']:['여성','남성'],
-        datasets:[{
-          data:(gUnknown>0)?[gFemale,gMale,gUnknown]:[gFemale,gMale],
-          backgroundColor:(gUnknown>0)?[femaleFill,maleFill,unknownFill]:[femaleFill,maleFill],
-          borderColor:'#fff', borderWidth:1
-        }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        layout:{ padding:{ top:10,right:10,bottom:28,left:10 } },
-        plugins:{
-          legend:{ position:'top', labels:{ usePointStyle:true } },
-          tooltip:{ callbacks:{ label:(c)=>`${c.label}: ${c.formattedValue}명` } }
-        }
-      },
-      plugins:[shadowPlugin]
-    });
-
-    // --- 연령대 막대 (정수 눈금 & 범례 제거) ---
-    const a10 = data?.age?.t10 ?? 0;
-    const a20 = data?.age?.t20 ?? 0;
-    const a30 = data?.age?.t30 ?? 0;
-    const a40 = data?.age?.t40 ?? 0;
-    const a50p = data?.age?.t50p ?? 0;
-
-    const maxRaw = Math.max(a10,a20,a30,a40,a50p,0);
-    const step   = (maxRaw <= 10) ? 1 : (maxRaw <= 50) ? 5 : (maxRaw <= 100) ? 10 : Math.ceil(maxRaw/10);
-    const axisMax= Math.max(step, Math.ceil((maxRaw||1)/step)*step);
-
-    const ageCtx = document.getElementById('ageChart').getContext('2d');
-    const bars   = ['#ffffff','#e5e5e5','#bdbdbd','#7f7f7f','#000000']; // 흰→검
-
-    ageChart?.destroy();
-    ageChart = new Chart(ageCtx, {
-      type:'bar',
-      data:{
-        labels:['10대','20대','30대','40대','50대+'],
-        datasets:[{
-          /* label 없이 생성 → 범례 소스 제거 */
-          data:[a10,a20,a30,a40,a50p],
-          backgroundColor:bars, borderColor:'#222', borderWidth:1
-        }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        layout:{ padding:{ top:6,right:10,bottom:18,left:10 } },
-        scales:{
-          y:{
-            min:0, max:axisMax,
-            ticks:{
-              stepSize:step,
-              // 소수점 완전 금지
-              format:{ maximumFractionDigits:0 },            // 수치 포맷(국제화)
-              callback:(v)=> Number.isInteger(v) ? String(v) : ''
-            },
-            title:{ display:true, text:'명' }
-          },
-          x:{ ticks:{ font:{ weight:600 } } }
+      genderChart?.destroy();
+      genderChart = new Chart(genderCtx, {
+        type: 'pie',
+        data: {
+          labels: (gUnknown > 0) ? ['여성', '남성', '기타'] : ['여성', '남성'],
+          datasets: [{
+            data: (gUnknown > 0) ? [gFemale, gMale, gUnknown] : [gFemale, gMale],
+            backgroundColor: (gUnknown > 0) ? [femaleFill, maleFill, unknownFill] : [femaleFill, maleFill],
+            borderColor: '#fff', borderWidth: 1
+          }]
         },
-        plugins:{
-          legend:{ display:false, labels:{ generateLabels:()=>[] } }, // 옵션 차원 비활성화
-          tooltip:{ callbacks:{ label:(c)=>`${c.parsed.y}명` } }
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          layout: { padding: { top: 10, right: 10, bottom: 28, left: 10 } },
+          plugins: {
+            legend: { position: 'top', labels: { usePointStyle: true } },
+            tooltip: { callbacks: { label: (c) => `${c.label}: ${c.formattedValue}명` } }
+          }
+        },
+        plugins: [shadowPlugin]
+      });
+
+      // --- 연령대 막대 (정수 눈금 & 범례 제거) ---
+      const a10 = data?.age?.t10 ?? 0;
+      const a20 = data?.age?.t20 ?? 0;
+      const a30 = data?.age?.t30 ?? 0;
+      const a40 = data?.age?.t40 ?? 0;
+      const a50p = data?.age?.t50p ?? 0;
+
+      const maxRaw = Math.max(a10, a20, a30, a40, a50p, 0);
+      const step = (maxRaw <= 10) ? 1 : (maxRaw <= 50) ? 5 : (maxRaw <= 100) ? 10 : Math.ceil(maxRaw / 10);
+      const axisMax = Math.max(step, Math.ceil((maxRaw || 1) / step) * step);
+
+      const ageCtx = document.getElementById('ageChart').getContext('2d');
+      const bars = ['#ffffff', '#e5e5e5', '#bdbdbd', '#7f7f7f', '#000000']; // 흰→검
+
+      ageChart?.destroy();
+      ageChart = new Chart(ageCtx, {
+        type: 'bar',
+        data: {
+          labels: ['10대', '20대', '30대', '40대', '50대+'],
+          datasets: [{
+            /* label 없이 생성 → 범례 소스 제거 */
+            data: [a10, a20, a30, a40, a50p],
+            backgroundColor: bars, borderColor: '#222', borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          layout: { padding: { top: 6, right: 10, bottom: 18, left: 10 } },
+          scales: {
+            y: {
+              min: 0, max: axisMax,
+              ticks: {
+                stepSize: step,
+                // 소수점 완전 금지
+                format: { maximumFractionDigits: 0 },            // 수치 포맷(국제화)
+                callback: (v) => Number.isInteger(v) ? String(v) : ''
+              },
+              title: { display: true, text: '명' }
+            },
+            x: { ticks: { font: { weight: 600 } } }
+          },
+          plugins: {
+            legend: { display: false, labels: { generateLabels: () => [] } }, // 옵션 차원 비활성화
+            tooltip: { callbacks: { label: (c) => `${c.parsed.y}명` } }
+          }
+        },
+        plugins: [shadowPlugin, hideLegendForBar]  // 안전장치 플러그인
+      });
+    }
+
+    // 라디오 토글
+    function bindToggle() {
+      const sales = document.getElementById('panel-sales');
+      const buyers = document.getElementById('panel-buyers');
+
+      document.getElementById('modeSales').addEventListener('change', async (e) => {
+        if (!e.target.checked) return;
+        buyers.classList.add('d-none'); sales.classList.remove('d-none');
+        // 매출 Ajax 훅(보류)
+        // await fetch(`/admin/stats/${productId}/sales`);
+      });
+
+      document.getElementById('modeBuyers').addEventListener('change', async (e) => {
+        if (!e.target.checked) return;
+        sales.classList.add('d-none'); buyers.classList.remove('d-none');
+        await loadBuyers();
+      });
+    }
+
+    bindToggle();
+    loadBuyers(); // 초기: 구매자
+  })();
+
+
+  // 판매량 통계
+  (() => {
+    const productId = document.getElementById('statRoot')?.dataset?.productId;
+
+    const unitSel = document.getElementById('unitSelect');
+    const dateInp = document.getElementById('dateInput');  // DAY
+    const monthInp = document.getElementById('monthInput'); // WEEK
+    const yearInp = document.getElementById('yearInput');  // MONTH
+    const salesCard = document.getElementById('panel-sales');
+
+    // 초기값: 오늘/이번달/올해
+    const today = new Date();
+    const thisYear = today.getFullYear();
+
+    dateInp.value = today.toISOString().slice(0, 10);
+    monthInp.value = today.toISOString().slice(0, 7);
+    yearInp.value = thisYear;
+
+    // 연도 입력 제한 (최대 올해 년도)
+    yearInp.setAttribute('max', String(thisYear));
+    // 필요 시 최소년도도 설정
+    yearInp.setAttribute('min', '2000');
+    yearInp.setAttribute('step', '1');
+
+    // 값이 범위를 넘으면 보정
+    function clampYearInput() {
+      let y = parseInt(yearInp.value, 10);
+      if (Number.isNaN(y)) { yearInp.value = thisYear; return; }
+      if (y > thisYear) yearInp.value = thisYear;
+      if (y < 2000) yearInp.value = 2000;
+    }
+    yearInp.addEventListener('input', clampYearInput);
+    yearInp.addEventListener('change', () => { clampYearInput(); loadAndDraw(); });
+
+    // 라디오 토글에서 '매출'로 전환 시 로딩
+    document.getElementById('modeSales').addEventListener('change', async (e) => {
+      if (!e.target.checked) return;
+      document.getElementById('panel-buyers').classList.add('d-none');
+      salesCard.classList.remove('d-none');
+      await loadAndDraw();
+    });
+
+    // 유닛 선택에 따라 입력 UI를 전환
+    unitSel.addEventListener('change', () => {
+      const u = unitSel.value;
+      dateInp.classList.toggle('d-none', u !== 'DAY');
+      monthInp.classList.toggle('d-none', u !== 'WEEK');
+      yearInp.classList.toggle('d-none', u !== 'MONTH');
+
+      // YEAR는 입력 없이 바로 로딩
+      dateInp.disabled = (u === 'YEAR');
+      monthInp.disabled = (u === 'YEAR');
+      yearInp.disabled = (u === 'YEAR');
+
+      loadAndDraw();
+    });
+
+    // 입력 변경 시 즉시 갱신
+    [dateInp, monthInp].forEach(el => el.addEventListener('change', loadAndDraw));
+
+    // // 라인+면적 스타일(은은한 그라데이션)
+    // function lineFill(ctx) {
+    //   const { chartArea, ctx: c } = ctx.chart;
+    //   if (!chartArea) return '#fff';
+    //   const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+    //   g.addColorStop(0, '#fff');
+    //   g.addColorStop(1, '#fff');
+    //   return g;
+    // }
+
+    let chart;
+    async function loadAndDraw() {
+      const u = unitSel.value;
+      const params = new URLSearchParams({ unit: u });
+      if (u === 'DAY') params.set('date', dateInp.value);       // YYYY-MM-DD
+      if (u === 'WEEK') params.set('date', monthInp.value);      // YYYY-MM
+      if (u === 'MONTH') { clampYearInput(); params.set('year', yearInp.value); } // YYYY
+
+      const res = await fetch(`/admin/stats/${productId}/sales?` + params.toString(),
+        { headers: { 'Accept': 'application/json' } });
+      const json = await res.json();
+
+      const labels = json.labels ?? [];
+      const data = json.data ?? [];
+
+      // 전부 0일 때 눈금이 사라지는 것 방지
+      const maxVal = data.length ? Math.max(...data) : 0;
+      const yScale = { min: 0, beginAtZero: true, ticks: { precision: 0 } };
+      if (maxVal === 0) yScale.suggestedMax = 5;
+
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      chart?.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: '판매량',
+            data,
+            fill: true,
+            backgroundColor: 'transparent',    // ★ 혹시 모를 채움 제거
+            borderColor: 'rgba(230, 99, 132, 1)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 5,
+            tension: 0
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: { y: yScale },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} 개` } }
+          }
         }
-      },
-      plugins:[shadowPlugin, hideLegendForBar]  // 안전장치 플러그인
-    });
-  }
+      });
+    }
 
-  // 라디오 토글
-  function bindToggle(){
-    const sales  = document.getElementById('panel-sales');
-    const buyers = document.getElementById('panel-buyers');
-
-    document.getElementById('modeSales').addEventListener('change', async (e)=>{
-      if(!e.target.checked) return;
-      buyers.classList.add('d-none'); sales.classList.remove('d-none');
-      // 매출 Ajax 훅(보류)
-      // await fetch(`/admin/stats/${productId}/sales`);
-    });
-
-    document.getElementById('modeBuyers').addEventListener('change', async (e)=>{
-      if(!e.target.checked) return;
-      sales.classList.add('d-none'); buyers.classList.remove('d-none');
-      await loadBuyers();
-    });
-  }
-
-  bindToggle();
-  loadBuyers(); // 초기: 구매자
-})();
+    // 페이지 첫 로드시 ‘구매자’가 기본이므로, 매출 탭으로 바꾸면 즉시 그려진다.
+    // 만약 처음부터 매출을 보이게 하고 싶다면 아래 한 줄을 풀면 됨:
+    // loadAndDraw();
+  })();
 </script>
+
 </html>
