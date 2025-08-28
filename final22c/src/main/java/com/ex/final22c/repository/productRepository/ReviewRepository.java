@@ -56,4 +56,5 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     Page<Review> findMyLikedReviews(@Param("userNo") Long userNo, Pageable pageable);
 
     Optional<Review> findByReviewIdAndWriter_UserNo(@Param("reviewId") Long reviewId, @Param("userNo") Long userNo);
+    
 }

@@ -24,33 +24,31 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.order.Order;
-import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Grade;
 import com.ex.final22c.data.product.MainNote;
 import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.product.Volume;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseDetail;
 import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
-import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.repository.order.OrderRepository;
-import com.ex.final22c.repository.orderDetail.OrderDetailRepository;
 import com.ex.final22c.repository.payment.PaymentRepository;
 import com.ex.final22c.repository.productRepository.BrandRepository;
 import com.ex.final22c.repository.productRepository.GradeRepository;
 import com.ex.final22c.repository.productRepository.MainNoteRepository;
 import com.ex.final22c.repository.productRepository.ProductRepository;
+import com.ex.final22c.repository.productRepository.ReviewRepository;
 import com.ex.final22c.repository.productRepository.VolumeRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseDetailRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
-import com.ex.final22c.repository.refundDetail.RefundDetailRepository;
 import com.ex.final22c.repository.user.UserRepository;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -76,8 +74,7 @@ public class AdminService {
     private final PurchaseDetailRepository purchaseDetailRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
-    private final RefundDetailRepository refundDetailRepository;
-    private final OrderDetailRepository orderDetailRepository;
+    private final ReviewRepository reviewRepository;
 
     // 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
@@ -94,14 +91,40 @@ public class AdminService {
 
         };
     }
-
+    // 정지 시간 갱신
+    public void updateUserStatusIfExpired(Users user) {
+        if ("suspended".equals(user.getStatus()) && user.getBanReg() != null) {
+            // banReg가 지났으면 정지 해제
+            if (user.getBanReg().isBefore(LocalDate.now())) {
+                user.setStatus("active");
+                user.setBanReg(null);
+                userRepository.save(user);
+            }
+        }
+    }
     // 전체 회원목록
-    public Page<Users> getList(int page, String kw) {
+    public Page<Users> getList(int page, String kw, String filter) {
         List<Sort.Order> sorts = new ArrayList<>();
         sorts.add(Sort.Order.desc("reg"));
         PageRequest pageable = PageRequest.of(page, 10, Sort.by(sorts));
+
+        // 기존 검색 조건
         Specification<Users> spec = search(kw);
-        return this.userRepository.findAll(spec, pageable);
+
+        // ✅ filter 추가
+        if ("suspended".equals(filter)) {
+            spec = spec.and((root, query, cb) ->
+                cb.or(
+                    cb.equal(root.get("status"), "suspended"),
+                    cb.equal(root.get("status"), "banned")
+                )
+            );
+        }
+
+        Page<Users> result = this.userRepository.findAll(spec, pageable);
+        result.forEach(this::updateUserStatusIfExpired);
+        return result;
+        
     }
 
     // 회원 정보
@@ -619,4 +642,13 @@ public class AdminService {
         return paymentRepository.findByOrder_OrderId(orderId);
     }
     
+    // 리뷰 목록
+    public Page<Review> getReview(int page){
+    	List<Sort.Order> sorts = new ArrayList<>();
+        sorts.add(Sort.Order.desc("createDate"));
+        PageRequest pageable = PageRequest.of(page, 10, Sort.by(sorts));
+        
+        Page<Review> result = this.reviewRepository.findAll(pageable);
+        return result;
+    }
 }
