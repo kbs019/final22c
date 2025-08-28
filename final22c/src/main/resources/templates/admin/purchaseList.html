@@ -1,21 +1,38 @@
 <html layout:decorate="~{/layout/adminLayout}">
 <div layout:fragment="content" class="container">
-	<div class="container my-3">
-		<h2>발주목록</h2>
-	  <!-- 발주내역 박스 -->
-	  <div class="d-flex justify-content-between align-items-center border rounded p-3 mb-2" th:each="pur:${purList}">
-	    <div>
-	      <div class="fw-bold">발주번호: PO[[${#temporals.format(pur.reg, 'yyyyMMdd')}]]-[[${pur.purchaseId}]]</div>
-	      <div>발주일: [[${#temporals.format(pur.reg, 'yyyy-MM-dd HH:mm')}]]</div>
-	      <div>품목개수: [[${pur.count}]]종</div>
-	    </div>
-	    <div>
-			<a href="javascript:void(0);" 
-			   class="btn btn-link fs-4 text-dark view-purchase"
-			   th:attr="data-purid=${pur.purchaseId}"
-			   style="text-decoration: none; color: inherit;">&gt;</a>
-	    </div>
-	  </div>
+	
+	<h2>발주내역</h2>
+<div class="card mb-4">
+	<div class="card-header">
+		<i class="fas fa-table me-1"></i>
+			발주리스트
+		</div>
+		<div class="card-body">
+			<table id="datatablesSimple">
+				<thead>
+					<tr>
+		                <th scope="col">발주번호</th>
+		                <th scope="col">상품개수</th>
+		                <th scope="col">총 금액</th>
+		                <th scope="col">발주시간</th>
+		                <th scope="col">관리</th>
+					</tr>
+				</thead>
+				<tbody >
+					<tr th:each="pur : ${purList}" >
+		                <td th:text="${#temporals.format(pur.reg, 'yyyyMMdd')}+'-'+${pur.purchaseId}"></td>
+		                <td th:text="${pur.count}"></td>
+		                <td th:text="${#numbers.formatInteger(pur.totalPrice, 1, 'COMMA')}"></td>
+		                <td th:text="${#temporals.format(pur.reg, 'yyyy-MM-dd HH:mm')}"></td>
+		                <td>
+							<button type="button" class="btn btn-primary btn-sm open-order" th:attr="data-purid=${pur.purchaseId}">
+							    상세보기
+							</button>
+						</td>
+	            	</tr>
+				</tbody>
+			</table>
+		</div>
 	</div>
 	
 	<!-- 발주 상세 모달 -->
