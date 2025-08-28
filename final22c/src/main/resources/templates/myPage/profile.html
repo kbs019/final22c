@@ -1,11 +1,116 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<div layout:fragment="content">
+
+  <!-- 페이지 공용 레이아웃 유틸(글로벌에 있다면 생략) -->
+  <style>
+    .mp-grid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start}
+    .mp-col-left{position:sticky;top:24px;align-self:start}
+    .mypage-body{max-width:900px;margin:0 auto}
+    .page-title{font-size:20px;font-weight:800;margin:0 0 12px}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px}
+    .row{display:flex;gap:12px}
+    .field{margin:10px 0}
+    .field>label{display:block;margin-bottom:6px;font-weight:700}
+    .field>input{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px}
+    .btn{padding:8px 12px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+    .btn.primary{background:#111827;color:#fff;border-color:#111827}
+    .error{color:#dc2626;margin-top:6px}
+    .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);border:0}
+  </style>
+
+  <section class="mypage-wrap">
+    <div class="mp-grid">
+
+      <!-- 좌측: 페이지 이동용 사이드박스 -->
+      <div class="mp-col-left"
+           th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+
+      <!-- 우측: 본문 -->
+      <div class="mp-col-right">
+        <section class="mypage-body" role="region" aria-labelledby="pageTitle">
+          <h1 id="pageTitle" class="sr-only">마이페이지 - 개인정보</h1>
+          <h2 class="page-title">개인정보</h2>
+
+          <!-- (A) 인증 안 된 상태: 비밀번호 확인 가드 -->
+          <div class="card" th:if="${verified == null || !verified}">
+            <p style="margin:0 0 10px">보안을 위해 비밀번호를 다시 입력해 주세요.</p>
+            <div class="row">
+              <input id="guardPassword" type="password" placeholder="비밀번호" style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+              <button id="guardSubmit" class="btn primary">확인</button>
+            </div>
+            <div id="guardError" class="error" aria-live="polite"></div>
+            <p style="color:#6b7280;margin-top:8px">확인 후 5분 간 재인증 없이 접근할 수 있습니다.</p>
+          </div>
+
+          <!-- (B) 인증된 상태: 실제 프로필 폼 -->
+          <div class="card" th:if="${verified}">
+            <form th:action="@{/mypage/profile}" method="post" id="profileForm">
+              <!-- 서버에서 me 내려준다고 가정(컨트롤러에서 model.addAttribute("me", me)) -->
+              <div class="field">
+                <label for="email">이메일</label>
+                <input id="email" name="email" th:value="${me.email}" readonly>
+              </div>
+
+              <div class="row">
+                <div class="field" style="flex:1">
+                  <label for="name">이름</label>
+                  <input id="name" name="name" th:value="${me.name}">
+                </div>
+                <div class="field" style="flex:1">
+                  <label for="phone">전화번호</label>
+                  <input id="phone" name="phone" th:value="${me.phone}">
+                </div>
+              </div>
+
+              <!-- 필요 시 비밀번호 변경 섹션 -->
+              <div class="field">
+                <label for="newPw">새 비밀번호 (선택)</label>
+                <input id="newPw" name="newPassword" type="password" placeholder="변경 시에만 입력">
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+                <button type="submit" class="btn primary">저장</button>
+              </div>
+            </form>
+          </div>
+
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // 비번 가드 AJAX (/mypage/profile/verify)
+    (function () {
+      const btn = document.getElementById('guardSubmit');
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
+        const pw = (document.getElementById('guardPassword')?.value || '').trim();
+        const errEl = document.getElementById('guardError');
+        errEl.textContent = '';
+        if (!pw) { errEl.textContent = '비밀번호를 입력해 주세요.'; return; }
+
+        const csrfH = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
+        const csrfT = document.querySelector('meta[name="_csrf"]')?.content || '';
+
+        try {
+          const res = await fetch('/mypage/profile/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(csrfT ? { [csrfH]: csrfT } : {}) },
+            body: JSON.stringify({ password: pw }),
+            credentials: 'same-origin'
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.message || '인증 실패');
+          location.reload(); // 인증 성공 → 동일 페이지 재진입(verified=true로 렌더)
+        } catch (e) {
+          errEl.textContent = e.message || '인증 중 오류가 발생했습니다.';
+        }
+      });
+    })();
+  </script>
+
+</div>
 </html>

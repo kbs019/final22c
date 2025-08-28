@@ -1,173 +1,431 @@
 <!-- src/main/resources/templates/myPage/activity.html -->
-<html xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout/layout}">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
 
-<style>
-  .mypage-body{max-width:900px;margin:0 auto}
-  .pill-tabs{display:inline-flex;border:1px solid #e5e7eb;border-radius:9999px;overflow:hidden;background:#fff}
-  .pill-tabs button{border:0;background:#fff;padding:10px 18px;cursor:pointer;font-weight:700}
-  .pill-tabs button:hover{background:#e8f0ff}
-  .pill-tabs button.is-active{background:#2563eb;color:#fff}
-  .list-wrap{margin-top:16px;display:grid;gap:14px}
-  .card{display:grid;grid-template-columns:88px 1fr auto;gap:16px;align-items:start;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px}
-  .thumb{width:88px;height:88px;border-radius:10px;object-fit:cover;background:#f3f4f6}
-  .title{font-weight:800}
-  .meta{color:#6b7280;font-size:13px;margin-top:2px}
-  .rating{font-weight:700;color:#2563eb;margin-left:6px}
-  .content{margin-top:8px;line-height:1.55;white-space:pre-wrap}
-  .actions a,.actions button{border:1px solid #e5e7eb;border-radius:10px;padding:6px 10px;background:#fff;cursor:pointer}
-  .actions a:hover,.actions button:hover{background:#f3f7ff}
-  .empty{padding:36px 12px;text-align:center;color:#9ca3af;border:1px dashed #e5e7eb;border-radius:12px;background:#fafafa}
-  .pager{display:flex;gap:6px;align-items:center;justify-content:center;margin:16px 0}
-  .pager .page-btn{border:1px solid #e5e7eb;background:#fff;padding:6px 10px;border-radius:8px;cursor:pointer}
-  .pager .page-btn[aria-current="page"]{background:#2563eb;color:#fff}
-  .pager .status{margin-right:8px;color:#6b7280;font-size:13px}
+  <style>
+    .mypage-body {
+      max-width: 900px;
+      margin: 0 auto
+    }
 
-  /* 공통 모달 */
-  .amodal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2000;}
-  .amodal.is-open{display:flex;}
-  .amodal__backdrop{position:absolute; inset:0; background:rgba(0,0,0,.45);}
-  .amodal__box{position:relative; width:min(92vw, 520px); background:#fff; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.25); padding:16px; z-index:1}
-  .amodal__head{display:flex; gap:12px; align-items:center; margin-bottom:10px;}
-  .amodal__thumb{width:72px; height:72px; border-radius:10px; overflow:hidden; background:#f3f4f6; flex:0 0 72px;}
-  .amodal__thumb img{width:100%; height:100%; object-fit:cover;}
-  .amodal__title{font-weight:800; line-height:1.3;}
-  .amodal__body{margin-top:8px;}
-  .amodal__actions{display:flex; gap:8px; justify-content:flex-end; margin-top:12px;}
-  .amodal__btn{border:1px solid #e5e7eb; background:#f9fafb; padding:8px 12px; border-radius:10px; cursor:pointer}
-  .amodal__btn--primary{background:#111827; color:#fff; border-color:#111827;}
-</style>
+    .pill-tabs {
+      display: inline-flex;
+      border: 1px solid #e5e7eb;
+      border-radius: 9999px;
+      overflow: hidden;
+      background: #fff
+    }
 
-<section class="mypage-body">
-  <h2 style="font-size:20px;font-weight:800;margin-bottom:12px">활동내역</h2>
+    .pill-tabs button {
+      border: 0;
+      background: #fff;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-weight: 700
+    }
 
-  <div class="pill-tabs" role="tablist" aria-label="활동 분류">
-    <button id="tab-reviews" class="is-active" data-tab="reviews" role="tab" aria-selected="true">리뷰</button>
-    <button id="tab-likes" data-tab="likes" role="tab" aria-selected="false">공감</button>
-  </div>
+    .pill-tabs button:hover {
+      background: #e8f0ff
+    }
 
-  <div id="list" class="list-wrap" aria-live="polite"></div>
+    .pill-tabs button.is-active {
+      background: #2563eb;
+      color: #fff
+    }
 
-  <nav id="pager" class="pager" aria-label="페이지네이션" hidden>
-    <span class="status" id="pagerStatus"></span>
-    <div id="pagerBtns"></div>
-  </nav>
-</section>
+    .list-wrap {
+      margin-top: 16px;
+      display: grid;
+      gap: 14px
+    }
 
-<!-- 수정 모달 -->
-<div id="editModal" class="amodal" aria-hidden="true">
-  <div class="amodal__backdrop" data-close></div>
-  <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="editTitle">
-    <div class="amodal__head">
-      <div class="amodal__thumb"><img id="emImg" src="/img/noimg.png" alt=""></div>
-      <div>
-        <div class="amodal__title" id="emTitle">상품명</div>
-        <div class="meta" id="emBrand">브랜드</div>
+    .card {
+      display: grid;
+      grid-template-columns: 88px 1fr auto;
+      gap: 16px;
+      align-items: start;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px 16px
+    }
+
+    .thumb {
+      width: 88px;
+      height: 88px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #f3f4f6
+    }
+
+    .title {
+      font-weight: 800
+    }
+
+    .meta {
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 2px
+    }
+
+    .rating {
+      font-weight: 700;
+      color: #2563eb;
+      margin-left: 6px
+    }
+
+    .content {
+      margin-top: 8px;
+      line-height: 1.55;
+      white-space: pre-wrap
+    }
+
+    .actions a,
+    .actions button {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 6px 10px;
+      background: #fff;
+      cursor: pointer
+    }
+
+    .actions a:hover,
+    .actions button:hover {
+      background: #f3f7ff
+    }
+
+    .empty {
+      padding: 36px 12px;
+      text-align: center;
+      color: #9ca3af;
+      border: 1px dashed #e5e7eb;
+      border-radius: 12px;
+      background: #fafafa
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      margin: 16px 0
+    }
+
+    .pager .page-btn {
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer
+    }
+
+    .pager .page-btn[aria-current="page"] {
+      background: #2563eb;
+      color: #fff
+    }
+
+    .pager .status {
+      margin-right: 8px;
+      color: #6b7280;
+      font-size: 13px
+    }
+
+    /* 공통 모달 */
+    .amodal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .amodal.is-open {
+      display: flex;
+    }
+
+    .amodal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+    }
+
+    .amodal__box {
+      position: relative;
+      width: min(92vw, 520px);
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+      padding: 16px;
+      z-index: 1
+    }
+
+    .amodal__head {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .amodal__thumb {
+      width: 72px;
+      height: 72px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #f3f4f6;
+      flex: 0 0 72px;
+    }
+
+    .amodal__thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .amodal__title {
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .amodal__body {
+      margin-top: 8px;
+    }
+
+    .amodal__actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    .amodal__btn {
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer
+    }
+
+    .amodal__btn--primary {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    /* 좌/우 2단 */
+    .mp-grid {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* 좌측 컬럼(사이드박스) 고정 */
+    .mp-col-left {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+    }
+
+    /* 사이드박스 스타일 */
+    .mp-sidebox__title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+
+    .mp-sidebox__nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mp-sidebox__link {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #111827;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+    }
+
+    .mp-sidebox__link:hover {
+      background: #f3f7ff;
+    }
+
+    .mp-sidebox__link.is-active {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    /* 스크린리더용 유틸(이미 쓰고 있으니 없으면 추가) */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      border: 0;
+    }
+  </style>
+
+  <section class="mypage-wrap">
+    <div class="mp-grid">
+      <!-- 좌측: 사이드박스 -->
+      <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+
+      <!-- 우측: 본문 -->
+      <div class="mp-col-right">
+        <section class="mypage-body" role="region" aria-labelledby="pageTitle">
+          <h1 id="pageTitle" class="sr-only">마이페이지 - 활동내역</h1>
+          <h2 style="font-size:20px;font-weight:800;margin-bottom:12px">활동내역</h2>
+
+          <!-- 탭 -->
+          <div class="pill-tabs" role="tablist" aria-label="활동 분류">
+            <button id="tab-reviews" class="is-active" role="tab" aria-selected="true" aria-controls="panel-reviews"
+              data-tab="reviews">리뷰</button>
+            <button id="tab-likes" role="tab" aria-selected="false" aria-controls="panel-likes"
+              data-tab="likes">공감</button>
+          </div>
+
+          <!-- 탭패널: 리뷰 -->
+          <div id="panel-reviews" role="tabpanel" tabindex="0" aria-labelledby="tab-reviews">
+            <div id="list" class="list-wrap" aria-live="polite"></div>
+
+            <nav id="pager" class="pager" aria-label="페이지네이션" hidden>
+              <span class="status" id="pagerStatus"></span>
+              <div id="pagerBtns"></div>
+            </nav>
+          </div>
+
+          <!-- 탭패널: 공감(초기 비표시) -->
+          <div id="panel-likes" role="tabpanel" tabindex="0" aria-labelledby="tab-likes" hidden></div>
+
+          <!-- 수정 모달 -->
+          <div id="editModal" class="amodal" aria-hidden="true">
+            <div class="amodal__backdrop" data-close></div>
+            <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+              <div class="amodal__head">
+                <div class="amodal__thumb"><img id="emImg" src="/img/noimg.png" alt=""></div>
+                <div>
+                  <div class="amodal__title" id="editTitle">상품명</div>
+                  <div class="meta" id="emBrand">브랜드</div>
+                </div>
+              </div>
+              <div class="amodal__body">
+                <textarea id="emContent" rows="6"
+                  style="width:100%; border:1px solid #e5e7eb; border-radius:10px; padding:10px; resize:none"
+                  placeholder="리뷰 내용을 입력하세요"></textarea>
+              </div>
+              <div class="amodal__actions">
+                <button class="amodal__btn" data-close>닫기</button>
+                <button class="amodal__btn amodal__btn--primary" id="emSave">수정</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 삭제 모달 -->
+          <div id="deleteModal" class="amodal" aria-hidden="true">
+            <div class="amodal__backdrop" data-close></div>
+            <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+              <div class="amodal__body" id="delTitle" style="font-weight:700; margin-bottom:8px;">리뷰를 삭제하시겠습니까?</div>
+              <div class="amodal__actions">
+                <button class="amodal__btn" data-close>아니요</button>
+                <button class="amodal__btn amodal__btn--primary" id="dmYes">예</button>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
-    <div class="amodal__body">
-      <textarea id="emContent" rows="6" style="width:100%; border:1px solid #e5e7eb; border-radius:10px; padding:10px; resize:none" placeholder="리뷰 내용을 입력하세요"></textarea>
-    </div>
-    <div class="amodal__actions">
-      <button class="amodal__btn" data-close>닫기</button>
-      <button class="amodal__btn amodal__btn--primary" id="emSave">수정</button>
-    </div>
-  </div>
-</div>
+  </section>
 
-<!-- 삭제 모달 -->
-<div id="deleteModal" class="amodal" aria-hidden="true">
-  <div class="amodal__backdrop" data-close></div>
-  <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="delTitle">
-    <div class="amodal__body" id="delTitle" style="font-weight:700; margin-bottom:8px;">리뷰를 삭제하시겠습니까?</div>
-    <div class="amodal__actions">
-      <button class="amodal__btn" data-close>아니요</button>
-      <button class="amodal__btn amodal__btn--primary" id="dmYes">예</button>
-    </div>
-  </div>
-</div>
+  <script>
+    (function () {
+      const listEl = document.getElementById('list');
+      const pagerEl = document.getElementById('pager');
+      const pagerBtns = document.getElementById('pagerBtns');
+      const pagerStatus = document.getElementById('pagerStatus');
+      const tabs = document.querySelectorAll('.pill-tabs button');
 
-<script>
-(function(){
-  const listEl   = document.getElementById('list');
-  const pagerEl  = document.getElementById('pager');
-  const pagerBtns= document.getElementById('pagerBtns');
-  const pagerStatus = document.getElementById('pagerStatus');
-  const tabs = document.querySelectorAll('.pill-tabs button');
+      // --- 상태
+      const state = { tab: 'reviews', page: 0, size: 10, totalPages: 0 };
 
-  // --- 상태
-  const state = { tab:'reviews', page:0, size:10, totalPages:0 };
+      // --- 초기 탭 결정: ?tab=likes | ?tab=reviews | (없으면 reviews)
+      function getInitialTab() {
+        const params = new URLSearchParams(location.search);
+        const p = (params.get('tab') || '').toLowerCase();
+        return (p === 'likes' || p === 'reviews') ? p : 'reviews';
+      }
 
-  // --- 초기 탭 결정: ?tab=likes | ?tab=reviews | (없으면 reviews)
-  function getInitialTab(){
-    const params = new URLSearchParams(location.search);
-    const p = (params.get('tab') || '').toLowerCase();
-    return (p === 'likes' || p === 'reviews') ? p : 'reviews';
-  }
+      // --- 탭 활성화 + URL 동기화
+      function setActiveTab(tab) {
+        state.tab = (tab === 'likes') ? 'likes' : 'reviews';
+        tabs.forEach(b => {
+          const on = (b.dataset.tab === state.tab);
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        const url = new URL(location.href);
+        url.searchParams.set('tab', state.tab);
+        history.replaceState({}, '', url);
+      }
 
-  // --- 탭 활성화 + URL 동기화
-  function setActiveTab(tab){
-    state.tab = (tab === 'likes') ? 'likes' : 'reviews';
-    tabs.forEach(b=>{
-      const on = (b.dataset.tab === state.tab);
-      b.classList.toggle('is-active', on);
-      b.setAttribute('aria-selected', on ? 'true' : 'false');
-    });
-    const url = new URL(location.href);
-    url.searchParams.set('tab', state.tab);
-    history.replaceState({}, '', url);
-  }
+      // --- 데이터 로드
+      function fetchAndRender() {
+        const url = state.tab === 'reviews'
+          ? `/mypage/reviews?page=${state.page}&size=${state.size}`
+          : `/mypage/likes?page=${state.page}&size=${state.size}`;
 
-  // --- 데이터 로드
-  function fetchAndRender(){
-    const url = state.tab === 'reviews'
-      ? `/mypage/reviews?page=${state.page}&size=${state.size}`
-      : `/mypage/likes?page=${state.page}&size=${state.size}`;
+        fetch(url)
+          .then(r => {
+            const ct = r.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) throw new Error('NOT_JSON');
+            return r.json();
+          })
+          .then(data => {
+            state.totalPages = data.totalPages || 0;
+            if (state.tab === 'reviews') renderReviewCards(data.content || []);
+            else renderLikeCards(data.content || []);
+            renderPager(data);
+          })
+          .catch(err => {
+            console.error(err);
+            listEl.innerHTML = `<div class="empty">목록을 불러오지 못했습니다.</div>`;
+            pagerEl.hidden = true;
+          });
+      }
 
-    fetch(url)
-      .then(r=>{
-        const ct = r.headers.get('content-type')||'';
-        if(!ct.includes('application/json')) throw new Error('NOT_JSON');
-        return r.json();
-      })
-      .then(data=>{
-        state.totalPages = data.totalPages || 0;
-        if(state.tab === 'reviews') renderReviewCards(data.content||[]);
-        else renderLikeCards(data.content||[]);
-        renderPager(data);
-      })
-      .catch(err=>{
-        console.error(err);
-        listEl.innerHTML = `<div class="empty">목록을 불러오지 못했습니다.</div>`;
-        pagerEl.hidden = true;
+      // --- 탭 클릭
+      tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.page = 0;
+          setActiveTab(btn.dataset.tab);
+          fetchAndRender();
+        });
       });
-  }
 
-  // --- 탭 클릭
-  tabs.forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      state.page = 0;
-      setActiveTab(btn.dataset.tab);
-      fetchAndRender();
-    });
-  });
+      // ========== 여기부터 카드 렌더링 구현 ==========
+      function renderReviewCards(items) {
+        if (!items.length) {
+          listEl.innerHTML = `<div class="empty">작성한 리뷰가 없습니다.</div>`;
+          return;
+        }
+        listEl.innerHTML = items.map(it => {
+          const href = it.productId ? (`/main/content/${it.productId}`) : '#';
+          const img = it.imageUrl || '/img/noimg.png';
+          const name = it.productName || '상품명';
+          const brand = it.brandName || '브랜드';
+          const date = it.createDate || '';
+          const rating = (it.rating ?? 0);
+          const content = esc(it.content || '');
 
-  // ========== 여기부터 카드 렌더링 구현 ==========
-  function renderReviewCards(items){
-    if(!items.length){
-      listEl.innerHTML = `<div class="empty">작성한 리뷰가 없습니다.</div>`;
-      return;
-    }
-    listEl.innerHTML = items.map(it=>{
-      const href  = it.productId ? (`/main/content/${it.productId}`) : '#';
-      const img   = it.imageUrl || '/img/noimg.png';
-      const name  = it.productName || '상품명';
-      const brand = it.brandName || '브랜드';
-      const date  = it.createDate || '';
-      const rating= (it.rating ?? 0);
-      const content = esc(it.content || '');
-
-      return `
+          return `
         <article class="card" data-id="${it.reviewId}">
           <img class="thumb" src="${esc(img)}" alt="">
           <div>
@@ -181,24 +439,24 @@
           </div>
         </article>
       `;
-    }).join('');
-  }
+        }).join('');
+      }
 
-  function renderLikeCards(items){
-    if(!items.length){
-      listEl.innerHTML = `<div class="empty">공감한 리뷰가 없습니다.</div>`;
-      return;
-    }
-    listEl.innerHTML = items.map(it=>{
-      const href  = it.productId ? (`/main/content/${it.productId}`) : '#';
-      const img   = it.imageUrl || '/img/noimg.png';
-      const name  = it.productName || '상품명';
-      const brand = it.brandName || '브랜드';
-      const rating= (it.rating ?? 0);
-      const date  = it.createDate || '';
-      const content = esc(it.content || '');
+      function renderLikeCards(items) {
+        if (!items.length) {
+          listEl.innerHTML = `<div class="empty">공감한 리뷰가 없습니다.</div>`;
+          return;
+        }
+        listEl.innerHTML = items.map(it => {
+          const href = it.productId ? (`/main/content/${it.productId}`) : '#';
+          const img = it.imageUrl || '/img/noimg.png';
+          const name = it.productName || '상품명';
+          const brand = it.brandName || '브랜드';
+          const rating = (it.rating ?? 0);
+          const date = it.createDate || '';
+          const content = esc(it.content || '');
 
-      return `
+          return `
         <article class="card" data-id="${it.reviewId}">
           <img class="thumb" src="${esc(img)}" alt="">
           <div>
@@ -215,178 +473,221 @@
           </div>
         </article>
       `;
-    }).join('');
+        }).join('');
 
-    // 공감 취소 이벤트 바인딩
-    listEl.querySelectorAll('.btn-unlike').forEach(btn=>{
-      btn.addEventListener('click', async ()=>{
-        const id = btn.dataset.id;
-        try{
-          const res = await fetch(`/mypage/likes/${id}`, { method:'DELETE', credentials:'same-origin' });
-          if(!res.ok) throw new Error();
-          fetchAndRender();
-        }catch(e){ alert('공감 취소 중 오류가 발생했습니다.'); }
-      });
-    });
-  }
-  // ========== 카드 렌더링 끝 ==========
+        // 공감 취소 이벤트 바인딩
+        listEl.querySelectorAll('.btn-unlike').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            try {
+              const res = await fetch(`/mypage/likes/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+              if (!res.ok) throw new Error();
+              fetchAndRender();
+            } catch (e) { alert('공감 취소 중 오류가 발생했습니다.'); }
+          });
+        });
+      }
+      // ========== 카드 렌더링 끝 ==========
 
-  function renderPager(data){
-    const total = data.totalPages || 0;
-    if(total <= 1){ pagerEl.hidden = true; return; }
-    pagerEl.hidden = false;
-    pagerStatus.textContent = `현재 ${data.page+1} / ${total} 페이지`;
-    pagerBtns.innerHTML = Array.from({length: total}, (_,i)=>
-      `<button type="button" class="page-btn" ${i===data.page?'aria-current="page"':''} data-page="${i}">${i+1}</button>`
-    ).join('');
-    pagerBtns.querySelectorAll('.page-btn').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        state.page = Number(b.dataset.page);
-        fetchAndRender();
-      });
-    });
-  }
+      function renderPager(data) {
+        const total = Math.max(0, Number(data.totalPages) || 0);
+        const page = Math.min(Math.max(0, Number(data.page) || 0), Math.max(0, total - 1));
 
-  function esc(s){
-    return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[m]));
-  }
+        if (total <= 1) { pagerEl.hidden = true; return; }
+        pagerEl.hidden = false;
 
-  // --- 초기 실행
-  setActiveTab(getInitialTab());
-  fetchAndRender();
-})();
+        pagerStatus.textContent = `현재 ${page + 1} / ${total} 페이지`;
 
-(function(){
-  // ===== 공통 =====
-  const listEl = document.getElementById('list');
+        const isFirst = page === 0;
+        const isLast = page === total - 1;
 
-  function getCsrf(){
-    const t = document.querySelector('meta[name="_csrf"]')?.content || '';
-    const h = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
-    return {header:h, token:t};
-  }
+        // 버튼 HTML 생성(aria-current는 활성 페이지만)
+        const pagesHtml = Array.from({ length: total }, (_, i) => {
+          const currentAttr = i === page ? ' aria-current="page"' : '';
+          return `<button type="button" class="page-btn"${currentAttr} data-page="${i}">${i + 1}</button>`;
+        }).join('');
 
-  // 간단 모달 유틸
-  function openModal(el){ el?.classList.add('is-open'); }
-  function closeModal(el){ el?.classList.remove('is-open'); }
+        pagerBtns.innerHTML = `
+          <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
+          <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
+          ${pagesHtml}
+          <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="다음 페이지">›</button>
+          <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
+        `;
 
-  document.addEventListener('click', (e)=>{
-    if(e.target.matches('[data-close], .amodal__backdrop')) {
-      const m = e.target.closest('.amodal'); closeModal(m);
-    }
-  });
+        // 클릭 핸들러
+        pagerBtns.querySelectorAll('.page-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (btn.disabled) return;
 
-  // ====== 수정 모달 ======
-  const em = document.getElementById('editModal');
-  const emImg = document.getElementById('emImg');
-  const emTitle = document.getElementById('emTitle');
-  const emBrand = document.getElementById('emBrand');
-  const emContent = document.getElementById('emContent');
-  const emSave = document.getElementById('emSave');
-  let currentReviewId = null;
+            const nav = btn.dataset.nav;
+            let next = page;
 
-  // 수정 모달 열기 부분만 교체
-  listEl.addEventListener('click', async (e)=>{
-    const a = e.target.closest('.btn-edit');
-    if(!a) return;
-    e.preventDefault();
+            if (nav === 'first') next = 0;
+            else if (nav === 'prev') next = Math.max(0, page - 1);
+            else if (nav === 'next') next = Math.min(total - 1, page + 1);
+            else if (nav === 'last') next = total - 1;
+            else if (btn.dataset.page != null) next = Number(btn.dataset.page);
 
-    const card = a.closest('.card');
-    const reviewId = card?.dataset.id;
-    if(!reviewId) return;
+            if (next === page) return;
 
-    try{
-      const res = await fetch(`/mypage/reviews/${reviewId}`, {
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin'
-      });
+            // 포커스 유지(접근성)
+            const keepFocus = () => {
+              const selector = `.page-btn[data-page="${next}"]`;
+              const nextBtn = pagerBtns.querySelector(selector) || pagerBtns.querySelector('.nav-next');
+              nextBtn?.focus();
+            };
 
-      // 권한/세션 만료 처리
-      if (res.status === 401 || res.status === 403) {
-        alert('로그인이 필요합니다.');
-        location.href = '/user/login';
-        return;
+            state.page = next;
+            fetchAndRender();
+            // fetchAndRender 후 다시 렌더링되므로 약간 늦춰 포커스 이동
+            setTimeout(keepFocus, 0);
+          });
+        });
       }
 
-      // JSON인지 확인(리다이렉트되어 HTML 오면 파싱 전에 걸러냄)
-      const ct = res.headers.get('content-type') || '';
-      if (!ct.includes('application/json')) {
-        throw new Error('NOT_JSON');
+
+      function esc(s) {
+        return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
       }
 
-      const d = await res.json();
+      // --- 초기 실행
+      setActiveTab(getInitialTab());
+      fetchAndRender();
+    })();
 
-      // 모달 채우기
-      emImg.src    = d.imageUrl || '/img/noimg.png';
-      emTitle.textContent = d.productName || '상품명';
-      emBrand.textContent = d.brandName || '';
-      emContent.value     = d.content || '';
-      currentReviewId = reviewId;
-      openModal(em);
-    }catch(err){
-      console.error(err);
-      alert('리뷰 정보를 불러오지 못했습니다.');
-    }
-  });
+    (function () {
+      // ===== 공통 =====
+      const listEl = document.getElementById('list');
 
-  // 저장
-  emSave.addEventListener('click', async ()=>{
-    if(!currentReviewId) return;
-    const content = emContent.value.trim();
-    if(!content){ alert('내용을 입력해 주세요.'); emContent.focus(); return; }
+      function getCsrf() {
+        const t = document.querySelector('meta[name="_csrf"]')?.content || '';
+        const h = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
+        return { header: h, token: t };
+      }
 
-    const {header, token} = getCsrf();
-    try{
-      const res = await fetch(`/mypage/reviews/${currentReviewId}`, {
-        method:'PUT',
-        headers:{'Content-Type':'application/json', ...(token?{[header]:token}:{})},
-        body: JSON.stringify({content})
+      // 간단 모달 유틸
+      function openModal(el) { el?.classList.add('is-open'); }
+      function closeModal(el) { el?.classList.remove('is-open'); }
+
+      document.addEventListener('click', (e) => {
+        if (e.target.matches('[data-close], .amodal__backdrop')) {
+          const m = e.target.closest('.amodal'); closeModal(m);
+        }
       });
-      const d = await res.json().catch(()=> ({}));
-      if(!res.ok || !d.ok){ throw new Error(d.message || '수정 실패'); }
-      closeModal(em);
-      // 목록 갱신 (fetchAndRender는 기존 스크립트에 있음)
-      if(typeof fetchAndRender === 'function') fetchAndRender();
-      else location.reload();
-    }catch(err){
-      alert(err.message || '수정 중 오류가 발생했습니다.');
-    }
-  });
 
-  // ====== 삭제 모달 ======
-  const dm = document.getElementById('deleteModal');
-  const dmYes = document.getElementById('dmYes');
+      // ====== 수정 모달 ======
+      const em = document.getElementById('editModal');
+      const emImg = document.getElementById('emImg');
+      const emTitle = document.getElementById('emTitle');
+      const emBrand = document.getElementById('emBrand');
+      const emContent = document.getElementById('emContent');
+      const emSave = document.getElementById('emSave');
+      let currentReviewId = null;
 
-  listEl.addEventListener('click', (e)=>{
-    const a = e.target.closest('.btn-delete');
-    if(!a) return;
-    e.preventDefault();
-    const card = a.closest('.card');
-    const reviewId = card?.dataset.id;
-    if(!reviewId) return;
-    currentReviewId = reviewId;
-    openModal(dm);
-  });
+      // 수정 모달 열기 부분만 교체
+      listEl.addEventListener('click', async (e) => {
+        const a = e.target.closest('.btn-edit');
+        if (!a) return;
+        e.preventDefault();
 
-  dmYes.addEventListener('click', async ()=>{
-    if(!currentReviewId) return;
-    const {header, token} = getCsrf();
-    try{
-      const res = await fetch(`/mypage/reviews/${currentReviewId}`, {
-        method:'DELETE',
-        headers: token ? {[header]: token} : {},
+        const card = a.closest('.card');
+        const reviewId = card?.dataset.id;
+        if (!reviewId) return;
+
+        try {
+          const res = await fetch(`/mypage/reviews/${reviewId}`, {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+          });
+
+          // 권한/세션 만료 처리
+          if (res.status === 401 || res.status === 403) {
+            alert('로그인이 필요합니다.');
+            location.href = '/user/login';
+            return;
+          }
+
+          // JSON인지 확인(리다이렉트되어 HTML 오면 파싱 전에 걸러냄)
+          const ct = res.headers.get('content-type') || '';
+          if (!ct.includes('application/json')) {
+            throw new Error('NOT_JSON');
+          }
+
+          const d = await res.json();
+
+          // 모달 채우기
+          emImg.src = d.imageUrl || '/img/noimg.png';
+          emTitle.textContent = d.productName || '상품명';
+          emBrand.textContent = d.brandName || '';
+          emContent.value = d.content || '';
+          currentReviewId = reviewId;
+          openModal(em);
+        } catch (err) {
+          console.error(err);
+          alert('리뷰 정보를 불러오지 못했습니다.');
+        }
       });
-      const d = await res.json().catch(()=> ({}));
-      if(!res.ok || d.ok !== true) throw new Error(d.message || '삭제 실패');
-      closeModal(dm);
-      if(typeof fetchAndRender === 'function') fetchAndRender();
-      else location.reload();
-    }catch(err){
-      alert(err.message || '삭제 중 오류가 발생했습니다.');
-    }
-  });
-})();
-</script>
+
+      // 저장
+      emSave.addEventListener('click', async () => {
+        if (!currentReviewId) return;
+        const content = emContent.value.trim();
+        if (!content) { alert('내용을 입력해 주세요.'); emContent.focus(); return; }
+
+        const { header, token } = getCsrf();
+        try {
+          const res = await fetch(`/mypage/reviews/${currentReviewId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...(token ? { [header]: token } : {}) },
+            body: JSON.stringify({ content })
+          });
+          const d = await res.json().catch(() => ({}));
+          if (!res.ok || !d.ok) { throw new Error(d.message || '수정 실패'); }
+          closeModal(em);
+          // 목록 갱신 (fetchAndRender는 기존 스크립트에 있음)
+          if (typeof fetchAndRender === 'function') fetchAndRender();
+          else location.reload();
+        } catch (err) {
+          alert(err.message || '수정 중 오류가 발생했습니다.');
+        }
+      });
+
+      // ====== 삭제 모달 ======
+      const dm = document.getElementById('deleteModal');
+      const dmYes = document.getElementById('dmYes');
+
+      listEl.addEventListener('click', (e) => {
+        const a = e.target.closest('.btn-delete');
+        if (!a) return;
+        e.preventDefault();
+        const card = a.closest('.card');
+        const reviewId = card?.dataset.id;
+        if (!reviewId) return;
+        currentReviewId = reviewId;
+        openModal(dm);
+      });
+
+      dmYes.addEventListener('click', async () => {
+        if (!currentReviewId) return;
+        const { header, token } = getCsrf();
+        try {
+          const res = await fetch(`/mypage/reviews/${currentReviewId}`, {
+            method: 'DELETE',
+            headers: token ? { [header]: token } : {},
+          });
+          const d = await res.json().catch(() => ({}));
+          if (!res.ok || d.ok !== true) throw new Error(d.message || '삭제 실패');
+          closeModal(dm);
+          if (typeof fetchAndRender === 'function') fetchAndRender();
+          else location.reload();
+        } catch (err) {
+          alert(err.message || '삭제 중 오류가 발생했습니다.');
+        }
+      });
+    })();
+  </script>
 
 </div>
+
 </html>

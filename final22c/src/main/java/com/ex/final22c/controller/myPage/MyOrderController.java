@@ -17,7 +17,6 @@ import com.ex.final22c.service.order.MyOrderService;
 
 import lombok.RequiredArgsConstructor;
 
-
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/mypage")
@@ -25,11 +24,11 @@ public class MyOrderController {
 	private final MyOrderService myOrderService;
 
 	@GetMapping("/order")
-	public String listFragment(@RequestParam(name= "page", defaultValue = "0") int page,
-							   @RequestParam(name= "size",defaultValue = "10") int size,
-							   Principal principal, Model model) {
+	public String listFragment(@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "10") int size,
+			Principal principal, Model model) {
 		// 로그인 안되어 있을 시 로그인 화면으로
-		if(principal == null) {
+		if (principal == null) {
 			return "redirect:/user/login";
 		}
 
@@ -40,23 +39,24 @@ public class MyOrderController {
 	}
 
 	public String list(@RequestParam(name = "page", defaultValue = "0") int page,
-					   @RequestParam(name = "size", defaultValue = "10") int size,
-					   @RequestParam(name = "statuses", required = false) List<String> statuses,
-					   Principal principal,
-					   Model model) {
-			
-		if (principal == null) return "redirect:/user/login";
+			@RequestParam(name = "size", defaultValue = "10") int size,
+			@RequestParam(name = "statuses", required = false) List<String> statuses,
+			Principal principal,
+			Model model) {
+
+		if (principal == null)
+			return "redirect:/user/login";
 		Page<Order> orders;
-			
+
 		if (statuses == null || statuses.isEmpty()) {
-		 // 기본: PENDING 제외 (서비스에 이미 구현해 둔 메서드)
-		orders = myOrderService.listMyOrders(principal.getName(), page, size);
-		model.addAttribute("statusFilter", "EXCEPT_PENDING");
+			// 기본: PENDING 제외 (서비스에 이미 구현해 둔 메서드)
+			orders = myOrderService.listMyOrders(principal.getName(), page, size);
+			model.addAttribute("statusFilter", "EXCEPT_PENDING");
 		} else {
-		orders = myOrderService.listMyOrders(principal.getName(), page, size);
-		model.addAttribute("statusFilter", String.join(",", statuses));
+			orders = myOrderService.listMyOrders(principal.getName(), page, size);
+			model.addAttribute("statusFilter", String.join(",", statuses));
 		}
-			
+
 		model.addAttribute("orders", orders);
 		model.addAttribute("page", page);
 		model.addAttribute("size", size);
@@ -65,7 +65,7 @@ public class MyOrderController {
 
 	@GetMapping("/order/{id}/fragment")
 	public String orderItemsFragment(@PathVariable("id") Long id,
-									Principal principal, Model model) {
+			Principal principal, Model model) {
 
 		Order order = myOrderService.findMyOrderWithDetails(principal.getName(), id);
 		List<Payment> payments = myOrderService.findPaymentsofOrder(id);
@@ -74,5 +74,19 @@ public class MyOrderController {
 		return "mypage/orderDetail :: items";
 	}
 
-	
+	@GetMapping("/order/{id}")
+	public String orderDetailPage(@PathVariable("id") Long id,
+			Principal principal,
+			Model model) {
+		if (principal == null)
+			return "redirect:/user/login";
+
+		Order order = myOrderService.findMyOrderWithDetails(principal.getName(), id);
+		List<Payment> payments = myOrderService.findPaymentsofOrder(id);
+
+		model.addAttribute("order", order);
+		model.addAttribute("payments", payments);
+		model.addAttribute("section", "orders"); // 사이드박스 활성화
+		return "mypage/orderDetail"; // ← 전체 상세 페이지(레이아웃 포함) 템플릿
+	}
 }
