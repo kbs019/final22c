@@ -1,0 +1,41 @@
+<th:block th:fragment="mypageSidebox(section)">
+  <aside class="mp-sidebox" role="navigation" aria-label="마이페이지 메뉴">
+    <h2 class="mp-sidebox__title">마이페이지</h2>
+    <nav class="mp-sidebox__nav">
+      <a th:href="@{/mypage/activity}"
+         class="mp-sidebox__link"
+         th:classappend="${section}=='activity' ? ' is-active' : ''"
+         th:attrappend="${section}=='activity' ? ' aria-current=page' : ''">
+        활동내역
+      </a>
+
+      <a th:href="@{/mypage/address}"
+         class="mp-sidebox__link"
+         th:classappend="${section}=='address' ? ' is-active' : ''"
+         th:attrappend="${section}=='address' ? ' aria-current=page' : ''">
+        배송지 관리
+      </a>
+
+      <a th:href="@{/mypage/orders}"
+         class="mp-sidebox__link"
+         th:classappend="${section}=='orders' ? ' is-active' : ''"
+         th:attrappend="${section}=='orders' ? ' aria-current=page' : ''">
+        주문내역
+      </a>
+
+      <a th:href="@{/mypage/profile}"
+         class="mp-sidebox__link"
+         th:classappend="${section}=='profile' ? ' is-active' : ''"
+         th:attrappend="${section}=='profile' ? ' aria-current=page' : ''">
+        개인정보
+      </a>
+
+      <a th:href="@{/mypage/wishlist}"
+         class="mp-sidebox__link"
+         th:classappend="${section}=='wishlist' ? ' is-active' : ''"
+         th:attrappend="${section}=='wishlist' ? ' aria-current=page' : ''">
+        위시리스트
+      </a>
+    </nav>
+  </aside>
+</th:block>
