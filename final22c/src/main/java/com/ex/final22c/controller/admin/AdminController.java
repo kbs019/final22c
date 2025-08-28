@@ -36,6 +36,7 @@ import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.service.admin.AdminService;
 import com.ex.final22c.service.refund.RefundService;
+import com.ex.final22c.service.stats.StatsService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -45,6 +46,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminController {
 	private final AdminService adminService;
 	private final RefundService refundService;
+	private final StatsService statsService;
 
 	// 회원목록
 	@GetMapping("userList")
@@ -350,4 +352,40 @@ public class AdminController {
 
 		return "admin/stats";
 	}
+
+	// {id} 상품의 통계 화면
+	@GetMapping("stats/{id}")
+	public String productStatsShow(@PathVariable("id") Long id, Model model) {
+		Product p = adminService.findProduct(id);
+		model.addAttribute("product", p);
+		return "admin/stat";
+	}
+
+	// Ajax: 구매자 통계
+	@GetMapping("stats/{id}/buyers")
+	@ResponseBody
+	public Map<String, Object> productBuyerStats(@PathVariable("id") Long id) {
+		return adminService.buildBuyerStats(id);
+	}
+
+	// // (미사용) Ajax: 매출 통계 훅 - 비워둠
+	// @GetMapping("stats/{id}/sales")
+	// @ResponseBody
+	// public Map<String, Object> productSalesStats(@PathVariable("id") Long id) {
+	// 	return Map.of();
+	// }
+
+    // GET /admin/stats/{productId}/sales?unit=DAY&date=2025-08-28
+    // GET /admin/stats/{productId}/sales?unit=WEEK&date=2025-08 (YYYY-MM)
+    // GET /admin/stats/{productId}/sales?unit=MONTH&year=2025
+    // GET /admin/stats/{productId}/sales?unit=YEAR
+    @GetMapping("/stats/{id}/sales")
+	@ResponseBody
+    public Map<String, Object> salesSeries(
+            @PathVariable("id") Long id,
+            @RequestParam("unit") String unit,
+            @RequestParam(name="date", required = false) String date,
+            @RequestParam(name="year", required = false) Integer year) {
+        return statsService.buildSeries(id, unit, date, year);
+    }
 }
