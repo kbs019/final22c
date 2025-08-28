@@ -26,7 +26,17 @@
       .wx-temp{ font-size:42px; font-weight:800; line-height:1; }
       .wx-meta{ color:#6b7280; }
 
-      .tag-badge{ padding:.35rem .7rem; border-radius:999px; background:#f3f4f6; }
+      /* ★ 변경: 해시태그를 a 태그로 사용하므로 버튼 느낌 스타일 */
+      .tag-badge{
+        display:inline-block;                /* ★ 변경 */
+        padding:.35rem .7rem;
+        border-radius:999px;
+        background:#f3f4f6;
+        border:1px solid #e5e7eb;           /* ★ 변경 */
+        text-decoration:none;                /* ★ 변경 */
+        color:#111;                          /* ★ 변경 */
+      }
+      .tag-badge:hover{ background:#eef2ff; border-color:#c7d2fe; } /* ★ 추가 */
 
       .hover-up{ transition:transform .15s ease; }
       .hover-up:hover{ transform:translateY(-2px); }
@@ -58,21 +68,11 @@
 
       <!-- 추천 요약 -->
       <div class="text-end">
-        <div class="fw-semibold mb-1">오늘의 추천</div>
+        <div class="fw-semibold mb-1">오늘은 이렇게 뿌려요~</div>
         <div id="wx-tags" class="d-flex flex-wrap gap-2 justify-content-end"><!-- JS가 채움 --></div>
-        <a id="rec-more" href="/list" class="btn btn-sm btn-outline-dark mt-2">추천 상품 보기</a>
       </div>
 
     </div>
-  </div>
-
-  <!-- ===== (선택) 추천 상품 그리드: /api/reco 있으면 표시 ===== -->
-  <div id="rec-grid" style="display:none">
-    <div class="d-flex align-items-center justify-content-between mb-2">
-      <h5 class="m-0">오늘의 추천 향수</h5>
-      <a class="text-decoration-none small" id="rec-more-2" href="/list">더 보기</a>
-    </div>
-    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3" id="rec-items"><!-- JS가 삽입 --></div>
   </div>
 
 </div> <!-- /content -->
@@ -91,10 +91,12 @@
   const prEl   = $id('wx-pr');
   const cloudEl= $id('wx-cloud');
   const tagsBox= $id('wx-tags');
-  const recMore= $id('rec-more');
-  const recMore2= $id('rec-more-2');
-  const recGrid= $id('rec-grid');
-  const recItems= $id('rec-items');
+
+  /* ★ 추가: 메인노트 한글명 -> ID 매핑 (요청 라우팅 규격) */
+  const NOTE_ID_BY_NAME = {
+    '스파이시':1, '우디':2, '허벌':3, '프루티':4,
+    '구르망':5, '플로랄':6, '시트러스':7, '바닐라':8
+  };
 
   /* ----- 상태/아이콘 ----- */
   function condKo(c){
@@ -166,25 +168,22 @@
     cloudEl.textContent = wx.cloud ?? '--';
   }
 
-  /* ----- 추천 태그(메인노트명) 렌더 + 링크 ----- */
+  /* ----- 추천 태그 렌더: 각 태그를 /main/list?mainNoteIds={id} 링크로 ----- */
   function renderTags(notes, recKey){
     tagsBox.innerHTML = '';
     notes.forEach(name=>{
-      const s = document.createElement('span');
-      s.className = 'tag-badge';
-      s.textContent = '#' + name;
-      tagsBox.appendChild(s);
+      const id = NOTE_ID_BY_NAME[name];           // ★ 변경: 이름→ID
+      if (!id) return;
+      const a  = document.createElement('a');     // ★ 변경: a 태그로 링크
+      a.className   = 'tag-badge';
+      a.href        = `/main/list?mainNoteIds=${id}`;         // ★ 변경: 목적지
+      a.textContent = `#${name}`;
+      a.setAttribute('aria-label', `${name} 향수 보러가기`);
+      tagsBox.appendChild(a);
     });
-
-    // 리스트 페이지로 메인노트를 직접 전달 (다중 파라미터)
-    const qs = new URLSearchParams();
-    notes.forEach(n => qs.append('mainNote', n));   // /list?mainNote=시트러스&mainNote=플로랄...
-    const href = '/list?' + qs.toString();
-    recMore.href = href;
-    if (recMore2) recMore2.href = href;
   }
 
-  /* ----- (선택) 추천 상품 API: 메인노트 배열로 조회 ----- */
+  /* ----- (선택) 추천 상품 API: 메인노트 배열로 조회 (그대로 유지) ----- */
   async function fetchRecoByNotes(notes){
     try{
       const qs = new URLSearchParams();
@@ -195,6 +194,10 @@
     }catch(_){ return []; }
   }
   function renderReco(items){
+    const recGrid  = document.getElementById('rec-grid');
+    const recItems = document.getElementById('rec-items');
+    if(!recGrid || !recItems) return; // 페이지에 없으면 스킵
+
     if(!items || items.length === 0) return;
     recItems.innerHTML = '';
     items.forEach(p=>{
@@ -223,7 +226,7 @@
     const {key, notes} = toRec(wx);
     renderTags(notes, key);
 
-    // 추천 API가 구현되어 있다면 주석 해제
+    // (선택) 추천 카드가 있다면 사용
     const items = await fetchRecoByNotes(notes).catch(()=>[]);
     if (items.length) renderReco(items);
   }
