@@ -1,56 +1,63 @@
-<!-- final22c/src/main/resources/templates/admin/stat.html -->
 <html layout:decorate="~{/layout/adminLayout}">
 <th:block layout:fragment="css">
   <style>
-    .chart-card{min-height:420px}
-    .chart-wrap{position:relative; height:380px}
-    .placeholder{height:420px; display:flex; align-items:center; justify-content:center; color:#888}
+    /* 세그먼트형 라디오 (중앙 정렬) */
+    .segmented .btn{
+      padding:.42rem 1rem;
+      border-color:#d0d3d9;
+      background:#fff; color:#222; font-weight:600;
+    }
+    .segmented .btn:first-of-type{ border-top-left-radius:999px; border-bottom-left-radius:999px; }
+    .segmented .btn:last-of-type{  border-top-right-radius:999px; border-bottom-right-radius:999px; }
+    .segmented .btn + .btn{ margin-left:-1px; }
+    .btn-check:checked + .btn{ background:#111;border-color:#111;color:#fff;box-shadow: inset 0 2px 8px rgba(0,0,0,.2); }
+
+    /* 카드 & 차트 영역 */
+    .chart-card{ border:1px solid #e6e8eb;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);overflow:hidden; }
+    .chart-card .card-body{ background:#f6f7f9; padding:1.25rem; }
+    .chart-wrap{ position:relative; height:400px; }
+    .chart-wrap canvas{ width:100% !important; height:100% !important; display:block; }
   </style>
 </th:block>
 
 <div layout:fragment="content">
-  <div class="container my-4" 
-       th:with="p=${product}">
-    <h2 class="mb-3">상품 통계</h2>
+  <div class="container my-4" th:with="p=${product}">
+    <h2 class="mb-2">상품 통계</h2>
 
-    <!-- 상품 헤더 -->
-    <div class="mb-3">
-      <div class="d-flex align-items-center gap-3">
-        <img th:src="${p.imgPath + p.imgName}" alt="" 
-             style="width:64px;height:64px;object-fit:cover;border-radius:8px"
-             onerror="this.style.display='none'">
-        <div>
-          <div class="fw-bold fs-5" th:text="${p.name}">상품명</div>
-          <div class="text-muted">
-            <span th:text="${p.brand != null ? p.brand.brandName : '브랜드 미지정'}"></span>
-            · ID <span th:text="${p.id}"></span>
-          </div>
+    <!-- 상품 정보 -->
+    <div class="d-flex align-items-center gap-3">
+      <img th:src="${p.imgPath + p.imgName}" alt=""
+           style="width:56px;height:56px;object-fit:cover;border-radius:10px"
+           onerror="this.style.display='none'">
+      <div>
+        <div class="fw-semibold" th:text="${p.name}">상품명</div>
+        <div class="text-muted small">
+          <span th:text="${p.brand != null ? p.brand.brandName : '브랜드 미지정'}"></span>
+          · ID <span th:text="${p.id}"></span>
         </div>
       </div>
     </div>
 
-    <!-- 라디오: 매출 / 구매자 -->
-    <div class="mb-3" 
-         th:attr="data-product-id=${p.id}" 
-         id="statRoot">
-      <div class="btn-group" role="group" aria-label="toggle">
+    <!-- 라디오: 상품정보 아래 + 중앙 정렬 -->
+    <div class="w-100 d-flex justify-content-center my-3" id="statRoot" th:attr="data-product-id=${p.id}">
+      <div class="btn-group segmented" role="group" aria-label="통계 탭">
         <input type="radio" class="btn-check" name="mode" id="modeSales" value="sales">
-        <label class="btn btn-outline-dark" for="modeSales">매출</label>
+        <label class="btn" for="modeSales">매출</label>
 
         <input type="radio" class="btn-check" name="mode" id="modeBuyers" value="buyers" checked>
-        <label class="btn btn-outline-dark" for="modeBuyers">구매자</label>
+        <label class="btn" for="modeBuyers">구매자</label>
       </div>
     </div>
 
     <!-- 매출 패널 (비워둠) -->
-    <div id="panel-sales" class="card chart-card d-none">
-      <div class="card-header">매출</div>
-      <div class="card-body placeholder">준비 중…</div>
+    <div id="panel-sales" class="chart-card d-none">
+      <div class="card-body">
+        <div class="text-center text-muted py-5">매출 통계는 준비 중입니다.</div>
+      </div>
     </div>
 
     <!-- 구매자 패널 -->
-    <div id="panel-buyers" class="card chart-card">
-      <div class="card-header">구매자</div>
+    <div id="panel-buyers" class="chart-card">
       <div class="card-body">
         <div class="row g-4">
           <div class="col-md-6">
@@ -70,155 +77,142 @@
   </div>
 </div>
 
-<script layout:fragment="script" type="text/javascript">
-/* Chart.js CDN (admin 레이아웃에 없다면 아래 사용) */
-</script>
+<script layout:fragment="script" type="text/javascript"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script layout:fragment="script" type="text/javascript">
 (() => {
   const root = document.getElementById('statRoot');
   const productId = root?.dataset?.productId;
 
-  // 간단한 3D 느낌(그림자) 플러그인
+  // 입체감(그림자)
   const shadowPlugin = {
     id: 'softShadow',
-    beforeDatasetsDraw(chart, args, pluginOptions) {
-      const {ctx} = chart;
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.25)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetY = 6;
-    },
-    afterDatasetsDraw(chart, args, pluginOptions) {
-      chart.ctx.restore();
+    beforeDatasetsDraw(chart){ const {ctx}=chart; ctx.save(); ctx.shadowColor='rgba(0,0,0,0.25)'; ctx.shadowBlur=10; ctx.shadowOffsetY=6; },
+    afterDatasetsDraw(chart){ chart.ctx.restore(); }
+  };
+
+  // 막대그래프 범례를 강제로 숨기는 전용 플러그인 (안전장치)
+  const hideLegendForBar = {
+    id: 'hideLegendForBar',
+    beforeInit(chart) {
+      if (chart.config.type === 'bar') {
+        chart.options.plugins = chart.options.plugins || {};
+        chart.options.plugins.legend = chart.options.plugins.legend || {};
+        chart.options.plugins.legend.display = false;
+        chart.options.plugins.legend.labels = { generateLabels: () => [] };
+      }
     }
   };
 
   let genderChart, ageChart;
 
-  function makeRadialGradient(ctx, area, from, to) {
-    const r = Math.min(area.width, area.height) / 2;
-    const g = ctx.createRadialGradient(area.left + area.width/2, area.top + area.height/2, r*0.1,
-                                       area.left + area.width/2, area.top + area.height/2, r);
-    g.addColorStop(0, from);
-    g.addColorStop(1, to);
-    return g;
-  }
-
-  async function loadBuyers() {
-    const res = await fetch(`/admin/stats/${productId}/buyers`, { headers: { 'Accept': 'application/json' }});
+  async function loadBuyers(){
+    const res = await fetch(`/admin/stats/${productId}/buyers`, { headers:{Accept:'application/json'} });
     const data = await res.json();
 
+    // --- 성별 파이 ---
     const gMale = data?.gender?.male ?? 0;
     const gFemale = data?.gender?.female ?? 0;
     const gUnknown = data?.gender?.unknown ?? 0;
 
-    // ----- 성별 파이 -----
     const genderCtx = document.getElementById('genderChart').getContext('2d');
-    const femaleFill = (ctx) => {
-      const area = ctx.chart.chartArea;
-      if (!area) return '#ffffff';
-      return makeRadialGradient(ctx.ctx, area, '#ffffff', '#d9d9d9');
-    };
-    const maleFill = (ctx) => {
-      const area = ctx.chart.chartArea;
-      if (!area) return '#000000';
-      return makeRadialGradient(ctx.ctx, area, '#2a2a2a', '#000000');
-    };
-    const unknownFill = (ctx) => {
-      const area = ctx.chart.chartArea;
-      if (!area) return '#9e9e9e';
-      return makeRadialGradient(ctx.ctx, area, '#cfcfcf', '#9e9e9e');
-    };
+    const femaleFill  = '#ffffff';  // 여성: 흰색
+    const maleFill    = '#111111';  // 남성: 검정
+    const unknownFill = '#9e9e9e';  // 기타: 회색
 
     genderChart?.destroy();
     genderChart = new Chart(genderCtx, {
-      type: 'pie',
-      data: {
-        labels: (gUnknown>0) ? ['여성','남성','기타'] : ['여성','남성'],
-        datasets: [{
-          data: (gUnknown>0) ? [gFemale, gMale, gUnknown] : [gFemale, gMale],
-          backgroundColor: (gUnknown>0) ? [femaleFill, maleFill, unknownFill] : [femaleFill, maleFill],
-          borderWidth: 1,
-          borderColor: '#fff'
+      type:'pie',
+      data:{
+        labels:(gUnknown>0)?['여성','남성','기타']:['여성','남성'],
+        datasets:[{
+          data:(gUnknown>0)?[gFemale,gMale,gUnknown]:[gFemale,gMale],
+          backgroundColor:(gUnknown>0)?[femaleFill,maleFill,unknownFill]:[femaleFill,maleFill],
+          borderColor:'#fff', borderWidth:1
         }]
       },
-      options: {
-        plugins: {
-          legend: { position: 'bottom' },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.label}: ${ctx.formattedValue}명`
-            }
-          }
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        layout:{ padding:{ top:10,right:10,bottom:28,left:10 } },
+        plugins:{
+          legend:{ position:'top', labels:{ usePointStyle:true } },
+          tooltip:{ callbacks:{ label:(c)=>`${c.label}: ${c.formattedValue}명` } }
         }
       },
-      plugins: [shadowPlugin]
+      plugins:[shadowPlugin]
     });
 
-    // ----- 연령대 막대 (10,20,30,40,50+) -----
+    // --- 연령대 막대 (정수 눈금 & 범례 제거) ---
     const a10 = data?.age?.t10 ?? 0;
     const a20 = data?.age?.t20 ?? 0;
     const a30 = data?.age?.t30 ?? 0;
     const a40 = data?.age?.t40 ?? 0;
     const a50p = data?.age?.t50p ?? 0;
 
+    const maxRaw = Math.max(a10,a20,a30,a40,a50p,0);
+    const step   = (maxRaw <= 10) ? 1 : (maxRaw <= 50) ? 5 : (maxRaw <= 100) ? 10 : Math.ceil(maxRaw/10);
+    const axisMax= Math.max(step, Math.ceil((maxRaw||1)/step)*step);
+
     const ageCtx = document.getElementById('ageChart').getContext('2d');
-    // 밝은 -> 어두운 (흰 → 검)
-    const bars = ['#ffffff','#e5e5e5','#bdbdbd','#7f7f7f','#000000'];
+    const bars   = ['#ffffff','#e5e5e5','#bdbdbd','#7f7f7f','#000000']; // 흰→검
 
     ageChart?.destroy();
     ageChart = new Chart(ageCtx, {
-      type: 'bar',
-      data: {
-        labels: ['10', '20', '30', '40', '50+'],
-        datasets: [{
-          label: '명',
-          data: [a10,a20,a30,a40,a50p],
-          backgroundColor: bars,
-          borderColor: '#222',
-          borderWidth: 1
+      type:'bar',
+      data:{
+        labels:['10대','20대','30대','40대','50대+'],
+        datasets:[{
+          /* label 없이 생성 → 범례 소스 제거 */
+          data:[a10,a20,a30,a40,a50p],
+          backgroundColor:bars, borderColor:'#222', borderWidth:1
         }]
       },
-      options: {
-        scales: {
-          y: { beginAtZero: true, ticks: { precision:0 } }
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        layout:{ padding:{ top:6,right:10,bottom:18,left:10 } },
+        scales:{
+          y:{
+            min:0, max:axisMax,
+            ticks:{
+              stepSize:step,
+              // 소수점 완전 금지
+              format:{ maximumFractionDigits:0 },            // 수치 포맷(국제화)
+              callback:(v)=> Number.isInteger(v) ? String(v) : ''
+            },
+            title:{ display:true, text:'명' }
+          },
+          x:{ ticks:{ font:{ weight:600 } } }
         },
-        plugins: {
-          legend: { display:false },
-          tooltip: {
-            callbacks: { label: (ctx) => `${ctx.parsed.y}명` }
-          }
+        plugins:{
+          legend:{ display:false, labels:{ generateLabels:()=>[] } }, // 옵션 차원 비활성화
+          tooltip:{ callbacks:{ label:(c)=>`${c.parsed.y}명` } }
         }
       },
-      plugins: [shadowPlugin]
+      plugins:[shadowPlugin, hideLegendForBar]  // 안전장치 플러그인
     });
   }
 
-  // 라디오 토글 (Ajax)
-  function bindToggle() {
-    const sales = document.getElementById('panel-sales');
+  // 라디오 토글
+  function bindToggle(){
+    const sales  = document.getElementById('panel-sales');
     const buyers = document.getElementById('panel-buyers');
 
     document.getElementById('modeSales').addEventListener('change', async (e)=>{
       if(!e.target.checked) return;
-      buyers.classList.add('d-none');
-      sales.classList.remove('d-none');
-      // 매출 Ajax 훅 (현재 비워둠)
+      buyers.classList.add('d-none'); sales.classList.remove('d-none');
+      // 매출 Ajax 훅(보류)
       // await fetch(`/admin/stats/${productId}/sales`);
     });
 
     document.getElementById('modeBuyers').addEventListener('change', async (e)=>{
       if(!e.target.checked) return;
-      sales.classList.add('d-none');
-      buyers.classList.remove('d-none');
+      sales.classList.add('d-none'); buyers.classList.remove('d-none');
       await loadBuyers();
     });
   }
 
   bindToggle();
-  // 초기 로딩은 '구매자'
-  loadBuyers();
+  loadBuyers(); // 초기: 구매자
 })();
 </script>
 </html>
