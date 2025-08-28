@@ -350,4 +350,10 @@ public class AdminController {
 
 		return "admin/stats";
 	}
+
+	// {id} 에 해당하는 상품의 통계 페이지로 이동
+	@GetMapping("stats/{id}")
+	public String productStatsShow( @PathVariable("id") Long id, Model model ){
+		return "admin/stat";
+	}
 }
