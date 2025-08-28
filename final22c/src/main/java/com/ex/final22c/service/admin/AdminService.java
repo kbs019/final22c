@@ -623,11 +623,13 @@ public class AdminService {
         return paymentRepository.findByOrder_OrderId(orderId);
     }
     
+    private static final List<String> OK = List.of("PAID","CONFIRMED","REFUNDED");
+
     // 판매량 조회
     public Map<Long, Long> getConfirmedQtySumMap(Collection<Long> productIds) {
         if (productIds == null || productIds.isEmpty()) return Collections.emptyMap();
 
-        List<Object[]> rows = orderDetailRepository.sumConfirmQuantityByProductIds(productIds);
+        List<Object[]> rows = orderDetailRepository.sumConfirmQuantityByProductIds(productIds, OK);
         Map<Long, Long> map = new HashMap<>();
         for (Object[] r : rows) {
             Long pid = (Long) r[0];
