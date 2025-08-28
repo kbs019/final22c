@@ -18,6 +18,9 @@ public interface CartDetailRepository extends JpaRepository<CartDetail, Long> {
     // userName 에 해당하는 Users 객체가 가지는 장바구니 물품 갯수
     int countByCartUserUserName(String userName);
 
+    // 
+    boolean existsByCartUserUserNameAndProductId(@Param("userName") String userName, @Param("id") Long id);
+
     // cartId 에 해당하는 CartDetail 타입의 모든 레코드 조회
     @EntityGraph(attributePaths = { "product", "product.brand" }) // fetch.EAGER 방지
     List<CartDetail> findAllByCart_CartIdOrderByCreateDateDesc(Long cartId);

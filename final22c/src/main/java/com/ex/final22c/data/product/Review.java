@@ -15,6 +15,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import lombok.Getter;
 import lombok.Setter;
@@ -44,6 +45,9 @@ public class Review {
     @CreationTimestamp
     private LocalDateTime createDate;
 
+    @Column(name = "status")
+    private String status;                          // ACTIVE - HIDE
+
     // 1~5
     @Column(name = "rating", nullable = false)
     private int rating;
@@ -51,4 +55,9 @@ public class Review {
     // 공감(좋아요) N:N
     @ManyToMany
     private Set<Users> likers = new HashSet<>();
+
+    @PrePersist
+    public void addReview(){
+        if( this.status == null ){ this.status = "ACTIVE"; }
+    }
 }
