@@ -20,10 +20,10 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
 
 	// confirmQuantity 합계 구함
 	@Query("""
-			    select od.product.id, coalesce(sum(od.confirmQuantity), 0)
-			    from OrderDetail od
-			    where od.product.id in :ids
-			    group by od.product.id
+				select od.product.id, coalesce(sum(od.confirmQuantity), 0)
+				from OrderDetail od
+				where od.product.id in :ids
+				group by od.product.id
 			""")
 	List<Object[]> sumConfirmQuantityByProductIds(@Param("ids") Collection<Long> ids);
 }
