@@ -142,7 +142,7 @@
   .cm-modal.is-open{ display: flex; }
 
   .cm-modal__content{
-    width: min(92vw, 360px);
+    width: min(92vw, 720px);
     background: #fff; border-radius: 12px;
     box-shadow: 0 12px 30px rgba(0,0,0,.25);
     padding: 20px; text-align: center;
@@ -179,6 +179,33 @@
     display:block;
     background:#f3f4f6;   /* 활동내역 .thumb와 동일한 배경 */
   }
+
+  /* 공통: 모달 콘텐츠 높이 제한 + 내부 스크롤 */
+.cm-modal__content,
+.m-modal__box{
+  max-height: min(80vh, 720px); /* 화면 80% 또는 720px 중 작은 값 */
+  overflow: auto;               /* 모달 내부만 스크롤 */
+  overscroll-behavior: contain; /* 스크롤 체인 방지(배경 스크롤 방지) */
+}
+
+/* 환불 요청 모달은 조금 더 낮게 */
+#refundModal .cm-modal__content{
+  max-height: min(78vh, 680px);
+}
+
+/* 주문상품 리스트 모달(현재 높이 제한 없음)도 제한 */
+#orderItemsModal .cm-modal__content{
+  max-height: min(70vh, 640px);
+  overflow: auto;
+}
+
+/* 좁은 화면에서 더 낮게 */
+@media (max-width: 900px){
+  .cm-modal__content,
+  .m-modal__box{
+    max-height: 82vh;
+  }
+}
 </style>
 
 <section>
@@ -201,7 +228,7 @@
     <div class="order-info">
       <div class="order-head">
         <div class="order-thumb">
-          <!-- ✅ 썸네일을 상품상세 링크로 -->
+          <!-- 썸네일을 상품상세 링크로 -->
           <a th:if="${first != null}"
             class="order-thumb"
             th:href="@{|/main/content/${first.product.id}|}">
@@ -232,15 +259,16 @@
             <span th:if="${o.status=='REQUESTED'}" class="badge-requested">환불요청</span>
             <span th:if="${o.status=='CONFIRMED' and o.status!='REQUESTED'}" class="badge-confirmed">주문확정</span>
             <span th:if="${o.status=='CANCELED' and o.status!='REQUESTED'}" class="badge-canceled">주문취소</span>
+            <span th:if="${o.status=='REFUNDED'}">환불완료</span>
           </div>
-          <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount,0)} + '원'">0원</div>
+          <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount, 1, 'COMMA')} + '원'">0원</div>
         </div>
       </div>
     </div>
 
     <!-- 하단 진행바: 취소가 아닌 경우에만 -->
     <div class="stepper"
-         th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.status!='CONFIRMED' and o.status!='REQUESTED'}"
+         th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.status!='CONFIRMED' and o.status!='REQUESTED' and o.status != 'REFUNDED'}"
          th:attr="data-step=${step}, data-max=3, data-autoplay='false'">
       <div class="step"><div class="dot"></div><div>주문접수</div></div>
       <div class="step"><div class="dot"></div><div>배송 중</div></div>
@@ -257,9 +285,6 @@
               class="order-btn btn-confirm" type="button">주문확정</button>
       <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}"
               class="refund-btn btn-refund" type="button">환불요청</button>
-
-      <button th:if="${o.status == 'REQUESTED'}" th:attr="data-order-id=${o.orderId}"
-              class="btn btn-outline btn-refund-requests" type="button">환불요청내역</button>
     </div>
 
     <a class="more" th:href="@{/mypage/order/{id}(id=${o.orderId})}">&gt;</a>
@@ -582,12 +607,25 @@ $confirmYes.addEventListener('click', async () => {
 
     try {
       const res = await fetch(`/mypage/order/${orderId}/fragment`, {
-        headers: { 'X-Requested-With':'XMLHttpRequest' }
+        method: 'GET',
+        headers: {
+          'Accept': 'text/html',                // 프래그먼트 HTML 기대
+          'X-Requested-With': 'XMLHttpRequest'  // 서버에서 Ajax 판단에 사용 시
+        },
+        credentials: 'same-origin'
       });
-      if (!res.ok) throw new Error('HTTP '+res.status);
-      body.innerHTML = await res.text();
+
+      const text = await res.text(); // 실패 시에도 본문을 확인
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}\n${text}`);
+
+      // 혹시 레이아웃이 통째로 왔다면(doctype 등) 경고
+      if (/<!doctype html/i.test(text)) {
+        console.warn('Fragment가 아니라 전체 페이지가 반환됐습니다. 반환 뷰 이름을 "mypage/orders :: items"로 확인하세요.');
+      }
+
+      body.innerHTML = text;
     } catch (err) {
-      console.error(err);
+      console.error('[order fragment error]', err);
       body.innerHTML = '<div style="color:#ef4444">상세를 불러오지 못했습니다.</div>';
     }
   });
