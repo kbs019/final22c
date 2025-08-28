@@ -1,12 +1,16 @@
 package com.ex.final22c.controller.refund;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ex.final22c.data.payment.Payment;
@@ -32,6 +37,7 @@ import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.refund.RefundDetailResponse;
 import com.ex.final22c.data.refund.RefundResultResponse;
 import com.ex.final22c.repository.order.OrderRepository;
+import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.service.refund.RefundService;
 
 import jakarta.validation.Valid;
@@ -44,6 +50,7 @@ public class RefundController {
 
     private final RefundService refundService;
     private final OrderRepository orderRepository;
+    private final RefundRepository refundRepository;
 
     // 환불내역 상세페이지
     @GetMapping("/{refundId}")
@@ -313,9 +320,63 @@ public class RefundController {
         }
     }
 
-    @GetMapping("/pay/order/{orderId}/refund-results")
-    public ResponseEntity<?> refundResults(@PathVariable Long orderId, Principal principal) {
-        Map<String, Object> body = refundService.getRefundResultsAsMap(orderId);
-        return ResponseEntity.ok(body);
-    }
+    // @GetMapping("/pay/order/{orderId}/refund-results")
+    // public ResponseEntity<?> refundResults(@PathVariable Long orderId, Principal
+    // principal) {
+    // Map<String, Object> body = refundService.getRefundResultsAsMap(orderId);
+    // return ResponseEntity.ok(body);
+    // }
+
+@GetMapping("/pay/order/{orderId}/refund-results")
+public ResponseEntity<Map<String, Object>> refundResults(@PathVariable Long orderId) {
+
+    final String REFUNDED = "REFUNDED"; // DB에 저장된 문자열과 정확히 일치해야 합니다.
+
+    List<Refund> refunds = refundRepository.findByOrder_OrderIdAndStatus(orderId, REFUNDED);
+
+    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
+
+    List<Map<String, Object>> refundMaps = refunds.stream().map(rf -> {
+        // 상세가 null일 수 있으니 방어
+        List<RefundDetail> rdList = (rf.getDetails() == null)
+                ? Collections.emptyList()
+                : rf.getDetails();
+
+        // 승인 수량만 노출
+        List<Map<String, Object>> details = rdList.stream()
+                .filter(d -> d.getRefundQty() > 0) // int라 null 아님
+                .map(d -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+
+                    String productName = "-";
+                    if (d.getOrderDetail() != null && d.getOrderDetail().getProduct() != null) {
+                        productName = d.getOrderDetail().getProduct().getName();
+                    }
+
+                    int refundQty = d.getRefundQty();
+                    int unit      = d.getUnitRefundAmount();
+                    int subtotal  = refundQty * unit;
+
+                    m.put("productName", productName);
+                    m.put("refundQty", refundQty);
+                    m.put("unitRefundAmount", unit);
+                    m.put("subtotal", subtotal);
+                    return m;
+                })
+                .collect(Collectors.toList());
+
+        Map<String, Object> rm = new LinkedHashMap<>();
+        rm.put("refundId",  rf.getRefundId());                                      // ← key: 사용 금지! (자바 문법 아님)
+        rm.put("status",    rf.getStatus());
+        rm.put("createdAt", rf.getCreateDate() != null ? rf.getCreateDate().format(fmt) : "");
+        rm.put("reason",    rf.getRequestedReason() == null ? "" : rf.getRequestedReason());
+        rm.put("details",   details);
+        return rm;
+    }).collect(Collectors.toList());
+
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("refunds", refundMaps); // 없으면 []
+
+    return ResponseEntity.ok(body);
+}
 }
