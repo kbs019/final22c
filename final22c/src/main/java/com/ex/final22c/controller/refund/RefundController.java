@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.refund.ApproveRefundRequest;
@@ -30,6 +31,7 @@ import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.refund.RefundDetailResponse;
 import com.ex.final22c.data.refund.RefundResultResponse;
+import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.service.refund.RefundService;
 
 import jakarta.validation.Valid;
@@ -41,6 +43,7 @@ import lombok.RequiredArgsConstructor;
 public class RefundController {
 
     private final RefundService refundService;
+    private final OrderRepository orderRepository;
 
     // 환불내역 상세페이지
     @GetMapping("/{refundId}")
@@ -76,7 +79,7 @@ public class RefundController {
         return ResponseEntity.ok(body);
     }
 
-    // ✅ 여기에 둔다(핸들러들 아래, DTO들 위)
+    // 여기에 둔다(핸들러들 아래, DTO들 위)
     private RefundDetailResponse.Item toItem(RefundDetail d) {
         var od = d.getOrderDetail();
         var p = od.getProduct();
@@ -310,4 +313,9 @@ public class RefundController {
         }
     }
 
+    @GetMapping("/pay/order/{orderId}/refund-results")
+    public ResponseEntity<?> refundResults(@PathVariable Long orderId, Principal principal) {
+        Map<String, Object> body = refundService.getRefundResultsAsMap(orderId);
+        return ResponseEntity.ok(body);
+    }
 }

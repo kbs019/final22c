@@ -68,4 +68,15 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
         "details.orderDetail"
     })
     Optional<Refund> findByRefundId(Long refundId);
+    
+    @Query("""
+      select distinct r from Refund r
+      left join fetch r.details d
+      left join fetch d.orderDetail od
+      left join fetch od.product p
+      where r.order.orderId = :orderId and r.status = :status
+      order by r.updateDate desc
+    """)
+    List<Refund> findRefundedWithDetails(@Param("orderId") Long orderId,
+                                         @Param("status") String status);
 }
