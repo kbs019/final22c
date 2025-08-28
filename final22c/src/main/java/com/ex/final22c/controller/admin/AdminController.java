@@ -351,9 +351,25 @@ public class AdminController {
 		return "admin/stats";
 	}
 
-	// {id} 에 해당하는 상품의 통계 페이지로 이동
-	@GetMapping("stats/{id}")
-	public String productStatsShow( @PathVariable("id") Long id, Model model ){
-		return "admin/stat";
-	}
+	 // {id} 상품의 통계 화면
+    @GetMapping("stats/{id}")
+    public String productStatsShow(@PathVariable("id") Long id, Model model){
+        Product p = adminService.findProduct(id);
+        model.addAttribute("product", p);
+        return "admin/stat";
+    }
+
+    // Ajax: 구매자 통계
+    @GetMapping("stats/{id}/buyers")
+    @ResponseBody
+    public Map<String, Object> productBuyerStats(@PathVariable("id") Long id) {
+        return adminService.buildBuyerStats(id);
+    }
+
+	// (미사용) Ajax: 매출 통계 훅 - 비워둠
+    @GetMapping("stats/{id}/sales")
+    @ResponseBody
+    public Map<String, Object> productSalesStats(@PathVariable("id") Long id) {
+        return Map.of();
+    }
 }
