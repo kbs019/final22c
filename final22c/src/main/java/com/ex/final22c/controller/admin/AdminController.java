@@ -156,8 +156,8 @@ public class AdminController {
 	// 주문 관리
 	@GetMapping("orderList")
 	public String orderList(Model model) {
-		
-		model.addAttribute("orders",this.adminService.getOrders());
+
+		model.addAttribute("orders", this.adminService.getOrders());
 		return "admin/orderList";
 	}
 
@@ -222,107 +222,132 @@ public class AdminController {
 		return "admin/refundList";
 	}
 
-	// 
+	//
 	@GetMapping("/refunds/{refundId}")
-    // @PreAuthorize("hasRole('ADMIN')")  // 보안 적용 시 주석 해제
-    public ResponseEntity<RefundDetailResponse> getRefundDetail(
-            @PathVariable("refundId") Long refundId) {
+	// @PreAuthorize("hasRole('ADMIN')") // 보안 적용 시 주석 해제
+	public ResponseEntity<RefundDetailResponse> getRefundDetail(
+			@PathVariable("refundId") Long refundId) {
 
-        // 서비스에서 Refund + (Order, User, Payment, RefundDetail(Product)) 까지 fetch-join으로 가져오도록 구현
-        Refund refund = refundService.getRefundGraphForAdmin(refundId);
+		// 서비스에서 Refund + (Order, User, Payment, RefundDetail(Product)) 까지 fetch-join으로
+		// 가져오도록 구현
+		Refund refund = refundService.getRefundGraphForAdmin(refundId);
 
-        // Header 구성
-        RefundDetailResponse.Header header = RefundDetailResponse.Header.builder()
-            .userName(refund.getUser().getUserName())
-            .orderId(refund.getOrder().getOrderId())
-            .createdAt(fmt(refund.getCreateDate()))
-            .reason(refund.getRequestedReason())
-            .status(refund.getStatus())
-            .paymentTid(getTidSafe(refund)) // UI에는 안 쓰더라도 전달해둠
-            .build();
+		// Header 구성
+		RefundDetailResponse.Header header = RefundDetailResponse.Header.builder()
+				.userName(refund.getUser().getUserName())
+				.orderId(refund.getOrder().getOrderId())
+				.createdAt(fmt(refund.getCreateDate()))
+				.reason(refund.getRequestedReason())
+				.status(refund.getStatus())
+				.paymentTid(getTidSafe(refund)) // UI에는 안 쓰더라도 전달해둠
+				.build();
 
-        // Items 구성
-        List<RefundDetailResponse.Item> items = refund.getDetails().stream()
-            .sorted(Comparator.comparing(RefundDetail::getRefundDetailId))
-            .map(d -> toItem(d))
-            .collect(Collectors.toList());
+		// Items 구성
+		List<RefundDetailResponse.Item> items = refund.getDetails().stream()
+				.sorted(Comparator.comparing(RefundDetail::getRefundDetailId))
+				.map(d -> toItem(d))
+				.collect(Collectors.toList());
 
-        RefundDetailResponse body = RefundDetailResponse.builder()
-            .header(header)
-            .items(items)
-            .build();
+		RefundDetailResponse body = RefundDetailResponse.builder()
+				.header(header)
+				.items(items)
+				.build();
 
-        return ResponseEntity.ok(body);
-    }
+		return ResponseEntity.ok(body);
+	}
 
-    // ✅ 여기에 둔다(핸들러들 아래, DTO들 위)
-    private RefundDetailResponse.Item toItem(RefundDetail d) {
+	// ✅ 여기에 둔다(핸들러들 아래, DTO들 위)
+	private RefundDetailResponse.Item toItem(RefundDetail d) {
 		var od = d.getOrderDetail();
-		var p  = od.getProduct();
+		var p = od.getProduct();
 
-        return RefundDetailResponse.Item.builder()
-            .refundDetailId(d.getRefundDetailId())
-            .unitRefundAmount(d.getUnitRefundAmount())
-            .quantity(d.getQuantity())
-            .refundQty(d.getRefundQty())
-            .product(RefundDetailResponse.ProductLite.builder()
-				.id(p.getId())
-				.name(p.getName())
-				.imgPath(p.getImgPath())
-				.imgName(p.getImgName())
-                .build())
-            .build();
-    }
+		return RefundDetailResponse.Item.builder()
+				.refundDetailId(d.getRefundDetailId())
+				.unitRefundAmount(d.getUnitRefundAmount())
+				.quantity(d.getQuantity())
+				.refundQty(d.getRefundQty())
+				.product(RefundDetailResponse.ProductLite.builder()
+						.id(p.getId())
+						.name(p.getName())
+						.imgPath(p.getImgPath())
+						.imgName(p.getImgName())
+						.build())
+				.build();
+	}
 
 	private String fmt(java.time.LocalDateTime t) {
-    return (t == null) ? null : t.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-    }
+		return (t == null) ? null : t.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+	}
 
-    private String getTidSafe(Refund refund) {
-        Payment p = refund.getPayment();
-        return (p == null) ? null : p.getTid();   // 네 Payment 엔티티에 tid 게터가 있다고 가정
-    }
-    
+	private String getTidSafe(Refund refund) {
+		Payment p = refund.getPayment();
+		return (p == null) ? null : p.getTid(); // 네 Payment 엔티티에 tid 게터가 있다고 가정
+	}
+
 	// 발주 목록
 	@GetMapping("purchaseList")
 	public String purchaseList(Model model) {
-		
-		model.addAttribute("purList",this.adminService.getPurchase());
+
+		model.addAttribute("purList", this.adminService.getPurchase());
 		return "admin/purchaseList";
 	}
-	
+
 	// 발주 신청
 	@PostMapping("confirmPurchase")
 	@ResponseBody
 	public Map<String, Object> confirmPurchase(@RequestBody Map<String, List<Map<String, Object>>> payload) {
-	    List<Map<String, Object>> items = payload.get("items");
-	    Map<String, Object> result = new HashMap<>();
-	    try {
-	        adminService.confirmPurchase(items);
-	        result.put("success", true);
-	    } catch (Exception e) {
-	        result.put("success", false);
-	        result.put("message", e.getMessage());
-	    }
-	    return result;
+		List<Map<String, Object>> items = payload.get("items");
+		Map<String, Object> result = new HashMap<>();
+		try {
+			adminService.confirmPurchase(items);
+			result.put("success", true);
+		} catch (Exception e) {
+			result.put("success", false);
+			result.put("message", e.getMessage());
+		}
+		return result;
 	}
-	
+
 	// 발주 상세 내역
 	@GetMapping("getPurchaseDetail/{purchaseId}")
 	@ResponseBody
 	public Map<String, Object> getPurchaseDetail(@PathVariable("purchaseId") Long purchaseId) {
 		return this.adminService.getPurchaseDetail(purchaseId);
 	}
-	
+
 	// 주문 내역 상세
 	@GetMapping("orderList/{id}/fragment")
-	public String orderItemsFragment(@PathVariable("id") Long id,
-									 Model model) {
-		
+	public String orderItemsFragment(@PathVariable("id") Long id, Model model) {
+
 		Order order = adminService.findMyOrderWithDetails(id);
 		List<Payment> payments = adminService.findPaymentsofOrder(id);
 		model.addAttribute("order", order);
 		model.addAttribute("payments", payments);
 		return "admin/orderDetail :: items";
+	}
+
+	// 상품 통계
+	@GetMapping("stats")
+	public String statsList(Model model, @RequestParam(value = "kw", defaultValue = "") String kw,
+			@RequestParam(value = "brand", required = false) List<Long> brandIds) {
+
+		// kw 와 brandIds 를 사용한 상품 리스트
+		List<Product> paging = adminService.getItemList(kw, brandIds);
+
+		List<Brand> brands = adminService.getBrand();
+
+		// ★ paging에서 id 추출
+		List<Long> productIds = paging.stream()
+				.map(Product::getId)
+				.toList();
+
+		// ★ 한 방에 합계 맵
+		Map<Long, Long> confirmedSumMap = adminService.getConfirmedQtySumMap(productIds);
+
+		model.addAttribute("brands", brands);
+		model.addAttribute("paging", paging);
+		model.addAttribute("confirmedSumMap", confirmedSumMap);
+
+		return "admin/stats";
 	}
 }

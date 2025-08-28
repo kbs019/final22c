@@ -9,6 +9,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -619,4 +621,21 @@ public class AdminService {
         return paymentRepository.findByOrder_OrderId(orderId);
     }
     
+    // 판매량 조회
+    public Map<Long, Long> getConfirmedQtySumMap(Collection<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) return Collections.emptyMap();
+
+        List<Object[]> rows = orderDetailRepository.sumConfirmQuantityByProductIds(productIds);
+        Map<Long, Long> map = new HashMap<>();
+        for (Object[] r : rows) {
+            Long pid = (Long) r[0];
+            Number sum = (Number) r[1];
+            map.put(pid, sum != null ? sum.longValue() : 0L);
+        }
+        // 주문내역이 없던 상품은 0으로 채움
+        for (Long pid : productIds) {
+            map.putIfAbsent(pid, 0L);
+        }
+        return map;
+    }
 }
