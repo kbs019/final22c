@@ -30,6 +30,7 @@ import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
+import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Grade;
 import com.ex.final22c.data.product.MainNote;
@@ -728,6 +729,7 @@ public class AdminService {
             "uniqueBuyerCount", uniqueBuyers.size()
         );
     }
+
     // 리뷰 목록
     public Page<Review> getReview(int page){
     	List<Sort.Order> sorts = new ArrayList<>();
