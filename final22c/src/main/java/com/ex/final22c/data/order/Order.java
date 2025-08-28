@@ -2,6 +2,7 @@ package com.ex.final22c.data.order;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import com.ex.final22c.ShippingSnapshotJsonConverter;
@@ -10,8 +11,10 @@ import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.user.Users;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -71,6 +74,20 @@ public class Order {
     @Convert(converter = ShippingSnapshotJsonConverter.class)
     private ShipSnapshotReq shippingSnapshot;
 
+    // 장바구니 삭제용
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+    	name = "orderSelectedCart",					// 테이블명
+    	joinColumns = @JoinColumn(name = "orderId") // FK 컬렴명
+	)
+    @Column(name = "cartDetailId")					// 값 칼럼명
+    private List<Long> selectedCartDetailIds = new ArrayList<>();
+    
+    public void selectedCartDetailIds(Collection<Long> ids) {
+    	selectedCartDetailIds.clear();
+    	if (ids != null) selectedCartDetailIds.addAll(ids);
+    }
+    
     @PrePersist
     public void prePersist() {
         if (regDate == null) regDate = LocalDateTime.now();
