@@ -12,8 +12,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -637,5 +639,64 @@ public class AdminService {
             map.putIfAbsent(pid, 0L);
         }
         return map;
+    }
+
+    public Product findProduct(Long id){
+        return productRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("상품을 찾을 수 없습니다. id="+id));
+    }
+
+    /** 구매자 통계(고유 구매자 기준) */
+    public Map<String, Object> buildBuyerStats(Long productId){
+        // confirmQuantity > 0 인 주문 상세만 집계
+        List<OrderDetail> details = orderDetailRepository.findConfirmedByProductId(productId);
+
+        // 고유 구매자
+        Map<Long, Users> uniqueBuyers = new LinkedHashMap<>();
+        for (OrderDetail d : details) {
+            if (d.getOrder() == null || d.getOrder().getUser() == null) continue;
+            Users u = d.getOrder().getUser();
+            uniqueBuyers.put(u.getUserNo(), u);
+        }
+
+        int male=0, female=0, unknown=0;
+        int a10=0, a20=0, a30=0, a40=0, a50p=0;
+
+        for (Users u : uniqueBuyers.values()) {
+            // 성별
+            String g = Optional.ofNullable(u.getGender()).orElse("").trim().toUpperCase();
+            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자")) female++;
+            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자")) male++;
+            else unknown++;
+
+            // 연령대 (10~19: 10대, 20~29: 20대, 30~39: 30대, 40~49: 40대, 50+: 50+)
+            Integer age = u.getAge(); // Users.prePersist/Update에서 계산됨
+            if (age != null) {
+                if (age >= 10 && age < 20) a10++;
+                else if (age < 30) a20++;
+                else if (age < 40) a30++;
+                else if (age < 50) a40++;
+                else a50p++;
+            }
+        }
+
+        Map<String,Object> gender = new LinkedHashMap<>();
+        gender.put("female", female);
+        gender.put("male", male);
+        gender.put("unknown", unknown);
+
+        Map<String,Object> age = new LinkedHashMap<>();
+        age.put("t10", a10);
+        age.put("t20", a20);
+        age.put("t30", a30);
+        age.put("t40", a40);
+        age.put("t50p", a50p);
+
+        return Map.of(
+            "productId", productId,
+            "gender", gender,
+            "age", age,
+            "uniqueBuyerCount", uniqueBuyers.size()
+        );
     }
 }

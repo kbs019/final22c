@@ -26,4 +26,14 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
 				group by od.product.id
 			""")
 	List<Object[]> sumConfirmQuantityByProductIds(@Param("ids") Collection<Long> ids);
+
+	@Query("""
+           select od
+             from OrderDetail od
+             join od.product p
+             join od.order o
+            where p.id = :pid
+              and od.confirmQuantity > 0
+           """)
+    List<OrderDetail> findConfirmedByProductId(@Param("pid") Long productId);
 }
