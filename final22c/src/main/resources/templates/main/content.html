@@ -112,8 +112,9 @@
   <div layout:fragment="content">
     <div class="productInfoWrap">
       <!-- 좌측의 향수 이미지 -->
-      <div class="slideWrap">
-        <img th:src="@{|${product.imgPath}${product.imgName}|}">
+      <div class="slideWrap" th:classappend="${product.count == 0} ? ' soldout'">
+        <img th:src="@{|${product.imgPath}${product.imgName}|}" alt="상품 이미지">
+        <div class="overlay" aria-hidden="true"></div>
       </div>
 
       <!-- 우측 상품 정보 -->

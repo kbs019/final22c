@@ -99,13 +99,6 @@
     color: #888
 }
 
-.actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px
-}
-
 /* Chrome, Edge, Safari(웹킷 계열)에서 공통 스피너 제거 */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
@@ -130,3 +123,51 @@ input[type=number]::-webkit-outer-spin-button {
 .dlg__btn{padding:8px 12px;border-radius:8px;border:1px solid #d0d5dd;background:#fff;cursor:pointer}
 .dlg__btn--primary{background:#6b7280;color:#fff;border-color:#6b7280} /* 회색 버튼(스샷 톤) */
 .dlg__btn:disabled{opacity:.6;cursor:not-allowed}
+
+/* 리스트 패널(카드)로 구분감 부여 */
+.list-panel{
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    background:#fff;
+    overflow:hidden;              /* 경계 안으로 정리 */
+    box-shadow:0 1px 2px rgba(0,0,0,.03);
+}
+
+.list-panel .actions{
+    display:grid;
+    grid-template-columns: 32px 96px 1fr auto;
+    gap:12px; align-items:center; padding:12px 12px;
+    top: calc(var(--nav-h) + 8px);
+    background:#fff; z-index:2; border-bottom:1px solid #e5e7eb;
+    justify-items: start; 
+}
+
+/* label을 그리드 자식처럼 쪼개기 */
+.list-panel .actions label.head-label{ display: contents; }
+
+/* 1열=체크박스, 3열=텍스트 */
+.list-panel .actions label.head-label > input{
+    grid-column:1; justify-self:center;
+}
+.list-panel .actions label.head-label > span{
+    grid-column:2; align-self:center; color:#374151; font-weight:600;
+}
+
+.list-panel .actions #btnRemove{ grid-column:4; justify-self:end; align-self:center; width:auto; }
+
+/* 리스트 부분의 행 패딩/경계(구분선 강화) */
+.list-panel .cart-row{
+    padding:16px 12px;                 /* 좌우 패딩 추가로 정렬선 맞춤 */
+    border-bottom:1px solid #f2f4f7;   /* 구분선 미세 강화 */
+}
+.list-panel .cart-row:last-child{ border-bottom:0; }
+.list-panel .cart-row:hover{ background:#fafafa; }
+
+/* 사이드바도 톤 맞춤 */
+.sidebar{
+    border-color:#e5e7eb;
+    box-shadow:0 1px 2px rgba(0,0,0,.03);
+}
+
+/* 액션바/행 패딩이 바뀌어 X버튼 시각적 보정(옵션) */
+.btnRowRemove{ right:12px; }
