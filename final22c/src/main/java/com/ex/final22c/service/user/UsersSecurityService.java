@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UsersSecurityService implements UserDetailsService {
+
     private final UserRepository usersRepository;
 
     @Override
@@ -34,7 +34,7 @@ public class UsersSecurityService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
         String status = (u.getStatus() == null) ? "active" : u.getStatus().toLowerCase();
-
+        Optional<Users> _users = this.usersRepository.findByUserName(username);
         // 1) 영구정지
         if ("banned".equals(status)) {
             throw new LockedException("영구정지된 회원입니다.");
@@ -44,9 +44,7 @@ public class UsersSecurityService implements UserDetailsService {
         if ("suspended".equals(status)) {
             LocalDate until = resolveBanUntil(u.getBanReg());
             if (until != null && LocalDate.now().isBefore(until)) {
-                // 아직 정지기간이면 막기
-                String msg = "정지된 회원입니다. 해제 예정: " + until;
-                throw new LockedException(msg);
+                throw new LockedException("정지된 회원입니다. 해제 예정: " + until);
             }
             // 기간이 지났으면 ACTIVE로 전환
             u.setStatus("active");
@@ -54,18 +52,23 @@ public class UsersSecurityService implements UserDetailsService {
             usersRepository.save(u);
         }
 
-        // 권한: ROLE 컬럼 사용 (없으면 ROLE_USER)
-        String role = (u.getRole() == null || u.getRole().isBlank()) ? "ROLE_USER" : u.getRole();
-        List<GrantedAuthority> auth = List.of(new SimpleGrantedAuthority(role));
-
-        return org.springframework.security.core.userdetails.User
-                .withUsername(u.getUserName())
-                .password(u.getPassword())
-                .authorities(auth)
-                .accountLocked(false) // 잠금은 위에서 예외로 처리
-                .disabled(false)
-                .build();
-    }
+        if(_users.isEmpty()) {
+            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
+         }
+         Users users = _users.get();
+         // 사용자 권한 객체
+         List<GrantedAuthority> authorities = new ArrayList<>();
+         if("admin".equals(username)) {
+            // 아이디가 admin 이면 admin권한
+            authorities.add(new SimpleGrantedAuthority(UserRole.ADMIN.getValue()));
+         }else {
+            // 아니면 user권한
+            authorities.add(new SimpleGrantedAuthority(UserRole.USER.getValue()));
+         }
+         
+         // 아이디,비밀번호,권한 리턴
+         return new User(users.getUserName(),users.getPassword(),authorities);
+      }
 
     /** BANREG을 LocalDate로 변환 */
     private LocalDate resolveBanUntil(Object banreg) {
@@ -79,9 +82,7 @@ public class UsersSecurityService implements UserDetailsService {
 
         if (banreg instanceof String s) {
             s = s.trim();
-            String[] patterns = {
-                "yy/MM/dd", "yyyy-MM-dd", "yyyy/MM/dd"
-            };
+            String[] patterns = { "yy/MM/dd", "yyyy-MM-dd", "yyyy/MM/dd" };
             for (String p : patterns) {
                 try {
                     DateTimeFormatter f = DateTimeFormatter.ofPattern(p);
