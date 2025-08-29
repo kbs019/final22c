@@ -3,21 +3,21 @@ package com.ex.final22c.service.user;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-
-
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-
+import com.ex.final22c.data.user.UserRole;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.user.UserRepository;
 
@@ -55,12 +55,7 @@ public class UsersSecurityService implements UserDetailsService {
         }
 
         // 권한: ROLE 컬럼 사용 (없으면 ROLE_USER)
-        String role;
-        if ("admin".equalsIgnoreCase(u.getUserName())) {
-            role = "ROLE_ADMIN";
-        } else {
-            role = (u.getRole() == null || u.getRole().isBlank()) ? "ROLE_USER" : u.getRole();
-        }
+        String role = (u.getRole() == null || u.getRole().isBlank()) ? "ROLE_USER" : u.getRole();
         List<GrantedAuthority> auth = List.of(new SimpleGrantedAuthority(role));
 
         return org.springframework.security.core.userdetails.User
