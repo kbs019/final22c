@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ex.final22c.OutOfStockException;
 import com.ex.final22c.data.cart.CartLine;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.order.OrderDetail;
@@ -55,7 +56,12 @@ public class OrderService {
 
         // 1) 재고 ‘예약’(감소) — 승인 전이지만 오버셀 방지용으로 미리 잡아둠
         //    실패 시(재고 부족 등) 예외 발생 → 트랜잭션 롤백
-        productService.decreaseStock(p.getId(), quantity);
+        try {
+            productService.decreaseStock(p.getId(), quantity);
+        } catch (IllegalStateException e) {
+            // 내부 상세 메시지는 숨기고, 사용자 친화 메시지로 변환
+            throw new OutOfStockException();
+        }
 
         // 2) 주문 + 디테일(가격 스냅샷) 저장
         Order order = new Order();
@@ -236,7 +242,11 @@ public class OrderService {
             int qty = Math.max(1, l.getQuantity());
             Product p = productService.getProduct(l.getId());
             if (p == null) throw new IllegalArgumentException("상품 없음: " + l.getId());
-            productService.decreaseStock(p.getId(), qty); // 예약
+            try {
+                productService.decreaseStock(p.getId(), qty); // 예약
+            } catch (IllegalStateException e) {
+                throw new OutOfStockException(); // 전체 트랜잭션 롤백
+            }
         }
 
         // 2) 주문 + 각 라인의 가격 스냅샷 저장
