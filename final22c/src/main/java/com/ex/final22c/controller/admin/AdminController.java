@@ -394,12 +394,30 @@ public class AdminController {
     }
 
 	
-	// 리뷰 관리
-	@GetMapping("reviewList")
-	public String reviewList(@RequestParam(name = "page", defaultValue="0") int page,Model model) {
-		Page<Review> re = this.adminService.getReview(page);
-		model.addAttribute("re",re);
-		return "admin/reviewList";
-	}
+ // 리뷰 리스트 페이지 이동
+    @GetMapping("reviewList")
+    public String reviewList(@RequestParam(name = "page", defaultValue="0") int page, Model model) {
+        Page<Review> re = this.adminService.getReview(page);
+        model.addAttribute("re", re);
+        return "admin/reviewList";
+    }
+
+    // 비속어 필터 API (AJAX 용)
+    @GetMapping("review/filterBad")
+    @ResponseBody
+    public List<Map<String,Object>> filterBadReviews() {
+        List<Review> list = adminService.getFilteredReviews();
+        List<Map<String,Object>> result = list.stream()
+        	    .map(r -> {
+        	        Map<String,Object> map = new HashMap<>();
+        	        map.put("reviewId", r.getReviewId());
+        	        map.put("username", r.getWriter() != null ? r.getWriter().getUserName() : "알 수 없음");
+        	        map.put("content", r.getContent());
+        	        return map;
+        	    })
+        	    .collect(Collectors.toList());
+
+        	return result;
+    }
 
 }

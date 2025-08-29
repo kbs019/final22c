@@ -7,22 +7,27 @@
 	        <div class="row g-2 align-items-start">
 	            <!-- 오른쪽: 텍스트 영역 -->
 	            <div class="col">
-	                <div class="title mb-1">
-	                    [[${re.product.name}]]
-	                </div>
-	                <div class="meta mb-1">
-	                    [[${re.product.brand.brandName}]] 
-	                    <span class="rating">★ [[${re.rating}]]</span>
-	                    <span class="ms-2 date">[[${#temporals.format(re.createDate, 'yyyy-MM-dd HH:mm')}]]</span>
-	                </div>
-	                <div class="content mb-1">[[${re.content}]]</div>
-	                <div class="actions">
-	                    <a class="btn btn-sm btn-primary me-1" th:href="@{/review/{id}/edit(id=${re.reviewId})}">숨김</a>
-	                </div>
+					<div class="title mb-1 d-flex justify-content-between align-items-center">
+					    <span>[[${re.product.name}]]</span>
+					    <span class="meta">
+					        [[${re.product.brand.brandName}]] 
+					        <span class="rating">★ [[${re.rating}]]</span>
+					        <span class="ms-2 date">[[${#temporals.format(re.createDate, 'yyyy-MM-dd HH:mm')}]]</span>
+					    </span>
+					</div>
+					<hr>
+				<div class="content mb-1 d-flex justify-content-between align-items-center">
+				    <span>[[${re.content}]]</span>
+				    <a class="btn btn-sm btn-primary ms-2"
+				       th:href="@{/review/{id}/edit(id=${re.reviewId})}">
+				        숨김
+				    </a>
+				</div>
 	            </div>
 	        </div>
 	    </article>
 	</div>
+	
 <nav aria-label="Page navigation">
   <ul class="pagination justify-content-center">
 
@@ -41,5 +46,49 @@
 
   </ul>
 </nav>
+<button id="filterBadBtn" class="btn btn-danger">비속어 필터</button>
+
+<table class="table mt-3">
+    <thead>
+        <tr>
+            <th>리뷰 ID</th>
+            <th>작성자</th>
+            <th>내용</th>
+        </tr>
+    </thead>
+    <tbody id="badReviewList"></tbody>
+</table>
 </div>
+<script layout:fragment="script" type="text/javascript">
+document.addEventListener("DOMContentLoaded", function() {
+    const btn = document.getElementById("filterBadBtn"); // btn 선언
+    if (!btn) {
+        console.error("버튼을 찾을 수 없습니다.");
+        return;
+    }
+
+    btn.addEventListener("click", function() {
+        console.log("버튼 클릭됨"); // 확인용
+        fetch("/admin/review/filterBad")
+            .then(res => {
+                if (!res.ok) throw new Error("네트워크 오류");
+                return res.json();
+            })
+            .then(data => {
+                const tbody = document.getElementById("badReviewList");
+                tbody.innerHTML = "";
+                data.forEach(r => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${r.reviewId}</td>
+                            <td>${r.username}</td>
+                            <td>${r.content}</td>
+                        </tr>
+                    `;
+                });
+            })
+            .catch(err => console.error(err));
+    });
+});
+</script>
 </html>

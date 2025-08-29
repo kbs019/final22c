@@ -39,11 +39,14 @@ public class ReviewService {
 
     @Transactional
     public Review write(Product product, Users writer, int rating, String content) {
+    	
         Review r = new Review();
         r.setProduct(product);
         r.setWriter(writer);
         r.setRating(Math.max(1, Math.min(5, rating)));
         r.setContent(content);
+        
+        
         return reviewRepository.save(r);
     }
 
