@@ -598,6 +598,12 @@
           }
         });
       });
+
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.bm-btn');
+        if (!btn) return;
+        btn.setAttribute('aria-pressed', String(btn.getAttribute('aria-pressed') !== 'true'));
+      });
     </script>
   </th:block>
 </body>
