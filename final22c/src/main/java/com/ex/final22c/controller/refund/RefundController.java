@@ -327,56 +327,57 @@ public class RefundController {
     // return ResponseEntity.ok(body);
     // }
 
-@GetMapping("/pay/order/{orderId}/refund-results")
-public ResponseEntity<Map<String, Object>> refundResults(@PathVariable Long orderId) {
+    @GetMapping("/pay/order/{orderId}/refund-results")
+    public ResponseEntity<Map<String, Object>> refundResults(@PathVariable("orderId") Long orderId) {
 
-    final String REFUNDED = "REFUNDED"; // DB에 저장된 문자열과 정확히 일치해야 합니다.
+        // DB 상태 문자열과 꼭 일치시켜 주세요(예: "REFUNDED" 또는 "환불완료")
+        final String REFUNDED = "REFUNDED";
 
-    List<Refund> refunds = refundRepository.findByOrder_OrderIdAndStatus(orderId, REFUNDED);
+        List<Refund> refunds = refundRepository.findByOrder_OrderIdAndStatus(orderId, REFUNDED);
 
-    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
 
-    List<Map<String, Object>> refundMaps = refunds.stream().map(rf -> {
-        // 상세가 null일 수 있으니 방어
-        List<RefundDetail> rdList = (rf.getDetails() == null)
-                ? Collections.emptyList()
-                : rf.getDetails();
+        List<Map<String, Object>> refundMaps = refunds.stream().map(rf -> {
+            // rf.getDetails()가 null일 가능성이 있으면 빈 리스트로 처리
+            List<RefundDetail> src = rf.getDetails() != null ? rf.getDetails()
+                    : java.util.Collections.emptyList();
 
-        // 승인 수량만 노출
-        List<Map<String, Object>> details = rdList.stream()
-                .filter(d -> d.getRefundQty() > 0) // int라 null 아님
-                .map(d -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
+            List<Map<String, Object>> details = src.stream()
+                    // int 이므로 null 비교 금지! 0 초과만 필터
+                    .filter(d -> d.getRefundQty() > 0)
+                    .map(d -> {
+                        Map<String, Object> m = new java.util.LinkedHashMap<>();
 
-                    String productName = "-";
-                    if (d.getOrderDetail() != null && d.getOrderDetail().getProduct() != null) {
-                        productName = d.getOrderDetail().getProduct().getName();
-                    }
+                        String productName = "-";
+                        if (d.getOrderDetail() != null && d.getOrderDetail().getProduct() != null) {
+                            productName = String.valueOf(d.getOrderDetail().getProduct().getName());
+                        }
 
-                    int refundQty = d.getRefundQty();
-                    int unit      = d.getUnitRefundAmount();
-                    int subtotal  = refundQty * unit;
+                        int refundQty = d.getRefundQty(); // primitive int
+                        long unit = d.getUnitRefundAmount(); // primitive int 라면 long 으로 승격
+                        long subtotal = unit * (long) refundQty;
 
-                    m.put("productName", productName);
-                    m.put("refundQty", refundQty);
-                    m.put("unitRefundAmount", unit);
-                    m.put("subtotal", subtotal);
-                    return m;
-                })
-                .collect(Collectors.toList());
+                        m.put("productName", productName);
+                        m.put("refundQty", refundQty);
+                        m.put("unitRefundAmount", unit);
+                        m.put("subtotal", subtotal);
+                        return m;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
 
-        Map<String, Object> rm = new LinkedHashMap<>();
-        rm.put("refundId",  rf.getRefundId());                                      // ← key: 사용 금지! (자바 문법 아님)
-        rm.put("status",    rf.getStatus());
-        rm.put("createdAt", rf.getCreateDate() != null ? rf.getCreateDate().format(fmt) : "");
-        rm.put("reason",    rf.getRequestedReason() == null ? "" : rf.getRequestedReason());
-        rm.put("details",   details);
-        return rm;
-    }).collect(Collectors.toList());
+            Map<String, Object> rm = new java.util.LinkedHashMap<>();
+            // 엔티티 실제 게터명으로 맞춤
+            rm.put("refundId", rf.getRefundId()); // ← getId() 아님
+            rm.put("status", rf.getStatus());
+            rm.put("createdAt", rf.getCreateDate() != null ? rf.getCreateDate().format(fmt) : "");
+            rm.put("reason", rf.getRequestedReason() != null ? rf.getRequestedReason() : ""); // ← getReason() 아님
+            rm.put("details", details);
+            return rm;
+        }).collect(java.util.stream.Collectors.toList());
 
-    Map<String, Object> body = new LinkedHashMap<>();
-    body.put("refunds", refundMaps); // 없으면 []
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("refunds", refundMaps);
+        return ResponseEntity.ok(body);
+    }
 
-    return ResponseEntity.ok(body);
-}
 }

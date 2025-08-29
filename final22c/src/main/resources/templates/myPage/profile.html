@@ -1,31 +1,106 @@
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/layout}">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
 
   <!-- 페이지 공용 레이아웃 유틸(글로벌에 있다면 생략) -->
   <style>
-    .mp-grid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start}
-    .mp-col-left{position:sticky;top:24px;align-self:start}
-    .mypage-body{max-width:900px;margin:0 auto}
-    .page-title{font-size:20px;font-weight:800;margin:0 0 12px}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px}
-    .row{display:flex;gap:12px}
-    .field{margin:10px 0}
-    .field>label{display:block;margin-bottom:6px;font-weight:700}
-    .field>input{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px}
-    .btn{padding:8px 12px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
-    .btn.primary{background:#111827;color:#fff;border-color:#111827}
-    .error{color:#dc2626;margin-top:6px}
-    .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);border:0}
+    :root {
+      scrollbar-gutter: stable;
+    }
+
+    html {
+      overflow-y: scroll;
+    }
+
+    .mp-grid {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start
+    }
+
+    .mp-col-left {
+      position: sticky;
+      top: 24px;
+      align-self: start
+    }
+
+    .mypage-body {
+      max-width: 900px;
+      margin: 0 auto
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 12px
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px
+    }
+
+    .row {
+      display: flex;
+      gap: 12px
+    }
+
+    .field {
+      margin: 10px 0
+    }
+
+    .field>label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 700
+    }
+
+    .field>input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px
+    }
+
+    .btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      cursor: pointer
+    }
+
+    .btn.primary {
+      background: #111827;
+      color: #fff;
+      border-color: #111827
+    }
+
+    .error {
+      color: #dc2626;
+      margin-top: 6px
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      border: 0
+    }
   </style>
 
   <section class="mypage-wrap">
     <div class="mp-grid">
 
       <!-- 좌측: 페이지 이동용 사이드박스 -->
-      <div class="mp-col-left"
-           th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+      <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
 
       <!-- 우측: 본문 -->
       <div class="mp-col-right">
@@ -37,7 +112,8 @@
           <div class="card" th:if="${verified == null || !verified}">
             <p style="margin:0 0 10px">보안을 위해 비밀번호를 다시 입력해 주세요.</p>
             <div class="row">
-              <input id="guardPassword" type="password" placeholder="비밀번호" style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+              <input id="guardPassword" type="password" placeholder="비밀번호"
+                style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:10px">
               <button id="guardSubmit" class="btn primary">확인</button>
             </div>
             <div id="guardError" class="error" aria-live="polite"></div>
@@ -113,4 +189,5 @@
   </script>
 
 </div>
+
 </html>
