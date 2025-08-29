@@ -150,7 +150,7 @@ input[type=number]::-webkit-outer-spin-button {
     grid-column:1; justify-self:center;
 }
 .list-panel .actions label.head-label > span{
-    grid-column:2; align-self:center; color:#374151; font-weight:600;
+    grid-column:2; align-self:center; color:#888; 
 }
 
 .list-panel .actions #btnRemove{ grid-column:4; justify-self:end; align-self:center; width:auto; }

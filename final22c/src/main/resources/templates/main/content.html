@@ -121,9 +121,17 @@
       <div class="productInfo">
         <div id="product-detail">
           <div class="mb-3 py-3 border-bottom pd-head">
-            <a class="brand-link" th:href="@{|/main/brand/${product.brand.id}|}">
-              <span class="brand" th:text="${product.brand.brandName}"></span>
-            </a>
+            <div class="brand-row">
+              <a class="brand-link" th:href="@{|/main/brand/${product.brand.id}|}">
+                <span th:text="${product.brand.brandName}"></span>
+              </a>
+              <button type="button" class="bm-btn" aria-pressed="false" title="북마크">
+                <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
+                  <path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+                </svg>
+              </button>
+            </div>
             <div>
               <strong class="title" th:text="${product.name}"></strong>
             </div>
