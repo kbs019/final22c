@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>22°C - MyType</title>
+
+  <!-- 페이지 전용 스타일 -->
+  <th:block layout:fragment="css">
+    <style>
+      :root { scrollbar-gutter: stable; }
+      html { overflow-y: scroll; }
+
+      /* 날씨 배너 */
+      .weather-banner{
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+        border: 1px solid rgba(0,0,0,.06);
+      }
+      .weather-icon{
+        width:64px;height:64px;display:flex;align-items:center;justify-content:center;
+        border-radius:18px;background:rgba(255,255,255,.7);
+      }
+      .wx-temp{ font-size:42px; font-weight:800; line-height:1; }
+      .wx-meta{ color:#6b7280; }
+
+      /* ★ 변경: 해시태그를 a 태그로 사용하므로 버튼 느낌 스타일 */
+      .tag-badge{
+        display:inline-block;                /* ★ 변경 */
+        padding:.35rem .7rem; 
+        border-radius:999px;
+        background:#f3f4f6;
+        border:1px solid #e5e7eb;           /* ★ 변경 */
+        text-decoration:none;                /* ★ 변경 */
+        color:#111;                          /* ★ 변경 */
+      }
+      .tag-badge:hover{ background:#eef2ff; border-color:#c7d2fe; } /* ★ 추가 */
+
+      .hover-up{ transition:transform .15s ease; }
+      .hover-up:hover{ transform:translateY(-2px); }
+    </style>
+  </th:block>
+</head>
+
+<body>
+<div layout:fragment="content" class="container py-4">
+
+  <!-- ===== 날씨 배너 ===== -->
+  <div id="wx-card" class="weather-banner rounded-4 shadow-sm p-4 mb-4">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+
+      <!-- 아이콘 -->
+      <div class="weather-icon fs-2" id="wx-icon">☀️</div>
+
+      <!-- 온도/상태 -->
+      <div class="me-auto">
+        <div class="d-flex align-items-baseline gap-2">
+          <div id="wx-temp" class="wx-temp">--°C</div>
+          <span id="wx-cond" class="badge text-bg-secondary">--</span>
+        </div>
+        <!-- 숨김: JS가 참조하므로 DOM은 유지 -->
+        <div class="wx-meta small mt-1 d-none">
+          습도 <span id="wx-hum">--</span>% · 강수량 <span id="wx-pr">--</span>mm · 운량 <span id="wx-cloud">--</span>%
+        </div>
+      </div>
+
+      <!-- 추천 요약 -->
+      <div class="text-end">
+        <div class="fw-semibold mb-1">오늘은 이렇게 뿌려요~</div>
+        <div id="wx-tags" class="d-flex flex-wrap gap-2 justify-content-end"><!-- JS가 채움 --></div>
+      </div>
+
+    </div>
+  </div>
+
+</div> <!-- /content -->
+
+<!-- ===== 스크립트 ===== -->
+<th:block layout:fragment="script">
+<script>
+(function(){
+  const $id = (x)=>document.getElementById(x);
+  const root = $id('wx-card'); if(!root) return;
+
+  const iconEl = $id('wx-icon');
+  const tempEl = $id('wx-temp');
+  const condEl = $id('wx-cond');
+  const humEl  = $id('wx-hum');
+  const prEl   = $id('wx-pr');
+  const cloudEl= $id('wx-cloud');
+  const tagsBox= $id('wx-tags');
+
+  /* ★ 추가: 메인노트 한글명 -> ID 매핑 (요청 라우팅 규격) */
+  const NOTE_ID_BY_NAME = {
+    '스파이시':1, '우디':2, '허벌':3, '프루티':4,
+    '구르망':5, '플로랄':6, '시트러스':7, '바닐라':8
+  };
+
+  /* ----- 상태/아이콘 ----- */
+  function condKo(c){
+    const k = (c||'').toUpperCase();
+    if (/RAIN|DRIZZLE|SHOWER/.test(k)) return '비';
+    if (/SNOW/.test(k)) return '눈';
+    if (/CLOUD/.test(k)) return '구름';
+    if (/HOT/.test(k)) return '더움';
+    if (/COLD/.test(k)) return '추움';
+    return '온화';
+  }
+  function condIcon(c){
+    const k = (c||'').toUpperCase();
+    if (/RAIN|DRIZZLE|SHOWER/.test(k)) return '🌧️';
+    if (/SNOW/.test(k)) return '❄️';
+    if (/CLOUD/.test(k)) return '⛅';
+    return '☀️';
+  }
+  function badgeClassByCond(c){
+    const k = (c||'').toUpperCase();
+    if (/RAIN|DRIZZLE|SHOWER/.test(k)) return 'text-bg-primary';
+    if (/SNOW/.test(k)) return 'text-bg-info';
+    if (/HOT/.test(k)) return 'text-bg-warning text-dark';
+    if (/COLD/.test(k)) return 'text-bg-dark';
+    if (/CLOUD/.test(k)) return 'text-bg-secondary';
+    return 'text-bg-success';
+  }
+
+  /* ----- 날씨 호출 ----- */
+  async function fetchNow(lat, lon){
+    const q = new URLSearchParams({lat, lon});
+    const r = await fetch('/api/weather/now?' + q);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }
+
+  /* ----- 날씨 → 메인노트(우리 8종) 매핑 ----- */
+  function toRec(wx){
+    const t = Number(wx.tempC ?? wx.temp ?? 0);
+    const hum = Number(wx.humidity ?? 0);
+    const pr  = Number(wx.precipitation ?? 0);
+    const cloud = Number(wx.cloud ?? 0);
+    const rainy = pr >= 0.1 || /rain|snow/i.test(wx.condition||'');
+    const hot   = t >= 28;
+    const cold  = t <= 12;
+    const humid = hum >= 70;
+    const cloudy= cloud >= 70;
+
+    if (hot && humid)  return { key:'hot_humid', notes:['시트러스','플로랄','허벌'] };
+    if (hot)           return { key:'hot',       notes:['프루티','시트러스','우디'] };
+    if (cold)          return { key:'cold',      notes:['바닐라','구르망','스파이시'] };
+    if (rainy || cloudy) return { key:'rainy',   notes:['우디','스파이시'] };
+    return                             { key:'mild',      notes:['플로랄','프루티','허벌'] };
+  }
+
+  /* ----- 상단 배너 렌더 ----- */
+  function renderWeather(wx){
+    const t = Number(wx.tempC ?? wx.temp ?? 0);
+    const cko = wx.conditionKo || condKo(wx.condition);
+    const cls = badgeClassByCond(wx.condition);
+
+    iconEl.textContent = condIcon(wx.condition);
+    tempEl.textContent = (t.toFixed ? t.toFixed(1) : Math.round(t)) + '°C';
+    condEl.className = 'badge ' + cls;
+    condEl.textContent = cko;
+
+    humEl.textContent   = wx.humidity ?? '--';
+    prEl.textContent    = (wx.precipitation ?? 0).toFixed ? (wx.precipitation).toFixed(1) : (wx.precipitation ?? 0);
+    cloudEl.textContent = wx.cloud ?? '--';
+  }
+
+  /* ----- 추천 태그 렌더: 각 태그를 /main/list?mainNoteIds={id} 링크로 ----- */
+  function renderTags(notes, recKey){
+    tagsBox.innerHTML = '';
+    notes.forEach(name=>{
+      const id = NOTE_ID_BY_NAME[name];           // ★ 변경: 이름→ID
+      if (!id) return;
+      const a  = document.createElement('a');     // ★ 변경: a 태그로 링크
+      a.className   = 'tag-badge';
+      a.href        = `/main/list?mainNoteIds=${id}`;         // ★ 변경: 목적지
+      a.textContent = `#${name}`;
+      a.setAttribute('aria-label', `${name} 향수 보러가기`);
+      tagsBox.appendChild(a);
+    });
+  }
+
+  /* ----- (선택) 추천 상품 API: 메인노트 배열로 조회 (그대로 유지) ----- */
+  async function fetchRecoByNotes(notes){
+    try{
+      const qs = new URLSearchParams();
+      notes.forEach(n => qs.append('mainNote', n));
+      const r = await fetch('/api/reco?' + qs.toString());
+      if(!r.ok) return [];
+      return r.json(); // [{id,name,brand,price,imageUrl}, ...]
+    }catch(_){ return []; }
+  }
+  function renderReco(items){
+    const recGrid  = document.getElementById('rec-grid');
+    const recItems = document.getElementById('rec-items');
+    if(!recGrid || !recItems) return; // 페이지에 없으면 스킵
+
+    if(!items || items.length === 0) return;
+    recItems.innerHTML = '';
+    items.forEach(p=>{
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.innerHTML = `
+        <div class="card h-100 hover-up">
+          <a href="/product/${p.id}" class="ratio ratio-1x1 d-block">
+            <img src="${p.imageUrl}" alt="${p.name}" class="w-100 h-100 p-3" style="object-fit:contain;">
+          </a>
+          <div class="card-body">
+            <div class="fw-semibold text-truncate">${p.name}</div>
+            <div class="small text-secondary">${p.brand ?? ''}</div>
+            <div class="fw-bold mt-1">${(p.price ?? 0).toLocaleString()}원</div>
+          </div>
+        </div>`;
+      recItems.appendChild(col);
+    });
+    recGrid.style.display = '';
+  }
+
+  async function boot(lat, lon){
+    const wx = await fetchNow(lat, lon);
+    renderWeather(wx);
+
+    const {key, notes} = toRec(wx);
+    renderTags(notes, key);
+
+    // (선택) 추천 카드가 있다면 사용
+    const items = await fetchRecoByNotes(notes).catch(()=>[]);
+    if (items.length) renderReco(items);
+  }
+
+  // 좌표: 지오로케이션 → 실패 시 서울
+  const fallback = () => boot(37.5665,126.9780);
+  if ('geolocation' in navigator){
+    navigator.geolocation.getCurrentPosition(
+      p => boot(p.coords.latitude, p.coords.longitude),
+      _ => fallback(),
+      { timeout: 5000 }
+    );
+  } else fallback();
+
+  // (옵션) 탭 복귀 시 갱신
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) fallback(); });
+  // setInterval(fallback, 10*60*1000); // 필요 시 주기 갱신
+})();
+</script>
+</th:block>
+
+</body>
+</html>

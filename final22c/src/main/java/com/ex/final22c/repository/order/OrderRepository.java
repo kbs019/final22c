@@ -19,10 +19,8 @@ import com.ex.final22c.data.order.Order;
 
 import jakarta.persistence.LockModeType;
 
-import java.time.LocalDateTime;
+
 import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {

@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ex.final22c.OutOfStockException;
 import com.ex.final22c.data.cart.CartLine;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.order.OrderDetail;
@@ -15,6 +16,7 @@ import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.repository.orderDetail.OrderDetailRepository;
 import com.ex.final22c.repository.user.UserRepository;
+import com.ex.final22c.service.cart.CartService;
 import com.ex.final22c.service.product.ProductService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class OrderService {
     private final ProductService productService;
     private final UserRepository usersRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final CartService cartService;
 
     private static final int SHIPPING_FEE = 3000;
 
@@ -53,7 +56,12 @@ public class OrderService {
 
         // 1) 재고 ‘예약’(감소) — 승인 전이지만 오버셀 방지용으로 미리 잡아둠
         //    실패 시(재고 부족 등) 예외 발생 → 트랜잭션 롤백
-        productService.decreaseStock(p.getId(), quantity);
+        try {
+            productService.decreaseStock(p.getId(), quantity);
+        } catch (IllegalStateException e) {
+            // 내부 상세 메시지는 숨기고, 사용자 친화 메시지로 변환
+            throw new OutOfStockException();
+        }
 
         // 2) 주문 + 디테일(가격 스냅샷) 저장
         Order order = new Order();
@@ -99,6 +107,14 @@ public class OrderService {
 
         if ("PAID".equalsIgnoreCase(o.getStatus())) return; // 멱등
 
+        // 0) 결제 성공했으니까 장바구니에서 삭제해주기
+        var ids = o.getSelectedCartDetailIds();
+        if (ids != null && !ids.isEmpty()) {
+        	String username = o.getUser().getUserName();
+        	cartService.removeAll(username, ids);
+        	o.getSelectedCartDetailIds().clear();  // -> 조인테이블에도 행삭제
+        }
+        
         // 1) 마일리지 차감
         int used = o.getUsedPoint();
         if (used > 0) {
@@ -204,7 +220,8 @@ public class OrderService {
                                         int shipping,      // 보통 3000
                                         int usedPoint,     // 서버 클램프
                                         int payableHint,   // 프론트 계산 값(참고용)
-                                        ShipSnapshotReq ship) {
+                                        ShipSnapshotReq ship,
+                                        List<Long> selectedCartDetailIds) {
         if (lines == null || lines.isEmpty()) {
             throw new IllegalArgumentException("선택된 상품이 없습니다.");
         }
@@ -225,7 +242,11 @@ public class OrderService {
             int qty = Math.max(1, l.getQuantity());
             Product p = productService.getProduct(l.getId());
             if (p == null) throw new IllegalArgumentException("상품 없음: " + l.getId());
-            productService.decreaseStock(p.getId(), qty); // 예약
+            try {
+                productService.decreaseStock(p.getId(), qty); // 예약
+            } catch (IllegalStateException e) {
+                throw new OutOfStockException(); // 전체 트랜잭션 롤백
+            }
         }
 
         // 2) 주문 + 각 라인의 가격 스냅샷 저장
@@ -234,7 +255,9 @@ public class OrderService {
         order.setUsedPoint(use);
         order.setTotalAmount(payable);   // 스냅샷 결제금
         order.setShippingSnapshot(ship); // 배송지 스냅샷
-
+        
+        order.selectedCartDetailIds(selectedCartDetailIds);
+        
         for (CartLine l : lines) {
             Product p = productService.getProduct(l.getId()); // 영속 엔티티
             int qty  = Math.max(1, l.getQuantity());

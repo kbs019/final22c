@@ -1,7 +1,6 @@
 package com.ex.final22c.controller.admin;
 
 import java.io.IOException;
-import java.security.Principal;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -28,6 +27,7 @@ import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
@@ -36,6 +36,7 @@ import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.service.admin.AdminService;
 import com.ex.final22c.service.refund.RefundService;
+import com.ex.final22c.service.stats.StatsService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -45,15 +46,19 @@ import lombok.RequiredArgsConstructor;
 public class AdminController {
 	private final AdminService adminService;
 	private final RefundService refundService;
+	private final StatsService statsService;
 
 	// 회원목록
 	@GetMapping("userList")
-	public String userList(Model model, @RequestParam(value = "page", defaultValue = "0") int page,
-			@RequestParam(value = "kw", defaultValue = "") String kw) {
-		Page<Users> user = adminService.getList(page, kw);
-		model.addAttribute("user", user);
-		model.addAttribute("kw", kw);
-		return "admin/userList";
+	public String userList(Model model,
+	                       @RequestParam(value = "page", defaultValue = "0") int page,
+	                       @RequestParam(value = "kw", defaultValue = "") String kw,
+	                       @RequestParam(value = "filter", defaultValue = "") String filter) {
+	    Page<Users> user = adminService.getList(page, kw, filter);
+	    model.addAttribute("user", user);
+	    model.addAttribute("kw", kw);
+	    model.addAttribute("filter", filter);
+	    return "admin/userList";
 	}
 
 	// 회원 정지
@@ -326,6 +331,7 @@ public class AdminController {
 		return "admin/orderDetail :: items";
 	}
 
+
 	// 상품 통계
 	@GetMapping("stats")
 	public String statsList(Model model, @RequestParam(value = "kw", defaultValue = "") String kw,
@@ -350,4 +356,50 @@ public class AdminController {
 
 		return "admin/stats";
 	}
+
+	// {id} 상품의 통계 화면
+	@GetMapping("stats/{id}")
+	public String productStatsShow(@PathVariable("id") Long id, Model model) {
+		Product p = adminService.findProduct(id);
+		model.addAttribute("product", p);
+		return "admin/stat";
+	}
+
+	// Ajax: 구매자 통계
+	@GetMapping("stats/{id}/buyers")
+	@ResponseBody
+	public Map<String, Object> productBuyerStats(@PathVariable("id") Long id) {
+		return adminService.buildBuyerStats(id);
+	}
+
+	// // (미사용) Ajax: 매출 통계 훅 - 비워둠
+	// @GetMapping("stats/{id}/sales")
+	// @ResponseBody
+	// public Map<String, Object> productSalesStats(@PathVariable("id") Long id) {
+	// 	return Map.of();
+	// }
+
+    // GET /admin/stats/{productId}/sales?unit=DAY&date=2025-08-28
+    // GET /admin/stats/{productId}/sales?unit=WEEK&date=2025-08 (YYYY-MM)
+    // GET /admin/stats/{productId}/sales?unit=MONTH&year=2025
+    // GET /admin/stats/{productId}/sales?unit=YEAR
+    @GetMapping("/stats/{id}/sales")
+	@ResponseBody
+    public Map<String, Object> salesSeries(
+            @PathVariable("id") Long id,
+            @RequestParam("unit") String unit,
+            @RequestParam(name="date", required = false) String date,
+            @RequestParam(name="year", required = false) Integer year) {
+        return statsService.buildSeries(id, unit, date, year);
+    }
+
+	
+	// 리뷰 관리
+	@GetMapping("reviewList")
+	public String reviewList(@RequestParam(name = "page", defaultValue="0") int page,Model model) {
+		Page<Review> re = this.adminService.getReview(page);
+		model.addAttribute("re",re);
+		return "admin/reviewList";
+	}
+
 }

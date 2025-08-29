@@ -51,8 +51,8 @@
                             <th scope="col">상품번호</th>
                             <th scope="col">상품명</th>
                             <th scope="col">브랜드</th>
-                            <th scope="col">매입가</th>
                             <th scope="col">정가</th>
+                            <th scope="col">매입가</th>
                             <th scope="col">판매가</th>
                             <th scope="col">판매량</th>
                             <th scope="col">통계</th>
@@ -63,14 +63,13 @@
                             <td th:text="${p.id}"></td>
                             <td th:text="${p.name}"></td>
                             <td th:text="${p.brand.brandName}"></td>
-                            <td th:text="${#numbers.formatInteger(p.costPrice, 3, 'COMMA')}"></td>
                             <td th:text="${#numbers.formatInteger(p.price, 3, 'COMMA')}"></td>
+                            <td th:text="${#numbers.formatInteger(p.costPrice, 3, 'COMMA')}"></td>
                             <td th:text="${#numbers.formatInteger(p.sellPrice, 3, 'COMMA')}"></td>
                             <td th:text="${confirmedSumMap[p.id]}">0</td>
                             <td>
                                 <div>
-                                    <a href="javascript:void(0);" class="btn btn-link fs-4 text-dark view-stats"
-                                        th:attr="data-id=${p.id}"
+                                    <a th:href="@{/admin/stats/{id}(id = ${p.id})}"
                                         style="text-decoration: none; color: inherit;">&gt;</a>
                                 </div>
                             </td>

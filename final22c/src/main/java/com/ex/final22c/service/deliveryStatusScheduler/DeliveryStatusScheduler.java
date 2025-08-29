@@ -33,11 +33,11 @@ public class DeliveryStatusScheduler {
     }
 
     /** 결제대기 만료: 오래된 PENDING → FAILED */
-    @Scheduled(cron = "0 */5 * * * *")  // 5분마다 점검
+    @Scheduled(cron = "0 */1 * * * *")  // 1분마다 점검
     @Transactional
     public void expireOldPendings() {
-        // 정책: 15분 넘게 결제창 단계면 실패 처리
-        LocalDateTime threshold = LocalDateTime.now().minusMinutes(15);
+        // 정책: 2분 넘게 결제창 단계면 실패 처리
+        LocalDateTime threshold = LocalDateTime.now().minusMinutes(2);
         int affected = orderRepository.failOldPendings(threshold);
         if (affected > 0) {
             log.info("Expired old pendings to FAILED: {}", affected);

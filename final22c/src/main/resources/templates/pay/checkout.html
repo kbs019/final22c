@@ -29,6 +29,15 @@
       body.overlay-lock{ overflow:hidden; }
       .line{display:flex;gap:14px;align-items:center;margin-top:10px}
       .thumb{width:60px;height:60px;border:1px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+
+      /* === 토스트(부드러운 오류 메시지용) === */
+      .cc-toast {
+        position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+        padding: 12px 16px; background: rgba(0,0,0,.86); color: #fff;
+        border-radius: 10px; font-size: 14px; z-index: 99999;
+        box-shadow: 0 6px 30px rgba(0,0,0,.3); opacity: 0; transition: opacity .18s ease;
+      }
+      .cc-toast.show { opacity: 1; }
     </style>
   </th:block>
 
@@ -139,7 +148,7 @@
       <div class="card">
         <div class="point-box">
           <strong>마일리지</strong>
-          <span class="point-badge">보유 <span id="ownedPoint" th:text="${#numbers.formatInteger(user.mileage, 1, 'COMMA')} + '원'">
+          <span class="point-badge">보유 <span id="ownedPoint" th:text="${#numbers.formatInteger(user.mileage, 1, 'COMMA')} + '원'"></span></span>
         </div>
         <div class="point-box" style="margin-top:8px;">
           <input id="usePoint" type="text" placeholder="사용할 마일리지" value="0" th:attr="max=${user.mileage}">
@@ -163,7 +172,7 @@
         <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(summary.grandTotal*0.05,0)}+'원'"></span></div>
 
         <input type="hidden" id="mode" value="cart">
-        	<button id="payBtn" th:disabled="${defaultAddr == null}" th:data-has-addr="${defaultAddr != null}" class="btn" type="button">결제하기</button>
+        <button id="payBtn" th:disabled="${defaultAddr == null}" th:data-has-addr="${defaultAddr != null}" class="btn" type="button">결제하기</button>
       </div>
 
       <!-- 결제 상세 (단건 모드) -->
@@ -179,7 +188,7 @@
         <input type="hidden" id="product_id" th:value="${product.id}">
         <input type="hidden" id="qty"        th:value="${qty}">
         <input type="hidden" id="lineTotal"  th:value="${lineTotal}">
-       		 <button id="payBtn" th:disabled="${defaultAddr == null}" th:data-has-addr="${defaultAddr != null}" class="btn" type="button">결제하기</button>
+        <button id="payBtn" th:disabled="${defaultAddr == null}" th:data-has-addr="${defaultAddr != null}" class="btn" type="button">결제하기</button>
       </div>
     </div>
 
@@ -277,7 +286,7 @@
             crossorigin="anonymous"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
-    <!-- ✅ 전역: 모달이 모두 닫히면 스크롤 잠금/백드롭 확실히 해제 -->
+    <!-- 전역: 모달이 모두 닫히면 스크롤 잠금/백드롭 확실히 해제 -->
     <script>
       (function(){
         function fullyUnlockScroll(){
@@ -292,9 +301,39 @@
         window.addEventListener('resize', function(){ setTimeout(fullyUnlockScroll, 0); });
         window._unlockAfterAddressChange = function(){ setTimeout(fullyUnlockScroll, 50); };
       })();
+
+      // === 간단 토스트 ===
+      function showToast(msg, ms=2200){
+        const t = document.createElement('div');
+        t.className = 'cc-toast';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        requestAnimationFrame(()=> t.classList.add('show'));
+        setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=> t.remove(), 180); }, ms);
+      }
+
+      // 에러 응답에서 "예쁜 한 줄"만 추출
+      function extractErrorMessage(xhr){
+        let msg = '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+        try {
+          if (xhr.responseJSON && xhr.responseJSON.message) return xhr.responseJSON.message;
+          if (xhr.responseText) {
+            try {
+              const p = JSON.parse(xhr.responseText);
+              if (p && p.message) return p.message;
+            } catch(_) {
+              // 스택트레이스 문자열이면 가독화
+              if (xhr.status === 409) return '재고가 부족합니다. 다른 사용자와 동시에 결제 중일 수 있어요.';
+              if (/OutOfStock|재고/.test(xhr.responseText)) return '재고가 부족합니다.';
+            }
+          }
+        } catch(_) {}
+        if (xhr.status === 409) msg = '재고가 부족합니다. 다른 사용자와 동시에 결제 중일 수 있어요.';
+        return msg;
+      }
     </script>
 
-    <!-- ✅ 결제 로직 -->
+    <!-- 결제 로직 -->
     <script th:inline="javascript">
     $(function(){
       /* ================== 안전한 서버 변수 바인딩 ================== */
@@ -541,65 +580,59 @@
       }
 
       function watchPopupClose(win, orderId){
-    	    const token  = $('meta[name="_csrf"]').attr('content');
-    	    const header = $('meta[name="_csrf_header"]').attr('content');
+        const token  = $('meta[name="_csrf"]').attr('content');
+        const header = $('meta[name="_csrf_header"]').attr('content');
 
-    	    const RETRIES = 10;      // 총 재시도 횟수 (약 6~8초 버퍼)
-    	    const DELAY   = 700;     // 시도 간격(ms)
-    	    let tries = 0;
+        const RETRIES = 2;
+        const DELAY   = 200;
+        let tries = 0;
 
-    	    const timer = setInterval(function(){
-    	      if (!win || win.closed) {
-    	        clearInterval(timer);
+        const timer = setInterval(function(){
+          if (!win || win.closed) {
+            clearInterval(timer);
 
-    	        // 승인 콜백이 도착할 시간을 조금 더 줌
-    	        function checkOnce(){
-    	          $.get('/pay/order/' + orderId + '/status')
-    	            .done(function(res){
-    	              const st = (res && res.status || '').toUpperCase();
+            function checkOnce(){
+              $.get('/pay/order/' + orderId + '/status')
+                .done(function(res){
+                  const st = (res && res.status || '').toUpperCase();
 
-    	              if (st === 'PAID') {
-    	                hideOverlay();
-    	                // 성공 경로
-    	                window.location.href = '/main/list';
-    	                return;
-    	              }
-    	              if (st === 'FAILED' || st === 'CANCELED') {
-    	                hideOverlay();
-    	                alert('결제가 실패/취소되었어요.');
-    	                return;
-    	              }
+                  if (st === 'PAID') {
+                    hideOverlay();
+                    window.location.href = '/mypage/order';
+                    return;
+                  }
+                  if (st === 'FAILED' || st === 'CANCELED') {
+                    hideOverlay();
+                    showToast('결제가 실패/취소되었어요.');
+                    return;
+                  }
 
-    	              // 아직도 PENDING이면 재시도
-    	              tries++;
-    	              if (tries < RETRIES) {
-    	                setTimeout(checkOnce, DELAY);
-    	              } else {
-    	                // 충분히 기다렸는데도 PENDING → 이제 취소 처리
-    	                $.ajax({
-    	                  type: "POST",
-    	                  url:  "/pay/cancel-pending",
-    	                  data: { orderId },
-    	                  beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); }
-    	                })
-    	                .always(function(){
-    	                  hideOverlay();
-    	                  alert('결제가 완료되지 않았습니다. 다시 시도해 주세요.');
-    	                });
-    	              }
-    	            })
-    	            .fail(function(){
-    	              tries++;
-    	              if (tries < RETRIES) setTimeout(checkOnce, DELAY);
-    	              else { hideOverlay(); alert('결과 확인 실패. 잠시 후 새로고침해 주세요.'); }
-    	            });
-    	        }
-
-    	        // 첫 체크를 약간 늦춰 승인 콜백 도착 여유를 줌
-    	        setTimeout(checkOnce, 700);
-    	      }
-    	    }, 300);
-    	  }
+                  tries++;
+                  if (tries < RETRIES) {
+                    setTimeout(checkOnce, DELAY);
+                  } else {
+                    $.ajax({
+                      type: "POST",
+                      url:  "/pay/cancel-pending",
+                      data: { orderId },
+                      beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); }
+                    })
+                    .always(function(){
+                      hideOverlay();
+                      showToast('결제가 완료되지 않았습니다. 다시 시도해 주세요.');
+                    });
+                  }
+                })
+                .fail(function(){
+                  tries++;
+                  if (tries < RETRIES) setTimeout(checkOnce, DELAY);
+                  else { hideOverlay(); showToast('결과 확인 실패. 잠시 후 새로고침해 주세요.'); }
+                });
+            }
+            setTimeout(checkOnce, 200);
+          }
+        }, 300);
+      }
 
       /* ================== ★ 배송지 스냅샷 헬퍼 ================== */
       function getShipSnapshot(){
@@ -634,7 +667,7 @@
           hideOverlay();
 
           if (d.status === 'success') {
-            window.location.href = '/main/list';
+            window.location.href = '/mypage/order';
             return;
           }
           if (d.orderId) {
@@ -644,10 +677,10 @@
               data: { reason: d.reason || 'FAIL' },
               beforeSend: csrfHdr
             }).always(function(){
-              alert('결제가 실패/취소되었어요. 다시 시도해 주세요.');
+              showToast('결제가 실패/취소되었어요. 다시 시도해 주세요.');
             });
           } else {
-            alert('결제가 실패/취소되었어요. 다시 시도해 주세요.');
+            showToast('결제가 실패/취소되었어요. 다시 시도해 주세요.');
           }
         });
       })();
@@ -665,7 +698,7 @@
             cartDetailId: it.cartDetailId,
             quantity: Math.max(1, Number(it.quantity)||1),
           }));
-          if (payload.length === 0) { alert("선택된 상품이 없습니다."); return; }
+          if (payload.length === 0) { showToast("선택된 상품이 없습니다."); return; }
 
           $.ajax({
             type: "POST",
@@ -694,13 +727,21 @@
         function onReadyOk(res){
           const payUrl  = res && res.next_redirect_pc_url;
           const orderId = res && res.orderId;
-          if (!payUrl || !orderId) { alert("응답 형식이 올바르지 않습니다."); console.log(res); return; }
+          if (!payUrl || !orderId) { showToast("응답 형식이 올바르지 않습니다."); console.log(res); return; }
           showOverlay();
           const win = openCenteredPopup(payUrl, 520, 720);
           if (win && !win.closed) { try { win.focus(); } catch(_) {} watchPopupClose(win, orderId); }
           else { hideOverlay(); window.location.href = payUrl; }
         }
-        function onReadyErr(xhr){ hideOverlay(); alert("결제 준비 실패 (" + xhr.status + ")\n" + (xhr.responseText||"")); }
+
+        // ★ 여기만 바꿨다: 스택트레이스 대신 "한 줄" 메시지로
+        function onReadyErr(xhr){
+          hideOverlay();
+          const msg = extractErrorMessage(xhr);
+          showToast(msg);
+          // 콘솔에는 상세를 남겨 디버깅 가능
+          console.warn('[pay ready error]', xhr);
+        }
       });
 
       function esc(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }

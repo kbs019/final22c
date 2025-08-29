@@ -12,8 +12,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -28,16 +30,17 @@ import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
+import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Grade;
 import com.ex.final22c.data.product.MainNote;
 import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.product.Volume;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseDetail;
 import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
-import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.repository.order.OrderRepository;
@@ -47,12 +50,12 @@ import com.ex.final22c.repository.productRepository.BrandRepository;
 import com.ex.final22c.repository.productRepository.GradeRepository;
 import com.ex.final22c.repository.productRepository.MainNoteRepository;
 import com.ex.final22c.repository.productRepository.ProductRepository;
+import com.ex.final22c.repository.productRepository.ReviewRepository;
 import com.ex.final22c.repository.productRepository.VolumeRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseDetailRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
-import com.ex.final22c.repository.refundDetail.RefundDetailRepository;
 import com.ex.final22c.repository.user.UserRepository;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -78,7 +81,7 @@ public class AdminService {
     private final PurchaseDetailRepository purchaseDetailRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
-    private final RefundDetailRepository refundDetailRepository;
+    private final ReviewRepository reviewRepository;
     private final OrderDetailRepository orderDetailRepository;
 
     // 브랜드 이미지 경로 지정
@@ -96,14 +99,40 @@ public class AdminService {
 
         };
     }
-
+    // 정지 시간 갱신
+    public void updateUserStatusIfExpired(Users user) {
+        if ("suspended".equals(user.getStatus()) && user.getBanReg() != null) {
+            // banReg가 지났으면 정지 해제
+            if (user.getBanReg().isBefore(LocalDate.now())) {
+                user.setStatus("active");
+                user.setBanReg(null);
+                userRepository.save(user);
+            }
+        }
+    }
     // 전체 회원목록
-    public Page<Users> getList(int page, String kw) {
+    public Page<Users> getList(int page, String kw, String filter) {
         List<Sort.Order> sorts = new ArrayList<>();
         sorts.add(Sort.Order.desc("reg"));
         PageRequest pageable = PageRequest.of(page, 10, Sort.by(sorts));
+
+        // 기존 검색 조건
         Specification<Users> spec = search(kw);
-        return this.userRepository.findAll(spec, pageable);
+
+        // ✅ filter 추가
+        if ("suspended".equals(filter)) {
+            spec = spec.and((root, query, cb) ->
+                cb.or(
+                    cb.equal(root.get("status"), "suspended"),
+                    cb.equal(root.get("status"), "banned")
+                )
+            );
+        }
+
+        Page<Users> result = this.userRepository.findAll(spec, pageable);
+        result.forEach(this::updateUserStatusIfExpired);
+        return result;
+        
     }
 
     // 회원 정보
@@ -621,11 +650,14 @@ public class AdminService {
         return paymentRepository.findByOrder_OrderId(orderId);
     }
     
+
+    private static final List<String> OK = List.of("PAID","CONFIRMED","REFUNDED");
+
     // 판매량 조회
     public Map<Long, Long> getConfirmedQtySumMap(Collection<Long> productIds) {
         if (productIds == null || productIds.isEmpty()) return Collections.emptyMap();
 
-        List<Object[]> rows = orderDetailRepository.sumConfirmQuantityByProductIds(productIds);
+        List<Object[]> rows = orderDetailRepository.sumConfirmQuantityByProductIds(productIds, OK);
         Map<Long, Long> map = new HashMap<>();
         for (Object[] r : rows) {
             Long pid = (Long) r[0];
@@ -637,5 +669,75 @@ public class AdminService {
             map.putIfAbsent(pid, 0L);
         }
         return map;
+    }
+
+    public Product findProduct(Long id){
+        return productRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("상품을 찾을 수 없습니다. id="+id));
+    }
+
+    /** 구매자 통계(고유 구매자 기준) */
+    public Map<String, Object> buildBuyerStats(Long productId){
+        // confirmQuantity > 0 인 주문 상세만 집계
+        List<OrderDetail> details = orderDetailRepository.findConfirmedByProductId(productId);
+
+        // 고유 구매자
+        Map<Long, Users> uniqueBuyers = new LinkedHashMap<>();
+        for (OrderDetail d : details) {
+            if (d.getOrder() == null || d.getOrder().getUser() == null) continue;
+            Users u = d.getOrder().getUser();
+            uniqueBuyers.put(u.getUserNo(), u);
+        }
+
+        int male=0, female=0, unknown=0;
+        int a10=0, a20=0, a30=0, a40=0, a50p=0;
+
+        for (Users u : uniqueBuyers.values()) {
+            // 성별
+            String g = Optional.ofNullable(u.getGender()).orElse("").trim().toUpperCase();
+            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자")) female++;
+            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자")) male++;
+            else unknown++;
+
+            // 연령대 (10~19: 10대, 20~29: 20대, 30~39: 30대, 40~49: 40대, 50+: 50+)
+            Integer age = u.getAge(); // Users.prePersist/Update에서 계산됨
+            if (age != null) {
+                if (age >= 10 && age < 20) a10++;
+                else if (age < 30) a20++;
+                else if (age < 40) a30++;
+                else if (age < 50) a40++;
+                else a50p++;
+            }
+        }
+
+        Map<String,Object> gender = new LinkedHashMap<>();
+        gender.put("female", female);
+        gender.put("male", male);
+        gender.put("unknown", unknown);
+
+        Map<String,Object> age = new LinkedHashMap<>();
+        age.put("t10", a10);
+        age.put("t20", a20);
+        age.put("t30", a30);
+        age.put("t40", a40);
+        age.put("t50p", a50p);
+
+        return Map.of(
+            "productId", productId,
+            "gender", gender,
+            "age", age,
+            "uniqueBuyerCount", uniqueBuyers.size()
+        );
+    }
+
+    // 리뷰 목록
+    public Page<Review> getReview(int page){
+    	List<Sort.Order> sorts = new ArrayList<>();
+        sorts.add(Sort.Order.desc("createDate"));
+        PageRequest pageable = PageRequest.of(page, 10, Sort.by(sorts));
+        
+        Page<Review> result = this.reviewRepository.findAll(pageable);
+        return result;
+
     }
 }

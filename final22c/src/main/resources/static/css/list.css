@@ -1,8 +1,8 @@
 :root{
   --card-radius: 1rem;
   --panel-radius: .75rem;
+  scrollbar-gutter: stable;      /* 필요시 stable both-edges */
 }
-
 /* ===== 검색바 ===== */
 .search-wrap{
   display:flex; justify-content:center;
