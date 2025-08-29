@@ -3,6 +3,7 @@
   --panel-radius: .75rem;
   scrollbar-gutter: stable;      /* 필요시 stable both-edges */
 }
+
 /* ===== 검색바 ===== */
 .search-wrap{
   display:flex; justify-content:center;
@@ -16,6 +17,7 @@
   border-radius:999px;
   padding:.75rem 3rem .75rem 1rem;
   outline:none; background:var(--bs-body-bg);
+  font-size:.95rem;              /* 살짝 컴팩트 */
 }
 .search-box input:focus{
   box-shadow:0 0 0 .2rem rgba(0,0,0,.06);
@@ -88,12 +90,12 @@
 /* 결과 카운트 */
 #result-count{ font-weight: 700; }
 
-/* 다크 모드 대비 */
-@media (prefers-color-scheme: dark){
-  .filter-panel{ border-color: rgba(255,255,255,.12); }
-  #product-grid .card{ border-color: rgba(255,255,255,.12); }
-  #product-grid .card:hover{ border-color: rgba(255,255,255,.22); }
-  .filter-list::-webkit-scrollbar-thumb{ background-color: rgba(255,255,255,.25); }
+/* ===== 정렬 드롭다운 ===== */
+.sort-select{
+  min-width: 180px;
+  border-radius: 999px;
+  padding-left: .9rem;
+  padding-right: .9rem;
 }
 
 /* ===== 가격 표시 (톤다운 레드 텍스트 + 인접 취소선 정가) ===== */
@@ -108,19 +110,19 @@
 .price-row .disc{
   color:#c85a5a;           /* 톤다운 레드 (#c85a5a ~ #cf6161 계열) */
   font-weight:500;         /* 얇은 느낌 */
-  font-size:.95rem;
+  font-size:.92rem;
 }
 
 .price-row .sale{
   font-weight:800;         /* 판매가는 굵게 */
-  font-size:1.05rem;
+  font-size:1.02rem;
   color:#111;
 }
 
 .price-row .list{
   color:#aeb4bb;           /* 눈부시지 않은 연회색 */
   text-decoration:line-through;
-  font-size:.95rem;
+  font-size:.92rem;
   margin-left:.35rem;      /* 판매가 바로 '옆'에 붙도록, 살짝만 여백 */
 }
 
@@ -129,4 +131,18 @@
 .card .price-row .disc,
 .card .price-row .list{
   line-height:1.1;
+}
+
+/* ===== 상품명 폰트 작게(요청사항) ===== */
+.name-compact{
+  font-size:.92rem;        /* 기존보다 축소 */
+  line-height:1.25;
+}
+
+/* 다크 모드 대비 */
+@media (prefers-color-scheme: dark){
+  .filter-panel{ border-color: rgba(255,255,255,.12); }
+  #product-grid .card{ border-color: rgba(255,255,255,.12); }
+  #product-grid .card:hover{ border-color: rgba(255,255,255,.22); }
+  .filter-list::-webkit-scrollbar-thumb{ background-color: rgba(255,255,255,.25); }
 }

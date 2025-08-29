@@ -127,7 +127,7 @@
     <!-- 중앙 리스트 -->
     <section class="col-12 col-md-9 col-lg-10">
       
-      <!-- 상단 검색창 추가 -->
+      <!-- 상단 검색창 -->
       <div class="search-wrap my-2">
         <form id="search-form" class="search-box" action="javascript:void(0);" role="search">
           <input id="keyword" name="q" type="search" placeholder="상품명을 입력하세요"
@@ -141,8 +141,19 @@
 
       <!-- 결과영역(Fragment로 교체) -->
       <div id="list-body" th:fragment="listBody">
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
           <div class="small text-secondary">검색결과 <span id="result-count" th:text="${total}">0</span>개</div>
+
+          <!-- 정렬 드롭다운 (검색창 바로 아래, 우측 정렬) -->
+          <div class="sort-wrap ms-auto">
+            <select id="sort-select" class="form-select form-select-sm sort-select">
+              <option th:value="'id'"         th:selected="${sort == 'id'}">기본순</option>
+              <option th:value="'popular'"    th:selected="${sort == 'popular'}">인기순</option>
+              <option th:value="'priceAsc'"   th:selected="${sort == 'priceAsc'}">가격</option>
+              <option th:value="'priceDesc'"  th:selected="${sort == 'priceDesc'}">가격 높은 순</option>
+              <option th:value="'reviewDesc'" th:selected="${sort == 'reviewDesc'}">리뷰 많은 순</option>
+            </select>
+          </div>
         </div>
 
         <div id="product-grid" class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3">
@@ -151,7 +162,7 @@
               <img th:src="${p['imgUrl']}" th:alt="${p['name']}" class="w-100" style="aspect-ratio:3/4;object-fit:cover;border-top-left-radius:1rem;border-top-right-radius:1rem;">
               <div class="card-body p-2">
                 <div class="small text-secondary" th:text="${p['brandName']}">Brand</div>
-                <div class="fw-semibold text-truncate" th:title="${p['name']}" th:text="${p['name']}">Name</div>
+                <div class="fw-semibold name-compact text-truncate" th:title="${p['name']}" th:text="${p['name']}">Name</div>
                 <!-- 가격영역: 얇은 레드 % + 굵은 판매가 + 바로 옆 정가(취소선) -->
                 <div class="price-row mt-1">
                   <!-- 할인률(텍스트, 얇게) -->
@@ -174,6 +185,42 @@
             </div>
           </div>
         </div>
+
+        <!-- 페이지네이션 -->
+        <nav class="mt-3" aria-label="상품 목록 페이지">
+          <ul class="pagination pagination-sm justify-content-center">
+            <li class="page-item" th:classappend="${page <= 1} ? ' disabled'">
+              <a class="page-link" href="#" data-page="1" aria-label="처음">«</a>
+            </li>
+            <li class="page-item" th:classappend="${page <= 1} ? ' disabled'">
+              <a class="page-link" href="#" th:attr="data-page=${page-1}" aria-label="이전">‹</a>
+            </li>
+
+            <!-- 페이지 숫자 (최대 7개 윈도우) -->
+            <th:block th:with="
+              tp=${totalPages.intValue()},
+              pg=${page},
+
+              _start=${T(java.lang.Math).max(1, pg-2)},
+              _end=${T(java.lang.Math).min(tp, pg+2)},
+              start=${T(java.lang.Math).max(1, T(java.lang.Math).min(_start, tp-4))},
+              end=${T(java.lang.Math).min(tp, T(java.lang.Math).max(_end, 5))}
+            ">
+              <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
+                  th:classappend="${i == page} ? ' active'">
+                <a class="page-link" href="#" th:text="${i}" th:attr="data-page=${i}">1</a>
+              </li>
+            </th:block>
+
+            <li class="page-item" th:classappend="${page >= totalPages} ? ' disabled'">
+              <a class="page-link" href="#" th:attr="data-page=${page+1}" aria-label="다음">›</a>
+            </li>
+            <li class="page-item" th:classappend="${page >= totalPages} ? ' disabled'">
+              <a class="page-link" href="#" th:attr="data-page=${totalPages}" aria-label="마지막">»</a>
+            </li>
+          </ul>
+        </nav>
+
       </div>
 
     </section>
@@ -211,50 +258,67 @@
               .map(function(){ return this.value; }).get();
     }
 
-    // GET 쿼리스트링 생성 (다중 파라미터 + 키워드)
-    function buildQS(){
+    // 현재 sort & page 보관
+    function currentSort(){ return $("#sort-select").val() || "id"; }
+    function currentPage(){ return Number($("#list-body").data("page")) || 1; }
+
+    // GET 쿼리스트링 생성 (다중 파라미터 + 키워드 + 정렬 + 페이지)
+    function buildQS(opts){
+      opts = opts || {};
       var q = [];
       var brand = collect("brand");
       var grade = collect("grade");
       var mn    = collect("mainNote");
       var vol   = collect("volume");
       var kw    = $.trim($("#keyword").val() || "");
+      var sort  = opts.sort || currentSort();
+      var page  = opts.page || 1;
+      var size  = 24; // 고정
+
       if (brand.length) q.push(brand.map(v => "brandIds="    + encodeURIComponent(v)).join("&"));
       if (grade.length) q.push(grade.map(v => "gradeIds="    + encodeURIComponent(v)).join("&"));
       if (mn.length)    q.push(mn.map(v    => "mainNoteIds=" + encodeURIComponent(v)).join("&"));
       if (vol.length)   q.push(vol.map(v   => "volumeIds="   + encodeURIComponent(v)).join("&"));
       if (kw)           q.push("q=" + encodeURIComponent(kw));
+      if (sort)         q.push("sort=" + encodeURIComponent(sort));
+      if (page)         q.push("page=" + encodeURIComponent(page));
+      if (size)         q.push("size=" + encodeURIComponent(size));
       return q.length ? ("?" + q.join("&")) : "";
     }
 
     // 부분 갱신 (항상 GET, 프래그먼트 내부만 교체)
-    function reload(){
-      var url = "/main/list/partial" + buildQS();
+    function reload(opts){
+      opts = opts || {};
+      // 페이지 지정 없으면 1페이지로
+      if (typeof opts.page === "undefined") opts.page = 1;
+
+      var url = "/main/list/partial" + buildQS(opts);
       console.log('[product-list] reload ->', url);
       $("#list-body").load(url + " #list-body>*", function(response, status, xhr){
         if(status !== "success"){
           console.error("[product-list] 부분 로드 실패:", xhr.status, xhr.statusText);
+          return;
         }
+        // 주소 표시 동기화
+        history.replaceState(null, "", "/main/list" + buildQS(opts));
       });
-      // 주소 표시 동기화
-      history.replaceState(null, "", "/main/list" + buildQS());
     }
 
-    // 필터 변경 시 갱신
+    // 필터 변경 시 갱신(1페이지로)
     $(document).on("change", ".filter-check", function(e){
       e.stopPropagation();
-      reload();
+      reload({ page: 1 });
     });
 
-    // 검색 실행
-    $("#search-form").on("submit", function(e){ e.preventDefault(); reload(); });
-    $("#btn-search").on("click", function(e){ e.preventDefault(); reload(); });
+    // 검색 실행(1페이지로)
+    $("#search-form").on("submit", function(e){ e.preventDefault(); reload({ page: 1 }); });
+    $("#btn-search").on("click", function(e){ e.preventDefault(); reload({ page: 1 }); });
 
     // 입력 X 버튼
     const $kw = $("#keyword"), $clear = $("#btn-clear");
     function toggleClear(){ $clear.prop("hidden", !$.trim($kw.val()).length); }
     $kw.on("input", toggleClear);
-    $clear.on("click", function(){ $kw.val(""); toggleClear(); reload(); });
+    $clear.on("click", function(){ $kw.val(""); toggleClear(); reload({ page: 1 }); });
     toggleClear();
 
     // 초기화 버튼: 필터 + 키워드 모두 해제
@@ -264,7 +328,20 @@
       $(".filter-check").prop("checked", false);
       $("#keyword").val("");
       toggleClear();
-      reload();
+      reload({ page: 1 });
+    });
+
+    // 정렬 드롭다운
+    $(document).on("change", "#sort-select", function(){
+      reload({ page: 1, sort: $(this).val() });
+    });
+
+    // 페이지네이션 클릭
+    $(document).on("click", ".pagination .page-link", function(e){
+      e.preventDefault();
+      var p = Number($(this).attr("data-page"));
+      if (!p || $(this).closest(".page-item").hasClass("disabled")) return;
+      reload({ page: p });
     });
   });
 
