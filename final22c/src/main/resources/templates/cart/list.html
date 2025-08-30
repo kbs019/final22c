@@ -221,8 +221,10 @@
 
                 const onKey = (e) => { if (e.key === 'Escape') close(); };
                 const onScrim = (e) => { if (e.target.classList.contains('dlg__scrim')) close(); };
+
                 const close = () => {
                     $root.style.display = 'none';
+                    document.body.classList.remove('dlg-open');   // ← 닫을 때 해제
                     document.removeEventListener('keydown', onKey);
                     $root.removeEventListener('click', onScrim);
                     $close.removeEventListener('click', close);
@@ -233,6 +235,7 @@
                 $root.addEventListener('click', onScrim);
                 $close.addEventListener('click', close);
 
+                document.body.classList.add('dlg-open');        // ← 열릴 때 잠금
                 $root.style.display = 'block';
             });
         }

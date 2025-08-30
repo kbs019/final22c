@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.user.Users;
 
 @Repository
@@ -64,4 +65,15 @@ public interface UserRepository extends JpaRepository<Users, Long> {
            WHERE birth IS NOT NULL
       """, nativeQuery = true)
   int refreshAgesForNewYear();
+
+  // 내 관심목록
+  // 특정 사용자의 관심상품 목록 (페이징)
+  @Query("""
+      select p
+      from Product p
+      join p.zzimers u
+      where u.userName = :userName
+      order by p.id desc
+      """)
+  Page<Product> findZzimedProductsByUsername(@Param("userName") String userName, Pageable pageable);
 }

@@ -1,3 +1,9 @@
+/* 항상 세로 스크롤바를 보여 너비 변화(보정 패딩) 자체를 없앤다 */
+html { overflow-y: scroll; }
+
+/* Bootstrap이 넣는 modal-open 시 패딩 보정을 끈다 */
+body.modal-open { padding-right: 0 !important; }
+
 /* 컨테이너 */
 .pd-head{
   padding: 10px 0 14px;
@@ -99,7 +105,8 @@
   stroke-miterlimit:10;                   /* 뾰족 모서리 유지 */
   transition:fill .15s ease;
 }
-.bm-btn[aria-pressed="true"] .bm-shape{ fill:currentColor; }
+.bm-btn[aria-pressed="true"] .bm-shape{ fill:currentColor; stroke:currentColor; }
+.bm-btn:active{ transform:scale(0.96); }
 
 /* 공통 레이아웃 튜닝 */
 .productInfoWrap{
@@ -209,6 +216,15 @@ input[type=number]::-webkit-outer-spin-button{
     min-width: 280px;
     max-width: 420px;
     box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+
+/* 모달 백드롭을 오른쪽으로 보정 패딩만큼 확장 */
+.modal-open .modal-backdrop {
+  position: fixed;
+  inset: 0;                           /* 상하좌우 0 */
+  right: calc(-1 * var(--bs-scrollbar-width, 0px)) !important;
+  width: auto;                         /* inset 우선 */
+  height: auto;
 }
 
 /* ========= 반응형 전환 ========= */

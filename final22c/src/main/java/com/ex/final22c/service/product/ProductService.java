@@ -11,8 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.productMapper.ProductMapper;
 import com.ex.final22c.repository.productRepository.ProductRepository;
+import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +25,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final UserRepository userRepository;
 
     public List<Product> showList() { return productRepository.findAll(); }
 

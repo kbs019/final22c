@@ -1,3 +1,17 @@
+/* 전역 CSS(bootstrap 뒤) */
+html { 
+    /* 크롬/엣지/사파리 최신: 스크롤바 공간 상시 확보 */
+    scrollbar-gutter: stable;
+    /* 구형 브라우저 대비책 */
+    overflow-y: scroll;
+}
+html, body{
+    overflow-x: hidden;        /* 가로 흰줄 방지 */
+}
+
+/* dlg나 dialog가 열릴 때 body 패딩 보정 금지 */
+body.dlg-open { padding-right: 0 !important; }
+
 /* 헤더 높이 설정 (실제 높이에 맞춰 숫자만 조정) */
 :root { --nav-h: 72px; }   /* 예: 헤더가 약 72px */
 
@@ -108,21 +122,54 @@ input[type=number]::-webkit-outer-spin-button {
 
 /* 모달창 css */
 .dlg{position:fixed;inset:0;z-index:1050;display:none}
-.dlg__scrim{position:absolute;inset:0;background:rgba(0,0,0,.2);backdrop-filter:blur(2px)}
-.dlg__card{
-    position:relative; margin:auto; top:15vh;
-    width:min(480px, calc(100% - 32px));
-    background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.15);
-    overflow:hidden; font-size:14px;
+.dlg.show { display: block; }
+
+
+
+/* 백드롭: 100vw 금지, inset:0 으로 전체 덮기 */
+.dlg__scrim{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
 }
-.dlg__header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eee}
-.dlg__close{border:0;background:transparent;font-size:16px;opacity:.6;cursor:pointer}
+
+/* 카드: 가운데 정렬 */
+.dlg__card{
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 520px;
+    width: calc(100% - 32px);
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.24);
+    z-index: 1061;             /* 백드롭 위 */
+    overflow: hidden;
+}
+
+/* 헤더/바디/푸터(필요 시) */
+.dlg__header,
+.dlg__footer{ padding: 14px 16px; }
+.dlg__body{ padding: 20px 24px 18px; }
+.dlg__header{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; }
+.dlg__footer{ display:flex; gap:8px; justify-content:flex-end; border-top:1px solid #eee; }
+
+.dlg__close{
+    appearance: none; border:0; background:transparent; font-size:18px; line-height:1; cursor:pointer;
+}
+.dlg__btn{ appearance:none; border:1px solid #ddd; background:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; }
+.dlg__btn--primary{ background:#495057; color:#fff; border-color:#495057; }
+
 .dlg__close:hover{opacity:1}
-.dlg__body{padding:16px;line-height:1.6;color:#333}
-.dlg__footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #f0f0f0}
-.dlg__btn{padding:8px 12px;border-radius:8px;border:1px solid #d0d5dd;background:#fff;cursor:pointer}
-.dlg__btn--primary{background:#6b7280;color:#fff;border-color:#6b7280} /* 회색 버튼(스샷 톤) */
+
 .dlg__btn:disabled{opacity:.6;cursor:not-allowed}
+
+/* 모달 열린 동안: 바디 스크롤 잠금 + 패딩 보정 제거 */
+body.dlg-open{
+    overflow: hidden !important;
+    padding-right: 0 !important;
+}
 
 /* 리스트 패널(카드)로 구분감 부여 */
 .list-panel{
