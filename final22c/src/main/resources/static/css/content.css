@@ -1,3 +1,9 @@
+/* 항상 세로 스크롤바를 보여 너비 변화(보정 패딩) 자체를 없앤다 */
+html { overflow-y: scroll; }
+
+/* Bootstrap이 넣는 modal-open 시 패딩 보정을 끈다 */
+body.modal-open { padding-right: 0 !important; }
+
 /* 컨테이너 */
 .pd-head{
   padding: 10px 0 14px;
@@ -13,7 +19,7 @@
   margin-bottom:4px;
 }
 .pd-head .brand{
-  color:#2563eb;                 /* 원하면 바꿔도 됨 */
+  color: #858282;                 /* 원하면 바꿔도 됨 */
   font-weight:700;
   white-space:nowrap;            /* “샤\n넬” 방지 */
   overflow:hidden;
@@ -65,6 +71,43 @@
   font-size:20px;
 }
 
+/* 한 줄에 배치 + 오른쪽 끝으로 아이콘 밀기 */
+.pd-head .brand-row{
+  display:flex; align-items:center; gap:8px;
+}
+.pd-head .brand-link{
+  flex:1 1 auto; min-width:0;            /* 남는 공간 차지 */
+  text-decoration:none; color:inherit;   /* 네이티브 스타일 제거 */
+}
+.pd-head .brand{
+  font-weight:700; color:#2563eb;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* 북마크: 크기/색은 font-size, color로 제어 */
+.bm-btn{
+  appearance:none; background:none; border:0; padding:6px;
+  line-height:1; cursor:pointer; margin-left:auto;   /* 맨 오른쪽 */
+  font-size:22px; color:#111;                        /* ← 여기만 바꾸면 크기/색 변경 */
+}
+
+/* SVG가 글자 크기를 따르도록 1em 사용 */
+.bm-icon{ width:36px; height:36px; display:block; }
+
+/* 외곽선 얇게 + 확대해도 두께 고정 + 모서리 각지게 */
+.bm-shape{
+  fill:none;
+  stroke:currentColor !important;
+  stroke-width:1.5px !important;          /* 필요시 0.8px~1.2px로 미세조정 */
+  vector-effect: non-scaling-stroke;     /* 크기 키워도 선두께 그대로 */
+  stroke-linejoin:miter;                  /* 각 모서리 */
+  stroke-linecap:butt;                    /* 끝도 각 */
+  stroke-miterlimit:10;                   /* 뾰족 모서리 유지 */
+  transition:fill .15s ease;
+}
+.bm-btn[aria-pressed="true"] .bm-shape{ fill:currentColor; stroke:currentColor; }
+.bm-btn:active{ transform:scale(0.96); }
+
 /* 공통 레이아웃 튜닝 */
 .productInfoWrap{
     /* 기존: position:relative; z-index:2; display:flex; margin... */
@@ -85,6 +128,41 @@
     flex: 1 1 0%;                   /* 가능한 한 넓게 차지 */
     min-width: 320px;               /* 너무 좁아지지 않도록 */
     padding-right: 0;               /* gap로 간격 관리하므로 padding 제거 */
+    display: inline-block;
+}
+
+/* 기본 오버레이 숨김 */
+.productInfoWrap .slideWrap .overlay{ display:none; }
+
+/* 품절: 딤 + 중앙 배지 */
+.slideWrap.soldout{ position:relative; }
+
+/* 어둡게 덮는 마스크 */
+.slideWrap.soldout::before{
+  content:"";
+  position:absolute; inset:0;
+  background: rgba(0,0,0,.28);  /* 검정 딤 농도 조절 */
+  z-index:1;
+}
+
+/* 중앙 배지(검정 바탕 + 흰 글자) */
+.slideWrap.soldout .overlay{
+  position:absolute; inset:0;
+  display:flex; justify-content:center; align-items:center;
+  z-index:2; pointer-events:none;
+}
+.slideWrap.soldout .overlay::after{
+  content:"SOLD OUT";
+  font-weight:800;
+  font-size: clamp(90px, 4.0vw, 70px);      /* 크기 증가 */
+  letter-spacing:.08em;
+  color:rgb(255, 255, 255);
+  /* background: rgba(0,0,0,.9);
+  border: 2px solid rgba(0,0,0,.9); */
+  padding: clamp(10px, 1.2vw, 14px) clamp(18px, 2.6vw, 26px); /* ← 패딩도 확대 */
+  /* transform: rotate(-20deg);                ← 살짝 기울기 */
+  /* box-shadow: 0 10px 24px rgba(0,0,0,.36); */
+  will-change: transform;                   /* 렌더링 안정화 */
 }
 
 /* 이미지 반응형 + 세로 과도 확장 방지 */
@@ -138,6 +216,15 @@ input[type=number]::-webkit-outer-spin-button{
     min-width: 280px;
     max-width: 420px;
     box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+
+/* 모달 백드롭을 오른쪽으로 보정 패딩만큼 확장 */
+.modal-open .modal-backdrop {
+  position: fixed;
+  inset: 0;                           /* 상하좌우 0 */
+  right: calc(-1 * var(--bs-scrollbar-width, 0px)) !important;
+  width: auto;                         /* inset 우선 */
+  height: auto;
 }
 
 /* ========= 반응형 전환 ========= */
@@ -276,3 +363,17 @@ input[type=number]::-webkit-outer-spin-button{
 .like-wrap.is-liked{ color:#111; }
 .like-wrap.is-liked .btn-like i{ font-weight: 900; }  /* 아이콘 진하게 */
 
+.bm-btn{appearance:none;background:none;border:0;padding:0;line-height:0;cursor:pointer;color:#111}
+.bm-icon{display:block}
+.bm-shape{
+  fill:none;                      /* 기본: 외곽선만 */
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linejoin:round;
+  transition:fill .15s ease;      /* 클릭 시 부드럽게 채움 */
+}
+/* 눌림 상태: 채움 */
+.bm-btn[aria-pressed="true"] .bm-shape{ fill:currentColor; }
+
+/* 크기/색 바꾸고 싶다면 버튼에 font-size/color만 주면 됨 */
+.bm-btn{ font-size:50px; color:#111; }  /* 24px 아이콘 */

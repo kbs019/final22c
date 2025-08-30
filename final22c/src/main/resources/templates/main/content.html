@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-  layout:decorate="~{layout/layout}">
+  xmlns:sec="https://www.thymeleaf.org/extras/spring-security" layout:decorate="~{layout/layout}">
 
 <head>
   <title>상품 상세</title>
@@ -112,17 +112,27 @@
   <div layout:fragment="content">
     <div class="productInfoWrap">
       <!-- 좌측의 향수 이미지 -->
-      <div class="slideWrap">
-        <img th:src="@{|${product.imgPath}${product.imgName}|}">
+      <div class="slideWrap" th:classappend="${product.count == 0} ? ' soldout'">
+        <img th:src="@{|${product.imgPath}${product.imgName}|}" alt="상품 이미지">
+        <div class="overlay" aria-hidden="true"></div>
       </div>
 
       <!-- 우측 상품 정보 -->
       <div class="productInfo">
         <div id="product-detail">
           <div class="mb-3 py-3 border-bottom pd-head">
-            <a class="brand-link" th:href="@{|/main/brand/${product.brand.id}|}">
-              <span class="brand" th:text="${product.brand.brandName}"></span>
-            </a>
+            <div class="brand-row bm-wrap">
+              <a class="brand-link" th:href="@{|/main/brand/${product.brand.id}|}">
+                <span th:text="${product.brand.brandName}"></span>
+              </a>
+              <button type="button" class="bm-btn" th:attr="aria-pressed=${zzimedByMe} ? 'true' : 'false'"
+                th:title="${zzimedByMe} ? '관심 해제' : '관심 등록'">
+                <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
+                  <path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+                </svg>
+              </button>
+            </div>
             <div>
               <strong class="title" th:text="${product.name}"></strong>
             </div>
@@ -200,6 +210,42 @@
             <span sec:authorize="isAnonymous()">
               <a th:href="@{/user/login}" class="btn btn-secondary" id="goCartBtn">로그인하기</a>
             </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 찜 등록 완료 모달 -->
+    <div class="modal fade" id="zzimDoneModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">관심등록</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body">관심등록이 되어있습니다.</div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 찜 해제 확인 모달 -->
+    <div class="modal fade" id="zzimConfirmModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">관심등록 해제</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body">
+            이미 관심등록이 된 상품입니다.<br>
+            관심등록을 해제하시겠습니까?
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
+            <button class="btn btn-danger btn-confirm">확인</button>
           </div>
         </div>
       </div>
@@ -589,6 +635,87 @@
           }
         });
       });
+    </script>
+
+    <script th:inline="javascript">
+      // ---- 찜(북마크) 토글 ----
+      (function () {
+        const btn = document.querySelector('.bm-btn');
+        if (!btn) return;
+
+        const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+
+        // 모달 준비
+        const doneModalEl = document.getElementById('zzimDoneModal');
+        const confirmModalEl = document.getElementById('zzimConfirmModal');
+        const loginModalEl = document.getElementById('loginRequiredModal');
+
+        const doneModal = doneModalEl ? new bootstrap.Modal(doneModalEl) : null;
+        const confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
+        const loginModal = loginModalEl ? new bootstrap.Modal(loginModalEl) : null;
+        const confirmBtn = confirmModalEl?.querySelector('.btn-confirm');
+
+        let busy = false;
+
+        async function callToggle() {
+          const res = await fetch(`/product/${PRODUCT_ID}/zzim/toggle`, {
+            method: 'POST',
+            credentials: 'same-origin'
+          });
+
+          if (res.status === 401 || res.status === 403) {
+            if (loginModal) loginModal.show(); else location.href = '/user/login';
+            return null;
+          }
+          const ct = res.headers.get('content-type') || '';
+          if (!ct.includes('application/json')) {
+            // 세션 만료 등
+            if (loginModal) loginModal.show(); else location.href = '/user/login';
+            return null;
+          }
+          return res.json();
+        }
+
+        btn.addEventListener('click', async () => {
+          if (busy) return;
+
+          const isPicked = btn.getAttribute('aria-pressed') === 'true';
+
+          // 아직 관심등록이 아니면 → 즉시 등록 요청 → 완료 모달
+          if (!isPicked) {
+            busy = true; btn.disabled = true;
+            try {
+              const data = await callToggle();
+              if (!data) return;
+              btn.setAttribute('aria-pressed', 'true');  // UI on
+              doneModal?.show();
+            } catch (_) {
+            } finally {
+              btn.disabled = false; busy = false;
+            }
+            return;
+          }
+
+          // 이미 관심등록 상태면 → 해제 확인 모달
+          confirmModal?.show();
+
+          // 확인 클릭 시 한 번만 실행
+          if (confirmBtn) {
+            confirmBtn.onclick = async () => {
+              busy = true; btn.disabled = true;
+              try {
+                const data = await callToggle();
+                if (!data) return;
+                btn.setAttribute('aria-pressed', 'false'); // UI off
+                confirmModal.hide();
+              } catch (_) {
+              } finally {
+                btn.disabled = false; busy = false;
+              }
+            };
+          }
+        });
+      })();
     </script>
   </th:block>
 </body>
