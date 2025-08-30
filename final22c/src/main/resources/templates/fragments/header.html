@@ -10,14 +10,6 @@
             <!-- 관리자 메인로고 -->
             <a class="navbar-brand" sec:authorize="hasRole('ADMIN')" href="/admin/userList">Main</a>
             <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
-                <!-- 관리자용 메뉴 -->
-                <ul class="navbar-nav" sec:authorize="hasRole('ADMIN')">
-                    <li class="nav-item"><a class="nav-link" href="/admin/userList">회원관리</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/admin/productList">상품관리</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/admin/orderList">주문관리</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">통계</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">돋보기</a></li>
-                </ul>
                 <!-- 일반 사용자 메뉴 -->
                 <ul class="navbar-nav" sec:authorize="!hasRole('ADMIN')">
                     <li class="nav-item"><a class="nav-link" href="/main">HOME</a></li>
