@@ -206,8 +206,7 @@
     SELECT
       b.BRANDNO                              AS "id",
       b.BRANDNAME                            AS "name",
-      NVL(b.IMGPATH,'') || NVL(b.IMGNAME,'') AS "imgUrl",
-      b.DESCRIPTION                          AS "description"
+      NVL(b.IMGPATH,'') || NVL(b.IMGNAME,'') AS "imgUrl"
     FROM BRAND b
     WHERE b.BRANDNO = #{brandNo}
   </select>
