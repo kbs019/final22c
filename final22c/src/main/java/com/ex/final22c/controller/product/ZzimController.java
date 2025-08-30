@@ -38,8 +38,8 @@ public class ZzimController {
     @PostMapping("/add")
     @ResponseBody
     public ResponseEntity<?> add(@RequestParam(value = "productId", required = false) Long productIdParam,
-                                 @RequestBody(required = false) Map<String, Object> body,
-                                 Principal principal) {
+                                @RequestBody(required = false) Map<String, Object> body,
+                                Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "로그인이 필요합니다."));
@@ -54,7 +54,7 @@ public class ZzimController {
     }
 
     /** 해제: { ok: true } (멱등) */
-    @DeleteMapping("/remove")
+    @PostMapping("/remove")
     @ResponseBody
     public ResponseEntity<?> remove(@RequestParam("productId") Long productId,
                                     Principal principal) {

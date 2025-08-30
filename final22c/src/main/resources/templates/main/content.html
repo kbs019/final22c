@@ -694,7 +694,7 @@
                                 .then(d => !!d.zzimed);
 
       const addZzim    = ()=> fetchJSON(`/zzim/add`,    { method:'POST', body: JSON.stringify({ productId: PRODUCT_ID })});
-      const removeZzim = ()=> fetchJSON(`/zzim/remove?productId=${PRODUCT_ID}`, { method:'DELETE' });
+      const removeZzim = ()=> fetchJSON(`/zzim/remove?productId=${PRODUCT_ID}`, { method:'POST' });
 
       bmBtn.addEventListener('click', ()=> withLock(bmBtn, async ()=>{
         try {
