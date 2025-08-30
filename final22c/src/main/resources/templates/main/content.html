@@ -315,6 +315,25 @@
         <div>- <span th:text="${product.description}"></span></div>
       </div>
 
+      <!-- 구매자 통계 (명수, 인구피라미드) -->
+      <div id="buyer-stats" class="mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="mb-0">구매자 통계</h2>
+          <div class="text-muted small">구매자 수(명) · 확정 수량 존재 기준</div>
+        </div>
+
+        <div class="card p-3">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>WOMAN</span>
+            <span>MAN</span>
+          </div>
+          <div style="height:300px;">
+            <canvas id="buyerStatChart" aria-label="나이/성별별 구매자 수 피라미드 차트"></canvas>
+          </div>
+          <div id="buyerStatEmpty" class="text-muted small mt-2" style="display:none;">데이터가 없습니다.</div>
+        </div>
+      </div>
+
       <!-- 리뷰 섹션 -->
       <div id="review-section" class="mt-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -726,6 +745,129 @@
       }));
     })();
     </script>
+
+    <!-- Chart.js + 구매자 피라미드 렌더 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script th:inline="javascript">
+      (function() {
+        const productId = /*[[${product.id}]]*/ 0;
+        const api = `/main/api/product/${productId}/buyer-stats`;
+        const $canvas = document.getElementById('buyerStatChart');
+        const $empty  = document.getElementById('buyerStatEmpty');
+        if (!$canvas) return;
+
+        // 중앙 라벨 + 중앙 여백(막대 잘라내기) 플러그인
+        const centerPlugin = {
+          id: 'pyramidCenter',
+          beforeDatasetsDraw(chart) {
+            const {ctx, chartArea} = chart;
+            const midX = (chartArea.left + chartArea.right) / 2;
+            const gutter = 64; // 중앙 여백(px) — 필요시 조절
+            const leftW  = midX - gutter/2 - chartArea.left;
+            const rightW = chartArea.right - (midX + gutter/2);
+
+            ctx.save();
+            ctx.beginPath();
+            // 왼쪽 영역
+            ctx.rect(chartArea.left, chartArea.top, Math.max(0,leftW), chartArea.bottom - chartArea.top);
+            // 오른쪽 영역
+            ctx.rect(midX + gutter/2, chartArea.top, Math.max(0,rightW), chartArea.bottom - chartArea.top);
+            ctx.clip(); // 막대는 중앙여백을 비우고 그려짐
+          },
+          afterDatasetsDraw(chart) {
+            const {ctx, chartArea, scales} = chart;
+            const y = scales.y;
+            const midX = (chartArea.left + chartArea.right) / 2;
+
+            ctx.restore(); // 클리핑 해제
+
+            // (요청) 중앙 세로선 제거: 아무 것도 그리지 않음
+
+            // 가운데 축 라벨(10대/20대 …)
+            const labels = chart.data.labels || [];
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#333';
+            ctx.font = getComputedStyle($canvas).font || '12px system-ui';
+            labels.forEach((lab, i) => {
+              const py = y.getPixelForTick(i);
+              ctx.fillText(lab, midX, py);
+            });
+            ctx.restore();
+          }
+        };
+
+        fetch(api, { credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(data => {
+            const labels = data?.labels || [];
+            const ds = data?.datasets || [];
+            const male   = (ds.find(v => v.label === '남성')?.data || []).map(Number);
+            const female = (ds.find(v => v.label === '여성')?.data || []).map(Number);
+
+            const hasData = (male.concat(female)).some(v => v > 0);
+            if (!hasData) { $empty.style.display = 'block'; return; }
+
+            const femaleNeg = female.map(v => -v);
+            const maxAbs = Math.max(...male.map(Math.abs), ...femaleNeg.map(Math.abs), 1);
+
+            new Chart($canvas.getContext('2d'), {
+              type: 'bar',
+              data: {
+                labels,
+                datasets: [
+                  { label: '여성', data: femaleNeg, stack: 'gender' },
+                  { label: '남성', data: male,      stack: 'gender' }
+                ]
+              },
+              options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { position: 'top' },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx) => {
+                        const v = Math.abs(ctx.raw ?? 0);
+                        return `${ctx.dataset.label}: ${v.toLocaleString('ko-KR')}명`;
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    stacked: true,
+                    ticks: { display: false },
+                    grid: {
+                      display: false,       // 가로선 전부 제거
+                      drawBorder: false     // 왼쪽 세로선 제거
+                    }
+                  },
+                  x: {
+                    stacked: true,
+                    min: -maxAbs,
+                    max:  maxAbs,
+                    grid: {
+                      drawBorder: true,         // 맨 아래 축선은 표시
+                      drawOnChartArea: false,   // 차트 안쪽 세로/가로선은 전부 제거
+                      color: '#bbb'             // 아래 축선 색상
+                    },
+                    ticks: {
+                      callback: (v) => Math.abs(v).toLocaleString('ko-KR')
+                    }
+                  }
+                }
+              },
+              plugins: [centerPlugin]
+            });
+          })
+          .catch(() => { if ($empty) $empty.style.display = 'block'; });
+      })();
+    </script>
+
+
   </th:block>
 </body>
 
