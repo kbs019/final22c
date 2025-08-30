@@ -100,4 +100,44 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 			order by p.id desc
 			""")
 	List<Product> findZzimedProductsByUsername(@Param("userName") String userName);
+
+	// =============================== 구매자 통계(명수 기준) ===============================
+
+	// 프로젝션 (각 그룹의 "구매자 수" = 사용자 수)
+	interface BuyerStatProjection {
+		String getGender();     // "M" / "F" / null
+		String getAgeBucket();  // "10대"~"50대","기타"
+		Long getCnt();          // 구매자 수 (distinct user)
+	}
+
+	// 상품별 구매자 통계 (확정 수량 > 0 인 주문라인 존재 && 사용자 중복 제거)
+	@Query("""
+		select
+			u.gender as gender,
+			case
+				when u.age between 10 and 19 then '10대'
+				when u.age between 20 and 29 then '20대'
+				when u.age between 30 and 39 then '30대'
+				when u.age between 40 and 49 then '40대'
+				when u.age between 50 and 59 then '50대'
+				else '기타'
+			end as ageBucket,
+			count(distinct u.userNo) as cnt
+		from com.ex.final22c.data.order.OrderDetail od
+			join od.order o
+			join o.user u
+		where od.product.id = :productId
+		  and od.confirmQuantity > 0
+		group by u.gender,
+			case
+				when u.age between 10 and 19 then '10대'
+				when u.age between 20 and 29 then '20대'
+				when u.age between 30 and 39 then '30대'
+				when u.age between 40 and 49 then '40대'
+				when u.age between 50 and 59 then '50대'
+				else '기타'
+			end
+		order by ageBucket
+		""")
+	List<BuyerStatProjection> findBuyerStatsByProduct(@Param("productId") Long productId);
 }
