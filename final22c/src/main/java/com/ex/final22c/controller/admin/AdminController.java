@@ -28,6 +28,7 @@ import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
+import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
@@ -396,10 +397,14 @@ public class AdminController {
 	
 	// 리뷰 관리
 	@GetMapping("reviewList")
-	public String reviewList(@RequestParam(name = "page", defaultValue="0") int page,Model model) {
-		Page<Review> re = this.adminService.getReview(page);
+	public String reviewList(Model model) {
+		List<Review> re = this.adminService.getReview();
 		model.addAttribute("re",re);
 		return "admin/reviewList";
 	}
-
+	@GetMapping("reviews/badwords")
+	@ResponseBody
+	public List<ReviewDto> badWordReviews() {
+	    return adminService.getFilteredReviews();
+	}
 }
