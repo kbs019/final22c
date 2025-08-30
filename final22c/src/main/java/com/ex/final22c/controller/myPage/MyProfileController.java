@@ -1,13 +1,21 @@
 package com.ex.final22c.controller.myPage;
 
 import java.security.Principal;
+import java.util.Map;
+import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.service.user.UsersService;
@@ -17,120 +25,184 @@ import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/profile")
+@RequestMapping("/mypage/profile") // 프로필 전용 베이스 경로
 public class MyProfileController {
-    private final UsersService usersService;
 
-    @GetMapping("/profile")
-    public String profileForm(Principal principal, HttpSession session, Model model) {
+    private final UsersService usersService;
+    private final PasswordEncoder passwordEncoder;
+
+    /** 프로필 페이지: 검증 상태와 사용자 정보 바인딩 */
+    @GetMapping
+    public String profilePage(Principal principal, HttpSession session, Model model) {
         if (principal == null)
             return "redirect:/user/login";
 
-        long now = System.currentTimeMillis();
+        Users me = usersService.getUser(principal.getName());
         Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
-        boolean verified = (ts != null) && (now - ts <= 5 * 60 * 1000L);
+        boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
 
         model.addAttribute("section", "profile");
         model.addAttribute("verified", verified);
-
-        if (verified) {
-            Users me = usersService.getUser(principal.getName());
-            model.addAttribute("me", me);
-        }
-        return "mypage/profile";
+        model.addAttribute("me", me);
+        return "mypage/profile"; // templates/mypage/profile.html
     }
 
-    // === 여기 추가: 폼 저장 ===
-    // 폼에서 "보내는 값"을 명시:
-    // - email
-    // - phone2 (가운데 4자리)
-    // - phone3 (끝 4자리)
-    // - newPassword
-    // - confirmPassword
-    @PostMapping(path = "/profile", consumes = "application/x-www-form-urlencoded")
+    /**
+     * 프로필 저장 (email/phone(전체 or 분할)/password 변경)
+     * - 요청값이 비어 있으면 해당 항목은 미변경
+     */
+    @PostMapping(consumes = "application/x-www-form-urlencoded")
     public String saveProfile(
             Principal principal,
             HttpSession session,
+            RedirectAttributes ra,
+            // 이메일(합쳐서 hidden name=email 로 넘어옴)
             @RequestParam(name = "email", required = false) String email,
+            // 휴대폰 전체값(hidden)
+            @RequestParam(name = "phone", required = false) String phone,
+            // 휴대폰 분할값(옵션)
             @RequestParam(name = "phone2", required = false) String phone2,
             @RequestParam(name = "phone3", required = false) String phone3,
+            // 비밀번호 변경(옵션)
             @RequestParam(name = "newPassword", required = false) String newPassword,
-            @RequestParam(name = "confirmPassword", required = false) String confirmPassword,
-            Model model) {
+            @RequestParam(name = "confirmPassword", required = false) String confirmPassword) {
         if (principal == null)
             return "redirect:/user/login";
 
-        // 1) 가드(5분 인증) 확인
+        // 5분 가드
         Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
         boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
         if (!verified) {
-            // 인증 만료 → 다시 GET 화면으로
-            model.addAttribute("section", "profile");
-            model.addAttribute("verified", false);
-            return "mypage/profile";
+            ra.addFlashAttribute("error", "재인증이 필요합니다.");
+            return "redirect:/mypage/profile";
         }
 
-        // 2) 기본 검증 (서버단)
-        if (email != null && !email.isBlank()) {
-            if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
-                // 이메일 형식 오류 → 다시 폼
-                Users me = usersService.getUser(principal.getName());
-                model.addAttribute("section", "profile");
-                model.addAttribute("verified", true);
-                model.addAttribute("me", me);
-                model.addAttribute("error", "이메일 형식을 확인해 주세요.");
-                return "mypage/profile";
-            }
-        }
+        // 입력 표준화
+        String trimmedEmail = (email == null || email.isBlank()) ? null : email.trim();
 
-        // 휴대폰 조합 (첫번째는 010 고정)
+        // phone: 전체값 우선, 없으면 분할값 결합(010 고정)
         String newPhone = null;
-        if (phone2 != null || phone3 != null) {
+        if (phone != null && !phone.isBlank()) {
+            newPhone = phone.trim();
+        } else if (phone2 != null || phone3 != null) {
             String p2 = phone2 == null ? "" : phone2.trim();
             String p3 = phone3 == null ? "" : phone3.trim();
             newPhone = "010-" + p2 + "-" + p3;
-
-            if (!newPhone.matches("^010-\\d{4}-\\d{4}$")) {
-                Users me = usersService.getUser(principal.getName());
-                model.addAttribute("section", "profile");
-                model.addAttribute("verified", true);
-                model.addAttribute("me", me);
-                model.addAttribute("error", "휴대폰 번호 형식을 확인해 주세요.");
-                return "mypage/profile";
-            }
         }
 
-        // 비밀번호(선택)
+        // 서버 검증
+        if (trimmedEmail != null && !trimmedEmail.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            ra.addFlashAttribute("error", "이메일 형식을 확인해 주세요.");
+            return "redirect:/mypage/profile";
+        }
+        if (newPhone != null && !newPhone.matches("^010-\\d{4}-\\d{4}$")) {
+            ra.addFlashAttribute("error", "휴대폰 번호 형식을 확인해 주세요.");
+            return "redirect:/mypage/profile";
+        }
+
         String pwToSet = null;
         if (newPassword != null && !newPassword.isBlank()) {
             if (newPassword.length() < 8) {
-                Users me = usersService.getUser(principal.getName());
-                model.addAttribute("section", "profile");
-                model.addAttribute("verified", true);
-                model.addAttribute("me", me);
-                model.addAttribute("error", "새 비밀번호는 8자 이상이어야 합니다.");
-                return "mypage/profile";
+                ra.addFlashAttribute("error", "새 비밀번호는 8자 이상이어야 합니다.");
+                return "redirect:/mypage/profile";
             }
             if (confirmPassword == null || !newPassword.equals(confirmPassword)) {
-                Users me = usersService.getUser(principal.getName());
-                model.addAttribute("section", "profile");
-                model.addAttribute("verified", true);
-                model.addAttribute("me", me);
-                model.addAttribute("error", "새 비밀번호와 확인이 일치하지 않습니다.");
-                return "mypage/profile";
+                ra.addFlashAttribute("error", "새 비밀번호와 확인이 일치하지 않습니다.");
+                return "redirect:/mypage/profile";
             }
             pwToSet = newPassword;
         }
 
-        // 3) 업데이트 수행 (이메일/휴대폰/비밀번호만)
-        usersService.updateProfile(
-                principal.getName(),
-                email, // null이면 변경 안 함
-                newPhone, // null이면 변경 안 함
-                pwToSet // null이면 변경 안 함
-        );
+        // 업데이트 (null 값은 변경하지 않음)
+        try {
+            usersService.updateProfile(
+                    principal.getName(),
+                    trimmedEmail,
+                    newPhone,
+                    pwToSet);
+            ra.addFlashAttribute("message", "개인정보가 성공적으로 수정되었습니다.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", "수정 중 오류가 발생했습니다: " + e.getMessage());
+        }
 
-        // 4) 성공 후 화면 재로딩
-        return "redirect:/profile/profile?ok=1";
+        return "redirect:/mypage/profile";
     }
+
+    /** 프로필 보호: 비밀번호 재확인 (AJAX) */
+    @PostMapping(value = "/verify", consumes = "application/json", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<?> verify(@RequestBody Map<String, String> req,
+            Principal principal,
+            HttpSession session) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+        String raw = Optional.ofNullable(req.get("password")).orElse("");
+        Users me = usersService.getUser(principal.getName());
+        if (!passwordEncoder.matches(raw, me.getPassword())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("ok", false, "message", "비밀번호가 올바르지 않습니다."));
+        }
+        session.setAttribute("PROFILE_AUTH_AT", System.currentTimeMillis()); // 5분 유효
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    /** 비밀번호 일치 확인 (AJAX) */
+    @PostMapping(value = "/pw-match", consumes = "application/json", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> passwordMatch(@RequestBody Map<String, String> req) {
+        String pw1 = Optional.ofNullable(req.get("newPassword")).orElse("");
+        String pw2 = Optional.ofNullable(req.get("confirmPassword")).orElse("");
+
+        if (pw1.isBlank() && pw2.isBlank()) {
+            return ResponseEntity.ok(Map.of("ok", false, "message", ""));
+        }
+        if (pw1.length() < 8) {
+            return ResponseEntity.ok(Map.of("ok", false, "message", "비밀번호는 8자 이상이어야 합니다."));
+        }
+
+        boolean same = pw1.equals(pw2);
+        return ResponseEntity.ok(Map.of(
+                "ok", same,
+                "message", same ? "비밀번호가 일치합니다." : "비밀번호가 일치하지 않습니다."));
+    }
+
+    // 비밀번호만 변경 AJAX
+    @PostMapping(value = "/password", consumes = "application/json", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> changePassword(@RequestBody Map<String, String> req,
+            Principal principal,
+            HttpSession session) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+        // 5분 재인증 가드
+        Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
+        boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
+        if (!verified) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("ok", false, "message", "재인증이 필요합니다."));
+        }
+
+        String pw1 = Optional.ofNullable(req.get("newPassword")).orElse("");
+        String pw2 = Optional.ofNullable(req.get("confirmPassword")).orElse("");
+
+        if (pw1.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("ok", false, "message", "새로운 비밀번호를 입력해 주세요."));
+        }
+        if (pw1.length() < 8) {
+            return ResponseEntity.badRequest().body(Map.of("ok", false, "message", "비밀번호는 8자 이상이어야 합니다."));
+        }
+        if (!pw1.equals(pw2)) {
+            return ResponseEntity.badRequest().body(Map.of("ok", false, "message", "비밀번호 확인이 일치하지 않습니다."));
+        }
+
+        // 업데이트 (이메일/휴대폰은 null → 미변경)
+        usersService.updateProfile(principal.getName(), null, null, pw1);
+
+        return ResponseEntity.ok(Map.of("ok", true, "message", "비밀번호가 변경되었습니다."));
+    }
+
 }

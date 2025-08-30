@@ -64,4 +64,5 @@ public interface UserRepository extends JpaRepository<Users, Long> {
            WHERE birth IS NOT NULL
       """, nativeQuery = true)
   int refreshAgesForNewYear();
+
 }

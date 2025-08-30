@@ -1,9 +1,9 @@
 package com.ex.final22c.service.user;
 
 import java.security.Principal;
-import java.time.LocalDate;
+import java.util.Optional;
 
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,68 +18,116 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UsersService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // public Users getUser(String userName) {
-    // Optional<Users> _user = userRepository.findByUserName(userName);
-    // if (_user.isEmpty()) {
-    // return null; // 사용자 없음
-    // } else {
-    // throw new DataNotFoundException("사용자를 찾을 수 없습니다.");
-    // }
-    // }
-
-    // 사용자 정보 조회
+    /** 사용자명으로 조회(없으면 DataNotFoundException) */
     public Users getUser(String userName) {
         return userRepository.findByUserName(userName)
                 .orElseThrow(() -> new DataNotFoundException("사용자를 찾을 수 없습니다."));
     }
 
-    public boolean verifyPassword(String username, String raw, PasswordEncoder encoder) {
-        Users u = getUser(username);
-        return encoder.matches(raw, u.getPassword());
-    }
-
-    // 로그인 사용자 정보 조회
+    /** 로그인 Principal로 조회(없으면 UsernameNotFoundException) */
     public Users getLoginUser(Principal principal) {
         String username = principal.getName();
         return userRepository.findByUserName(username)
                 .orElseThrow(() -> new UsernameNotFoundException("로그인 정보 없음"));
     }
 
-    // 회원가입
+    /** 비밀번호 검증 */
+    public boolean verifyPassword(String username, String raw) {
+        Users u = getUser(username);
+        return passwordEncoder.matches(raw, u.getPassword());
+    }
+
+    /** 회원가입 */
     public Users create(UsersForm usersForm) {
         Users user = Users.builder()
                 .userName(usersForm.getUserName())
                 .password(passwordEncoder.encode(usersForm.getPassword1()))
-                .email(usersForm.getEmail())
+                .email(safeLowerTrim(usersForm.getEmail()))
                 .name(usersForm.getName())
                 .birth(usersForm.getBirth())
                 .telecom(usersForm.getTelecom())
-                .phone(usersForm.getPhone())
+                .phone(safeTrim(usersForm.getPhone()))
                 .gender(usersForm.getGender())
                 .loginType("local")
                 .mileage(0)
                 .build();
-        this.userRepository.save(user);
-        return user;
+        return userRepository.save(user);
     }
 
-    // 이메일/휴대폰/비밀번호만 업데이트 ===
+    /** 이메일/휴대폰/비밀번호만 업데이트 (null/blank는 미변경) + 본인 제외 중복 검사 */
+    @Transactional
     public Users updateProfile(String username, String newEmail, String newPhone, String newPasswordNullable) {
         Users me = getUser(username);
 
-        if (newEmail != null) {
-            me.setEmail(newEmail.trim());
+        // 입력 정규화
+        String emailNorm = isBlank(newEmail) ? null : safeLowerTrim(newEmail);
+        String phoneNorm = isBlank(newPhone) ? null : safeTrim(newPhone);
+
+        // 사전 중복 검사 (본인 제외)
+        if (emailNorm != null) {
+            Optional<Users> existingEmail = userRepository.findByEmail(emailNorm);
+            if (existingEmail.isPresent() && !existingEmail.get().getUserNo().equals(me.getUserNo())) {
+                throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            }
         }
-        if (newPhone != null) {
-            me.setPhone(newPhone.trim());
+        if (phoneNorm != null) {
+            Optional<Users> existingPhone = userRepository.findByPhone(phoneNorm);
+            if (existingPhone.isPresent() && !existingPhone.get().getUserNo().equals(me.getUserNo())) {
+                throw new IllegalArgumentException("이미 사용 중인 휴대폰 번호입니다.");
+            }
         }
-        if (newPasswordNullable != null && !newPasswordNullable.isBlank()) {
+
+        // 반영
+        if (emailNorm != null)
+            me.setEmail(emailNorm);
+        if (phoneNorm != null)
+            me.setPhone(phoneNorm);
+        if (!isBlank(newPasswordNullable)) {
             me.setPassword(passwordEncoder.encode(newPasswordNullable));
         }
 
-        return userRepository.save(me);
+        // @Transactional + 영속 엔티티 변경 → flush 시점에 반영
+        // 명시 저장을 원하면 아래 주석 해제
+        // userRepository.save(me);
+
+        return me;
+    }
+
+    /** 전체 Users 객체 업데이트(중복 검사 포함) */
+    @Transactional
+    public Users updateUser(Users user) {
+        // 이메일 중복 체크 (본인 제외)
+        Optional<Users> existingEmail = userRepository.findByEmail(safeLowerTrim(user.getEmail()));
+        if (existingEmail.isPresent() && !existingEmail.get().getUserNo().equals(user.getUserNo())) {
+            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+        }
+
+        // 휴대폰 중복 체크 (본인 제외)
+        Optional<Users> existingPhone = userRepository.findByPhone(safeTrim(user.getPhone()));
+        if (existingPhone.isPresent() && !existingPhone.get().getUserNo().equals(user.getUserNo())) {
+            throw new IllegalArgumentException("이미 사용 중인 휴대폰 번호입니다.");
+        }
+
+        // 정규화 후 저장
+        user.setEmail(safeLowerTrim(user.getEmail()));
+        user.setPhone(safeTrim(user.getPhone()));
+        return userRepository.save(user);
+    }
+
+    // ---- helpers ----
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    private static String safeTrim(String s) {
+        return s == null ? null : s.trim();
+    }
+
+    private static String safeLowerTrim(String s) {
+        return s == null ? null : s.trim().toLowerCase();
     }
 }

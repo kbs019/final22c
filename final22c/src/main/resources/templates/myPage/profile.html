@@ -4,12 +4,8 @@
   xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
   layout:decorate="~{layout/layout}"
 >
-  <!-- favicon 방지 -->
   <link rel="icon" href="data:," />
-  <!-- 안전한 context-path 지정 (500 예방) -->
   <meta name="context-path" th:content="@{/}" />
-
-  <!-- (선택) CSRF 메타: 있으면 사용, 없으면 무시 -->
   <meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}" />
   <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
 
@@ -18,8 +14,7 @@
       :root {
         scrollbar-gutter: stable;
         --font-sans: system-ui, -apple-system, "Noto Sans KR", "Malgun Gothic",
-          "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple SD Gothic Neo",
-          "Apple Color Emoji", "Segoe UI Emoji";
+          "Segoe UI", Roboto, "Helvetica Neue", Arial;
       }
       html {
         overflow-y: scroll;
@@ -28,11 +23,10 @@
       .mypage-wrap {
         font-family: var(--font-sans);
         font-size: 14px;
-        line-height: 1.6;
         color: #111827;
       }
 
-      /* 사이드박스 (orders.html과 동일) */
+      /* ===== 레이아웃 ===== */
       .mp-grid {
         display: grid;
         grid-template-columns: 260px minmax(0, 1fr);
@@ -45,39 +39,6 @@
         align-self: start;
         z-index: 1;
       }
-      .mp-col-right {
-        min-width: 0;
-      }
-
-      .mp-sidebox__title {
-        font-size: 20px;
-        font-weight: 800;
-        margin: 0 0 12px;
-      }
-      .mp-sidebox__nav {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .mp-sidebox__link {
-        display: block;
-        padding: 8px 10px;
-        border-radius: 10px;
-        text-decoration: none;
-        color: #111827;
-        border: 1px solid #e5e7eb;
-        background: #fff;
-      }
-      .mp-sidebox__link:hover {
-        background: #f3f7ff;
-      }
-      .mp-sidebox__link.is-active {
-        background: #111827;
-        color: #fff;
-        border-color: #111827;
-      }
-
-      /* 카드/폼 */
       .mypage-body {
         max-width: 900px;
         margin: 0 auto;
@@ -88,65 +49,143 @@
         margin: 0 0 12px;
       }
 
-      .card {
+      .mp-card {
         background: #fff;
         border: 1px solid #e5e7eb;
         border-radius: 12px;
         padding: 16px;
       }
-      .row {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      .field {
+      .mp-field {
         margin: 10px 0;
-        flex: 1;
-        min-width: 260px;
       }
-      .field > label {
+      .mp-field > label {
         display: block;
         margin-bottom: 6px;
         font-weight: 700;
       }
-      .field > input,
-      .field > select {
+
+      .mp-input,
+      .mp-select {
         width: 100%;
         padding: 10px;
         border: 1px solid #e5e7eb;
         border-radius: 10px;
         background: #fff;
+        line-height: 1.2;
       }
-      .readonly {
-        background: #f9fafb !important;
+      .mp-input--readonly {
+        background: #f9fafb;
         color: #6b7280;
       }
 
-      .btn {
-        padding: 8px 12px;
+      /* ===== 버튼 ===== */
+      .mp-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        writing-mode: horizontal-tb;
+        padding: 10px 14px;
         border-radius: 10px;
         border: 1px solid #e5e7eb;
         background: #fff;
         cursor: pointer;
-        font-weight: 600;
+        font-weight: 700;
+        min-width: 72px;
       }
-      .btn:hover {
+      .mp-btn:hover {
         background: #f3f4f6;
       }
-      .btn.primary {
+      .mp-btn--primary {
         background: #111827;
         color: #fff;
         border-color: #111827;
       }
-      .btn.primary:hover {
+      .mp-btn--primary:hover {
         opacity: 0.92;
       }
 
-      .error {
-        color: #dc2626;
+      /* 재인증: 입력 + 버튼 가로 */
+      .verify-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+      }
+
+      /* 이메일 한 줄 */
+      .mp-row-inline {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .mp-at {
+        flex: 0 0 auto;
+        padding: 0 4px;
+        color: #6b7280;
+      }
+
+      /* 비밀번호 두 줄 + 버튼(같은 폭) */
+      .pw-grid {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+      }
+      .pw-grid label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 700;
+        grid-column: 1;
+      }
+      .pw-spacer {
+        grid-column: 2;
+        width: 1px;
+        height: 1px;
+      }
+
+      /* 휴대폰 + 통신사 한 줄 */
+      .phone-grid {
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        gap: 8px;
+        align-items: center;
+      }
+      .phone-inline {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .phone-inline input[type="text"] {
+        text-align: center;
+      }
+
+      @media (max-width: 560px) {
+        .verify-row,
+        .pw-grid,
+        .phone-grid {
+          grid-template-columns: 1fr;
+        }
+        .pw-spacer {
+          display: none;
+        }
+        .mp-btn {
+          width: 100%;
+        }
+      }
+
+      /* 메시지 */
+      .mp-msg {
         margin-top: 6px;
         font-size: 13px;
       }
+      .mp-msg--ok {
+        color: #065f46;
+      }
+      .mp-msg--bad {
+        color: #dc2626;
+      }
+
       .sr-only {
         position: absolute;
         width: 1px;
@@ -157,18 +196,50 @@
         clip: rect(0 0 0 0);
         border: 0;
       }
+
+      /* Sidebox 복구 */
+      .mp-sidebox__title {
+        font-size: 20px;
+        font-weight: 800;
+        margin: 0 0 12px;
+      }
+      .mp-sidebox__nav,
+      .mp-sidebox__nav ul {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .mp-sidebox__link {
+        display: block;
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        color: #111827;
+        text-decoration: none;
+      }
+      .mp-sidebox__link:hover {
+        background: #f3f7ff;
+      }
+      .mp-sidebox__link.is-active {
+        background: #111827;
+        color: #fff;
+        border-color: #111827;
+      }
     </style>
 
     <section class="mypage-wrap">
       <div class="mp-grid">
-        <!-- 좌측: 사이드박스 -->
         <div
           class="mp-col-left"
           th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"
         ></div>
 
-        <!-- 우측: 본문 -->
-        <div class="mp-col-right">
+        <div>
           <section
             class="mypage-body"
             role="region"
@@ -178,182 +249,246 @@
             <h2 class="page-title">개인정보</h2>
 
             <!-- (A) 재인증 필요 -->
-            <div class="card" th:if="${verified == null || !verified}">
+            <div class="mp-card" th:if="${verified == null || !verified}">
               <p style="margin: 0 0 10px">
                 보안을 위해 비밀번호를 다시 입력해 주세요.
               </p>
-              <div class="row" style="align-items: center">
+              <div class="verify-row">
                 <input
                   id="guardPassword"
                   type="password"
                   placeholder="비밀번호"
-                  style="
-                    flex: 1;
-                    padding: 10px;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 10px;
-                  "
+                  class="mp-input"
                 />
-                <button id="guardSubmit" class="btn primary">확인</button>
+                <button id="guardSubmit" class="mp-btn mp-btn--primary">
+                  확인
+                </button>
               </div>
-              <div id="guardError" class="error" aria-live="polite"></div>
+              <div
+                id="guardError"
+                class="mp-msg mp-msg--bad"
+                aria-live="polite"
+              ></div>
               <p style="color: #6b7280; margin-top: 8px">
                 확인 후 5분 간 재인증 없이 접근할 수 있습니다.
               </p>
             </div>
 
-            <!-- (B) 재인증 완료: 수정 가능 항목 = 이메일, 휴대폰번호, 비밀번호 -->
-            <div class="card" th:if="${verified}">
+            <!-- (B) 재인증 완료 -->
+            <div class="mp-card" th:if="${verified}">
               <form
-                th:action="@{/profile/profile}"
+                th:action="@{/mypage/profile}"
                 method="post"
                 id="profileForm"
+                novalidate
               >
-                <!-- 아이디/이름 (읽기전용) -->
-                <div class="row">
-                  <div class="field">
-                    <label for="userName">아이디</label>
-                    <input
-                      id="userName"
-                      name="userName"
-                      th:value="${me.userName}"
-                      readonly
-                      class="readonly"
-                    />
-                  </div>
-                  <div class="field">
-                    <label for="name">이름</label>
-                    <input
-                      id="name"
-                      name="name"
-                      th:value="${me.name}"
-                      readonly
-                      class="readonly"
-                    />
-                  </div>
+                <input
+                  type="hidden"
+                  th:if="${_csrf}"
+                  th:name="${_csrf.parameterName}"
+                  th:value="${_csrf.token}"
+                />
+
+                <!-- 이름 -->
+                <div class="mp-field">
+                  <label for="name">이름</label>
+                  <input
+                    id="name"
+                    name="name"
+                    th:value="${me.name}"
+                    class="mp-input mp-input--readonly"
+                    readonly
+                  />
                 </div>
 
-                <!-- 생년월일/성별 (읽기전용) -->
-                <div class="row">
-                  <div class="field">
-                    <label for="birth_display">생년월일</label>
-                    <input
-                      id="birth_display"
-                      th:value="${me.birth}"
-                      readonly
-                      class="readonly"
-                    />
-                    <input
-                      type="hidden"
-                      id="birth"
-                      name="birth"
-                      th:value="${me.birth}"
-                    />
-                  </div>
-                  <div class="field">
-                    <label for="gender_display">성별</label>
-                    <select id="gender_display" class="readonly" disabled>
-                      <option value="남" th:selected="${me.gender=='남'}">
-                        남자
-                      </option>
-                      <option value="여" th:selected="${me.gender=='여'}">
-                        여자
-                      </option>
-                      <option value="기타" th:selected="${me.gender=='기타'}">
-                        기타
-                      </option>
-                    </select>
-                    <input
-                      type="hidden"
-                      id="gender"
-                      name="gender"
-                      th:value="${me.gender}"
-                    />
-                  </div>
+                <!-- 생년월일 -->
+                <div class="mp-field">
+                  <label for="birth_display">생년월일</label>
+                  <input
+                    id="birth_display"
+                    th:value="${me.birth}"
+                    class="mp-input mp-input--readonly"
+                    readonly
+                  />
+                  <input
+                    type="hidden"
+                    id="birth"
+                    name="birth"
+                    th:value="${me.birth}"
+                  />
                 </div>
 
-                <!-- 이메일 + 휴대폰(3칸) -->
-                <div class="row">
-                  <div class="field">
-                    <label for="email">이메일</label>
+                <!-- 성별 -->
+                <div class="mp-field">
+                  <label for="gender_display">성별</label>
+                  <select
+                    id="gender_display"
+                    class="mp-select mp-input--readonly"
+                    disabled
+                  >
+                    <option value="남" th:selected="${me.gender=='남'}">
+                      남자
+                    </option>
+                    <option value="여" th:selected="${me.gender=='여'}">
+                      여자
+                    </option>
+                    <option value="기타" th:selected="${me.gender=='기타'}">
+                      기타
+                    </option>
+                  </select>
+                  <input
+                    type="hidden"
+                    id="gender"
+                    name="gender"
+                    th:value="${me.gender}"
+                  />
+                </div>
+
+                <!-- 아이디 -->
+                <div class="mp-field">
+                  <label for="userName">아이디</label>
+                  <input
+                    id="userName"
+                    name="userName"
+                    th:value="${me.userName}"
+                    class="mp-input mp-input--readonly"
+                    readonly
+                  />
+                </div>
+
+                <!-- 비밀번호 -->
+                <div class="mp-field">
+                  <div class="pw-grid">
+                    <label for="newPw">새 비밀번호 (선택)</label>
+                    <div class="pw-spacer" aria-hidden="true"></div>
+
                     <input
-                      id="email"
-                      name="email"
-                      th:value="${me.email}"
-                      placeholder="example@domain.com"
+                      id="newPw"
+                      name="newPassword"
+                      type="password"
+                      class="mp-input"
+                      placeholder="영문/숫자/특수문자 조합"
                     />
+                    <div class="pw-spacer" aria-hidden="true"></div>
+
+                    <label for="confirmPw">새 비밀번호 확인</label>
+                    <div class="pw-spacer" aria-hidden="true"></div>
+
+                    <input
+                      id="confirmPw"
+                      name="confirmPassword"
+                      type="password"
+                      class="mp-input"
+                      placeholder="한 번 더 입력"
+                    />
+                    <button
+                      type="button"
+                      id="btnChangePw"
+                      class="mp-btn mp-btn--primary"
+                    >
+                      변경
+                    </button>
                   </div>
-                  <div class="field">
-                    <label for="phone1">휴대폰 번호</label>
-                    <div style="display: flex; gap: 6px; align-items: center">
+                  <div id="pwMatchMsg" class="mp-msg" aria-live="polite"></div>
+                  <div id="pwChangeMsg" class="mp-msg" aria-live="polite"></div>
+                </div>
+
+                <!-- 휴대폰 + 통신사 -->
+                <div class="mp-field">
+                  <label for="phone2">휴대폰 번호</label>
+                  <div class="phone-grid">
+                    <!-- 왼쪽: 번호 010-XXXX-XXXX -->
+                    <div class="phone-inline">
                       <input
                         id="phone1"
-                        name="phone1"
+                        type="text"
+                        class="mp-input"
                         value="010"
                         readonly
-                        style="width: 64px; text-align: center"
+                        style="width: 72px"
                       />
                       <span>-</span>
                       <input
                         id="phone2"
                         name="phone2"
+                        type="text"
                         maxlength="4"
                         inputmode="numeric"
-                        pattern="\d{4}"
-                        style="width: 84px; text-align: center"
+                        class="mp-input"
+                        style="width: 96px"
                         th:value="${#lists.size(#strings.arraySplit(me.phone?:'', '-'))>=2 ? #strings.arraySplit(me.phone,'-')[1] : ''}"
                       />
                       <span>-</span>
                       <input
                         id="phone3"
                         name="phone3"
+                        type="text"
                         maxlength="4"
                         inputmode="numeric"
-                        pattern="\d{4}"
-                        style="width: 84px; text-align: center"
+                        class="mp-input"
+                        style="width: 96px"
                         th:value="${#lists.size(#strings.arraySplit(me.phone?:'', '-'))>=3 ? #strings.arraySplit(me.phone,'-')[2] : ''}"
                       />
                       <input type="hidden" id="phone" name="phone" />
                     </div>
+
+                    <!-- 오른쪽: 통신사 -->
+                    <select id="telecom" name="telecom" class="mp-select">
+                      <option value="">통신사</option>
+                      <option value="SKT" th:selected="${me.telecom=='SKT'}">
+                        SKT
+                      </option>
+                      <option value="KT" th:selected="${me.telecom=='KT'}">
+                        KT
+                      </option>
+                      <option value="LGU+" th:selected="${me.telecom=='LGU+'}">
+                        LG U+
+                      </option>
+                      <option
+                        value="알뜰폰"
+                        th:selected="${me.telecom=='알뜰폰'}"
+                      >
+                        알뜰폰
+                      </option>
+                    </select>
                   </div>
+                  <div id="phoneError" class="mp-msg mp-msg--bad"></div>
                 </div>
 
-                <!-- 새 비밀번호(선택) -->
-                <div class="row">
-                  <div class="field">
-                    <label for="newPw">새 비밀번호 (선택)</label>
+                <!-- 이메일 -->
+                <div class="mp-field">
+                  <label for="emailLocal">이메일</label>
+                  <div class="mp-row-inline">
                     <input
-                      id="newPw"
-                      name="newPassword"
-                      type="password"
-                      placeholder="영문/숫자/특수문자 조합"
+                      id="emailLocal"
+                      type="text"
+                      class="mp-input"
+                      placeholder="example"
+                      th:value="${#strings.substringBefore(me.email?:'', '@')}"
+                    />
+                    <span class="mp-at">@</span>
+                    <input
+                      id="emailDomain"
+                      type="text"
+                      class="mp-input"
+                      placeholder="domain.com"
+                      th:value="${#strings.substringAfter(me.email?:'', '@')}"
                     />
                   </div>
-                  <div class="field">
-                    <label for="confirmPw">새 비밀번호 확인</label>
-                    <input
-                      id="confirmPw"
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="한 번 더 입력"
-                    />
-                  </div>
+                  <input type="hidden" id="email" name="email" />
+                  <div id="emailError" class="mp-msg mp-msg--bad"></div>
                 </div>
 
                 <div
-                  style="
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 8px;
-                    margin-top: 12px;
-                  "
-                >
-                  <button type="reset" class="btn">취소</button>
-                  <button type="submit" class="btn primary">저장</button>
-                </div>
-
-                <!-- 서버측 에러 메시지 표시용 -->
-                <div th:if="${error}" class="error" th:text="${error}"></div>
+                  th:if="${message}"
+                  class="mp-msg mp-msg--ok"
+                  th:text="${message}"
+                ></div>
+                <div
+                  th:if="${error}"
+                  class="mp-msg mp-msg--bad"
+                  th:text="${error}"
+                ></div>
               </form>
             </div>
           </section>
@@ -361,19 +496,20 @@
       </div>
     </section>
 
-    <script>
-      // ===== 비밀번호 재검증 Ajax =====
+    <script th:inline="javascript">
+      /* ===== 재인증 Ajax ===== */
       (function () {
         const btn = document.getElementById("guardSubmit");
         if (!btn) return;
+
         btn.addEventListener("click", async () => {
           const pw = (
             document.getElementById("guardPassword")?.value || ""
           ).trim();
-          const errEl = document.getElementById("guardError");
-          errEl.textContent = "";
+          const err = document.getElementById("guardError");
+          err.textContent = "";
           if (!pw) {
-            errEl.textContent = "비밀번호를 입력해 주세요.";
+            err.textContent = "비밀번호를 입력해 주세요.";
             return;
           }
 
@@ -382,10 +518,11 @@
             "X-CSRF-TOKEN";
           const csrfT =
             document.querySelector('meta[name="_csrf"]')?.content || "";
+          const URL =
+            /*[[@{/mypage/profile/verify}]]*/ "/mypage/profile/verify";
 
           try {
-            const res = await fetch("[[@{/profile/verify}]]", {
-              // 컨트롤러에 /profile/verify 추가했을 때
+            const res = await fetch(URL, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -399,64 +536,188 @@
               throw new Error(data.message || "인증 실패");
             location.reload();
           } catch (e) {
-            errEl.textContent = e.message || "인증 중 오류가 발생했습니다.";
+            err.textContent = e.message || "인증 중 오류가 발생했습니다.";
           }
         });
       })();
 
-      // ===== 간단 유효성 + 휴대폰 자동 포커스/합치기 =====
+      /* ===== 폼: 이메일/휴대폰/비밀번호 ===== */
       (function () {
         const form = document.getElementById("profileForm");
         if (!form) return;
 
-        const p1 = form.phone1,
-          p2 = form.phone2,
-          p3 = form.phone3;
-
-        // 숫자만 허용
-        function digitsOnly(el) {
-          el.value = el.value.replace(/\D+/g, "");
+        /* 이메일 */
+        const emailHidden = document.getElementById("email");
+        const emailLocal = document.getElementById("emailLocal");
+        const emailDomain = document.getElementById("emailDomain");
+        const emailErr = document.getElementById("emailError");
+        function composeEmail() {
+          const l = (emailLocal?.value || "").trim();
+          const d = (emailDomain?.value || "").trim();
+          return l && d ? `${l}@${d}` : "";
+        }
+        function isValidEmail(v) {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
         }
 
-        p2.addEventListener("input", () => {
+        /* 휴대폰 */
+        const p2 = document.getElementById("phone2");
+        const p3 = document.getElementById("phone3");
+        const phoneHidden = document.getElementById("phone");
+        const phoneErr = document.getElementById("phoneError");
+        function digitsOnly(el) {
+          el.value = (el.value || "").replace(/\D+/g, "");
+        }
+
+        p2?.addEventListener("input", () => {
           digitsOnly(p2);
-          if (p2.value.length === 4) p3.focus();
+          if (p2.value.length === 4) p3?.focus();
         });
-        p3.addEventListener("input", () => digitsOnly(p3));
+        p3?.addEventListener("input", () => {
+          digitsOnly(p3);
+        });
 
-        form.addEventListener("submit", (e) => {
-          const email = form.email?.value?.trim();
-          const pw1 = form.newPassword?.value || "";
-          const pw2c = form.confirmPassword?.value || "";
-
-          // 휴대폰 합치기 (010 고정)
-          const fullPhone = `010-${(p2.value || "").trim()}-${(
-            p3.value || ""
-          ).trim()}`;
-          form.phone.value = fullPhone;
-
-          // 이메일 검사
-          if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            alert("이메일 형식을 확인해 주세요.");
-            e.preventDefault();
+        /* 비밀번호 일치/변경 */
+        const pw1 = document.getElementById("newPw");
+        const pw2 = document.getElementById("confirmPw");
+        const matchMsg = document.getElementById("pwMatchMsg");
+        const changeMsg = document.getElementById("pwChangeMsg");
+        function setMsg(el, text, kind) {
+          el.textContent = text || "";
+          el.classList.remove("mp-msg--ok", "mp-msg--bad");
+          if (text) {
+            el.classList.add(kind === "ok" ? "mp-msg--ok" : "mp-msg--bad");
+          }
+        }
+        function checkMatch() {
+          const a = pw1?.value || "",
+            b = pw2?.value || "";
+          if (!a && !b) {
+            setMsg(matchMsg, "", "ok");
             return;
           }
-          // 휴대폰 검사
-          if (!/^010-\d{4}-\d{4}$/.test(fullPhone)) {
-            alert("휴대폰 번호 형식을 확인해 주세요. (예: 010-1234-5678)");
-            e.preventDefault();
+          if (a && a.length < 8) {
+            setMsg(matchMsg, "비밀번호는 8자 이상이어야 합니다.", "bad");
             return;
           }
-          // 비밀번호 검사(선택)
-          if (pw1 || pw2c) {
-            if (pw1.length < 8) {
-              alert("새 비밀번호는 8자 이상이어야 합니다.");
-              e.preventDefault();
+          if (a && b) {
+            setMsg(
+              matchMsg,
+              a === b
+                ? "비밀번호가 일치합니다."
+                : "비밀번호가 일치하지 않습니다.",
+              a === b ? "ok" : "bad"
+            );
+          } else setMsg(matchMsg, "", "ok");
+        }
+        ["input", "blur"].forEach((ev) => {
+          pw1?.addEventListener(ev, checkMatch);
+          pw2?.addEventListener(ev, checkMatch);
+        });
+
+        /* 비밀번호 변경 Ajax */
+        document
+          .getElementById("btnChangePw")
+          ?.addEventListener("click", async () => {
+            const a = (pw1?.value || "").trim();
+            const b = (pw2?.value || "").trim();
+            setMsg(changeMsg, "", "ok");
+            if (!a) {
+              setMsg(changeMsg, "새로운 비밀번호를 입력해 주세요.", "bad");
               return;
             }
-            if (pw1 !== pw2c) {
-              alert("새 비밀번호와 확인이 일치하지 않습니다.");
+            if (a.length < 8) {
+              setMsg(changeMsg, "비밀번호는 8자 이상이어야 합니다.", "bad");
+              return;
+            }
+            if (a !== b) {
+              setMsg(changeMsg, "비밀번호 확인이 일치하지 않습니다.", "bad");
+              return;
+            }
+
+            const csrfH =
+              document.querySelector('meta[name="_csrf_header"]')?.content ||
+              "X-CSRF-TOKEN";
+            const csrfT =
+              document.querySelector('meta[name="_csrf"]')?.content || "";
+            const PW_URL =
+              /*[[@{/mypage/profile/password}]]*/ "/mypage/profile/password";
+
+            try {
+              const res = await fetch(PW_URL, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...(csrfT ? { [csrfH]: csrfT } : {}),
+                },
+                body: JSON.stringify({ newPassword: a, confirmPassword: b }),
+                credentials: "same-origin",
+              });
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok || !data.ok)
+                throw new Error(data.message || "변경 실패");
+              setMsg(
+                changeMsg,
+                data.message || "비밀번호가 변경되었습니다.",
+                "ok"
+              );
+              pw1.value = "";
+              pw2.value = "";
+              setMsg(matchMsg, "", "ok");
+            } catch (e) {
+              setMsg(
+                changeMsg,
+                e.message || "변경 중 오류가 발생했습니다.",
+                "bad"
+              );
+            }
+          });
+
+        /* 제출 */
+        form.addEventListener("submit", (e) => {
+          // 이메일
+          emailErr.textContent = "";
+          const email = composeEmail();
+          if (email) {
+            if (!isValidEmail(email)) {
               e.preventDefault();
+              emailErr.textContent = "이메일 형식을 확인해 주세요.";
+              return;
+            }
+            emailHidden.value = email;
+          } else {
+            emailHidden.value = "";
+          }
+
+          // 휴대폰 (입력했을 때만 검증/합치기)
+          phoneErr.textContent = "";
+          const p2v = (p2?.value || "").trim();
+          const p3v = (p3?.value || "").trim();
+          if (p2v || p3v) {
+            const full = `010-${p2v}-${p3v}`;
+            if (!/^010-\d{4}-\d{4}$/.test(full)) {
+              e.preventDefault();
+              phoneErr.textContent =
+                "휴대폰 번호 형식을 확인해 주세요. (예: 010-1234-5678)";
+              return;
+            }
+            phoneHidden.value = full;
+          } else {
+            phoneHidden.value = "";
+          }
+
+          // 비밀번호(선택)
+          const a = pw1?.value || "",
+            b = pw2?.value || "";
+          if (a || b) {
+            if (a.length < 8) {
+              e.preventDefault();
+              setMsg(matchMsg, "비밀번호는 8자 이상이어야 합니다.", "bad");
+              return;
+            }
+            if (a !== b) {
+              e.preventDefault();
+              setMsg(matchMsg, "비밀번호가 일치하지 않습니다.", "bad");
               return;
             }
           }
@@ -465,3 +726,4 @@
     </script>
   </div>
 </html>
+ 
