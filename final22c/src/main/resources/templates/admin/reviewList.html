@@ -37,30 +37,45 @@
 		</div>
 <button id="filterBadBtn" class="btn btn-danger">비속어 필터</button>
 
+<table id="datatablesSimple" class="table">
+    <thead>
+        <tr>
+            <th>리뷰번호</th>
+            <th>브랜드</th>
+            <th>상품명</th>
+            <th>평점</th>
+            <th>리뷰내용</th>
+            <th>작성자</th>
+            <th>작성일</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
 </div>
 
-<script layout:fragment="script" type="text/javascript">
-    // datatablesSimple 초기화
+
+<script type="text/javascript">
     let datatable = new simpleDatatables.DataTable("#datatablesSimple");
 
     document.getElementById("filterBadBtn").addEventListener("click", function () {
         fetch("/admin/reviews/badwords")
             .then(res => res.json())
             .then(data => {
-				console.log(data);
-                // 기존 테이블 데이터 비우기
-                datatable.rows().remove();
+                console.log(data);
+
+                // 기존 데이터 삭제
+                datatable.clear();
 
                 // 새 데이터 추가
                 data.forEach(re => {
                     datatable.rows().add([
                         re.reviewId,
-                        re.product.brand.brandName,
-                        re.product.name,
+                        re.product?.brand?.brandName || "",
+                        re.product?.name || "",
                         re.rating,
                         re.content,
-                        re.writer.userName,
-                        re.createDate
+                        re.writer?.userName || "",
+                        re.createDate ? new Date(re.createDate).toLocaleString() : ""
                     ]);
                 });
             });

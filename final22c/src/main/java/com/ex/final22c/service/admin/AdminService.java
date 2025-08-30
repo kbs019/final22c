@@ -739,23 +739,10 @@ public class AdminService {
 
     }
     
- // 관리자 페이지에서 '비속어 포함 리뷰만 보기'
-    public List<ReviewDto> getFilteredReviews() {
+    public List<Review> getFilteredReviews() {
         List<Review> all = reviewRepository.findAll();
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-
         return all.stream()
                 .filter(r -> reviewFilterService.containsBadWord(r.getContent()))
-                .map(r -> new ReviewDto(
-                        r.getReviewId(),
-                        r.getProduct().getBrand().getBrandName(),
-                        r.getProduct().getName(),
-                        r.getRating(),
-                        r.getContent(),
-                        r.getWriter().getUserName(),
-                        r.getCreateDate().format(formatter)
-                ))
                 .toList();
     }
 }

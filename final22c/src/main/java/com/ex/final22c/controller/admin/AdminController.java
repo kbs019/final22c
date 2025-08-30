@@ -402,9 +402,8 @@ public class AdminController {
 		model.addAttribute("re",re);
 		return "admin/reviewList";
 	}
-	@GetMapping("reviews/badwords")
-	@ResponseBody
-	public List<ReviewDto> badWordReviews() {
-	    return adminService.getFilteredReviews();
-	}
+    @GetMapping("reviews/badwords")
+    public List<Review> badWordReviews() {
+        return adminService.getFilteredReviews();
+    }
 }
