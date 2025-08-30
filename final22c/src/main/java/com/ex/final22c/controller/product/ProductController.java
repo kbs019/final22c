@@ -146,8 +146,6 @@ public class ProductController {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
         Review review = reviewService.get(reviewId); // 권한은 폼에서만 표시되지만 서버에서도 체크
-        // 소유/관리자 여부 서버에서 한 번 걸러두는 편
-        // (폼 진입 자체를 제한하고 싶으시면 reviewService.update의 authorize 로직을 재사용)
         Product product = productService.getProduct(productId);
 
         model.addAttribute("product", product);
@@ -180,30 +178,42 @@ public class ProductController {
                                RedirectAttributes ra) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
-        // service.delete에서 productId를 반환하도록 만들었지만 명시적 파라미터로도 받습니다.
         reviewService.delete(reviewId, actor);
         ra.addFlashAttribute("msg", "후기가 삭제되었습니다.");
         return "redirect:/main/content/" + productId;
     }
 
-    // 리스트
+    // ========================= 리스트(정렬 + 페이징) =========================
     @GetMapping("/list")
     public String listPage(@RequestParam(name = "brandIds",    required = false) List<Long> brandIds,
                            @RequestParam(name = "gradeIds",    required = false) List<Long> gradeIds,
                            @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
                            @RequestParam(name = "volumeIds",   required = false) List<Long> volumeIds,
                            @RequestParam(name = "q",           required = false) String keyword,
+                           @RequestParam(name = "sort",        defaultValue = "id") String sort,
+                           @RequestParam(name = "page",        defaultValue = "1") int page,
+                           @RequestParam(name = "size",        defaultValue = "24") int size,
                            Model model) {
 
+        // 옵션(필터)
         model.addAttribute("brands",    productService.getBrandOptions());
         model.addAttribute("grades",    productService.getGradeOptions());
         model.addAttribute("mainNotes", productService.getMainNoteOptions());
         model.addAttribute("volumes",   productService.getVolumeOptions());
 
-        Map<String, Object> res = productService.getProducts(brandIds, gradeIds, mainNoteIds, volumeIds, keyword);
-        model.addAttribute("products", res.get("items"));
-        model.addAttribute("total",    res.get("total"));
-        model.addAttribute("keyword",  keyword == null ? "" : keyword);
+        // 리스트 + 전체 카운트
+        Map<String, Object> res = productService.getProductsPaged(
+                brandIds, gradeIds, mainNoteIds, volumeIds, keyword, sort, page, size);
+
+        model.addAttribute("products",   res.get("items"));
+        model.addAttribute("total",      res.get("total"));
+        model.addAttribute("totalPages", res.get("totalPages"));
+        model.addAttribute("page",       res.get("page"));
+        model.addAttribute("size",       res.get("size"));
+
+        model.addAttribute("keyword", keyword == null ? "" : keyword);
+        model.addAttribute("sort", sort);
+
         return "main/list";
     }
 
@@ -213,11 +223,22 @@ public class ProductController {
                               @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
                               @RequestParam(name = "volumeIds",   required = false) List<Long> volumeIds,
                               @RequestParam(name = "q",           required = false) String keyword,
+                              @RequestParam(name = "sort",        defaultValue = "id") String sort,
+                              @RequestParam(name = "page",        defaultValue = "1") int page,
+                              @RequestParam(name = "size",        defaultValue = "24") int size,
                               Model model) {
-        Map<String, Object> res = productService.getProducts(brandIds, gradeIds, mainNoteIds, volumeIds, keyword);
-        model.addAttribute("products", res.get("items"));
-        model.addAttribute("total",    res.get("total"));
-        model.addAttribute("keyword",  keyword == null ? "" : keyword);
+
+        Map<String, Object> res = productService.getProductsPaged(
+                brandIds, gradeIds, mainNoteIds, volumeIds, keyword, sort, page, size);
+
+        model.addAttribute("products",   res.get("items"));
+        model.addAttribute("total",      res.get("total"));
+        model.addAttribute("totalPages", res.get("totalPages"));
+        model.addAttribute("page",       res.get("page"));
+        model.addAttribute("size",       res.get("size"));
+        model.addAttribute("keyword",    keyword == null ? "" : keyword);
+        model.addAttribute("sort",       sort);
+
         return "main/list :: listBody";
     }
 
@@ -250,6 +271,6 @@ public class ProductController {
     // ==== MY TYPE ====
     @GetMapping("/myType")
     public String myType() {
-    	return "main/myType";
+        return "main/myType";
     }
 }
