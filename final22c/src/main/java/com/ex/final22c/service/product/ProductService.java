@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -12,10 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.product.Product;
-import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.productMapper.ProductMapper;
 import com.ex.final22c.repository.productRepository.ProductRepository;
-import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +26,6 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
-    private final UserRepository userRepository;
 
     public List<Product> showList() { return productRepository.findAll(); }
 
@@ -42,10 +41,10 @@ public class ProductService {
 
     // ===== 기존(브랜드 상세 등에서 사용) =====
     public Map<String, Object> getProducts(List<Long> brandIds,
-                                           List<Long> gradeIds,
-                                           List<Long> mainNoteIds,
-                                           List<Long> volumeIds,
-                                           String keyword) {
+                                        List<Long> gradeIds,
+                                        List<Long> mainNoteIds,
+                                        List<Long> volumeIds,
+                                        String keyword) {
         long total = productMapper.countProducts(brandIds, gradeIds, mainNoteIds, volumeIds, keyword);
         List<Map<String, Object>> items = productMapper.selectProducts(brandIds, gradeIds, mainNoteIds, volumeIds, keyword);
 
@@ -272,5 +271,53 @@ public class ProductService {
      */
     public boolean hasRecommendableProducts(List<Long> mainNoteIds) {
         return countProductsByMainNotes(mainNoteIds) > 0;
+    }
+
+    // ===================== 추가: 구매자 통계(명수) 차트 데이터 =====================
+    public Map<String, Object> getBuyerStatsForChart(Long productId) {
+        List<ProductRepository.BuyerStatProjection> rows =
+                productRepository.findBuyerStatsByProduct(productId);
+
+        // UI 스케치(상단이 고연령) 기준 버킷 순서
+        List<String> ageBuckets = Arrays.asList("50대","40대","30대","20대","10대","기타");
+
+        Map<String, long[]> byGender = new LinkedHashMap<>();
+        byGender.put("M", new long[ageBuckets.size()]);
+        byGender.put("F", new long[ageBuckets.size()]);
+
+        for (var r : rows) {
+            String g = r.getGender() == null ? "" : r.getGender();
+            String bucket = r.getAgeBucket() == null ? "기타" : r.getAgeBucket();
+            // 50대 이상은 쿼리에서 "50대"로 묶였고, 나머지도 동일 라벨
+            int idx = ageBuckets.indexOf(bucket);
+            if (idx < 0) idx = ageBuckets.size() - 1;
+
+            long cnt = r.getCnt() == null ? 0L : r.getCnt();
+
+            if ("M".equalsIgnoreCase(g)) {
+                byGender.get("M")[idx] += cnt;
+            } else if ("F".equalsIgnoreCase(g)) {
+                byGender.get("F")[idx] += cnt;
+            } else {
+                // 성별 미지정은 현재 제외
+            }
+        }
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("labels", ageBuckets);
+
+        List<Map<String, Object>> datasets = new ArrayList<>();
+        for (var entry : byGender.entrySet()) {
+            Map<String, Object> ds = new LinkedHashMap<>();
+            ds.put("label", "M".equals(entry.getKey()) ? "남성" : "여성");
+            long[] arr = entry.getValue();
+            List<Long> data = new ArrayList<>(arr.length);
+            for (long v : arr) data.add(v);
+            ds.put("data", data);
+            ds.put("stack", "gender");
+            datasets.add(ds);
+        }
+        out.put("datasets", datasets);
+        return out;
     }
 }
