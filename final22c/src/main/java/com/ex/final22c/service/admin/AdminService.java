@@ -30,12 +30,12 @@ import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
-import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Grade;
 import com.ex.final22c.data.product.MainNote;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
+import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.product.Volume;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseDetail;
@@ -57,6 +57,7 @@ import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.user.UserRepository;
+import com.ex.final22c.service.product.ReviewFilterService;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -83,6 +84,7 @@ public class AdminService {
     private final PaymentRepository paymentRepository;
     private final ReviewRepository reviewRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final ReviewFilterService reviewFilterService;
 
     // 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
@@ -731,13 +733,16 @@ public class AdminService {
     }
 
     // 리뷰 목록
-    public Page<Review> getReview(int page){
-    	List<Sort.Order> sorts = new ArrayList<>();
-        sorts.add(Sort.Order.desc("createDate"));
-        PageRequest pageable = PageRequest.of(page, 10, Sort.by(sorts));
-        
-        Page<Review> result = this.reviewRepository.findAll(pageable);
-        return result;
+    public List<Review> getReview(){
+    	
+    	return reviewRepository.findAll(Sort.by(Sort.Direction.DESC, "createDate"));
 
+    }
+    
+    public List<Review> getFilteredReviews() {
+        List<Review> all = reviewRepository.findAll();
+        return all.stream()
+                .filter(r -> reviewFilterService.containsBadWord(r.getContent()))
+                .toList();
     }
 }
