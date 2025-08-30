@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.user.Users;
+import com.ex.final22c.repository.productRepository.ProductRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.ProductService;
 import com.ex.final22c.service.product.ReviewService;
@@ -81,12 +80,25 @@ public class ProductController {
             }
         }
 
+        // 로그인/찜 초기 상태 주입 --- (추가)
+        boolean loggedIn = (principal != null);
+        boolean zzimedByMe = false;
+        String me = null;
+
+        if (loggedIn) {
+            me = principal.getUsername(); // Users.userName 과 매핑
+            zzimedByMe = zzimService.isZzimed(me, id); // 초기 찜 상태
+        }
+
         model.addAttribute("product", product);
         model.addAttribute("reviews", reviews);
         model.addAttribute("reviewCount", reviewCount);
         model.addAttribute("reviewAvg", avg);
         model.addAttribute("sort", sort);
         model.addAttribute("likedReviewIds", likedReviewIds);
+
+        model.addAttribute("loggedIn", loggedIn);
+        model.addAttribute("zzimedByMe", zzimedByMe);
 
         return "main/content";
     }
@@ -190,19 +202,19 @@ public class ProductController {
 
     // ========================= 리스트(정렬 + 페이징) =========================
     @GetMapping("/list")
-    public String listPage(@RequestParam(name = "brandIds",    required = false) List<Long> brandIds,
-                           @RequestParam(name = "gradeIds",    required = false) List<Long> gradeIds,
-                           @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
-                           @RequestParam(name = "volumeIds",   required = false) List<Long> volumeIds,
-                           @RequestParam(name = "q",           required = false) String keyword,
-                           @RequestParam(name = "sort",        defaultValue = "id") String sort,
-                           @RequestParam(name = "page",        defaultValue = "1") int page,
-                           @RequestParam(name = "size",        defaultValue = "24") int size,
-                           Model model) {
+    public String listPage(@RequestParam(name = "brandIds", required = false) List<Long> brandIds,
+            @RequestParam(name = "gradeIds", required = false) List<Long> gradeIds,
+            @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
+            @RequestParam(name = "volumeIds", required = false) List<Long> volumeIds,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "sort", defaultValue = "id") String sort,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "24") int size,
+            Model model) {
 
         // 옵션(필터)
-        model.addAttribute("brands",    productService.getBrandOptions());
-        model.addAttribute("grades",    productService.getGradeOptions());
+        model.addAttribute("brands", productService.getBrandOptions());
+        model.addAttribute("grades", productService.getGradeOptions());
         model.addAttribute("mainNotes", productService.getMainNoteOptions());
         model.addAttribute("volumes", productService.getVolumeOptions());
 
@@ -210,11 +222,11 @@ public class ProductController {
         Map<String, Object> res = productService.getProductsPaged(
                 brandIds, gradeIds, mainNoteIds, volumeIds, keyword, sort, page, size);
 
-        model.addAttribute("products",   res.get("items"));
-        model.addAttribute("total",      res.get("total"));
+        model.addAttribute("products", res.get("items"));
+        model.addAttribute("total", res.get("total"));
         model.addAttribute("totalPages", res.get("totalPages"));
-        model.addAttribute("page",       res.get("page"));
-        model.addAttribute("size",       res.get("size"));
+        model.addAttribute("page", res.get("page"));
+        model.addAttribute("size", res.get("size"));
 
         model.addAttribute("keyword", keyword == null ? "" : keyword);
         model.addAttribute("sort", sort);
@@ -223,26 +235,26 @@ public class ProductController {
     }
 
     @GetMapping("/list/partial")
-    public String listPartial(@RequestParam(name = "brandIds",    required = false) List<Long> brandIds,
-                              @RequestParam(name = "gradeIds",    required = false) List<Long> gradeIds,
-                              @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
-                              @RequestParam(name = "volumeIds",   required = false) List<Long> volumeIds,
-                              @RequestParam(name = "q",           required = false) String keyword,
-                              @RequestParam(name = "sort",        defaultValue = "id") String sort,
-                              @RequestParam(name = "page",        defaultValue = "1") int page,
-                              @RequestParam(name = "size",        defaultValue = "24") int size,
-                              Model model) {
+    public String listPartial(@RequestParam(name = "brandIds", required = false) List<Long> brandIds,
+            @RequestParam(name = "gradeIds", required = false) List<Long> gradeIds,
+            @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
+            @RequestParam(name = "volumeIds", required = false) List<Long> volumeIds,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "sort", defaultValue = "id") String sort,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "24") int size,
+            Model model) {
 
         Map<String, Object> res = productService.getProductsPaged(
                 brandIds, gradeIds, mainNoteIds, volumeIds, keyword, sort, page, size);
 
-        model.addAttribute("products",   res.get("items"));
-        model.addAttribute("total",      res.get("total"));
+        model.addAttribute("products", res.get("items"));
+        model.addAttribute("total", res.get("total"));
         model.addAttribute("totalPages", res.get("totalPages"));
-        model.addAttribute("page",       res.get("page"));
-        model.addAttribute("size",       res.get("size"));
-        model.addAttribute("keyword",    keyword == null ? "" : keyword);
-        model.addAttribute("sort",       sort);
+        model.addAttribute("page", res.get("page"));
+        model.addAttribute("size", res.get("size"));
+        model.addAttribute("keyword", keyword == null ? "" : keyword);
+        model.addAttribute("sort", sort);
 
         return "main/list :: listBody";
     }
@@ -279,24 +291,5 @@ public class ProductController {
     }
 
     // ==================================== 관심등록 ===================================
-    /** 관심등록 토글 (JSON). content.html의 북마크 버튼이 호출 */
-    @PostMapping("/product/{id}/zzim/toggle")
-    @ResponseBody
-    public ResponseEntity<?> toggle(@PathVariable("id") Long id,
-            Principal principal) {
-        if (principal == null) {
-            return ResponseEntity.status(401).body(Map.of("code","LOGIN_REQUIRED"));
-        }
-        String userName = principal.getName();      // 항상 채워짐
-        Map<String, Object> res = zzimService.toggle(id, userName);
-        return ResponseEntity.ok(res); // {picked, count}
-    }
 
-    /** 현재 관심 수 조회 (JSON) */
-    @GetMapping("/product/{id}/zzim/count")
-    @ResponseBody
-    public Map<String, Object> count(@PathVariable("id") Long id) {
-        long count = zzimService.count(id);
-        return Map.of("count", count);
-    }
 }

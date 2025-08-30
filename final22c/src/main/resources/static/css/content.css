@@ -84,30 +84,6 @@ body.modal-open { padding-right: 0 !important; }
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
-/* 북마크: 크기/색은 font-size, color로 제어 */
-.bm-btn{
-  appearance:none; background:none; border:0; padding:6px;
-  line-height:1; cursor:pointer; margin-left:auto;   /* 맨 오른쪽 */
-  font-size:22px; color:#111;                        /* ← 여기만 바꾸면 크기/색 변경 */
-}
-
-/* SVG가 글자 크기를 따르도록 1em 사용 */
-.bm-icon{ width:36px; height:36px; display:block; }
-
-/* 외곽선 얇게 + 확대해도 두께 고정 + 모서리 각지게 */
-.bm-shape{
-  fill:none;
-  stroke:currentColor !important;
-  stroke-width:1.5px !important;          /* 필요시 0.8px~1.2px로 미세조정 */
-  vector-effect: non-scaling-stroke;     /* 크기 키워도 선두께 그대로 */
-  stroke-linejoin:miter;                  /* 각 모서리 */
-  stroke-linecap:butt;                    /* 끝도 각 */
-  stroke-miterlimit:10;                   /* 뾰족 모서리 유지 */
-  transition:fill .15s ease;
-}
-.bm-btn[aria-pressed="true"] .bm-shape{ fill:currentColor; stroke:currentColor; }
-.bm-btn:active{ transform:scale(0.96); }
-
 /* 공통 레이아웃 튜닝 */
 .productInfoWrap{
     /* 기존: position:relative; z-index:2; display:flex; margin... */
@@ -363,17 +339,27 @@ input[type=number]::-webkit-outer-spin-button{
 .like-wrap.is-liked{ color:#111; }
 .like-wrap.is-liked .btn-like i{ font-weight: 900; }  /* 아이콘 진하게 */
 
-.bm-btn{appearance:none;background:none;border:0;padding:0;line-height:0;cursor:pointer;color:#111}
-.bm-icon{display:block}
-.bm-shape{
-  fill:none;                      /* 기본: 외곽선만 */
-  stroke:currentColor;
-  stroke-width:2;
-  stroke-linejoin:round;
-  transition:fill .15s ease;      /* 클릭 시 부드럽게 채움 */
+/* 북마크: 크기/색은 font-size, color로 제어 */
+.bm-btn{
+  appearance:none; background:none; border:0; padding:6px;
+  line-height:1; cursor:pointer; margin-left:auto;   /* 맨 오른쪽 */
+  font-size:50px; color:#111;                        /* ← 여기만 바꾸면 크기/색 변경 */
 }
-/* 눌림 상태: 채움 */
-.bm-btn[aria-pressed="true"] .bm-shape{ fill:currentColor; }
 
-/* 크기/색 바꾸고 싶다면 버튼에 font-size/color만 주면 됨 */
-.bm-btn{ font-size:50px; color:#111; }  /* 24px 아이콘 */
+/* SVG가 글자 크기를 따르도록 1em 사용 */
+.bm-icon{ width:36px; height:36px; display:block; }
+
+/* 외곽선 얇게 + 확대해도 두께 고정 + 모서리 각지게 */
+.bm-shape{
+  fill:none;
+  stroke:currentColor !important;
+  stroke-width:1.5px !important;          /* 필요시 0.8px~1.2px로 미세조정 */
+  vector-effect: non-scaling-stroke;     /* 크기 키워도 선두께 그대로 */
+  stroke-linejoin:miter;                  /* 각 모서리 */
+  stroke-linecap:butt;                    /* 끝도 각 */
+  stroke-miterlimit:10;                   /* 뾰족 모서리 유지 */
+  transition:fill .15s ease;
+}
+.bm-btn[aria-pressed="true"]{ color:#111; }
+.bm-btn[aria-pressed="true"] .bm-shape{ fill:currentColor; stroke:currentColor; }
+.bm-btn:active{ transform:scale(0.96); }

@@ -67,13 +67,7 @@ public interface UserRepository extends JpaRepository<Users, Long> {
   int refreshAgesForNewYear();
 
   // 내 관심목록
-  // 특정 사용자의 관심상품 목록 (페이징)
-  @Query("""
-      select p
-      from Product p
-      join p.zzimers u
-      where u.userName = :userName
-      order by p.id desc
-      """)
-  Page<Product> findZzimedProductsByUsername(@Param("userName") String userName, Pageable pageable);
+    // userName으로 PK만 뽑아오기(경량)
+    @Query("select u.userNo from Users u where u.userName = :userName")
+    Optional<Long> findUserNoByUserName(@Param("userName") String userName);
 }

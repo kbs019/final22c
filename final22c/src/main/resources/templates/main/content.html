@@ -125,8 +125,8 @@
               <a class="brand-link" th:href="@{|/main/brand/${product.brand.id}|}">
                 <span th:text="${product.brand.brandName}"></span>
               </a>
-              <button type="button" class="bm-btn" th:attr="aria-pressed=${zzimedByMe} ? 'true' : 'false'"
-                th:title="${zzimedByMe} ? '관심 해제' : '관심 등록'">
+              <button type="button" class="bm-btn" th:attr="aria-pressed=${zzimedByMe} ? 'true' : 'false',
+                data-logged-in=${loggedIn}" th:title="${zzimedByMe} ? '관심 해제' : '관심 등록'">
                 <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
                   <!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
                   <path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
@@ -215,7 +215,24 @@
       </div>
     </div>
 
-    <!-- 찜 등록 완료 모달 -->
+    <!-- [신규] 찜 로그인 안내 모달 -->
+    <div class="modal fade" id="zzimLoginModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">관심등록</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body">로그인이 되어있지 않습니다. 로그인하시겠습니까?</div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
+            <a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 찜 등록 완료 모달(문구 정정) -->
     <div class="modal fade" id="zzimDoneModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -223,7 +240,7 @@
             <h5 class="modal-title">관심등록</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
           </div>
-          <div class="modal-body">관심등록이 되어있습니다.</div>
+          <div class="modal-body">관심등록이 되었습니다.</div>
           <div class="modal-footer">
             <button class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
           </div>
@@ -231,7 +248,7 @@
       </div>
     </div>
 
-    <!-- 찜 해제 확인 모달 -->
+    <!-- 찜 해제 확인 모달(기존 문구 유지) -->
     <div class="modal fade" id="zzimConfirmModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -240,8 +257,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
           </div>
           <div class="modal-body">
-            이미 관심등록이 된 상품입니다.<br>
-            관심등록을 해제하시겠습니까?
+            이미 관심등록이 된 상품입니다.<br>관심등록을 해제하시겠습니까?
           </div>
           <div class="modal-footer">
             <button class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
@@ -638,84 +654,77 @@
     </script>
 
     <script th:inline="javascript">
-      // ---- 찜(북마크) 토글 ----
-      (function () {
-        const btn = document.querySelector('.bm-btn');
-        if (!btn) return;
+    (function(){
+      const bmBtn = document.querySelector('.bm-btn');
+      if(!bmBtn) return;
 
-        const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+      const PRODUCT_ID = /*[[${product.id}]]*/ 0;
 
-        // 모달 준비
-        const doneModalEl = document.getElementById('zzimDoneModal');
-        const confirmModalEl = document.getElementById('zzimConfirmModal');
-        const loginModalEl = document.getElementById('loginRequiredModal');
+      const zzimLoginModal  = document.getElementById('zzimLoginModal');
+      const confirmModalEl  = document.getElementById('zzimConfirmModal');
+      const doneModalEl     = document.getElementById('zzimDoneModal');
 
-        const doneModal = doneModalEl ? new bootstrap.Modal(doneModalEl) : null;
-        const confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
-        const loginModal = loginModalEl ? new bootstrap.Modal(loginModalEl) : null;
-        const confirmBtn = confirmModalEl?.querySelector('.btn-confirm');
+      const loginModal  = zzimLoginModal ? new bootstrap.Modal(zzimLoginModal) : null;
+      const confirmModal= confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
+      const doneModal   = doneModalEl ? new bootstrap.Modal(doneModalEl) : null;
 
-        let busy = false;
+      function withLock(btn, fn){
+        if(!btn || btn.disabled) return;
+        btn.disabled = true;
+        return Promise.resolve(fn()).finally(()=> setTimeout(()=> btn.disabled=false, 600));
+      }
 
-        async function callToggle() {
-          const res = await fetch(`/product/${PRODUCT_ID}/zzim/toggle`, {
-            method: 'POST',
-            credentials: 'same-origin'
-          });
+      // 공통 fetch(JSON) + CSRF
+      async function fetchJSON(url, opt={}){
+        const { header, token } = getCsrfPair();
+        const base = {
+          credentials:'same-origin',
+          headers: { 'Accept':'application/json', ...(opt.body ? {'Content-Type':'application/json'}:{}), ...(token ? {[header]:token}:{}) }
+        };
+        const res = await fetch(url, {...base, ...opt});
+        if(res.status===401 || res.status===403){ throw { auth:true }; }
+        const ct = res.headers.get('content-type') || '';
+        const data = ct.includes('application/json') ? await res.json() : {};
+        if(!res.ok) throw { status:res.status, data };
+        return data;
+      }
 
-          if (res.status === 401 || res.status === 403) {
-            if (loginModal) loginModal.show(); else location.href = '/user/login';
-            return null;
-          }
-          const ct = res.headers.get('content-type') || '';
-          if (!ct.includes('application/json')) {
-            // 세션 만료 등
-            if (loginModal) loginModal.show(); else location.href = '/user/login';
-            return null;
-          }
-          return res.json();
-        }
+      // 서버에서 실시간 상태 확인(= product_zzimers 테이블 조회 반영)
+      const checkState = ()=> fetchJSON(`/zzim/state?productId=${PRODUCT_ID}`, { method:'GET' })
+                                .then(d => !!d.zzimed);
 
-        btn.addEventListener('click', async () => {
-          if (busy) return;
+      const addZzim    = ()=> fetchJSON(`/zzim/add`,    { method:'POST', body: JSON.stringify({ productId: PRODUCT_ID })});
+      const removeZzim = ()=> fetchJSON(`/zzim/remove?productId=${PRODUCT_ID}`, { method:'DELETE' });
 
-          const isPicked = btn.getAttribute('aria-pressed') === 'true';
+      bmBtn.addEventListener('click', ()=> withLock(bmBtn, async ()=>{
+        try {
+          // 서버에 실제 상태 질의 (비로그인 시 401 → catch에서 처리)
+          const already = await checkState();
 
-          // 아직 관심등록이 아니면 → 즉시 등록 요청 → 완료 모달
-          if (!isPicked) {
-            busy = true; btn.disabled = true;
-            try {
-              const data = await callToggle();
-              if (!data) return;
-              btn.setAttribute('aria-pressed', 'true');  // UI on
-              doneModal?.show();
-            } catch (_) {
-            } finally {
-              btn.disabled = false; busy = false;
-            }
-            return;
-          }
-
-          // 이미 관심등록 상태면 → 해제 확인 모달
-          confirmModal?.show();
-
-          // 확인 클릭 시 한 번만 실행
-          if (confirmBtn) {
-            confirmBtn.onclick = async () => {
-              busy = true; btn.disabled = true;
-              try {
-                const data = await callToggle();
-                if (!data) return;
-                btn.setAttribute('aria-pressed', 'false'); // UI off
-                confirmModal.hide();
-              } catch (_) {
-              } finally {
-                btn.disabled = false; busy = false;
-              }
+          if (already) {
+            confirmModal?.show();
+            const okBtn = confirmModalEl?.querySelector('.btn-confirm');
+            const handler = async ()=>{
+              await withLock(okBtn, async ()=>{
+                await removeZzim();
+                bmBtn.setAttribute('aria-pressed','false');
+                bmBtn.title = '관심 등록';
+                confirmModal?.hide();
+              });
             };
+            okBtn?.addEventListener('click', handler, { once:true });
+          } else {
+            await addZzim();
+            bmBtn.setAttribute('aria-pressed','true');
+            bmBtn.title = '관심 해제';
+            doneModal?.show();
           }
-        });
-      })();
+        } catch (e) {
+          if (e && e.auth) { loginModal?.show(); return; }  // 401/403
+          alert('처리 중 오류가 발생했습니다.');
+        }
+      }));
+    })();
     </script>
   </th:block>
 </body>

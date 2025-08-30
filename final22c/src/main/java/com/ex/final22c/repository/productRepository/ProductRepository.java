@@ -83,21 +83,20 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 			""")
 	List<ProductSalesProjection> findTopByGender(@Param("gender") String gender, Pageable pageable);
 
-	// =============================== 관심 등록 ===============================
-	// 
+	// ================================= 관심 등록 ===============================================
+	/** zzimers 컬렉션을 즉시 로딩해서 N+1 방지 */
 	@EntityGraph(attributePaths = "zzimers")
 	@Query("select p from Product p where p.id = :id")
 	Optional<Product> findByIdWithZzimers(@Param("id") Long id);
 
-	@Query("select count(u) from Product p join p.zzimers u where p.id = :id")
-	long countZzimers(@Param("id") Long id);
-
+	/** 사용자(userName)와 상품(productId)의 찜 여부 카운트(0/1) */
 	@Query("""
-			select p
+			select count(p)
 			from Users u
 			join u.zzimedProducts p
 			where u.userName = :userName
-			order by p.id desc
+			  and p.id       = :productId
 			""")
-	List<Product> findZzimedProductsByUsername(@Param("userName") String userName);
+	long countZzimByUserAndProduct(@Param("userName") String userName,
+			@Param("productId") Long productId);
 }
