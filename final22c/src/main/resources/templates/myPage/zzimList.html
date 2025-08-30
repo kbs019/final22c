@@ -1,0 +1,39 @@
+<html layout:decorate="~{/layout/layout}">
+<th:block layout:fragment="content">
+    <div class="container my-4">
+        <h2 class="mb-3">내 관심목록</h2>
+        <div class="row g-3">
+            <div class="col-6 col-md-3" th:each="p : ${paging.content}">
+                <a th:href="@{|/main/content/${p.id}|}" class="card h-100 text-decoration-none text-dark">
+                    <img th:src="@{|${p.imgPath}${p.imgName}|}" class="card-img-top" th:alt="${p.name}">
+                    <div class="card-body">
+                        <div class="small text-muted" th:text="${p.brand.brandName}">브랜드</div>
+                        <div class="fw-semibold text-truncate" th:text="${p.name}">상품명</div>
+                        <div class="mt-1">
+                            <span class="fw-bold"
+                                th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'">0원</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 페이지네이션 -->
+        <nav class="mt-4" th:if="${totalPages > 1}">
+            <ul class="pagination">
+                <li class="page-item" th:classappend="${page==0} ? 'disabled'">
+                    <a class="page-link" th:href="@{|/me/zzim?page=${page-1}&size=${size}|}">이전</a>
+                </li>
+                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages-1)}"
+                    th:classappend="${i==page}? 'active'">
+                    <a class="page-link" th:href="@{|/me/zzim?page=${i}&size=${size}|}" th:text="${i+1}">1</a>
+                </li>
+                <li class="page-item" th:classappend="${page >= totalPages-1} ? 'disabled'">
+                    <a class="page-link" th:href="@{|/me/zzim?page=${page+1}&size=${size}|}">다음</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</th:block>
+
+</html>

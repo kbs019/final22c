@@ -12,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.product.Product;
+import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.productMapper.ProductMapper;
 import com.ex.final22c.repository.productRepository.ProductRepository;
+import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +26,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final UserRepository userRepository;
 
     public List<Product> showList() { return productRepository.findAll(); }
 
@@ -37,7 +40,7 @@ public class ProductService {
     public List<Map<String, Object>> getMainNoteOptions() { return productMapper.selectMainNoteOptions(); }
     public List<Map<String, Object>> getVolumeOptions()   { return productMapper.selectVolumeOptions(); }
 
-    // 필터 + 상품명 검색
+    // ===== 기존(브랜드 상세 등에서 사용) =====
     public Map<String, Object> getProducts(List<Long> brandIds,
                                            List<Long> gradeIds,
                                            List<Long> mainNoteIds,
@@ -49,6 +52,35 @@ public class ProductService {
         Map<String, Object> res = new HashMap<>();
         res.put("total", total);
         res.put("items", items);
+        return res;
+    }
+
+    // ===== 리스트 페이지 전용: 정렬 + 페이징(24개 기본) =====
+    public Map<String, Object> getProductsPaged(List<Long> brandIds,
+                                                List<Long> gradeIds,
+                                                List<Long> mainNoteIds,
+                                                List<Long> volumeIds,
+                                                String keyword,
+                                                String sort,
+                                                int page,
+                                                int size) {
+        if (size <= 0) size = 24;
+        if (page < 1) page = 1;
+        int offset = (page - 1) * size;
+
+        long total = productMapper.countProducts(brandIds, gradeIds, mainNoteIds, volumeIds, keyword);
+        List<Map<String, Object>> items = total == 0
+                ? List.of()
+                : productMapper.selectProductsPaged(brandIds, gradeIds, mainNoteIds, volumeIds, keyword, sort, offset, size);
+
+        long totalPages = (total + size - 1) / size;
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("total", total);
+        res.put("items", items);
+        res.put("totalPages", totalPages);
+        res.put("page", page);
+        res.put("size", size);
         return res;
     }
 
@@ -114,7 +146,7 @@ public class ProductService {
         List<List<T>> pages = new ArrayList<>();
         if (list == null || list.isEmpty() || size <= 0) return pages;
         for (int i = 0; i < list.size(); i += size) {
-            pages.add(list.subList(i, Math.min(i + size, list.size())));
+            pages.add(list.subList(i, Math.min(i  + size, list.size())));
         }
         return pages;
     }

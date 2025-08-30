@@ -1,5 +1,6 @@
 package com.ex.final22c.controller.product;
 
+import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -21,9 +22,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.user.Users;
+import com.ex.final22c.repository.productRepository.ProductRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.ProductService;
 import com.ex.final22c.service.product.ReviewService;
+import com.ex.final22c.service.product.ZzimService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +38,7 @@ public class ProductController {
     private final ProductService productService;
     private final ReviewService reviewService;
     private final UserRepository userRepository;
+    private final ZzimService zzimService;
 
     @GetMapping("")
     public String main(Model model) {
@@ -49,8 +53,8 @@ public class ProductController {
         model.addAttribute("allBest", productService.getAllBest(10));
 
         // 여성/남성 베스트 TOP10 (Users.gender: 1=남, 2=여)
-        model.addAttribute("womanBest", productService.getGenderBest("F", 10));  // ✅ 여성 = F
-        model.addAttribute("manBest",   productService.getGenderBest("M", 10));  // ✅ 남성 = M
+        model.addAttribute("womanBest", productService.getGenderBest("F", 10)); // ✅ 여성 = F
+        model.addAttribute("manBest", productService.getGenderBest("M", 10)); // ✅ 남성 = M
 
         return "main/main";
     }
@@ -80,12 +84,25 @@ public class ProductController {
             }
         }
 
+        // 로그인/찜 초기 상태 주입 --- (추가)
+        boolean loggedIn = (principal != null);
+        boolean zzimedByMe = false;
+        String me = null;
+
+        if (loggedIn) {
+            me = principal.getUsername(); // Users.userName 과 매핑
+            zzimedByMe = zzimService.isZzimed(me, id); // 초기 찜 상태
+        }
+
         model.addAttribute("product", product);
         model.addAttribute("reviews", reviews);
         model.addAttribute("reviewCount", reviewCount);
         model.addAttribute("reviewAvg", avg);
         model.addAttribute("sort", sort);
         model.addAttribute("likedReviewIds", likedReviewIds);
+
+        model.addAttribute("loggedIn", loggedIn);
+        model.addAttribute("zzimedByMe", zzimedByMe);
 
         return "main/content";
     }
@@ -95,7 +112,7 @@ public class ProductController {
     @PreAuthorize("isAuthenticated()")
     @ResponseBody
     public Map<String, Object> toggleLike(@PathVariable("reviewId") Long reviewId,
-                                        @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal UserDetails principal) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
         boolean liked = reviewService.toggleLike(reviewId, actor);
@@ -107,7 +124,7 @@ public class ProductController {
     @GetMapping("/etc/review/new")
     @PreAuthorize("isAuthenticated()")
     public String reviewNew(@RequestParam("productId") long productId,
-                            Model model) {
+            Model model) {
         Product product = productService.getProduct(productId);
         model.addAttribute("product", product);
         return "main/etc/review-form";
@@ -144,14 +161,12 @@ public class ProductController {
     @GetMapping("/etc/review/{reviewId}/edit")
     @PreAuthorize("isAuthenticated()")
     public String reviewEditForm(@PathVariable("reviewId") Long reviewId,
-                                 @RequestParam("productId") long productId,
-                                 @AuthenticationPrincipal UserDetails principal,
-                                 Model model) {
+            @RequestParam("productId") long productId,
+            @AuthenticationPrincipal UserDetails principal,
+            Model model) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
         Review review = reviewService.get(reviewId); // 권한은 폼에서만 표시되지만 서버에서도 체크
-        // 소유/관리자 여부 서버에서 한 번 걸러두는 편
-        // (폼 진입 자체를 제한하고 싶으시면 reviewService.update의 authorize 로직을 재사용)
         Product product = productService.getProduct(productId);
 
         model.addAttribute("product", product);
@@ -163,11 +178,11 @@ public class ProductController {
     @PostMapping("/etc/review/{reviewId}/edit")
     @PreAuthorize("isAuthenticated()")
     public String reviewEdit(@PathVariable("reviewId") Long reviewId,
-                             @RequestParam("productId") long productId,
-                             @RequestParam("rating") int rating,
-                             @RequestParam("content") String content,
-                             @AuthenticationPrincipal UserDetails principal,
-                             RedirectAttributes ra) {
+            @RequestParam("productId") long productId,
+            @RequestParam("rating") int rating,
+            @RequestParam("content") String content,
+            @AuthenticationPrincipal UserDetails principal,
+            RedirectAttributes ra) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
         reviewService.update(reviewId, actor, rating, content);
@@ -179,49 +194,72 @@ public class ProductController {
     @PostMapping("/etc/review/{reviewId}/delete")
     @PreAuthorize("isAuthenticated()")
     public String reviewDelete(@PathVariable("reviewId") Long reviewId,
-                               @RequestParam("productId") long productId,
-                               @AuthenticationPrincipal UserDetails principal,
-                               RedirectAttributes ra) {
+            @RequestParam("productId") long productId,
+            @AuthenticationPrincipal UserDetails principal,
+            RedirectAttributes ra) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
-        // service.delete에서 productId를 반환하도록 만들었지만 명시적 파라미터로도 받습니다.
         reviewService.delete(reviewId, actor);
         ra.addFlashAttribute("msg", "후기가 삭제되었습니다.");
         return "redirect:/main/content/" + productId;
     }
 
-    // 리스트
+    // ========================= 리스트(정렬 + 페이징) =========================
     @GetMapping("/list")
-    public String listPage(@RequestParam(name = "brandIds",    required = false) List<Long> brandIds,
-                           @RequestParam(name = "gradeIds",    required = false) List<Long> gradeIds,
-                           @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
-                           @RequestParam(name = "volumeIds",   required = false) List<Long> volumeIds,
-                           @RequestParam(name = "q",           required = false) String keyword,
-                           Model model) {
+    public String listPage(@RequestParam(name = "brandIds", required = false) List<Long> brandIds,
+            @RequestParam(name = "gradeIds", required = false) List<Long> gradeIds,
+            @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
+            @RequestParam(name = "volumeIds", required = false) List<Long> volumeIds,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "sort", defaultValue = "id") String sort,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "24") int size,
+            Model model) {
 
-        model.addAttribute("brands",    productService.getBrandOptions());
-        model.addAttribute("grades",    productService.getGradeOptions());
+        // 옵션(필터)
+        model.addAttribute("brands", productService.getBrandOptions());
+        model.addAttribute("grades", productService.getGradeOptions());
         model.addAttribute("mainNotes", productService.getMainNoteOptions());
-        model.addAttribute("volumes",   productService.getVolumeOptions());
+        model.addAttribute("volumes", productService.getVolumeOptions());
 
-        Map<String, Object> res = productService.getProducts(brandIds, gradeIds, mainNoteIds, volumeIds, keyword);
+        // 리스트 + 전체 카운트
+        Map<String, Object> res = productService.getProductsPaged(
+                brandIds, gradeIds, mainNoteIds, volumeIds, keyword, sort, page, size);
+
         model.addAttribute("products", res.get("items"));
-        model.addAttribute("total",    res.get("total"));
-        model.addAttribute("keyword",  keyword == null ? "" : keyword);
+        model.addAttribute("total", res.get("total"));
+        model.addAttribute("totalPages", res.get("totalPages"));
+        model.addAttribute("page", res.get("page"));
+        model.addAttribute("size", res.get("size"));
+
+        model.addAttribute("keyword", keyword == null ? "" : keyword);
+        model.addAttribute("sort", sort);
+
         return "main/list";
     }
 
     @GetMapping("/list/partial")
-    public String listPartial(@RequestParam(name = "brandIds",    required = false) List<Long> brandIds,
-                              @RequestParam(name = "gradeIds",    required = false) List<Long> gradeIds,
-                              @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
-                              @RequestParam(name = "volumeIds",   required = false) List<Long> volumeIds,
-                              @RequestParam(name = "q",           required = false) String keyword,
-                              Model model) {
-        Map<String, Object> res = productService.getProducts(brandIds, gradeIds, mainNoteIds, volumeIds, keyword);
+    public String listPartial(@RequestParam(name = "brandIds", required = false) List<Long> brandIds,
+            @RequestParam(name = "gradeIds", required = false) List<Long> gradeIds,
+            @RequestParam(name = "mainNoteIds", required = false) List<Long> mainNoteIds,
+            @RequestParam(name = "volumeIds", required = false) List<Long> volumeIds,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "sort", defaultValue = "id") String sort,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "24") int size,
+            Model model) {
+
+        Map<String, Object> res = productService.getProductsPaged(
+                brandIds, gradeIds, mainNoteIds, volumeIds, keyword, sort, page, size);
+
         model.addAttribute("products", res.get("items"));
-        model.addAttribute("total",    res.get("total"));
-        model.addAttribute("keyword",  keyword == null ? "" : keyword);
+        model.addAttribute("total", res.get("total"));
+        model.addAttribute("totalPages", res.get("totalPages"));
+        model.addAttribute("page", res.get("page"));
+        model.addAttribute("size", res.get("size"));
+        model.addAttribute("keyword", keyword == null ? "" : keyword);
+        model.addAttribute("sort", sort);
+
         return "main/list :: listBody";
     }
 
@@ -241,23 +279,22 @@ public class ProductController {
         Map<String, Object> res = productService.getProducts(
                 Collections.singletonList(brandNo),
                 null, null, null,
-                null
-        );
+                null);
 
         model.addAttribute("brand", brand);
-        model.addAttribute("total",  (Long) res.get("total"));
+        model.addAttribute("total", (Long) res.get("total"));
         model.addAttribute("products", (List<Map<String, Object>>) res.get("items"));
 
         return "main/brandDetail";
     }
-    
+
     // ==== MY TYPE ====
     @GetMapping("/myType")
     public String myType() {
-    	return "main/myType";
+        return "main/myType";
     }
+    
     	
-    // 설문용 제품 추천
     /**
      * 설문 기반 향수 추천 API (간단 버전)
      */
@@ -265,7 +302,7 @@ public class ProductController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getRecommendations(
             @RequestParam("mainNoteIds") List<Long> mainNoteIds,
-            @RequestParam(value = "size", defaultValue = "6") int size) {
+            @RequestParam(name = "size", defaultValue = "6") int size) {
         
         try {
             if (mainNoteIds == null || mainNoteIds.isEmpty()) {
@@ -519,4 +556,5 @@ public class ProductController {
         
         return reason.toString();
     }
+    // ==================================== 관심등록 ===================================
 }

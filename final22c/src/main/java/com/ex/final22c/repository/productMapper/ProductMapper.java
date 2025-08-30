@@ -15,18 +15,36 @@ public interface ProductMapper {
     List<Map<String, Object>> selectMainNoteOptions();
     List<Map<String, Object>> selectVolumeOptions();
 
-    // ===== 상품 카운트/목록 (필터 + 키워드 공통) =====
+    // ===== 상품 카운트 =====
     long countProducts(@Param("brandIds")    List<Long> brandIds,
                        @Param("gradeIds")    List<Long> gradeIds,
                        @Param("mainNoteIds") List<Long> mainNoteIds,
                        @Param("volumeIds")   List<Long> volumeIds,
                        @Param("keyword")     String keyword);
 
+    // (기존 - 다른 화면에서 사용)
     List<Map<String, Object>> selectProducts(@Param("brandIds")    List<Long> brandIds,
                                              @Param("gradeIds")    List<Long> gradeIds,
                                              @Param("mainNoteIds") List<Long> mainNoteIds,
                                              @Param("volumeIds")   List<Long> volumeIds,
                                              @Param("keyword")     String keyword);
+
+    // ===== 리스트용 (정렬 + 페이징) =====
+    /**
+     * @param sort   정렬키: id(기본), popular(판매량), priceAsc, priceDesc, reviewDesc
+     * @param offset 시작 오프셋
+     * @param limit  가져올 개수
+     */
+    List<Map<String, Object>> selectProductsPaged(
+            @Param("brandIds")    List<Long> brandIds,
+            @Param("gradeIds")    List<Long> gradeIds,
+            @Param("mainNoteIds") List<Long> mainNoteIds,
+            @Param("volumeIds")   List<Long> volumeIds,
+            @Param("keyword")     String keyword,
+            @Param("sort")        String sort,
+            @Param("offset")      int offset,
+            @Param("limit")       int limit
+    );
 
     // ===== 브랜드 페이지용 =====
     List<Map<String, Object>> selectBrands();                 // id, name, imgUrl

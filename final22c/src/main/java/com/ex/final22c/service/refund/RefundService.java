@@ -1,7 +1,10 @@
 package com.ex.final22c.service.refund;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,7 +42,7 @@ public class RefundService {
     private final OrderDetailRepository orderDetailRepository;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
-
+    private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
     private final KakaoApiService kakaoApiService;
     private final RefundSmsService refundSmsService;
     private final ObjectMapper objectMapper;
@@ -425,5 +428,65 @@ public class RefundService {
         if (v == null)
             v = res.get("refund_id");
         return (v == null) ? null : String.valueOf(v);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getRefundResultsAsMap(Long orderId) {
+        List<Refund> refunds = refundRepository.findRefundedWithDetails(orderId, "REFUNDED");
+
+        List<Map<String, Object>> refundMaps = new ArrayList<>();
+
+        for (Refund r : refunds) {
+            // details -> refundQty > 0 만 포함
+            List<Map<String, Object>> detailMaps = new ArrayList<>();
+            int total = 0;
+
+            if (r.getDetails() != null) {
+                for (RefundDetail d : r.getDetails()) {
+                    int qty = d.getRefundQty();
+                    if (qty <= 0)
+                        continue;
+
+                    int unit = d.getUnitRefundAmount();
+                    int sub = qty * unit;
+                    total += sub;
+
+                    String productName = "-";
+                    try {
+                        if (d.getOrderDetail() != null &&
+                                d.getOrderDetail().getProduct() != null &&
+                                d.getOrderDetail().getProduct().getName() != null) {
+                            productName = d.getOrderDetail().getProduct().getName();
+                        }
+                    } catch (Exception ignore) {
+                    }
+
+                    Map<String, Object> line = new LinkedHashMap<>();
+                    line.put("productName", productName);
+                    line.put("refundQty", qty);
+                    line.put("unitRefundAmount", unit);
+                    line.put("subtotal", sub);
+                    detailMaps.add(line);
+                }
+            }
+
+            String created = "";
+            if (r.getUpdateDate() != null)
+                created = r.getUpdateDate().format(DF);
+            else if (r.getCreateDate() != null)
+                created = r.getCreateDate().format(DF);
+
+            Map<String, Object> rm = new LinkedHashMap<>();
+            rm.put("refundId", r.getRefundId());
+            rm.put("status", r.getStatus()); // "REFUNDED"
+            rm.put("createdAt", created);
+            rm.put("reason", r.getRequestedReason());
+            rm.put("details", detailMaps);
+            rm.put("totalRefundAmount", total); // 참고용(없어도 됨)
+
+            refundMaps.add(rm);
+        }
+
+        return Map.of("refunds", refundMaps);
     }
 }

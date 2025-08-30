@@ -1,4 +1,16 @@
+<!-- templates/mypage/orderDetail.html -->
+<style>
+  .to-top {
+    display: none !important;
+  }
+
+  :root {
+    scrollbar-gutter: stable;
+  }
+</style>
 <div th:fragment="items">
+
+
   <div style="text-align:left; font-weight:600; margin-bottom:4px">
 
     <!-- 주문날짜 / 주문번호 -->
@@ -9,34 +21,40 @@
     </div>
 
     <hr style="margin:12px 0">
-
     <!-- 주문상품 정보 -->
     <h4 style="margin:0 0 8px">주문상품 정보</h4>
 
-    <ul style="list-style:none; padding:0; margin:0; display:grid; gap:8px">
-      <li th:each="d : ${order.details}"
-          style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-bottom:1px solid #eee; padding:6px 0;">
-        <!-- 상품명 -->
-        <span style="flex:1">
-          <a th:if="${d.product != null}"
-             th:href="@{|/main/content/${d.product.id}|}"
-             th:text="${d.product.name}"
-             style="text-decoration:underline"></a>
-          <span th:if="${d.product == null}">상품</span>
-        </span>
+    <!-- 항목별 결과 -->
+    <section class="mt-3">
+      <div id="resItems" class="mt-2"></div>
 
-        <!-- 수량 -->
-        <span>[[${d.quantity}]]개</span>
 
-        <!-- 금액: 주문 시점 금액 스냅샷(d.totalPrice) 우선 -->
-        <span th:text="${#numbers.formatInteger(d.totalPrice != null ? d.totalPrice : 0, 1, 'COMMA')} + '원'">0원</span>
-      </li>
-    </ul>
+      <div class="d-flex align-items-center py-2 border-bottom" th:each="d : ${order.details}">
+        <img class="rounded me-3" th:src="${d.product.imgPath+d.product.imgName}" alt=""
+          style="width:56px;height:56px;object-fit:cover">
+        <div class="flex-grow-1">
+          <div class="fw-semibold name">[[${d.product.name}]]</div>
+          <div class="small text-muted">
+            개당 <span class="unit">[[${#numbers.formatInteger(d.sellPrice, 3, 'COMMA')}]]</span>
+            <span th:if="${order.status=='REQUESTED' and d.refundDetail != null}"
+              th:text="'· 환불요청 '+${d.refundDetail.quantity}"></span>
+            <span th:if="${order.status=='REFUNDED' and d.refundDetail != null}"
+              th:text="'· 환불승인 '+${d.refundDetail.refundQty}"></span>
+          </div>
+        </div>
+        <div class="text-end">
+          <div class="fw-semibold subtotal">[[${d.quantity}]]개 [[${#numbers.formatInteger(d.totalPrice, 1, 'COMMA')}]]
+          </div>
+        </div>
+      </div>
+
+    </section>
 
     <hr style="margin:12px 0">
 
     <!-- 배송지 정보 -->
     <h4 style="margin:14px 0 8px">배송지</h4>
+
     <div th:if="${order.shippingSnapshot != null}">
       <div style="font-weight:600" th:text="${order.shippingSnapshot.addressName}">배송지명</div>
       <div>
@@ -50,20 +68,24 @@
         <span th:text="${order.shippingSnapshot.detailAddress}">상세</span>
       </div>
       <div class="text-muted"
-           th:if="${order.shippingSnapshot.memo != null and !#strings.isEmpty(order.shippingSnapshot.memo)}">
+        th:if="${order.shippingSnapshot.memo != null and !#strings.isEmpty(order.shippingSnapshot.memo)}">
         요청사항: <span th:text="${order.shippingSnapshot.memo}"></span>
       </div>
     </div>
 
     <hr style="margin:12px 0">
-
-    <!-- 결제내역 -->
+    <!-- 결제내역이 있다면 -->
     <div th:if="${payments != null and !payments.isEmpty()}">
       <ul style="list-style:none; padding:0; margin:0; display:grid; gap:6px">
         <li th:each="p : ${payments}" th:with="isPointOnly=${p.amount == 0 or p.tid == null}">
           결제번호 [[${p.paymentId}]]<br>
+
+          <!-- 결제 수단 -->
           <span th:if="${isPointOnly}">결제 수단 : 마일리지 전액 결제</span>
-          <span th:unless="${isPointOnly}">결제 수단 : 카카오페이</span><br>
+          <span th:unless="${isPointOnly}">
+            결제 수단 : 카카오페이
+          </span>
+          <br>
           총 결제 금액 : [[${#numbers.formatInteger(p.amount, 1, 'COMMA')}]]원
         </li>
       </ul>

@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.user.Users;
 
 @Repository
@@ -64,4 +65,9 @@ public interface UserRepository extends JpaRepository<Users, Long> {
            WHERE birth IS NOT NULL
       """, nativeQuery = true)
   int refreshAgesForNewYear();
+
+  // 내 관심목록
+    // userName으로 PK만 뽑아오기(경량)
+    @Query("select u.userNo from Users u where u.userName = :userName")
+    Optional<Long> findUserNoByUserName(@Param("userName") String userName);
 }

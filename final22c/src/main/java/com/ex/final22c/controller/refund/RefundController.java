@@ -1,12 +1,16 @@
 package com.ex.final22c.controller.refund;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -22,6 +26,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.refund.ApproveRefundRequest;
@@ -30,6 +36,8 @@ import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.refund.RefundDetailResponse;
 import com.ex.final22c.data.refund.RefundResultResponse;
+import com.ex.final22c.repository.order.OrderRepository;
+import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.service.refund.RefundService;
 
 import jakarta.validation.Valid;
@@ -41,6 +49,8 @@ import lombok.RequiredArgsConstructor;
 public class RefundController {
 
     private final RefundService refundService;
+    private final OrderRepository orderRepository;
+    private final RefundRepository refundRepository;
 
     // 환불내역 상세페이지
     @GetMapping("/{refundId}")
@@ -76,7 +86,7 @@ public class RefundController {
         return ResponseEntity.ok(body);
     }
 
-    // ✅ 여기에 둔다(핸들러들 아래, DTO들 위)
+    // 여기에 둔다(핸들러들 아래, DTO들 위)
     private RefundDetailResponse.Item toItem(RefundDetail d) {
         var od = d.getOrderDetail();
         var p = od.getProduct();
@@ -308,6 +318,66 @@ public class RefundController {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    // @GetMapping("/pay/order/{orderId}/refund-results")
+    // public ResponseEntity<?> refundResults(@PathVariable Long orderId, Principal
+    // principal) {
+    // Map<String, Object> body = refundService.getRefundResultsAsMap(orderId);
+    // return ResponseEntity.ok(body);
+    // }
+
+    @GetMapping("/pay/order/{orderId}/refund-results")
+    public ResponseEntity<Map<String, Object>> refundResults(@PathVariable("orderId") Long orderId) {
+
+        // DB 상태 문자열과 꼭 일치시켜 주세요(예: "REFUNDED" 또는 "환불완료")
+        final String REFUNDED = "REFUNDED";
+
+        List<Refund> refunds = refundRepository.findByOrder_OrderIdAndStatus(orderId, REFUNDED);
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
+
+        List<Map<String, Object>> refundMaps = refunds.stream().map(rf -> {
+            // rf.getDetails()가 null일 가능성이 있으면 빈 리스트로 처리
+            List<RefundDetail> src = rf.getDetails() != null ? rf.getDetails()
+                    : java.util.Collections.emptyList();
+
+            List<Map<String, Object>> details = src.stream()
+                    // int 이므로 null 비교 금지! 0 초과만 필터
+                    .filter(d -> d.getRefundQty() > 0)
+                    .map(d -> {
+                        Map<String, Object> m = new java.util.LinkedHashMap<>();
+
+                        String productName = "-";
+                        if (d.getOrderDetail() != null && d.getOrderDetail().getProduct() != null) {
+                            productName = String.valueOf(d.getOrderDetail().getProduct().getName());
+                        }
+
+                        int refundQty = d.getRefundQty(); // primitive int
+                        long unit = d.getUnitRefundAmount(); // primitive int 라면 long 으로 승격
+                        long subtotal = unit * (long) refundQty;
+
+                        m.put("productName", productName);
+                        m.put("refundQty", refundQty);
+                        m.put("unitRefundAmount", unit);
+                        m.put("subtotal", subtotal);
+                        return m;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+
+            Map<String, Object> rm = new java.util.LinkedHashMap<>();
+            // 엔티티 실제 게터명으로 맞춤
+            rm.put("refundId", rf.getRefundId()); // ← getId() 아님
+            rm.put("status", rf.getStatus());
+            rm.put("createdAt", rf.getCreateDate() != null ? rf.getCreateDate().format(fmt) : "");
+            rm.put("reason", rf.getRequestedReason() != null ? rf.getRequestedReason() : ""); // ← getReason() 아님
+            rm.put("details", details);
+            return rm;
+        }).collect(java.util.stream.Collectors.toList());
+
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("refunds", refundMaps);
+        return ResponseEntity.ok(body);
     }
 
 }

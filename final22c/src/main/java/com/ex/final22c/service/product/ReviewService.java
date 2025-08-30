@@ -6,8 +6,6 @@ import java.util.Iterator;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.access.AccessDeniedException;
-
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.user.Users;
@@ -49,23 +47,25 @@ public class ReviewService {
 
     public Review get(Long reviewId) {
         return reviewRepository.findById(reviewId)
-            .orElseThrow(() -> new IllegalArgumentException("리뷰를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("리뷰를 찾을 수 없습니다."));
     }
 
     @Transactional
     public boolean toggleLike(Long reviewId, Users actor) {
-        if (actor == null) throw new AccessDeniedException("로그인이 필요합니다.");
+        if (actor == null) {
+            throw new AccessDeniedException("로그인이 필요합니다.");
+        }
         Review r = get(reviewId);
 
-        // 이미 눌렀는지 사용자명으로 판별(동일 영속성 컨텍스트가 아닐 수도 있으므로)
+        // PK(userNo)로 비교해야 안전
         boolean already = r.getLikers().stream()
-                .anyMatch(u -> actor.getUserName().equals(u.getUserName()));
+                .anyMatch(u -> u.getUserNo() != null && u.getUserNo().equals(actor.getUserNo()));
 
         if (already) {
-            // 안전 제거
+            // 안전 제거(Iterator 사용)
             for (Iterator<Users> it = r.getLikers().iterator(); it.hasNext();) {
                 Users u = it.next();
-                if (actor.getUserName().equals(u.getUserName())) {
+                if (u.getUserNo() != null && u.getUserNo().equals(actor.getUserNo())) {
                     it.remove();
                     break;
                 }
@@ -73,7 +73,7 @@ public class ReviewService {
             return false; // now unliked
         } else {
             r.getLikers().add(actor);
-            return true;  // now liked
+            return true; // now liked
         }
     }
 
@@ -82,10 +82,12 @@ public class ReviewService {
     }
 
     private void authorize(Review r, Users actor) {
-        if (actor == null) throw new AccessDeniedException("로그인이 필요합니다.");
+        if (actor == null)
+            throw new AccessDeniedException("로그인이 필요합니다.");
         boolean isOwner = r.getWriter() != null && actor.getUserName().equals(r.getWriter().getUserName());
         boolean isAdmin = actor.getRole() != null && actor.getRole().equalsIgnoreCase("ADMIN");
-        if (!(isOwner || isAdmin)) throw new AccessDeniedException("권한이 없습니다.");
+        if (!(isOwner || isAdmin))
+            throw new AccessDeniedException("권한이 없습니다.");
     }
 
     @Transactional
