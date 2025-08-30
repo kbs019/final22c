@@ -1,11 +1,15 @@
 package com.ex.final22c.controller.product;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -251,5 +255,268 @@ public class ProductController {
     @GetMapping("/myType")
     public String myType() {
     	return "main/myType";
+    }
+    	
+    // 설문용 제품 추천
+    /**
+     * 설문 기반 향수 추천 API (간단 버전)
+     */
+    @GetMapping("/api/products/recommendations")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getRecommendations(
+            @RequestParam("mainNoteIds") List<Long> mainNoteIds,
+            @RequestParam(value = "size", defaultValue = "6") int size) {
+        
+        try {
+            if (mainNoteIds == null || mainNoteIds.isEmpty()) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "메인노트 ID가 필요합니다.");
+                errorResponse.put("items", List.of());
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            // 기존 ProductService 메서드 활용
+            List<Map<String, Object>> recommendations = productService.getRecommendationsByMainNotes(mainNoteIds, size);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("total", recommendations.size());
+            response.put("items", recommendations);
+            response.put("mainNoteIds", mainNoteIds);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.err.println("추천 API 오류: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "추천 상품 조회 중 오류가 발생했습니다.");
+            errorResponse.put("items", List.of());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * 설문 페이지용 - 메인노트별 상품 개수 조회 API
+     * @param mainNoteIds 메인노트 ID들
+     * @return 각 메인노트별 상품 개수 정보
+     */
+    @GetMapping("/api/products/count-by-mainnotes")
+    @ResponseBody  
+    public ResponseEntity<Map<String, Object>> getProductCountByMainNotes(
+            @RequestParam("mainNoteIds") List<Long> mainNoteIds) {
+        
+        try {
+            if (mainNoteIds == null || mainNoteIds.isEmpty()) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("total", 0);
+                errorResponse.put("message", "메인노트 ID가 필요합니다.");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            long totalCount = productService.countProductsByMainNotes(mainNoteIds);
+            boolean hasProducts = productService.hasRecommendableProducts(mainNoteIds);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("total", totalCount);
+            response.put("mainNoteIds", mainNoteIds);
+            response.put("hasRecommendableProducts", hasProducts);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.err.println("상품 개수 조회 API 오류: " + e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("total", 0);
+            errorResponse.put("error", e.getMessage());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * 설문 결과 상세 분석 API (선택사항)
+     * @param answers 설문 답변들 (JSON 형태)
+     * @return 상세한 분석 결과 및 추천 이유
+     */
+    @PostMapping("/api/survey/analyze")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> analyzeSurveyResults(
+            @RequestBody Map<String, String> answers) {
+        
+        try {
+            // 설문 답변 분석 로직
+            Map<String, Object> analysis = analyzeSurveyAnswers(answers);
+            
+            // 추천 메인노트 추출
+            @SuppressWarnings("unchecked")
+            List<Long> recommendedMainNotes = (List<Long>) analysis.get("recommendedMainNotes");
+            
+            // 해당 메인노트의 상품들 조회
+            List<Map<String, Object>> products = productService.getRecommendationsByMainNotes(recommendedMainNotes, 6);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("analysis", analysis);
+            response.put("recommendations", products);
+            response.put("totalProducts", products.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.err.println("설문 분석 API 오류: " + e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "설문 분석 중 오류가 발생했습니다.");
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * 설문 답변 분석 헬퍼 메서드
+     * @param answers 설문 답변 Map
+     * @return 분석 결과
+     */
+    private Map<String, Object> analyzeSurveyAnswers(Map<String, String> answers) {
+        // 메인노트 매핑 (프론트엔드와 동일)
+        Map<String, Long> mainNoteMapping = Map.of(
+            "floral", 6L,    // 플로랄
+            "citrus", 7L,    // 시트러스  
+            "woody", 2L,     // 우디
+            "spicy", 1L,     // 스파이시
+            "vanilla", 8L,   // 바닐라
+            "fruity", 4L,    // 푸루티
+            "herbal", 3L,    // 허벌
+            "gourmand", 5L   // 구르망
+        );
+        
+        String demographics = answers.get("demographics");
+        String mood = answers.get("mood");
+        String season = answers.get("season");
+        String intensity = answers.get("intensity");
+        String notes = answers.get("notes");
+        String usage = answers.get("usage");
+        String personality = answers.get("personality");
+        String budget = answers.get("budget");
+        
+        // 메인 노트 결정
+        Long primaryMainNote = mainNoteMapping.getOrDefault(notes, 6L); // 기본값: 플로랄
+        Set<Long> secondaryMainNotes = new HashSet<>();
+        
+        // 답변 조합에 따른 추가 노트 추천
+        if ("romantic".equals(mood)) {
+            secondaryMainNotes.addAll(List.of(6L, 8L)); // 플로랄, 바닐라
+        } else if ("professional".equals(mood)) {
+            secondaryMainNotes.addAll(List.of(2L, 7L)); // 우디, 시트러스
+        } else if ("casual".equals(mood)) {
+            secondaryMainNotes.addAll(List.of(7L, 3L)); // 시트러스, 허벌
+        } else if ("luxurious".equals(mood)) {
+            secondaryMainNotes.addAll(List.of(1L, 5L)); // 스파이시, 구르망
+        }
+        
+        if ("spring".equals(season)) {
+            secondaryMainNotes.addAll(List.of(6L, 7L)); // 플로랄, 시트러스
+        } else if ("summer".equals(season)) {
+            secondaryMainNotes.addAll(List.of(7L, 3L)); // 시트러스, 허벌
+        } else if ("autumn".equals(season)) {
+            secondaryMainNotes.addAll(List.of(2L, 1L)); // 우디, 스파이시
+        } else if ("winter".equals(season)) {
+            secondaryMainNotes.addAll(List.of(8L, 5L)); // 바닐라, 구르망
+        }
+        
+        if ("gentle".equals(personality)) {
+            secondaryMainNotes.addAll(List.of(6L, 8L)); // 플로랄, 바닐라
+        } else if ("confident".equals(personality)) {
+            secondaryMainNotes.addAll(List.of(1L, 2L)); // 스파이시, 우디
+        } else if ("fresh".equals(personality)) {
+            secondaryMainNotes.addAll(List.of(7L, 3L)); // 시트러스, 허벌
+        } else if ("mysterious".equals(personality)) {
+            secondaryMainNotes.addAll(List.of(2L, 5L)); // 우디, 구르망
+        }
+        
+        // 메인노트 추가 및 중복 제거, 최대 3개 선택
+        secondaryMainNotes.add(primaryMainNote);
+        List<Long> recommendedMainNotes = secondaryMainNotes.stream()
+            .limit(3)
+            .collect(Collectors.toList());
+        
+        // 분석 결과 구성
+        Map<String, Object> analysis = new HashMap<>();
+        analysis.put("primaryMainNote", primaryMainNote);
+        analysis.put("recommendedMainNotes", recommendedMainNotes);
+        analysis.put("userProfile", Map.of(
+            "demographics", demographics,
+            "mood", mood,
+            "season", season,
+            "intensity", intensity,
+            "personality", personality,
+            "budget", budget
+        ));
+        
+        // 추천 이유 생성
+        String reason = generateRecommendationReason(answers, recommendedMainNotes);
+        analysis.put("recommendationReason", reason);
+        
+        return analysis;
+    }
+
+    /**
+     * 추천 이유 생성 헬퍼 메서드
+     */
+    private String generateRecommendationReason(Map<String, String> answers, List<Long> mainNoteIds) {
+        Map<Long, String> mainNoteNames = Map.of(
+            1L, "스파이시", 2L, "우디", 3L, "허벌", 4L, "푸루티",
+            5L, "구르망", 6L, "플로랄", 7L, "시트러스", 8L, "바닐라"
+        );
+        
+        String mood = answers.get("mood");
+        String personality = answers.get("personality");
+        String season = answers.get("season");
+        
+        StringBuilder reason = new StringBuilder();
+        reason.append("당신의 ");
+        
+        if ("romantic".equals(mood)) {
+            reason.append("로맨틱한 감성");
+        } else if ("professional".equals(mood)) {
+            reason.append("프로페셔널한 매력");
+        } else if ("casual".equals(mood)) {
+            reason.append("자연스러운 일상");
+        } else if ("luxurious".equals(mood)) {
+            reason.append("럭셔리한 취향");
+        }
+        
+        reason.append("과 ");
+        
+        if ("confident".equals(personality)) {
+            reason.append("자신감 넘치는 개성");
+        } else if ("gentle".equals(personality)) {
+            reason.append("부드러운 매력");
+        } else if ("fresh".equals(personality)) {
+            reason.append("상쾌한 에너지");
+        } else if ("mysterious".equals(personality)) {
+            reason.append("신비로운 분위기");
+        }
+        
+        reason.append("을 고려하여 ");
+        
+        List<String> noteNames = mainNoteIds.stream()
+            .map(id -> mainNoteNames.getOrDefault(id, "특별한"))
+            .collect(Collectors.toList());
+        
+        reason.append(String.join(", ", noteNames));
+        reason.append(" 계열 향수를 추천드립니다.");
+        
+        return reason.toString();
     }
 }
