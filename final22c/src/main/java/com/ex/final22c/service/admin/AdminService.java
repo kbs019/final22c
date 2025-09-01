@@ -85,7 +85,9 @@ public class AdminService {
     private final ReviewRepository reviewRepository;
     private final OrderDetailRepository orderDetailRepository;
     private final ReviewFilterService reviewFilterService;
-
+    
+    
+    
     // 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
 
@@ -744,5 +746,36 @@ public class AdminService {
         return all.stream()
                 .filter(r -> reviewFilterService.containsBadWord(r.getContent()))
                 .toList();
+    }
+    
+    public boolean applySanction(String username, String sanction) {
+        Optional<Users> optionalUser = userRepository.findByUserName(username);
+
+        if (!optionalUser.isPresent()) {
+            return false; // 사용자 없으면 실패
+        }
+
+        Users user = optionalUser.get();
+        LocalDate today = LocalDate.now();
+
+        switch (sanction) {
+            case "7d":
+                user.setStatus("suspended");
+                user.setBanReg(today.plusDays(7));
+                break;
+            case "30d":
+                user.setStatus("suspended");
+                user.setBanReg(today.plusDays(30));
+                break;
+            case "permanent":
+                user.setStatus("banned");
+                user.setBanReg(null);
+                break;
+            default:
+                return false;
+        }
+
+        userRepository.save(user);
+        return true;
     }
 }

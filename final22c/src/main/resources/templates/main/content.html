@@ -379,8 +379,8 @@
             <!-- 좌측: 메타 + 본문 -->
             <div class="d-flex align-items-start gap-3 flex-grow-1">
               <div class="review-meta">
-                <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.writer.userName)}"
-                  th:text="${len <= 3} ? ${rv.writer.userName} : ${#strings.substring(rv.writer.userName,0,2)} + ${'*'.repeat(len-2)}">
+                <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
+                  th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
                   kv**</div>
 
                 <div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
@@ -414,7 +414,7 @@
 
               <!-- 로그인 + (소유자 또는 관리자)만 노출 -->
               <div class="review-actions mt-1" sec:authorize="isAuthenticated()"
-                th:with="isOwner=${#authentication.name == rv.writer.userName}">
+                th:with="isOwner=${#authentication.name == rv.userName}">
                 <div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
                   <a class="ra-link" th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${product.id}|}">수정</a>
 

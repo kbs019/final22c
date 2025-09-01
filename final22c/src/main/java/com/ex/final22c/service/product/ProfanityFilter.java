@@ -12,40 +12,32 @@ import jakarta.annotation.PostConstruct;
 
 @Component
 public class ProfanityFilter {
-	 private Set<String> profanitySet = new HashSet<>();
-	 @PostConstruct
-	    public void init() throws Exception {
-	        InputStream is = getClass().getResourceAsStream("/profanity.txt");
-	        BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-	        String line;
-	        while ((line = reader.readLine()) != null) {
-	            line = line.trim();
-	            if (!line.isEmpty()) {
-	                profanitySet.add(line);
-	            }
-	        }
-	        reader.close();
-	    }
+	private Set<String> profanitySet = new HashSet<>();
 
-	    // 욕설 포함 여부 체크
-	    public boolean containsProfanity(String text) {
-	        for (String word : profanitySet) {
-	            if (text.contains(word)) {
-	                return true;
-	            }
-	        }
-	        return false;
-	    }
+    @PostConstruct
+    public void init() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/static/profanity.txt"); 
+        if (is == null) throw new RuntimeException("profanity.txt 파일을 찾을 수 없습니다!");
 
-	    // 욕설을 '*' 처리
-	    public String maskProfanity(String text) {
-	        String maskedText = text;
-	        for (String word : profanitySet) {
-	            if (maskedText.contains(word)) {
-	                String stars = "*".repeat(word.length());
-	                maskedText = maskedText.replaceAll(word, stars);
-	            }
-	        }
-	        return maskedText;
-	    }
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) profanitySet.add(line);
+            }
+        }
+    }
+
+    public boolean containsProfanity(String text) {
+        return profanitySet.stream().anyMatch(text::contains);
+    }
+
+    public String maskProfanity(String text) {
+        String maskedText = text;
+        for (String word : profanitySet) {
+            String stars = "*".repeat(word.length());
+            maskedText = maskedText.replace(word, stars); // ← 정규식 말고 그냥 replace
+        }
+        return maskedText;
+    }
 }

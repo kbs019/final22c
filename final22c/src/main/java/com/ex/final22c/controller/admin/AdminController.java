@@ -33,6 +33,7 @@ import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.refund.RefundDetailResponse;
+import com.ex.final22c.data.user.SanctionRequest;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.service.admin.AdminService;
@@ -405,5 +406,16 @@ public class AdminController {
     @GetMapping("reviews/badwords")
     public List<Review> badWordReviews() {
         return adminService.getFilteredReviews();
+    }
+    
+    // 회원 정지
+    @PostMapping("/sanction")
+    public ResponseEntity<String> sanctionUser(@RequestBody SanctionRequest request) {
+        boolean success = adminService.applySanction(request.getUsername(), request.getSanction());
+        if (success) {
+            return ResponseEntity.ok("제재 적용 완료");
+        } else {
+            return ResponseEntity.badRequest().body("사용자를 찾을 수 없거나 잘못된 제재 유형입니다.");
+        }
     }
 }
