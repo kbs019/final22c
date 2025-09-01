@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
+    private final ProfanityFilter profanityFilter;
 
     public List<Review> getReviews(Product product, String sort) {
         if ("recent".equalsIgnoreCase(sort)) {
@@ -37,11 +38,13 @@ public class ReviewService {
 
     @Transactional
     public Review write(Product product, Users writer, int rating, String content) {
+    	// 1. 욕설 필터 적용
+        String filteredContent = profanityFilter.maskProfanity(content);
         Review r = new Review();
         r.setProduct(product);
         r.setWriter(writer);
         r.setRating(Math.max(1, Math.min(5, rating)));
-        r.setContent(content);
+        r.setContent(filteredContent);
         return reviewRepository.save(r);
     }
 

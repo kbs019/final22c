@@ -54,31 +54,31 @@
 </div>
 
 
-<script type="text/javascript">
+<script type="text/javascript" layout:fragment="script" >
     let datatable = new simpleDatatables.DataTable("#datatablesSimple");
 
     document.getElementById("filterBadBtn").addEventListener("click", function () {
-        fetch("/admin/reviews/badwords")
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
+    	fetch("/admin/reviews/badwords")
+        .then(res => res.json())
+        .then(data => {
+            console.log(data);
 
-                // 기존 데이터 삭제
-                datatable.clear();
+            // 기존 데이터 삭제
+            datatable.rows().remove();
 
-                // 새 데이터 추가
-                data.forEach(re => {
-                    datatable.rows().add([
-                        re.reviewId,
-                        re.product?.brand?.brandName || "",
-                        re.product?.name || "",
-                        re.rating,
-                        re.content,
-                        re.writer?.userName || "",
-                        re.createDate ? new Date(re.createDate).toLocaleString() : ""
-                    ]);
-                });
+            // 새 데이터 추가
+            data.forEach(re => {
+                datatable.rows().add([
+                    re.reviewId,
+                    re.product?.brand?.brandName || "",
+                    re.product?.name || "",
+                    re.rating,
+                    re.content,
+                    re.writer?.userName || "",
+                    re.createDate ? new Date(re.createDate).toLocaleString() : ""
+                ]);
             });
+        });
     });
 </script>
 </html>
