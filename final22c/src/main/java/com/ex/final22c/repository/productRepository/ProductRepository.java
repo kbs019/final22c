@@ -1,8 +1,10 @@
 package com.ex.final22c.repository.productRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import org.apache.ibatis.annotations.Select;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -140,4 +142,17 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
       order by ageBucket
       """)
    List<BuyerStatProjection> findBuyerStatsByProduct(@Param("productId") Long productId);
+   
+// 상품 상세 정보 조회 (ID로)
+   @Query(value = """
+		    SELECT p.id as id, p.name as name, p.sellPrice as sellPrice, p.imgName as imgName, p.count as count,
+		           b.brandName as brandName, m.mainNoteName as mainNoteName, g.gradeName as gradeName, v.volumeName as volumeName
+		    FROM Product p
+		    LEFT JOIN p.brand b
+		    LEFT JOIN p.mainNote m
+		    LEFT JOIN p.grade g
+		    LEFT JOIN p.volume v
+		    WHERE p.id = :id
+		""")
+		Map<String, Object> selectProductById(@Param("id") Long id);
 }

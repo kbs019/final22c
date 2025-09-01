@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
+import com.ex.final22c.data.user.Users;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
@@ -57,4 +58,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     Optional<Review> findByReviewIdAndWriter_UserNo(@Param("reviewId") Long reviewId, @Param("userNo") Long userNo);
     
+    // 리뷰 작성자
+    List<Review> findByWriter(Users writer);
+    
+    List<Review> findByWriterAndRatingGreaterThanEqual(Users writer, int rating);
 }

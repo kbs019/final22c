@@ -1,6 +1,7 @@
 package com.ex.final22c.service.product;
 
 import java.util.List;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -10,6 +11,7 @@ import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.productRepository.ReviewRepository;
+import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +22,7 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ProfanityFilter profanityFilter;
+    private final UserRepository userRepository;
 
     public List<Review> getReviews(Product product, String sort) {
         if ("recent".equalsIgnoreCase(sort)) {
@@ -109,5 +112,16 @@ public class ReviewService {
         Long productId = r.getProduct().getId();
         reviewRepository.delete(r);
         return productId;
+    }
+    
+    /**
+     * 사용자별 리뷰 조회
+     */
+    public List<Review> getReviewsByUser(String userName) {
+        Users user = userRepository.findByUserName(userName)
+            .orElse(null);
+        if (user == null) return Collections.emptyList();
+        
+        return reviewRepository.findByWriter(user);
     }
 }
