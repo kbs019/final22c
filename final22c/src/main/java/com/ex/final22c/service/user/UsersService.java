@@ -63,11 +63,12 @@ public class UsersService {
     public Users updateProfile(String username, String newEmail, String newPhone, String newPasswordNullable) {
         Users me = getUser(username);
 
-        // 입력 정규화
         String emailNorm = isBlank(newEmail) ? null : safeLowerTrim(newEmail);
-        String phoneNorm = isBlank(newPhone) ? null : safeTrim(newPhone);
 
-        // 사전 중복 검사 (본인 제외)
+        // phone: 하이푼 제거
+        String phoneNorm = isBlank(newPhone) ? null : newPhone.replaceAll("-", "").trim();
+
+        // --- 중복 검사 ---
         if (emailNorm != null) {
             Optional<Users> existingEmail = userRepository.findByEmail(emailNorm);
             if (existingEmail.isPresent() && !existingEmail.get().getUserNo().equals(me.getUserNo())) {
@@ -81,18 +82,14 @@ public class UsersService {
             }
         }
 
-        // 반영
+        // --- 저장 ---
         if (emailNorm != null)
             me.setEmail(emailNorm);
         if (phoneNorm != null)
-            me.setPhone(phoneNorm);
+            me.setPhone(phoneNorm); // DB에는 01012345678 형식 저장
         if (!isBlank(newPasswordNullable)) {
             me.setPassword(passwordEncoder.encode(newPasswordNullable));
         }
-
-        // @Transactional + 영속 엔티티 변경 → flush 시점에 반영
-        // 명시 저장을 원하면 아래 주석 해제
-        // userRepository.save(me);
 
         return me;
     }
@@ -119,15 +116,73 @@ public class UsersService {
     }
 
     // ---- helpers ----
+    /** 빈 문자열 여부 확인 */
     private static boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
 
+    /** null-세이프 trim */
     private static String safeTrim(String s) {
         return s == null ? null : s.trim();
     }
 
+    /** null-세이프 trim + 소문자 변환(이메일 표준화용) */
     private static String safeLowerTrim(String s) {
         return s == null ? null : s.trim().toLowerCase();
+    }
+
+    /** 휴대폰/통신사만 변경: 입력은 하이푼 포함, DB엔 숫자만 저장. 본인 제외 중복검사 */
+    @Transactional
+    public Users updatePhoneAndTelecom(String username, String newPhone, String newTelecom) {
+        Users me = getUser(username);
+
+        // 1) 입력 정규화(뷰에서 하이푼 포함 전달)
+        String phoneHyphen = (newPhone == null) ? "" : newPhone.trim();
+        String telNorm = (newTelecom == null) ? "" : newTelecom.trim();
+
+        if (phoneHyphen.isEmpty() || telNorm.isEmpty()) {
+            throw new IllegalArgumentException("휴대번호/통신사를 확인해 주세요.");
+        }
+
+        // 2) 형식 검증 (입력은 하이푼 포함)
+        if (!phoneHyphen.matches("^010-\\d{4}-\\d{4}$")) {
+            throw new IllegalArgumentException("휴대폰 번호 형식을 확인해 주세요. (예: 010-1234-5678)");
+        }
+
+        // 3) DB 저장/중복검사는 숫자만으로 통일
+        String phoneDigits = phoneHyphen.replaceAll("-", ""); // "01012345678"
+
+        userRepository.findByPhone(phoneDigits).ifPresent(other -> {
+            if (!other.getUserNo().equals(me.getUserNo())) {
+                throw new IllegalArgumentException("이미 사용 중인 휴대폰 번호입니다.");
+            }
+        });
+
+        // 4) 저장
+        me.setPhone(phoneDigits); // DB에는 숫자만
+        me.setTelecom(telNorm);
+        return me;
+    }
+
+    /** 이메일 사용 가능 여부 사전 체크(본인 이메일이면 사용 가능으로 간주) */
+    public boolean isEmailAvailableFor(String usernameNullable, String newEmail) {
+        String emailNorm = safeLowerTrim(newEmail);
+        if (emailNorm == null)
+            return false;
+
+        Users self = null;
+        if (usernameNullable != null) {
+            try {
+                self = getUser(usernameNullable);
+            } catch (Exception ignored) {
+            }
+        }
+
+        // 본인 이메일이면 사용 가능으로 처리
+        if (self != null && emailNorm.equals(safeLowerTrim(self.getEmail()))) {
+            return true;
+        }
+
+        return userRepository.findByEmail(emailNorm).isEmpty();
     }
 }

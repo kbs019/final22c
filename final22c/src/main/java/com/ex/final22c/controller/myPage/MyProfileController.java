@@ -34,8 +34,7 @@ public class MyProfileController {
     /** 프로필 페이지: 검증 상태와 사용자 정보 바인딩 */
     @GetMapping
     public String profilePage(Principal principal, HttpSession session, Model model) {
-        if (principal == null)
-            return "redirect:/user/login";
+        if (principal == null) return "redirect:/user/login";
 
         Users me = usersService.getUser(principal.getName());
         Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
@@ -56,20 +55,16 @@ public class MyProfileController {
             Principal principal,
             HttpSession session,
             RedirectAttributes ra,
-            // 이메일(합쳐서 hidden name=email 로 넘어옴)
-            @RequestParam(name = "email", required = false) String email,
-            // 휴대폰 전체값(hidden)
-            @RequestParam(name = "phone", required = false) String phone,
-            // 휴대폰 분할값(옵션)
-            @RequestParam(name = "phone2", required = false) String phone2,
-            @RequestParam(name = "phone3", required = false) String phone3,
-            // 비밀번호 변경(옵션)
-            @RequestParam(name = "newPassword", required = false) String newPassword,
+            @RequestParam(name = "email",    required = false) String email,   // 합쳐진 email
+            @RequestParam(name = "phone",    required = false) String phone,   // hidden 전체값
+            @RequestParam(name = "phone2",   required = false) String phone2,  // 분할값
+            @RequestParam(name = "phone3",   required = false) String phone3,  // 분할값
+            @RequestParam(name = "newPassword",     required = false) String newPassword,
             @RequestParam(name = "confirmPassword", required = false) String confirmPassword) {
-        if (principal == null)
-            return "redirect:/user/login";
 
-        // 5분 가드
+        if (principal == null) return "redirect:/user/login";
+
+        // 5분 재인증 가드
         Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
         boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
         if (!verified) {
@@ -77,7 +72,6 @@ public class MyProfileController {
             return "redirect:/mypage/profile";
         }
 
-        // 입력 표준화
         String trimmedEmail = (email == null || email.isBlank()) ? null : email.trim();
 
         // phone: 전체값 우선, 없으면 분할값 결합(010 고정)
@@ -113,13 +107,8 @@ public class MyProfileController {
             pwToSet = newPassword;
         }
 
-        // 업데이트 (null 값은 변경하지 않음)
         try {
-            usersService.updateProfile(
-                    principal.getName(),
-                    trimmedEmail,
-                    newPhone,
-                    pwToSet);
+            usersService.updateProfile(principal.getName(), trimmedEmail, newPhone, pwToSet);
             ra.addFlashAttribute("message", "개인정보가 성공적으로 수정되었습니다.");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "수정 중 오류가 발생했습니다: " + e.getMessage());
@@ -132,8 +121,8 @@ public class MyProfileController {
     @PostMapping(value = "/verify", consumes = "application/json", produces = "application/json")
     @ResponseBody
     public ResponseEntity<?> verify(@RequestBody Map<String, String> req,
-            Principal principal,
-            HttpSession session) {
+                                    Principal principal,
+                                    HttpSession session) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
@@ -168,17 +157,16 @@ public class MyProfileController {
                 "message", same ? "비밀번호가 일치합니다." : "비밀번호가 일치하지 않습니다."));
     }
 
-    // 비밀번호만 변경 AJAX
+    /** 비밀번호만 변경 (AJAX) */
     @PostMapping(value = "/password", consumes = "application/json", produces = "application/json")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> changePassword(@RequestBody Map<String, String> req,
-            Principal principal,
-            HttpSession session) {
+                                                              Principal principal,
+                                                              HttpSession session) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
         }
-        // 5분 재인증 가드
         Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
         boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
         if (!verified) {
@@ -199,10 +187,102 @@ public class MyProfileController {
             return ResponseEntity.badRequest().body(Map.of("ok", false, "message", "비밀번호 확인이 일치하지 않습니다."));
         }
 
-        // 업데이트 (이메일/휴대폰은 null → 미변경)
         usersService.updateProfile(principal.getName(), null, null, pw1);
-
         return ResponseEntity.ok(Map.of("ok", true, "message", "비밀번호가 변경되었습니다."));
     }
 
+    /** 휴대폰 변경 (AJAX) */
+    @PostMapping(value = "/phone", consumes = "application/json", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> changePhone(@RequestBody Map<String, String> body,
+                                                           Principal principal,
+                                                           HttpSession session) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+
+        Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
+        boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
+        if (!verified) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("ok", false, "message", "재인증이 필요합니다."));
+        }
+
+        String phone   = Optional.ofNullable(body.get("phone")).orElse("").trim();
+        String telecom = Optional.ofNullable(body.get("telecom")).orElse("").trim();
+
+        if (!phone.matches("^010-\\d{4}-\\d{4}$") || telecom.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("ok", false, "message", "휴대번호/통신사를 확인해 주세요."));
+        }
+
+        try {
+            usersService.updatePhoneAndTelecom(principal.getName(), phone, telecom);
+            return ResponseEntity.ok(Map.of("ok", true, "message", "변경되었습니다."));
+        } catch (IllegalArgumentException dup) {
+            return ResponseEntity.badRequest().body(Map.of("ok", false, "message", dup.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("ok", false, "message", "변경 중 오류가 발생했습니다."));
+        }
+    }
+
+    /** 이메일 중복 확인 (AJAX) */
+    @PostMapping(value = "/email/check", consumes = "application/json", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> checkEmail(@RequestBody Map<String, String> body,
+                                                          Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+
+        String email = Optional.ofNullable(body.get("email")).orElse("").trim().toLowerCase();
+        if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("ok", false, "message", "이메일 형식을 확인해 주세요."));
+        }
+
+        boolean available = usersService.isEmailAvailableFor(principal.getName(), email);
+        return ResponseEntity.ok(Map.of(
+                "ok", available,
+                "message", available ? "사용 가능한 이메일입니다." : "중복된 이메일입니다."));
+    }
+
+    /** 이메일 실제 변경 (AJAX) */
+    @PostMapping(value = "/email", consumes = "application/json", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> changeEmail(@RequestBody Map<String, String> body,
+                                                           Principal principal,
+                                                           HttpSession session) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+
+        Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
+        boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
+        if (!verified) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("ok", false, "message", "재인증이 필요합니다."));
+        }
+
+        String email = Optional.ofNullable(body.get("email")).orElse("").trim().toLowerCase();
+        if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("ok", false, "message", "이메일 형식을 확인해 주세요."));
+        }
+
+        try {
+            usersService.updateProfile(principal.getName(), email, null, null);
+            return ResponseEntity.ok(Map.of("ok", true, "message", "이메일이 변경되었습니다."));
+        } catch (IllegalArgumentException dup) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("ok", false, "message", dup.getMessage())); // "이미 사용 중인 이메일입니다."
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("ok", false, "message", "변경 중 오류가 발생했습니다."));
+        }
+    }
 }
