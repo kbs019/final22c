@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html layout:decorate="~{layout/layout}">
+<link rel="icon" href="data:," />
+<meta name="context-path" th:content="${#httpServletRequest.getContextPath()}" />
+<meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}" />
+<meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
+
+<div layout:fragment="content">
+    <style>
+        :root {
+            --font-sans: system-ui, -apple-system, "Noto Sans KR", "Malgun Gothic", "Segoe UI", Roboto, "Helvetica Neue", Arial
+        }
+
+        html {
+            overflow-y: scroll
+        }
+
+        .m-wrap {
+            font-family: var(--font-sans);
+            font-size: 14px;
+            line-height: 1.6;
+            color: #111827
+        }
+
+        .muted {
+            color: #6b7280;
+            font-size: 12px
+        }
+
+        /* grid (주문내역과 동일) */
+        .mp-grid {
+            display: grid;
+            grid-template-columns: 260px minmax(0, 1fr);
+            gap: 24px;
+            align-items: start
+        }
+
+        .mp-col-left {
+            position: sticky;
+            top: 24px;
+            align-self: start;
+            z-index: 1
+        }
+
+        /* header */
+        .m-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px
+        }
+
+        .m-title {
+            font-size: 22px;
+            font-weight: 800;
+            margin: 0
+        }
+
+        .m-chip {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 160px;
+            height: 64px;
+            padding: 8px 14px;
+            border-radius: 14px;
+            color: #fff;
+            background: linear-gradient(135deg, #5b67ff, #8a48d9);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, .08);
+        }
+
+        .m-chip b {
+            font-size: 22px;
+            line-height: 1;
+            letter-spacing: .5px
+        }
+
+        /* table */
+        .m-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0
+        }
+
+        .m-table th,
+        .m-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #e5e7eb
+        }
+
+        .m-table thead th {
+            background: #f8fafc;
+            font-weight: 800
+        }
+
+        .m-table th:first-child,
+        .m-table td:first-child {
+            padding-left: 16px
+        }
+
+        .m-table th:last-child,
+        .m-table td:last-child {
+            padding-right: 16px
+        }
+
+        .m-link {
+            color: #2563eb;
+            text-decoration: none
+        }
+
+        .m-link:hover {
+            text-decoration: underline
+        }
+
+        .pt-use {
+            color: #ef4444;
+            font-weight: 800
+        }
+
+        /* -1,000P */
+        .pt-earn {
+            color: #16a34a;
+            font-weight: 800
+        }
+
+        /* +500P */
+
+        /* empty */
+        .m-empty {
+            padding: 48px 0;
+            text-align: center;
+            color: #9ca3af
+        }
+
+        /* pager */
+        .pager {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            margin: 18px 0
+        }
+
+        .pager .btn {
+            appearance: none;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: #111827;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            min-width: 44px;
+            text-align: center
+        }
+
+        .pager .btn:hover {
+            background: #f3f7ff
+        }
+
+        .pager .btn[disabled] {
+            opacity: .5;
+            cursor: not-allowed
+        }
+
+        .pager .num {
+            min-width: 36px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid #111827;
+            background: #111827;
+            color: #fff;
+            text-align: center
+        }
+
+        .pager input[type="number"] {
+            width: 56px;
+            padding: 8px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            text-align: center
+        }
+    </style>
+
+    <section class="m-wrap">
+        <div class="mp-grid">
+            <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox('mileage')}"></div>
+
+            <div class="mp-col-right">
+                <header class="m-header" role="region" aria-labelledby="pageTitle">
+                    <h1 id="pageTitle" class="m-title">마일리지 내역</h1>
+                    <div class="m-chip" aria-label="보유 마일리지">
+                        <span class="muted" style="color:#e5e7ff">보유 마일리지</span>
+                        <b th:text="${#numbers.formatInteger(me?.mileage?:0,1,'COMMA')} + 'P'">0P</b>
+                    </div>
+                </header>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:12px 0 16px" />
+
+                <!-- 목록 -->
+                <div th:if="${rows.content.empty}" class="m-empty">마일리지 사용/적립 내역이 없습니다.</div>
+
+                <table th:if="${!rows.content.empty}" class="m-table" aria-describedby="pageTitle">
+                    <colgroup>
+                        <col style="width:160px">
+                        <col style="width:220px">
+                        <col style="width:220px">
+                        <col style="width:220px">
+                        <col style="width:160px">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th scope="col">주문번호</th>
+                            <th scope="col">처리일시</th>
+                            <th scope="col">사용포인트</th>
+                            <th scope="col">적립포인트</th>
+                            <th scope="col">주문상태</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${rows.content}">
+                            <td class="mile-order">
+                                <a class="m-link" th:href="@{|/mypage/order/${r.orderId}|}"
+                                    th:text="'#' + ${r.orderId}">#0</a>
+                            </td>
+                            <td th:text="${#temporals.format(r.processedAt,'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</td>
+
+                            <!-- 사용포인트: 0이면 '-' -->
+                            <td>
+                                <span th:if="${(r.usedPoint?:0) > 0}" class="pt-use"
+                                    th:text="${'-' + #numbers.formatInteger(r.usedPoint,1,'COMMA')} + 'P'">-0P</span>
+                                <span th:if="${(r.usedPoint?:0) == 0}" class="muted">-</span>
+                            </td>
+
+                            <!-- 적립포인트: 0이면 '-' -->
+                            <td>
+                                <span th:if="${(r.earnedPoint?:0) > 0}" class="pt-earn"
+                                    th:text="${'+' + #numbers.formatInteger(r.earnedPoint,1,'COMMA')} + 'P'">+0P</span>
+                                <span th:if="${(r.earnedPoint?:0) == 0}" class="muted">-</span>
+                            </td>
+
+                            <!-- 상태표시: 영문 → 한글 라벨 -->
+                            <td th:switch="${#strings.toUpperCase(r.status)}">
+                                <span th:case="'CONFIRMED'">구매확정</span>
+                                <span th:case="'REFUNDED'">환불완료</span>
+                                <span th:case="*" th:text="${r.status}">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- 페이징 -->
+                <div th:if="${rows.totalPages > 0}" class="pager"
+                    th:attr="data-total=${rows.totalPages}, data-number=${rows.number}">
+                    <a class="btn" th:classappend="${!rows.hasPrevious} ? ' disabled'"
+                        th:href="@{|/mypage/mileage?page=${rows.number}&size=${rows.size}|}"
+                        th:attr="aria-disabled=${!rows.hasPrevious}">이전</a>
+
+                    <span class="num" th:text="${rows.number + 1}">1</span>
+                    <input id="jumpInput" type="number" min="1" th:max="${rows.totalPages}"
+                        th:value="${rows.number + 1}" aria-label="이동할 페이지 입력" />
+                    <a class="btn" th:classappend="${!rows.hasNext} ? ' disabled'"
+                        th:href="@{|/mypage/mileage?page=${rows.number + 2}&size=${rows.size}|}"
+                        th:attr="aria-disabled=${!rows.hasNext}">다음</a>
+                </div>
+
+                <div th:if="${rows.content.empty}" class="m-empty">마일리지 사용/적립 내역이 없습니다.</div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // 페이지 점프
+        (function () {
+            const input = document.getElementById('jumpInput');
+            if (!input) return;
+            input.addEventListener('change', () => {
+                const total = parseInt(document.querySelector('.pager')?.dataset.total || '1', 10);
+                let p = parseInt(input.value || '1', 10);
+                if (!Number.isFinite(p)) return;
+                p = Math.max(1, Math.min(total, p));
+                const params = new URLSearchParams(location.search);
+                params.set('page', String(p));
+                params.set('size', params.get('size') || '10');
+                location.href = (document.querySelector('meta[name="context-path"]')?.content || '') + '/mypage/mileage?' + params.toString();
+            });
+        })();
+    </script>
+</div>
+
+</html>
