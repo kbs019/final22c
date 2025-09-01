@@ -1,10 +1,18 @@
 package com.ex.final22c.controller.myPage;
 
+import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.service.mypage.MyActivityService;
+import com.ex.final22c.service.product.ZzimService;
 import com.ex.final22c.service.user.UsersService;
 import lombok.RequiredArgsConstructor;
+
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +27,7 @@ public class MyActivityController {
 
     private final UsersService usersService;
     private final MyActivityService myActivityService;
+    private final ZzimService zzimService;
 
     /** 활동내역 페이지 (뷰) */
     @GetMapping("/activity")
@@ -86,4 +95,23 @@ public class MyActivityController {
         boolean ok = myActivityService.deleteMyReview(me.getUserNo(), reviewId);
         return ResponseEntity.ok(Map.of("ok", ok));
     }
+
+    /** 내 관심목록 페이지 (Thymeleaf) */
+    // @GetMapping("/zzim")
+    // @PreAuthorize("isAuthenticated()")
+    // public String myZzimPage(@RequestParam(defaultValue = "0") int page,
+    //                          @RequestParam(defaultValue = "12") int size,
+    //                          Principal principal,
+    //                          Model model) {
+    //     Pageable pageable = PageRequest.of(page, size);
+    //     Page<Product> paging = zzimService.listMyZzim(principal.getName(), pageable);
+
+    //     model.addAttribute("paging", paging);
+    //     model.addAttribute("totalElements", paging.getTotalElements());
+    //     model.addAttribute("totalPages", paging.getTotalPages());
+    //     model.addAttribute("page", page);
+    //     model.addAttribute("size", size);
+
+    //     return "user/zzimList"; // ← 뷰 이름(원하는 템플릿 경로로 바꿔도 됨)
+    // }
 }

@@ -65,8 +65,32 @@ dependencies {
 
    // coolsms
    implementation 'net.nurigo:sdk:4.2.7'
+   
+   // gpt
+   implementation 'com.theokanning.openai-gpt3-java:service:0.14.0'
 }
 
 tasks.named('test') {
    useJUnitPlatform()
 }
+
+// 여기부터
+// dependencies {
+//     implementation("com.squareup.okhttp3:okhttp:4.10.0")
+//     implementation("com.squareup.okio:okio:2.10.0")
+
+//     implementation("com.theokanning.openai-gpt3-java:service:0.14.0") {
+//         exclude group: "com.squareup.okio", module: "okio"
+//     }
+//     implementation("net.nurigo:sdk:4.2.7") {
+//         exclude group: "com.squareup.okio", module: "okio"
+//     }
+// }
+
+// configurations.all {
+//     resolutionStrategy.eachDependency { d ->
+//         if (d.requested.group == "com.squareup.okio") d.useVersion("2.10.0")
+//         if (d.requested.group == "com.squareup.okhttp3") d.useVersion("4.10.0")
+//     }
+// }
+// 여기까지입니다

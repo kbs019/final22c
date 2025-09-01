@@ -9,6 +9,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -59,6 +61,11 @@ public class Product {
 
     // 상품을 찜한 사용자들 - N:N (조인 테이블 생성 - 컬럼: product_id, users_id)
     @ManyToMany
+    @JoinTable(
+        name = "PRODUCT_ZZIMERS",
+        joinColumns = @JoinColumn(name = "ZZIMEDPRODUCTS_ID", referencedColumnName = "id"),          // 조인테이블의 상품 FK 컬럼명
+        inverseJoinColumns = @JoinColumn(name = "ZZIMERS_USERNO", referencedColumnName = "userNo")   // 조인테이블의 사용자 FK 컬럼명
+    )
     private Set<Users> zzimers = new HashSet<>();
 
     // 상품의 리뷰들 - 1:N
