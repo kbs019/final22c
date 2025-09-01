@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout/adminLayout}">
+
+<th:block layout:fragment="css">
+    <style>
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .stat-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 6px 0;
+        }
+
+        /* 컨트롤 크기 업 */
+        .stat-controls .form-control.form-control-sm,
+        .stat-controls .form-select.form-select-sm {
+            height: 38px;
+            padding: 6px 10px;
+            font-size: 0.95rem;
+        }
+
+        .stat-controls .btn.btn-sm {
+            padding: .45rem .7rem;
+            font-size: .95rem;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .cards .card .h2 {
+            font-variant-numeric: tabular-nums;
+            font-size: 1.6rem;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .table thead th,
+        .table td {
+            text-align: right
+        }
+
+        .table thead th:first-child,
+        .table td:first-child {
+            text-align: left
+        }
+    </style>
+</th:block>
+
+<div layout:fragment="content" class="container py-3">
+    <h1 class="page-title mb-3">매출 통계</h1>
+
+    <!-- 상단 기간 선택 -->
+    <div class="stat-controls mb-3">
+        <div class="btn-group" role="group" id="unitTabs">
+            <button class="btn btn-outline-secondary btn-sm active" data-unit="DAY">일간</button>
+            <button class="btn btn-outline-secondary btn-sm" data-unit="WEEK">주간</button>
+            <button class="btn btn-outline-secondary btn-sm" data-unit="MONTH">월간</button>
+            <button class="btn btn-outline-secondary btn-sm" data-unit="YEAR">연간</button>
+        </div>
+
+        <!-- 단일 기간 선택기: 단위에 따라 바뀌는 영역 -->
+        <div id="pickerArea" class="d-flex align-items-center gap-2">
+            <!-- 일간: 특정 ‘일’ 선택 -->
+            <input id="pick-day-date" type="date" class="form-control form-control-sm" style="width: 160px;">
+            <!-- 주간: 특정 ‘월’ 선택 -->
+            <input id="pick-week-month" type="month" class="form-control form-control-sm d-none" style="width: 160px;">
+            <!-- 월간: 특정 ‘연도’ 선택 -->
+            <select id="pick-month-year" class="form-select form-select-sm d-none" style="width: 120px;"></select>
+            <!-- 연간: 별도 입력 없음(올해 기준 최근 5년 자동) -->
+        </div>
+
+        <button id="btnSearch" class="btn btn-primary btn-sm">조회</button>
+    </div>
+
+
+    <!-- 합계 카드: 라벨만 교체 -->
+    <div class="cards mb-3">
+        <div class="card">
+            <div class="card-body">
+                <div>매출액</div>
+                <div id="revSum" class="h2">0</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div>지출액</div>
+                <div id="cogsSum" class="h2">0</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div>순이익</div>
+                <div id="profitSum" class="h2">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 전체 매출 추이 -->
+    <section class="card mb-3">
+        <div class="card-header h5 mb-0">전체 매출 추이 (매출액 / 지출액 / 순이익)</div>
+        <div class="card-body">
+            <canvas id="totalSeries" height="160"></canvas>
+        </div>
+    </section>
+
+    <!-- [새로] 상품 매출 추이: 브랜드→용량→상품 -->
+    <section class="card mb-3">
+        <div class="card-header h5 mb-0 d-flex align-items-center justify-content-between">
+            <span>상품 매출 추이 (선택 상품)</span>
+            <div class="d-flex gap-2">
+                <select id="selProdBrand" class="form-select form-select-sm" style="min-width:160px">
+                    <option value="">브랜드 선택</option>
+                </select>
+                <select id="selProdCapacity" class="form-select form-select-sm" style="min-width:140px" disabled>
+                    <option value="">용량 선택</option>
+                </select>
+                <select id="selProd" class="form-select form-select-sm" style="min-width:260px" disabled>
+                    <option value="">상품 선택</option>
+                </select>
+                <button id="btnProdApply" class="btn btn-primary btn-sm" disabled>적용</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <canvas id="productSeries" height="160"></canvas>
+        </div>
+    </section>
+
+    <!-- [새로] 브랜드 매출 추이: 브랜드만 선택 -->
+    <section class="card mb-3">
+        <div class="card-header h5 mb-0 d-flex align-items-center justify-content-between">
+            <span>브랜드 매출 추이 (선택 브랜드)</span>
+            <div class="d-flex gap-2">
+                <select id="selBrand" class="form-select form-select-sm" style="min-width:200px">
+                    <option value="">브랜드 선택</option>
+                </select>
+                <button id="btnBrandApply" class="btn btn-primary btn-sm" disabled>적용</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <canvas id="brandSeries" height="160"></canvas>
+        </div>
+    </section>
+</div>
+
+<th:block layout:fragment="script">
+    <script>
+        /* ========= 공통(상단) : 여기 블록은 기존과 동일 ========= */
+        const BASE = '/admin/salesStats/api';
+
+        // 색상: 매출액=빨강, 지출액=파랑, 순이익=초록
+        const SALES = '#dc2626';   // 매출액 (red-600)
+        const EXP   = '#2563eb';   // 지출액 (blue-600)
+        const PROF  = '#16a34a';   // 순이익 (green-600)
+
+        Chart.defaults.locale = 'ko-KR';
+        const KR = new Intl.NumberFormat('ko-KR'), KRW = n => `${KR.format(n ?? 0)}원`;
+        const STATE = { unit: 'DAY', from: null, to: null };
+        const $day = document.getElementById('pick-day-date');
+        const $wmon = document.getElementById('pick-week-month');
+        const $year = document.getElementById('pick-month-year');
+
+        const d2s = d => d.toISOString().slice(0, 10);
+        const addDays = (s, n) => { const d = new Date(s); d.setDate(d.getDate() + n); return d2s(d); };
+
+        (function initPickers() {
+            const today = new Date();
+            $day.value = d2s(today);
+            $wmon.value = d2s(new Date(today.getFullYear(), today.getMonth(), 1)).slice(0, 7);
+            const yNow = today.getFullYear(); $year.innerHTML = '';
+            for (let y = yNow - 5; y <= yNow + 1; y++) { const o = document.createElement('option'); o.value = y; o.textContent = y; $year.appendChild(o); }
+            $year.value = String(yNow);
+            applyDayRange($day.value);
+        })();
+        function showPicker(u) {
+            document.getElementById('pick-day-date').classList.toggle('d-none', u !== 'DAY');
+            document.getElementById('pick-week-month').classList.toggle('d-none', u !== 'WEEK');
+            document.getElementById('pick-month-year').classList.toggle('d-none', u !== 'MONTH');
+        }
+        function applyDayRange(d) { STATE.unit = 'DAY'; STATE.from = addDays(d, -3); STATE.to = addDays(d, +3); }
+        function applyWeekRange(ym) { const [y, m] = ym.split('-').map(Number); STATE.unit = 'WEEK'; STATE.from = d2s(new Date(y, m - 1, 1)); STATE.to = d2s(new Date(y, m, 0)); STATE._weekYm = ym; }
+        function applyMonthRange(y) { STATE.unit = 'MONTH'; STATE.from = `${y}-01-01`; STATE.to = `${y}-12-31`; }
+        function applyYearRange() { const y = new Date().getFullYear(); STATE.unit = 'YEAR'; STATE.from = `${y - 4}-01-01`; STATE.to = `${y}-12-31`; }
+
+        function expectedLabels(unit) {
+            if (unit === 'DAY') { const out = [], d0 = new Date(STATE.from), d1 = new Date(STATE.to); for (let d = new Date(d0); d <= d1; d.setDate(d.getDate() + 1)) out.push(d2s(d)); return out; }
+            if (unit === 'WEEK') { return ['1주', '2주', '3주', '4주', '5주']; }
+            if (unit === 'MONTH') { return Array.from({ length: 12 }, (_, i) => `${STATE.from.slice(0, 4)}-${String(i + 1).padStart(2, '0')}`); }
+            if (unit === 'YEAR') { const yTo = +STATE.to.slice(0, 4); return Array.from({ length: 5 }, (_, i) => String(yTo - 4 + i)); }
+            return [];
+        }
+        function weekBucket(dateStr) { const [y, m, d] = dateStr.split('-').map(Number); const first = new Date(y, m - 1, 1), cur = new Date(y, m - 1, d); const diff = Math.floor((cur - first) / (1000 * 60 * 60 * 24)); return Math.min(4, Math.floor(diff / 7)); }
+
+        function normalizeSeries(rows) {
+            const m = new Map();
+            rows.forEach(r => m.set(String(r.date), { revenue: +r.revenue || 0, cogs: +r.cogs || 0, profit: +r.profit || 0 }));
+            const labels = expectedLabels(STATE.unit);
+            if (STATE.unit === 'WEEK') {
+                const buckets = Array.from({ length: 5 }, () => ({ revenue: 0, cogs: 0, profit: 0 }));
+                for (const [k, v] of m) { const idx = weekBucket(k); buckets[idx].revenue += v.revenue; buckets[idx].cogs += v.cogs; buckets[idx].profit += v.profit; }
+                return { labels, revenue: buckets.map(b => b.revenue), cogs: buckets.map(b => b.cogs), profit: buckets.map(b => b.profit) };
+            }
+            const revenue = [], cogs = [], profit = []; labels.forEach(l => { const v = m.get(l) || { revenue: 0, cogs: 0, profit: 0 }; revenue.push(v.revenue); cogs.push(v.cogs); profit.push(v.profit); });
+            return { labels, revenue, cogs, profit };
+        }
+
+        let totalChart;
+        function renderCards(s) { const sum = a => a.reduce((x, y) => x + (+y || 0), 0); revSum.textContent = KRW(sum(s.revenue)); cogsSum.textContent = KRW(sum(s.cogs)); profitSum.textContent = KRW(sum(s.profit)); }
+        function renderTotalChart(s) {
+            if (totalChart) totalChart.destroy();
+            totalChart = new Chart(document.getElementById('totalSeries'), {
+                type: 'line',
+                data: {
+                    labels: s.labels,
+                    datasets: [
+                        {
+                            label: '매출액',
+                            data: s.revenue,
+                            borderColor: SALES,
+                            backgroundColor: SALES,
+                            fill: false,
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            tension: .2
+                        },
+                        {
+                            label: '지출액',
+                            data: s.cogs,
+                            borderColor: EXP,
+                            backgroundColor: EXP,
+                            fill: false,
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            tension: .2
+
+                        },
+                        {
+                            label: '영업이익',
+                            data: s.profit,
+                            borderColor: PROF,
+                            backgroundColor: PROF,
+                            fill: false,
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            tension: .2
+
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: v => KR.format(v)
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => `${ctx.dataset.label}: ${KRW(ctx.parsed.y || 0)}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        async function loadSeries() {
+            const rows = await fetch(`${BASE}/series?from=${STATE.from}&to=${STATE.to}&unit=${STATE.unit}`, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            const s = normalizeSeries(rows); renderCards(s); renderTotalChart(s);
+        }
+        async function refresh() { await loadSeries(); }
+
+        document.querySelectorAll('#unitTabs [data-unit]').forEach(btn => {
+            btn.addEventListener('click', e => {
+                document.querySelectorAll('#unitTabs [data-unit]').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                const u = e.currentTarget.dataset.unit; STATE.unit = u; showPicker(u);
+                if (u === 'DAY') applyDayRange($day.value);
+                if (u === 'WEEK') applyWeekRange($wmon.value);
+                if (u === 'MONTH') applyMonthRange($year.value);
+                if (u === 'YEAR') applyYearRange();
+                refresh();
+            });
+        });
+        $day.addEventListener('change', e => { if (STATE.unit === 'DAY') { applyDayRange(e.target.value); refresh(); } });
+        $wmon.addEventListener('change', e => { if (STATE.unit === 'WEEK') { applyWeekRange(e.target.value); refresh(); } });
+        $year.addEventListener('change', e => { if (STATE.unit === 'MONTH') { applyMonthRange(e.target.value); refresh(); } });
+        document.getElementById('btnSearch').addEventListener('click', refresh);
+        refresh();
+
+        /* ========= 하단(상품/브랜드) ========= */
+        const selProdBrand = document.getElementById('selProdBrand');
+        const selProdCapacity = document.getElementById('selProdCapacity');
+        const selProd = document.getElementById('selProd');
+        const btnProdApply = document.getElementById('btnProdApply');
+
+        const selBrand = document.getElementById('selBrand');
+        const btnBrandApply = document.getElementById('btnBrandApply');
+
+        let prodChart, brandChart;
+
+        async function loadBrandOptionsOnce() {
+            const list = await fetch(`${BASE}/brand/options`, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            const opts = '<option value="">브랜드 선택</option>' + (list || []).map(b => `<option value="${b.brandNo}">${b.brandName}</option>`).join('');
+            selProdBrand.innerHTML = opts; selBrand.innerHTML = opts;
+        }
+        loadBrandOptionsOnce();
+
+        selProdBrand.addEventListener('change', async e => {
+            selProdCapacity.disabled = true; selProdCapacity.innerHTML = '<option value="">용량 선택</option>';
+            selProd.disabled = true; selProd.innerHTML = '<option value="">상품 선택</option>'; btnProdApply.disabled = true;
+            const bno = e.target.value; if (!bno) return;
+            const caps = await fetch(`${BASE}/product/capacities?brandNo=${bno}`, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            selProdCapacity.innerHTML = '<option value="">용량 선택</option>' + (caps || []).map(c => `<option>${c}</option>`).join('');
+            selProdCapacity.disabled = false;
+        });
+
+        selProdCapacity.addEventListener('change', async e => {
+            selProd.disabled = true; selProd.innerHTML = '<option value="">상품 선택</option>'; btnProdApply.disabled = true;
+            const bno = selProdBrand.value, cap = e.target.value; if (!bno || !cap) return;
+            const prods = await fetch(`${BASE}/product/byBrandCapacity?brandNo=${bno}&capacity=${encodeURIComponent(cap)}`, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            selProd.innerHTML = '<option value="">상품 선택</option>' + (prods || []).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            selProd.disabled = false;
+        });
+        selProd.addEventListener('change', () => { btnProdApply.disabled = !selProd.value; });
+        selBrand.addEventListener('change', () => { btnBrandApply.disabled = !selBrand.value; });
+
+        async function loadProductSeries() {
+            const pid = selProd.value; if (!pid) return;
+            const url = new URL(`${location.origin}${BASE}/product/series`);
+            url.searchParams.set('productId', pid);
+            url.searchParams.set('from', STATE.from);
+            url.searchParams.set('to', STATE.to);
+            url.searchParams.set('unit', STATE.unit);
+            const rows = await fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            const s = normalizeSeries(rows);
+            if (prodChart) prodChart.destroy();
+            prodChart = new Chart(document.getElementById('productSeries'), {
+                type: 'line',
+                data: {
+                    labels: s.labels, datasets: [
+                        { label: '매출액', data: s.revenue, borderColor: SALES, backgroundColor: SALES, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '지출액', data: s.cogs, borderColor: EXP, backgroundColor: EXP, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '순이익', data: s.profit, borderColor: PROF, backgroundColor: PROF, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                    ]
+                },
+                options: {
+                    responsive: true, interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: true, ticks: { callback: v => KR.format(v) } } },
+                    plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${KRW(ctx.parsed.y || 0)}` } } }
+                }
+            });
+        }
+        async function loadBrandSeries() {
+            const bno = selBrand.value; if (!bno) return;
+            const url = new URL(`${location.origin}${BASE}/brand/series`);
+            url.searchParams.set('brandNo', bno);
+            url.searchParams.set('from', STATE.from);
+            url.searchParams.set('to', STATE.to);
+            url.searchParams.set('unit', STATE.unit);
+            const rows = await fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            const s = normalizeSeries(rows);
+            if (brandChart) brandChart.destroy();
+            brandChart = new Chart(document.getElementById('brandSeries'), {
+                type: 'line',
+                data: {
+                    labels: s.labels, datasets: [
+                        { label: '매출액', data: s.revenue, borderColor: SALES, backgroundColor: SALES, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '지출액', data: s.cogs, borderColor: EXP, backgroundColor: EXP, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '순이익', data: s.profit, borderColor: PROF, backgroundColor: PROF, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                    ]
+                },
+                options: {
+                    responsive: true, interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: true, ticks: { callback: v => KR.format(v) } } },
+                    plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${KRW(ctx.parsed.y || 0)}` } } }
+                }
+            });
+        }
+
+        btnProdApply.addEventListener('click', loadProductSeries);
+        btnBrandApply.addEventListener('click', loadBrandSeries);
+
+        // 상단 기간/단위 바뀌면 하단도 동기 갱신
+        const _oldRefresh = refresh;
+        refresh = async function () {
+            await _oldRefresh();
+            if (selProd.value) await loadProductSeries();
+            if (selBrand.value) await loadBrandSeries();
+        };
+    </script>
+
+</th:block>
+
+</html>

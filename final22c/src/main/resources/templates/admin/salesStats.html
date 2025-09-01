@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout/adminLayout}">
+
+<th:block layout:fragment="css">
+    <style>
+        .stat-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px
+        }
+
+        .cards .card .h2 {
+            font-variant-numeric: tabular-nums
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px
+        }
+
+        .table thead th,
+        .table td {
+            text-align: right
+        }
+
+        .table thead th:first-child,
+        .table td:first-child {
+            text-align: left
+        }
+    </style>
+</th:block>
+
+<div layout:fragment="content" class="container py-3">
+
+    <!-- 상단 기간 선택 -->
+    <div class="stat-controls mb-3">
+        <div class="btn-group" role="group" id="unitTabs">
+            <button class="btn btn-outline-secondary btn-sm active" data-unit="DAY">일간</button>
+            <button class="btn btn-outline-secondary btn-sm" data-unit="WEEK">주간</button>
+            <button class="btn btn-outline-secondary btn-sm" data-unit="MONTH">월간</button>
+            <button class="btn btn-outline-secondary btn-sm" data-unit="YEAR">연간</button>
+        </div>
+
+        <!-- 단일 기간 선택기: 단위에 따라 바뀌는 영역 -->
+        <div id="pickerArea" class="d-flex align-items-center gap-2">
+            <!-- 일간: 특정 ‘일’ 선택 -->
+            <input id="pick-day-date" type="date" class="form-control form-control-sm" style="width: 160px;">
+            <!-- 주간: 특정 ‘월’ 선택 -->
+            <input id="pick-week-month" type="month" class="form-control form-control-sm d-none" style="width: 160px;">
+            <!-- 월간: 특정 ‘연도’ 선택 -->
+            <select id="pick-month-year" class="form-select form-select-sm d-none" style="width: 120px;"></select>
+            <!-- 연간: 별도 입력 없음(올해 기준 최근 5년 자동) -->
+        </div>
+
+        <button id="btnSearch" class="btn btn-primary btn-sm">조회</button>
+    </div>
+
+    <!-- 합계 카드 -->
+    <div class="cards mb-3">
+        <div class="card">
+            <div class="card-body">
+                <div>순매출</div>
+                <div id="revSum" class="h2">0</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div>매입원가</div>
+                <div id="cogsSum" class="h2">0</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div>총매출</div>
+                <div id="profitSum" class="h2">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 최상단: 전체 매출 타임시리즈 -->
+    <section class="card mb-3">
+        <div class="card-header">전체 매출 추이 (Revenue / COGS / Profit)</div>
+        <div class="card-body">
+            <canvas id="totalSeries" height="140"></canvas>
+        </div>
+    </section>
+
+    <!-- 하단 2칼럼: 상품 / 브랜드 -->
+    <div class="grid-2">
+        <!-- 상품 타임시리즈 -->
+        <section class="card mb-3">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span>상품 매출 추이 (선택 상품 / 기간 동일)</span>
+                <div class="d-flex gap-2">
+                    <input id="prodSearch" class="form-control form-control-sm" placeholder="상품명 검색">
+                    <button id="btnProdFind" class="btn btn-outline-secondary btn-sm">검색</button>
+                    <select id="prodSelect" class="form-select form-select-sm" style="min-width:260px">
+                        <option value="">상품을 선택하세요</option>
+                    </select>
+                    <button id="btnProdApply" class="btn btn-primary btn-sm">적용</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="productSeries" height="120"></canvas>
+            </div>
+        </section>
+
+        <!-- 브랜드 타임시리즈 -->
+        <section class="card mb-3">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span>브랜드 매출 추이 (선택 브랜드 / 기간 동일)</span>
+                <div class="d-flex gap-2">
+                    <select id="brandSelect" class="form-select form-select-sm" style="min-width:200px">
+                        <option value="">브랜드 선택</option>
+                    </select>
+                    <button id="btnBrandApply" class="btn btn-primary btn-sm">적용</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="brandSeries" height="120"></canvas>
+            </div>
+        </section>
+    </div>
+</div>
+
+<th:block layout:fragment="script">
+    <script>
+        const BASE = '/admin/salesStats/api';
+
+        // 색상: 파랑(순매출), 빨강(매입원가), 검정(총매출)
+        const REV = '#2563eb';
+        const COG = '#dc2626';
+        const PRF = '#111827';
+
+        // 포맷
+        Chart.defaults.locale = 'ko-KR';
+        const KR = new Intl.NumberFormat('ko-KR');
+        const KRW = n => `${KR.format(n ?? 0)}원`;
+
+        // 상태
+        const STATE = { unit: 'DAY', from: null, to: null };
+
+        // 피커 참조
+        const $day = document.getElementById('pick-day-date');
+        const $wmon = document.getElementById('pick-week-month');
+        const $year = document.getElementById('pick-month-year');
+        const $btn = document.getElementById('btnSearch');
+
+        // 유틸: 날짜 <-> 문자열
+        const d2s = d => d.toISOString().slice(0, 10);
+        const addDays = (s, n) => {
+            const d = new Date(s); d.setDate(d.getDate() + n); return d2s(d);
+        };
+
+        // 초기값
+        (function initPickers() {
+            const today = new Date();
+            $day.value = d2s(today);
+            $wmon.value = d2s(new Date(today.getFullYear(), today.getMonth(), 1)).slice(0, 7);
+            // 연도 셀렉트(월간)
+            const yNow = today.getFullYear();
+            $year.innerHTML = '';
+            for (let y = yNow - 5; y <= yNow + 1; y++) {
+                const o = document.createElement('option'); o.value = y; o.textContent = y; $year.appendChild(o);
+            }
+            $year.value = String(yNow);
+            // 초기 범위: 일간(±3일)
+            applyDayRange($day.value);
+        })();
+
+        function showPicker(unit) {
+            document.getElementById('pick-day-date').classList.toggle('d-none', unit !== 'DAY');
+            document.getElementById('pick-week-month').classList.toggle('d-none', unit !== 'WEEK');
+            document.getElementById('pick-month-year').classList.toggle('d-none', unit !== 'MONTH');
+        }
+
+        // ====== 범위 계산 ======
+        function applyDayRange(selDate /* 'yyyy-MM-dd' */) {
+            // 선택일 -3 ~ +3
+            STATE.unit = 'DAY';
+            STATE.from = addDays(selDate, -3);
+            STATE.to = addDays(selDate, +3);
+        }
+        function applyWeekRange(ym /* 'yyyy-MM' */) {
+            // 그 달의 1일 ~ 말일
+            const [y, m] = ym.split('-').map(Number);
+            const from = new Date(y, m - 1, 1);
+            const to = new Date(y, m, 0);
+            STATE.unit = 'WEEK';
+            STATE.from = d2s(from);
+            STATE.to = d2s(to);
+            STATE._weekYm = ym; // 버킷 라벨용
+        }
+        function applyMonthRange(year /* 'yyyy' */) {
+            STATE.unit = 'MONTH';
+            STATE.from = `${year}-01-01`;
+            STATE.to = `${year}-12-31`;
+        }
+        function applyYearRange() {
+            const y = new Date().getFullYear();
+            STATE.unit = 'YEAR';
+            STATE.from = `${y - 4}-01-01`;   // 최근 5년
+            STATE.to = `${y}-12-31`;
+        }
+
+        // ====== 기대 라벨 만들기 & 패딩 ======
+        function expectedLabels(unit) {
+            if (unit === 'DAY') {
+                // from..to 일자 전부
+                const out = [], d0 = new Date(STATE.from), d1 = new Date(STATE.to);
+                for (let d = new Date(d0); d <= d1; d.setDate(d.getDate() + 1)) out.push(d2s(d));
+                return out;
+            }
+            if (unit === 'WEEK') {
+                // 그 달 1~5주
+                const [y, m] = STATE._weekYm.split('-').map(Number);
+                const start = new Date(y, m - 1, 1);
+                const weeks = [];
+                for (let i = 0; i < 5; i++) weeks.push(new Date(start.getFullYear(), start.getMonth(), 1 + i * 7));
+                return ['1주', '2주', '3주', '4주', '5주'];
+            }
+            if (unit === 'MONTH') {
+                return Array.from({ length: 12 }, (_, i) => `${STATE.from.slice(0, 4)}-${String(i + 1).padStart(2, '0')}`);
+            }
+            if (unit === 'YEAR') {
+                const yTo = Number(STATE.to.slice(0, 4));
+                return Array.from({ length: 5 }, (_, i) => String(yTo - 4 + i)); // 과거→현재 (좌→우)
+            }
+            return [];
+        }
+
+        // 주간 버킷 인덱스 계산(해당 달의 1~5주 간격)
+        function weekBucket(dateStr /* 'yyyy-MM-dd' */) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const first = new Date(y, m - 1, 1);
+            const cur = new Date(y, m - 1, d);
+            const diff = Math.floor((cur - first) / (1000 * 60 * 60 * 24)); // day offset
+            return Math.min(4, Math.floor(diff / 7)); // 0~4 -> 1~5주
+        }
+
+        // 서버 시리즈를 기대 라벨로 패딩
+        function normalizeSeries(serverRows) {
+            // 맵: dateKey -> {revenue,cogs,profit}
+            const m = new Map();
+            serverRows.forEach(r => {
+                m.set(String(r.date), { revenue: +r.revenue || 0, cogs: +r.cogs || 0, profit: +r.profit || 0 });
+            });
+
+            const labels = expectedLabels(STATE.unit);
+
+            if (STATE.unit === 'WEEK') {
+                // 서버는 'TRUNC(...,IW)' 날짜키를 주므로 이를 1~5주 버킷으로 재집계
+                const buckets = Array.from({ length: 5 }, () => ({ revenue: 0, cogs: 0, profit: 0 }));
+                for (const [k, v] of m) {
+                    // k는 'yyyy-MM-dd' 꼴(서비스에서 ISO_DATE로 맞춤)
+                    const idx = weekBucket(k); // 0~4
+                    buckets[idx].revenue += v.revenue;
+                    buckets[idx].cogs += v.cogs;
+                    buckets[idx].profit += v.profit;
+                }
+                return {
+                    labels,
+                    revenue: buckets.map(b => b.revenue),
+                    cogs: buckets.map(b => b.cogs),
+                    profit: buckets.map(b => b.profit),
+                };
+            }
+
+            // DAY / MONTH / YEAR : 라벨 그대로 찾아 없으면 0
+            const revenue = [], cogs = [], profit = [];
+            labels.forEach(l => {
+                const v = m.get(l) || { revenue: 0, cogs: 0, profit: 0 };
+                revenue.push(v.revenue); cogs.push(v.cogs); profit.push(v.profit);
+            });
+            return { labels, revenue, cogs, profit };
+        }
+
+        // ====== 차트 렌더 ======
+        let totalChart;
+        function renderCards(series) {
+            const sum = a => a.reduce((s, v) => s + (+v || 0), 0);
+            revSum.textContent = KRW(sum(series.revenue));
+            cogsSum.textContent = KRW(sum(series.cogs));
+            profitSum.textContent = KRW(sum(series.profit));
+        }
+
+        function renderTotalChart(series) {
+            if (totalChart) totalChart.destroy();
+            totalChart = new Chart(document.getElementById('totalSeries'), {
+                type: 'line',
+                data: {
+                    labels: series.labels,
+                    datasets: [
+                        { label: '순매출', data: series.revenue, borderColor: REV, backgroundColor: REV, fill: false, borderWidth: 2, pointRadius: 2, tension: .2 },
+                        { label: '매입원가', data: series.cogs, borderColor: COG, backgroundColor: COG, fill: false, borderWidth: 2, pointRadius: 2, tension: .2 },
+                        { label: '총매출', data: series.profit, borderColor: PRF, backgroundColor: PRF, fill: false, borderWidth: 2, pointRadius: 2, tension: .2 },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => KR.format(v) } } },
+                    plugins: {
+                        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${KRW(ctx.parsed.y || 0)}` } }
+                    }
+                }
+            });
+        }
+
+        // ====== API 로드 & 갱신 ======
+        async function loadSeries() {
+            const rows = await fetch(`${BASE}/series?from=${STATE.from}&to=${STATE.to}&unit=${STATE.unit}`, {
+                headers: { 'Accept': 'application/json' }
+            }).then(r => r.json());
+            const normalized = normalizeSeries(rows);
+            renderCards(normalized);
+            renderTotalChart(normalized);
+        }
+
+        async function refresh() { await loadSeries(); }
+
+        // ====== 이벤트 ======
+        document.querySelectorAll('#unitTabs [data-unit]').forEach(btn => {
+            btn.addEventListener('click', e => {
+                document.querySelectorAll('#unitTabs [data-unit]').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                const u = e.currentTarget.dataset.unit;
+                STATE.unit = u;
+                showPicker(u);
+                if (u === 'DAY') applyDayRange($day.value);
+                if (u === 'WEEK') applyWeekRange($wmon.value);
+                if (u === 'MONTH') applyMonthRange($year.value);
+                if (u === 'YEAR') applyYearRange();
+                refresh();
+            });
+        });
+
+        $day.addEventListener('change', e => { if (STATE.unit === 'DAY') { applyDayRange(e.target.value); refresh(); } });
+        $wmon.addEventListener('change', e => { if (STATE.unit === 'WEEK') { applyWeekRange(e.target.value); refresh(); } });
+        $year.addEventListener('change', e => { if (STATE.unit === 'MONTH') { applyMonthRange(e.target.value); refresh(); } });
+
+        document.getElementById('btnSearch').addEventListener('click', refresh);
+
+        // 최초 1회
+        refresh();
+    </script>
+
+    <script>
+        // ====== 공통: 서버 시리즈 -> 라벨/데이터 정규화 (상단과 동일)
+        function normalizeSeriesForLine(rows) {
+            // rows: [{date,revenue,cogs,profit}]
+            const labels = rows.map(r => String(r.date));
+            const revenue = rows.map(r => +r.revenue || 0);
+            const cogs = rows.map(r => +r.cogs || 0);
+            const profit = rows.map(r => +r.profit || 0);
+            return { labels, revenue, cogs, profit };
+        }
+
+        // ====== 차트 인스턴스
+        let prodChart, brandChart;
+
+        // ====== 상품: 검색 -> 셀렉트 채우기 -> 적용 시 로드
+        async function searchProducts() {
+            const q = (document.getElementById('prodSearch').value || '').trim();
+            if (!q) return;
+            const list = await fetch(`${BASE}/product/search?q=${encodeURIComponent(q)}`, {
+                headers: { 'Accept': 'application/json' }
+            }).then(r => r.json());
+            const sel = document.getElementById('prodSelect');
+            sel.innerHTML = '<option value="">상품을 선택하세요</option>' +
+                (list || []).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        }
+
+        async function loadProductSeries() {
+            const prodId = document.getElementById('prodSelect').value;
+            if (!prodId) return;
+            const url = new URL(`${location.origin}${BASE}/product/series`);
+            url.searchParams.set('productId', prodId);
+            url.searchParams.set('from', STATE.from);
+            url.searchParams.set('to', STATE.to);
+            url.searchParams.set('unit', STATE.unit);
+
+            const rows = await fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            const s = normalizeSeriesForLine(rows);
+
+            if (prodChart) prodChart.destroy();
+            prodChart = new Chart(document.getElementById('productSeries'), {
+                type: 'line',
+                data: {
+                    labels: s.labels,
+                    datasets: [
+                        { label: '순매출', data: s.revenue, borderColor: REV, backgroundColor: REV, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '매입원가', data: s.cogs, borderColor: COG, backgroundColor: COG, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '총매출', data: s.profit, borderColor: PRF, backgroundColor: PRF, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => KR.format(v) } } },
+                    plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${KRW(ctx.parsed.y || 0)}` } } }
+                }
+            });
+        }
+
+        // ====== 브랜드: 옵션 채우기 1회 -> 적용 시 로드
+        async function loadBrandOptionsOnce() {
+            const sel = document.getElementById('brandSelect');
+            if (sel.options.length > 1) return; // 이미 채움
+            const list = await fetch(`${BASE}/brand/options`, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            sel.innerHTML = '<option value="">브랜드 선택</option>' +
+                (list || []).map(b => `<option value="${b.brandNo}">${b.brandName}</option>`).join('');
+        }
+
+        async function loadBrandSeries() {
+            const brandNo = document.getElementById('brandSelect').value;
+            if (!brandNo) return;
+            const url = new URL(`${location.origin}${BASE}/brand/series`);
+            url.searchParams.set('brandNo', brandNo);
+            url.searchParams.set('from', STATE.from);
+            url.searchParams.set('to', STATE.to);
+            url.searchParams.set('unit', STATE.unit);
+
+            const rows = await fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            const s = normalizeSeriesForLine(rows);
+
+            if (brandChart) brandChart.destroy();
+            brandChart = new Chart(document.getElementById('brandSeries'), {
+                type: 'line',
+                data: {
+                    labels: s.labels,
+                    datasets: [
+                        { label: '순매출', data: s.revenue, borderColor: REV, backgroundColor: REV, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '매입원가', data: s.cogs, borderColor: COG, backgroundColor: COG, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '총매출', data: s.profit, borderColor: PRF, backgroundColor: PRF, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => KR.format(v) } } },
+                    plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${KRW(ctx.parsed.y || 0)}` } } }
+                }
+            });
+        }
+
+        // 이벤트 바인딩
+        document.getElementById('btnProdFind').addEventListener('click', searchProducts);
+        document.getElementById('btnProdApply').addEventListener('click', loadProductSeries);
+        document.getElementById('btnBrandApply').addEventListener('click', loadBrandSeries);
+
+        // 초기 1회
+        loadBrandOptionsOnce();
+
+        // 상단 기간/단위가 바뀌면 하단도 같은 기간으로 재조회 (선택이 되어 있을 때만)
+        const _oldRefresh = refresh;
+        refresh = async function () {
+            await _oldRefresh(); // 상단 갱신
+            // 선택되어 있으면 갱신
+            if (document.getElementById('prodSelect').value) await loadProductSeries();
+            if (document.getElementById('brandSelect').value) await loadBrandSeries();
+        };
+    </script>
+</th:block>
+
+</html>

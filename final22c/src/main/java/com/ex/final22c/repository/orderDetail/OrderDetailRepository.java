@@ -121,4 +121,359 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
 			""", nativeQuery = true)
 	List<Object[]> yearlyTotalsWithStatuses(@Param("id") Long id, @Param("statuses") Collection<String> statuses,
 			@Param("startAt") LocalDateTime startAt, @Param("endAt") LocalDateTime endAt);
+
+	
+
+	// ======================================== 매출 통계 =============================================
+	// ----- 타임시리즈: 일/주/월 단위 순매출 -----
+	@Query(value = """
+		SELECT TRUNC(o.REGDATE) AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+		FROM ORDERDETAIL od
+		JOIN ORDERS o ON o.ORDERID = od.ORDERID
+		WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		GROUP BY TRUNC(o.REGDATE)
+		ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByDay(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+		SELECT TRUNC(o.REGDATE, 'IW') AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+		FROM ORDERDETAIL od
+		JOIN ORDERS o ON o.ORDERID = od.ORDERID
+		WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		GROUP BY TRUNC(o.REGDATE, 'IW')
+		ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByWeek(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+		SELECT TRUNC(o.REGDATE, 'MM') AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+		FROM ORDERDETAIL od
+		JOIN ORDERS o ON o.ORDERID = od.ORDERID
+		WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		GROUP BY TRUNC(o.REGDATE, 'MM')
+		ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByMonth(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	// ----- 상품/브랜드별 순매출 (이미 사용중) -----
+	@Query(value = """
+		SELECT od.ID AS product_id,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+		FROM ORDERDETAIL od
+		JOIN ORDERS o ON o.ORDERID = od.ORDERID
+		WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		GROUP BY od.ID
+	""", nativeQuery = true)
+	List<Object[]> revenueByProduct(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+		SELECT p.BRAND_BRANDNO AS brand_no,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+		FROM ORDERDETAIL od
+		JOIN ORDERS o  ON o.ORDERID = od.ORDERID
+		JOIN PRODUCT p ON p.ID = od.ID
+		WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		GROUP BY p.BRAND_BRANDNO
+	""", nativeQuery = true)
+	List<Object[]> revenueByBrand(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	// 전체 순매출 합계
+	@Query(value = """
+		SELECT SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE)
+		FROM ORDERDETAIL od
+		JOIN ORDERS o ON o.ORDERID = od.ORDERID
+		WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+	""", nativeQuery = true)
+	Long revenueTotal(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE, 'YYYY') AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+	GROUP BY TRUNC(o.REGDATE, 'YYYY')
+	ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByYear(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	// 상품 이름 포함
+	@Query(value = """
+	SELECT od.ID AS product_id, p.NAME AS name,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS  o ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND (:q IS NULL OR INSTR(p.NAME, :q) > 0)
+	GROUP BY od.ID, p.NAME
+	""", nativeQuery = true)
+	List<Object[]> revenueByProductWithName(@Param("from") LocalDateTime from,
+											@Param("to") LocalDateTime to,
+											@Param("q") String q);
+
+	// 브랜드 이름 포함 (특정 브랜드 필터 가능)
+	@Query(value = """
+	SELECT p.BRAND_BRANDNO AS brand_no, b.BRANDNAME AS brand_name,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS  o ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	JOIN BRAND   b ON b.BRANDNO = p.BRAND_BRANDNO
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND (:brandNo IS NULL OR p.BRAND_BRANDNO = :brandNo)
+	GROUP BY p.BRAND_BRANDNO, b.BRANDNAME
+	""", nativeQuery = true)
+	List<Object[]> revenueByBrandWithName(@Param("from") LocalDateTime from,
+										@Param("to") LocalDateTime to,
+										@Param("brandNo") Long brandNo);
+
+	// 상품 검색
+	@Query(value = "SELECT p.ID, p.NAME FROM PRODUCT p WHERE INSTR(p.NAME, :q) > 0 ORDER BY p.NAME FETCH FIRST 20 ROWS ONLY", nativeQuery = true)
+	List<Object[]> searchProductsByName(@Param("q") String q);
+
+	// 상품별 시리즈
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE) AS d, SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED') AND od.ID = :productId
+		AND o.REGDATE BETWEEN :from AND :to
+	GROUP BY TRUNC(o.REGDATE) ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByDayForProduct(@Param("productId") Long productId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE,'IW') AS d, SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED') AND od.ID = :productId
+		AND o.REGDATE BETWEEN :from AND :to
+	GROUP BY TRUNC(o.REGDATE,'IW') ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByWeekForProduct(@Param("productId") Long productId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE,'MM') AS d, SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED') AND od.ID = :productId
+		AND o.REGDATE BETWEEN :from AND :to
+	GROUP BY TRUNC(o.REGDATE,'MM') ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByMonthForProduct(@Param("productId") Long productId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE,'YYYY') AS d, SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED') AND od.ID = :productId
+		AND o.REGDATE BETWEEN :from AND :to
+	GROUP BY TRUNC(o.REGDATE,'YYYY') ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByYearForProduct(@Param("productId") Long productId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	// 브랜드별 시리즈
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE) AS d, SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED') AND p.BRAND_BRANDNO = :brandNo
+		AND o.REGDATE BETWEEN :from AND :to
+	GROUP BY TRUNC(o.REGDATE) ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByDayForBrand(@Param("brandNo") Long brandNo, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE,'IW') AS d, SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED') AND p.BRAND_BRANDNO = :brandNo
+		AND o.REGDATE BETWEEN :from AND :to
+	GROUP BY TRUNC(o.REGDATE,'IW') ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByWeekForBrand(@Param("brandNo") Long brandNo, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE,'MM') AS d, SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED') AND p.BRAND_BRANDNO = :brandNo
+		AND o.REGDATE BETWEEN :from AND :to
+	GROUP BY TRUNC(o.REGDATE,'MM') ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByMonthForBrand(@Param("brandNo") Long brandNo, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE,'YYYY') AS d, SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED') AND p.BRAND_BRANDNO = :brandNo
+		AND o.REGDATE BETWEEN :from AND :to
+	GROUP BY TRUNC(o.REGDATE,'YYYY') ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByYearForBrand(@Param("brandNo") Long brandNo, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	// 브랜드 옵션
+	@Query(value = "SELECT b.BRANDNO, b.BRANDNAME FROM BRAND b ORDER BY b.BRANDNAME", nativeQuery = true)
+	List<Object[]> findAllBrands();
+
+
+	// ============================================ 23 : 38 ====================================================================
+	// --- 상품 시리즈 ---
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE) AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND od.ID = :productId
+	GROUP BY TRUNC(o.REGDATE)
+	ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByDayForProduct(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
+												@Param("productId") Long productId);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE,'IW') AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND od.ID = :productId
+	GROUP BY TRUNC(o.REGDATE,'IW')
+	ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByWeekForProduct(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
+												@Param("productId") Long productId);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE,'MM') AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND od.ID = :productId
+	GROUP BY TRUNC(o.REGDATE,'MM')
+	ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByMonthForProduct(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
+												@Param("productId") Long productId);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE,'YYYY') AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS o ON o.ORDERID = od.ORDERID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND od.ID = :productId
+	GROUP BY TRUNC(o.REGDATE,'YYYY')
+	ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByYearForProduct(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
+												@Param("productId") Long productId);
+
+	// --- 브랜드 시리즈 ---
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE) AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS o  ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND p.BRAND_BRANDNO = :brandNo
+	GROUP BY TRUNC(o.REGDATE)
+	ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByDayForBrand(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
+											@Param("brandNo") Long brandNo);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE, 'IW') AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS o  ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND p.BRAND_BRANDNO = :brandNo
+	GROUP BY TRUNC(o.REGDATE, 'IW')
+	ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByWeekForBrand(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
+											@Param("brandNo") Long brandNo);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE, 'MM') AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS o  ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND p.BRAND_BRANDNO = :brandNo
+	GROUP BY TRUNC(o.REGDATE, 'MM')
+	ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByMonthForBrand(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
+												@Param("brandNo") Long brandNo);
+
+	@Query(value = """
+	SELECT TRUNC(o.REGDATE, 'YYYY') AS d,
+			SUM(NVL(od.CONFIRMQUANTITY,0) * od.SELLPRICE) AS revenue
+	FROM ORDERDETAIL od
+	JOIN ORDERS o  ON o.ORDERID = od.ORDERID
+	JOIN PRODUCT p ON p.ID = od.ID
+	WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+		AND o.REGDATE BETWEEN :from AND :to
+		AND p.BRAND_BRANDNO = :brandNo
+	GROUP BY TRUNC(o.REGDATE, 'YYYY')
+	ORDER BY d
+	""", nativeQuery = true)
+	List<Object[]> revenueSeriesByYearForBrand(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
+											@Param("brandNo") Long brandNo);
+
+	// =========================== 브랜드 옵션 =====================================
+	// 브랜드 옵션
+	@Query(value = """
+	SELECT b.BRANDNO AS id, b.BRANDNAME AS name
+	FROM BRAND b
+	ORDER BY b.BRANDNAME
+	""", nativeQuery = true)
+	List<Object[]> brandOptions();
+
+	// 브랜드의 용량들(중복 제거)
+	@Query(value = """
+	SELECT DISTINCT v.VOLUMENAME
+	FROM PRODUCT p
+	JOIN VOLUME v ON v.VOLUMENO = p.VOLUME_VOLUMENO
+	WHERE p.BRAND_BRANDNO = :brandNo
+	ORDER BY v.VOLUMENAME
+	""", nativeQuery = true)
+	List<String> capacitiesByBrand(@Param("brandNo") Long brandNo);
+
+	// 브랜드+용량의 상품 목록
+	@Query(value = """
+	SELECT p.ID, p.NAME
+	FROM PRODUCT p
+	JOIN VOLUME v ON v.VOLUMENO = p.VOLUME_VOLUMENO
+	WHERE p.BRAND_BRANDNO = :brandNo
+		AND v.VOLUMENAME = :capacity
+	ORDER BY p.NAME
+	""", nativeQuery = true)
+	List<Object[]> productsByBrandCapacity(@Param("brandNo") Long brandNo, @Param("capacity") String capacity);
 }

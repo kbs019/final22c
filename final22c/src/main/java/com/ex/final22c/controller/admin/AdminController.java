@@ -1,6 +1,7 @@
 package com.ex.final22c.controller.admin;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,6 +39,7 @@ import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.service.admin.AdminService;
 import com.ex.final22c.service.refund.RefundService;
+import com.ex.final22c.service.stats.SalesStatService;
 import com.ex.final22c.service.stats.StatsService;
 
 import lombok.RequiredArgsConstructor;
@@ -48,18 +51,19 @@ public class AdminController {
 	private final AdminService adminService;
 	private final RefundService refundService;
 	private final StatsService statsService;
+	private final SalesStatService salesStatService;
 
 	// 회원목록
 	@GetMapping("userList")
 	public String userList(Model model,
-	                       @RequestParam(value = "page", defaultValue = "0") int page,
-	                       @RequestParam(value = "kw", defaultValue = "") String kw,
-	                       @RequestParam(value = "filter", defaultValue = "") String filter) {
-	    Page<Users> user = adminService.getList(page, kw, filter);
-	    model.addAttribute("user", user);
-	    model.addAttribute("kw", kw);
-	    model.addAttribute("filter", filter);
-	    return "admin/userList";
+			@RequestParam(value = "page", defaultValue = "0") int page,
+			@RequestParam(value = "kw", defaultValue = "") String kw,
+			@RequestParam(value = "filter", defaultValue = "") String filter) {
+		Page<Users> user = adminService.getList(page, kw, filter);
+		model.addAttribute("user", user);
+		model.addAttribute("kw", kw);
+		model.addAttribute("filter", filter);
+		return "admin/userList";
 	}
 
 	// 회원 정지
@@ -332,7 +336,6 @@ public class AdminController {
 		return "admin/orderDetail :: items";
 	}
 
-
 	// 상품 통계
 	@GetMapping("stats")
 	public String statsList(Model model, @RequestParam(value = "kw", defaultValue = "") String kw,
@@ -377,33 +380,161 @@ public class AdminController {
 	// @GetMapping("stats/{id}/sales")
 	// @ResponseBody
 	// public Map<String, Object> productSalesStats(@PathVariable("id") Long id) {
-	// 	return Map.of();
+	// return Map.of();
 	// }
 
-    // GET /admin/stats/{productId}/sales?unit=DAY&date=2025-08-28
-    // GET /admin/stats/{productId}/sales?unit=WEEK&date=2025-08 (YYYY-MM)
-    // GET /admin/stats/{productId}/sales?unit=MONTH&year=2025
-    // GET /admin/stats/{productId}/sales?unit=YEAR
-    @GetMapping("/stats/{id}/sales")
+	// GET /admin/stats/{productId}/sales?unit=DAY&date=2025-08-28
+	// GET /admin/stats/{productId}/sales?unit=WEEK&date=2025-08 (YYYY-MM)
+	// GET /admin/stats/{productId}/sales?unit=MONTH&year=2025
+	// GET /admin/stats/{productId}/sales?unit=YEAR
+	@GetMapping("/stats/{id}/sales")
 	@ResponseBody
-    public Map<String, Object> salesSeries(
-            @PathVariable("id") Long id,
-            @RequestParam("unit") String unit,
-            @RequestParam(name="date", required = false) String date,
-            @RequestParam(name="year", required = false) Integer year) {
-        return statsService.buildSeries(id, unit, date, year);
-    }
+	public Map<String, Object> salesSeries(
+			@PathVariable("id") Long id,
+			@RequestParam("unit") String unit,
+			@RequestParam(name = "date", required = false) String date,
+			@RequestParam(name = "year", required = false) Integer year) {
+		return statsService.buildSeries(id, unit, date, year);
+	}
 
-	
 	// 리뷰 관리
 	@GetMapping("reviewList")
 	public String reviewList(Model model) {
 		List<Review> re = this.adminService.getReview();
-		model.addAttribute("re",re);
+		model.addAttribute("re", re);
 		return "admin/reviewList";
 	}
-    @GetMapping("reviews/badwords")
-    public List<Review> badWordReviews() {
-        return adminService.getFilteredReviews();
-    }
+
+	@GetMapping("reviews/badwords")
+	public List<Review> badWordReviews() {
+		return adminService.getFilteredReviews();
+	}
+
+	// ========================================== 매출 통계
+	// =======================================
+	//
+
+	/** 페이지 진입: /admin/sales-stats -> templates/admin/salesStats.html */
+	@GetMapping("/salesStats")
+	public String page() {
+		return "admin/salesStats2";
+	}
+
+	/** 최상단: 전체 매출 타임시리즈 (unit = DAY | WEEK | MONTH) */
+	@ResponseBody
+	@GetMapping("/salesStats/api/series")
+	public List<Map<String, Object>> series(
+			@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+			@RequestParam(name = "unit", defaultValue = "DAY") String unit) {
+		return salesStatService.totalSeries(from, to, unit);
+	}
+
+	/** 한 번에: 전체합계 + 상품별 + 브랜드별 */
+	@ResponseBody
+	@GetMapping("/salesStats/api/all")
+	public Map<String, Object> all(
+			@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+		return salesStatService.allStats(from, to);
+	}
+
+	/** 상품별 총매출(이익) Map<productId, profit> */
+	@ResponseBody
+	@GetMapping("/salesStats/api/product")
+	public Map<Long, Long> byProduct(
+			@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+		return salesStatService.productProfit(from, to);
+	}
+
+	/** 브랜드별 총매출(이익) Map<brandNo, profit> */
+	@ResponseBody
+	@GetMapping("/salesStats/api/brand")
+	public Map<Long, Long> byBrand(
+			@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+		return salesStatService.brandProfit(from, to);
+	}
+
+	/** 전체 총매출(= 순매출합 - 매입원가합) 단일 값 */
+	@ResponseBody
+	@GetMapping("/salesStats/api/total")
+	public long total(
+			@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+		return salesStatService.totalProfit(from, to);
+	}
+
+	// 이름까지 내려주는 상품 이익 Top N
+	@ResponseBody
+	@GetMapping("/salesStats/api/productNamed")
+	public List<Map<String, Object>> productNamed(
+			@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+			@RequestParam(name = "q", required = false) String q,
+			@RequestParam(name = "limit", defaultValue = "20") int limit) {
+		return salesStatService.productProfitNamed(from, to, q, limit);
+	}
+
+	// 이름까지 내려주는 브랜드 이익 (전체 or 특정 브랜드)
+	@ResponseBody
+	@GetMapping("/salesStats/api/brandNamed")
+	public List<Map<String, Object>> brandNamed(
+			@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+			@RequestParam(name = "brandNo", required = false) Long brandNo) {
+		return salesStatService.brandProfitNamed(from, to, brandNo);
+	}
+
+	// 브랜드 드롭다운 옵션
+	@ResponseBody
+	@GetMapping("/salesStats/api/brand/options")
+	public List<Map<String, Object>> brandOptions() {
+		return salesStatService.brandOptions();
+	}
+
+	// ================================
+	// 상품 검색 (셀렉트 채우기)
+	@ResponseBody
+	@GetMapping("/salesStats/api/product/search")
+	public List<Map<String,Object>> productSearch(@RequestParam("q") String q) {
+		return salesStatService.searchProductsByName(q);
+	}
+
+	// 특정 상품 타임시리즈
+	@ResponseBody
+	@GetMapping("/salesStats/api/product/series")
+	public List<Map<String,Object>> productSeries(
+			@RequestParam("productId") Long productId,
+			@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam("to")   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+			@RequestParam(name="unit", defaultValue = "DAY") String unit) {
+		return salesStatService.totalSeriesForProduct(productId, from, to, unit);
+	}
+
+	// 특정 브랜드 타임시리즈
+	@ResponseBody
+	@GetMapping("/salesStats/api/brand/series")
+	public List<Map<String,Object>> brandSeries(
+			@RequestParam("brandNo") Long brandNo,
+			@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam("to")   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+			@RequestParam(name="unit", defaultValue = "DAY") String unit) {
+		return salesStatService.totalSeriesForBrand(brandNo, from, to, unit);
+	}
+
+// ======================================== 23 : 38 ===============================================
+	@ResponseBody
+	@GetMapping("/salesStats/api/product/capacities")
+	public List<String> productCaps(@RequestParam("brandNo") Long brandNo) {
+		return salesStatService.productCapacitiesByBrand(brandNo);
+	}
+
+	@ResponseBody
+	@GetMapping("/salesStats/api/product/byBrandCapacity")
+	public List<Map<String,Object>> productsByBrandCapacity(@RequestParam("brandNo") Long brandNo,
+															@RequestParam("capacity") String capacity) {
+		return salesStatService.productsByBrandCapacity(brandNo, capacity);
+	}
 }
