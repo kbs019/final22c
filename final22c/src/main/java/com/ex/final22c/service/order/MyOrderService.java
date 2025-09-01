@@ -108,7 +108,7 @@ public class MyOrderService {
                 .orElseThrow(() -> new IllegalStateException("주문을 찾을 수 없습니다."));
 
         // 3) 마일리지 적립
-        int earnBase = Math.max(0, order.getTotalAmount() - order.getUsedPoint());
+        int earnBase = Math.max(0, order.getTotalAmount());
         int mileage  = (int) Math.floor(earnBase * 0.05);
         if (mileage > 0) {
             usersRepository.addMileage(me.getUserNo(), mileage);
