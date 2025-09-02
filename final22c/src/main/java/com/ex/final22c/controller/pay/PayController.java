@@ -72,9 +72,7 @@ public class PayController {
         Order order = orderService.createPendingOrder(userId, productId, qty, usedPoint, ship);
 
         // 2. 결제액 계산
-        int itemsTotal = order.getTotalAmount();
-        int shipping   = SHIPPING_FEE;
-        int payable    = Math.max(0, itemsTotal + shipping - usedPoint);
+        int payable    = order.getTotalAmount();
         
         // 3) 총 결제금액이 0원일때 PG호출 스킵
         if(payable == 0) {

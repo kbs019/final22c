@@ -21,7 +21,7 @@ public class MyMileageService {
 
     @Transactional(readOnly = true)
     public Page<OrderRepository.MileageRow> getMileageHistory(Long userNo, int page, int size) {
-        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
+        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), Math.max(size, 1));
         return orderRepository.findMileageByUserAndStatuses(userNo, MILEAGE_STATUSES, pageable);
     }
 }

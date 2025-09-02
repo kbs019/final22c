@@ -15,6 +15,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.repository.order.OrderRepository.MileageRow;
 
 import jakarta.persistence.LockModeType;
 
@@ -137,32 +138,26 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
   interface MileageRow {
     Long getOrderId();
-
     java.time.LocalDateTime getProcessedAt();
-
-    Integer getUsedPoint();
-
-    Long getEarnedPoint(); // 화면 바인딩 유지 위해 둠 (지금은 0으로 매핑)
-
+    Long getUsedPoint();
+    Long getEarnedPoint();
     String getStatus();
   }
 
   @Query("""
-        select
-          o.orderId as orderId,
-          o.regDate  as processedAt,
-          coalesce(o.usedPoint, 0) as usedPoint,
+      select
+          o.orderId                            as orderId,
+          o.regDate                            as processedAt,
+          coalesce(o.usedPoint, 0)             as usedPoint,
           case
-            when o.status = 'REFUNDED' then 0
-            else coalesce(sum(oi.savePoint), 0)
-          end                  as earnedPoint,
-          o.status             as status
-        from Order o
-        left join o.orderItems oi
-        where o.user.userNo = :userNo
-          and o.status in :statuses
-        group by o.orderId, o.regDate, o.usedPoint, o.status
-        order by o.regDate desc
+              when o.status = 'REFUNDED' then 0
+              else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
+          end                                   as earnedPoint,
+          o.status                             as status
+      from Order o
+      where o.user.userNo = :userNo
+        and o.status in :statuses
+      order by o.regDate desc
       """)
   Page<MileageRow> findMileageByUserAndStatuses(
       @Param("userNo") Long userNo,
