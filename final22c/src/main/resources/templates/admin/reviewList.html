@@ -1,5 +1,13 @@
 <html layout:decorate="~{/layout/adminLayout}">
-
+<th:block layout:fragment="css">
+<style>
+.review-table th:last-child,
+.review-table td:last-child {
+    width: 100px;   /* 버튼 들어갈 만큼 넓혀줌 */
+    text-align: center; /* 선택: 버튼 가운데 정렬 */
+}
+</style>
+</th:block>
 <div layout:fragment="content">
 	
 	<h2>리뷰내역</h2>
@@ -9,7 +17,7 @@
 				리뷰리스트
 			</div>
 			<div class="card-body">
-				<table id="datatablesSimple">
+				<table id="datatablesSimple" class="review-table">
 					<thead>
 						<tr>
 			                <th scope="col">리뷰번호</th>
@@ -19,6 +27,7 @@
 			                <th scope="col">리뷰내용</th>
 			                <th scope="col">작성자</th>
 			                <th scope="col">작성일</th>
+			                <th scope="col" style="width: 120px;">관리</th>
 						</tr>
 					</thead>
 					<tbody >
@@ -43,6 +52,12 @@
 							    </a>
 							</td>
 			                <td th:text="${#temporals.format(list.createDate, 'yyyy-MM-dd HH:mm')}"></td>
+			                <td>
+								<button class="btn btn-sm btn-warning toggle-status-btn"
+								        th:attr="data-reviewid=${list.reviewId}, data-status=${list.status}">
+								  [[${list.status} == 'HIDDEN' ? '숨김 해제' : '숨김']]
+								</button>
+							</td>
 		            	</tr>
 					</tbody>
 				</table>
@@ -98,6 +113,29 @@
 		        <button type="button" id="writerConfirmBtn" class="btn btn-primary">확인</button>
 		      </div>
 		
+		    </div>
+		  </div>
+		</div>
+		
+		<!-- 숨김/숨김 해제 확인 모달 -->
+		<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+		  <div class="modal-dialog">
+		    <div class="modal-content">
+		      
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="statusModalLabel">리뷰 상태 변경</h5>
+		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+		      </div>
+		      
+		      <div class="modal-body" id="statusModalMessage">
+		        <!-- 메시지 들어가는 부분 -->
+		      </div>
+		      
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+		        <button type="button" id="statusConfirmBtn" class="btn btn-primary">확인</button>
+		      </div>
+		      
 		    </div>
 		  </div>
 		</div>
@@ -162,6 +200,52 @@ document.getElementById("writerConfirmBtn").addEventListener("click", function()
         if (res.ok) {
             alert("제재가 적용되었습니다.");
             location.reload(); // 필요하면 새로고침
+        } else {
+            alert("처리 중 오류가 발생했습니다.");
+        }
+    });
+});
+
+// 숨김 처리
+let targetBtn = null; // 어떤 버튼 눌렀는지 저장
+
+// 버튼 클릭 시 모달 띄우기
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("toggle-status-btn")) {
+        targetBtn = e.target;
+        let status = targetBtn.getAttribute("data-status");
+        let message = (status === "HIDDEN") ? 
+            "이 리뷰를 다시 표시하시겠습니까?" : 
+            "이 리뷰를 숨기시겠습니까?";
+
+        document.getElementById("statusModalMessage").innerText = message;
+
+        let modal = new bootstrap.Modal(document.getElementById("statusModal"));
+        modal.show();
+    }
+});
+
+// 모달에서 확인 버튼 누르면 서버에 요청
+document.getElementById("statusConfirmBtn").addEventListener("click", function() {
+    if (!targetBtn) return;
+
+    let reviewId = targetBtn.getAttribute("data-reviewid");
+    let status = targetBtn.getAttribute("data-status");
+    let newStatus = (status === "HIDDEN") ? "ACTIVE" : "HIDDEN";
+
+    fetch("/admin/reviewList/changeStatus", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ reviewId: reviewId, status: newStatus })
+    })
+    .then(res => {
+        if (res.ok) {
+            // 버튼 텍스트와 상태 즉시 반영
+            targetBtn.innerText = (newStatus === "HIDDEN") ? "숨김 해제" : "숨김";
+            targetBtn.setAttribute("data-status", newStatus);
+
+            // 모달 닫기
+            bootstrap.Modal.getInstance(document.getElementById("statusModal")).hide();
         } else {
             alert("처리 중 오류가 발생했습니다.");
         }
