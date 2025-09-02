@@ -61,7 +61,7 @@
         font-weight: 600;
         line-height: 1;
         cursor: pointer;
-        transition: background .15s ease, border-color .15s ease, opacity .15s ease, box-shadow .15s ease;
+        transition: background .15s, border-color .15s, opacity .15s, box-shadow .15s;
         min-height: 36px;
         min-width: 84px;
         white-space: nowrap;
@@ -200,6 +200,7 @@
         background: #fafafa;
       }
 
+      /* ====== 페이저 ====== */
       .pager {
         display: flex;
         gap: 6px;
@@ -208,6 +209,11 @@
         margin: 16px 0;
       }
 
+      .pager--right {
+        justify-content: flex-end;
+      }
+
+      /* ★ 오른쪽 정렬 */
       .pager .page-btn {
         border: 1px solid #e5e7eb;
         background: #fff;
@@ -219,12 +225,6 @@
       .pager .page-btn[aria-current="page"] {
         background: #2563eb;
         color: #fff;
-      }
-
-      .pager .status {
-        margin-right: 8px;
-        color: #6b7280;
-        font-size: 13px;
       }
 
       /* =================== 모달 (amodal) =================== */
@@ -296,27 +296,6 @@
         margin-top: 12px;
       }
 
-      /* ===사이드박스/그리드 레이아웃 복구===*/
-      .mp-grid {
-        display: grid;
-        grid-template-columns: 260px minmax(0, 1fr);
-        gap: 24px;
-        align-items: start;
-      }
-
-      .mp-col-left {
-        position: sticky;
-        top: 24px;
-        /* 스크롤 시 고정되는 위치 */
-        align-self: start;
-        z-index: 1;
-      }
-
-      .mp-col-right {
-        min-width: 0;
-        /* 긴 내용 줄바꿈을 위해 */
-      }
-
       /* === 사이드박스/그리드 레이아웃 === */
       .mp-grid {
         display: grid;
@@ -370,7 +349,7 @@
       }
 
       /* 모바일 대응 */
-      @media (max-width: 860px) {
+      @media (max-width:860px) {
         .mp-grid {
           grid-template-columns: 1fr;
         }
@@ -403,8 +382,8 @@
             <!-- 탭패널: 리뷰 -->
             <div id="panel-reviews" role="tabpanel" tabindex="0" aria-labelledby="tab-reviews">
               <div id="list" class="list-wrap" aria-live="polite"></div>
+              <!-- ★ 상태 텍스트 제거하고 오른쪽 정렬만 -->
               <nav id="pager" class="pager" aria-label="페이지네이션" hidden>
-                <span class="status" id="pagerStatus"></span>
                 <div id="pagerBtns"></div>
               </nav>
             </div>
@@ -436,7 +415,7 @@
             </div>
           </div>
 
-          <!-- 삭제 모달 (버튼 순서: 예 → 아니요) -->
+          <!-- 삭제 모달 -->
           <div id="deleteModal" class="amodal" aria-hidden="true">
             <div class="amodal__backdrop" data-close></div>
             <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="delTitle">
@@ -452,13 +431,12 @@
       </div>
     </section>
 
-    <!-- ===== 스크립트: 목록/탭/페이지네이션 ===== -->
+    <!-- ===== 스크립트: 목록/탭/페이지네이션 (1) ===== -->
     <script>
       (function () {
         const listEl = document.getElementById('list');
         const pagerEl = document.getElementById('pager');
         const pagerBtns = document.getElementById('pagerBtns');
-        const pagerStatus = document.getElementById('pagerStatus');
         const tabs = document.querySelectorAll('.pill-tabs button');
 
         // --- 상태
@@ -529,19 +507,19 @@
             const rating = (it.rating ?? 0);
             const content = esc(it.content || '');
             return `
-          <article class="card" data-id="${it.reviewId}">
-            <img class="thumb" src="${esc(img)}" alt="">
-            <div>
-              <div class="title"><a href="${href}">${esc(name)}</a></div>
-              <div class="meta">${esc(brand)} <span class="rating">★ ${rating}</span> <span style="margin-left:6px">${esc(date)}</span></div>
-              <div class="content">${content}</div>
-            </div>
-            <div class="actions">
-              <a class="btn-edit" href="/review/${it.reviewId}/edit">수정</a>
-              <a class="btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
-            </div>
-          </article>
-        `;
+            <article class="card" data-id="${it.reviewId}">
+              <img class="thumb" src="${esc(img)}" alt="">
+              <div>
+                <div class="title"><a href="${href}">${esc(name)}</a></div>
+                <div class="meta">${esc(brand)} <span class="rating">★ ${rating}</span> <span style="margin-left:6px">${esc(date)}</span></div>
+                <div class="content">${content}</div>
+              </div>
+              <div class="actions">
+                <a class="btn-edit" href="/review/${it.reviewId}/edit">수정</a>
+                <a class="btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
+              </div>
+            </article>
+          `;
           }).join('');
         }
 
@@ -560,18 +538,18 @@
             const date = it.createDate || '';
             const content = esc(it.content || '');
             return `
-          <article class="card" data-id="${it.reviewId}">
-            <img class="thumb" src="${esc(img)}" alt="">
-            <div>
-              <div class="title"><a href="${href}">${esc(name)}</a></div>
-              <div class="meta">${esc(brand)}<span class="rating">★ ${rating}</span><span style="margin-left:6px">${esc(date)}</span></div>
-              <div class="content">${content}</div>
-            </div>
-            <div class="actions">
-              <button type="button" class="btn-unlike" data-id="${it.reviewId}">공감 취소</button>
-            </div>
-          </article>
-        `;
+            <article class="card" data-id="${it.reviewId}">
+              <img class="thumb" src="${esc(img)}" alt="">
+              <div>
+                <div class="title"><a href="${href}">${esc(name)}</a></div>
+                <div class="meta">${esc(brand)}<span class="rating">★ ${rating}</span><span style="margin-left:6px">${esc(date)}</span></div>
+                <div class="content">${content}</div>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn-unlike" data-id="${it.reviewId}">공감 취소</button>
+              </div>
+            </article>
+          `;
           }).join('');
 
           // 공감 취소 이벤트 바인딩
@@ -588,25 +566,28 @@
         }
 
         function renderPager(data) {
-          if (!pagerEl || !pagerBtns || !pagerStatus) return;
+          if (!pagerEl || !pagerBtns) return;
           const total = Math.max(0, Number(data.totalPages) || 0);
           const page = Math.min(Math.max(0, Number(data.page) || 0), Math.max(0, total - 1));
           if (total <= 1) { pagerEl.hidden = true; return; }
           pagerEl.hidden = false;
-          pagerStatus.textContent = `현재 ${page + 1} / ${total} 페이지`;
+
           const isFirst = page === 0;
           const isLast = page === total - 1;
+
           const pagesHtml = Array.from({ length: total }, (_, i) => {
             const currentAttr = i === page ? ' aria-current="page"' : '';
             return `<button type="button" class="page-btn"${currentAttr} data-page="${i}">${i + 1}</button>`;
           }).join('');
+
           pagerBtns.innerHTML = `
-        <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
-        <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
-        ${pagesHtml}
-        <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="다음 페이지">›</button>
-        <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
-      `;
+          <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
+          <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
+          ${pagesHtml}
+          <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="다음 페이지">›</button>
+          <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
+        `;
+
           pagerBtns.querySelectorAll('.page-btn').forEach(btn => {
             btn.addEventListener('click', () => {
               if (btn.disabled) return;
@@ -643,13 +624,12 @@
       })();
     </script>
 
-    <!-- ===== 스크립트: 목록/탭/페이지네이션 ===== -->
+    <!-- ===== 스크립트: 목록/탭/페이지네이션 (2) ===== -->
     <script>
       (function () {
         const listEl = document.getElementById('list');
         const pagerEl = document.getElementById('pager');
         const pagerBtns = document.getElementById('pagerBtns');
-        const pagerStatus = document.getElementById('pagerStatus');
         const tabs = document.querySelectorAll('.pill-tabs button');
 
         const state = { tab: 'reviews', page: 0, size: 10, totalPages: 0 };
@@ -718,19 +698,19 @@
             const rating = (it.rating ?? 0);
             const content = esc(it.content || '');
             return `
-        <article class="card" data-id="${it.reviewId}">
-          <img class="thumb" src="${esc(img)}" alt="">
-          <div>
-            <div class="title"><a href="${href}">${esc(name)}</a></div>
-            <div class="meta">${esc(brand)} <span class="rating">★ ${rating}</span> <span style="margin-left:6px">${esc(date)}</span></div>
-            <div class="content">${content}</div>
-          </div>
-          <div class="actions">
-            <a class="btn-edit" href="/review/${it.reviewId}/edit">수정</a>
-            <a class="btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
-          </div>
-        </article>
-      `;
+            <article class="card" data-id="${it.reviewId}">
+              <img class="thumb" src="${esc(img)}" alt="">
+              <div>
+                <div class="title"><a href="${href}">${esc(name)}</a></div>
+                <div class="meta">${esc(brand)} <span class="rating">★ ${rating}</span> <span style="margin-left:6px">${esc(date)}</span></div>
+                <div class="content">${content}</div>
+              </div>
+              <div class="actions">
+                <a class="btn-edit" href="/review/${it.reviewId}/edit">수정</a>
+                <a class="btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
+              </div>
+            </article>
+          `;
           }).join('');
         }
 
@@ -748,18 +728,18 @@
             const date = it.createDate || '';
             const content = esc(it.content || '');
             return `
-        <article class="card" data-id="${it.reviewId}">
-          <img class="thumb" src="${esc(img)}" alt="">
-          <div>
-            <div class="title"><a href="${href}">${esc(name)}</a></div>
-            <div class="meta">${esc(brand)}<span class="rating">★ ${rating}</span><span style="margin-left:6px">${esc(date)}</span></div>
-            <div class="content">${content}</div>
-          </div>
-          <div class="actions">
-            <button type="button" class="btn-unlike" data-id="${it.reviewId}">공감 취소</button>
-          </div>
-        </article>
-      `;
+            <article class="card" data-id="${it.reviewId}">
+              <img class="thumb" src="${esc(img)}" alt="">
+              <div>
+                <div class="title"><a href="${href}">${esc(name)}</a></div>
+                <div class="meta">${esc(brand)}<span class="rating">★ ${rating}</span><span style="margin-left:6px">${esc(date)}</span></div>
+                <div class="content">${content}</div>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn-unlike" data-id="${it.reviewId}">공감 취소</button>
+              </div>
+            </article>
+          `;
           }).join('');
 
           listEl.querySelectorAll('.btn-unlike').forEach(btn => {
@@ -779,20 +759,23 @@
           const page = Math.min(Math.max(0, Number(data.page) || 0), Math.max(0, total - 1));
           if (total <= 1) { pagerEl.hidden = true; return; }
           pagerEl.hidden = false;
-          pagerStatus.textContent = `현재 ${page + 1} / ${total} 페이지`;
+
           const isFirst = page === 0;
           const isLast = page === total - 1;
+
           const pagesHtml = Array.from({ length: total }, (_, i) => {
             const currentAttr = i === page ? ' aria-current="page"' : '';
             return `<button type="button" class="page-btn"${currentAttr} data-page="${i}">${i + 1}</button>`;
           }).join('');
+
           pagerBtns.innerHTML = `
-      <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
-      <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
-      ${pagesHtml}
-      <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="다음 페이지">›</button>
-      <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
-    `;
+          <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
+          <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
+          ${pagesHtml}
+          <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="다음 페이지">›</button>
+          <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
+        `;
+
           pagerBtns.querySelectorAll('.page-btn').forEach(btn => {
             btn.addEventListener('click', () => {
               if (btn.disabled) return;
@@ -941,7 +924,6 @@
         });
       })();
     </script>
-
 
   </div>
 </body>
