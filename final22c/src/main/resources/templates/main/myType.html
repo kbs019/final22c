@@ -949,15 +949,36 @@
         }
 
         function restartSurvey() {
-            if (confirm('새로 설문조사를 시작하시겠습니까?')) {
-                window.location.reload();
-            }
-        }
+        	   if (confirm('새로 설문조사를 시작하시겠습니까?')) {
+        	       // 설문 초기화 API 호출
+        	       fetch('/api/recommendation/reset', {
+        	           method: 'POST',
+        	           headers: { 
+        	               'Content-Type': 'application/json',
+        	               'X-Requested-With': 'XMLHttpRequest'
+        	           },
+        	           credentials: 'same-origin'
+        	       })
+        	       .then(response => response.json())
+        	       .then(data => {
+        	           if (data.success) {
+        	               window.location.reload();
+        	           } else {
+        	               alert('초기화 중 오류가 발생했습니다: ' + data.message);
+        	           }
+        	       })
+        	       .catch(error => {
+        	           console.error('Reset failed:', error);
+        	           alert('초기화 중 오류가 발생했습니다.');
+        	       });
+        	   }
+        	}
 
-        // 초기화
-        document.addEventListener('DOMContentLoaded', () => {
-            window.surveyManager = new SimplePerfumeSurvey();
-        });
+        	// 초기화
+        	document.addEventListener('DOMContentLoaded', () => {
+        	   console.log('페이지 로드 완료');
+        	   window.surveyManager = new SimplePerfumeSurvey();
+        	});
     </script>
 </body>
 </html>
