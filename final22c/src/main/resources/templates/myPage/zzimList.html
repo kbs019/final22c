@@ -1,128 +1,166 @@
-<html layout:decorate="~{/layout/layout}">
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{/layout/layout}">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>마이페이지 - 위시리스트</title>
+</head>
+
 <th:block layout:fragment="css">
-<style>
- /* ===사이드박스/그리드 레이아웃 복구===*/
+  <style>
+    /* === 사이드박스 공통 레이아웃 === */
+    .mp-grid {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .mp-col-left {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      z-index: 1;
+    }
+
+    .mp-col-right {
+      min-width: 0;
+    }
+
+    .mp-sidebox__title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+
+    .mp-sidebox__nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mp-sidebox__link {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #111827;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+    }
+
+    .mp-sidebox__link:hover {
+      background: #f3f7ff;
+    }
+
+    .mp-sidebox__link.is-active {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    @media (max-width:860px) {
       .mp-grid {
-        display: grid;
-        grid-template-columns: 260px minmax(0, 1fr);
-        gap: 24px;
-        align-items: start;
+        grid-template-columns: 1fr;
       }
 
       .mp-col-left {
-        position: sticky;
-        top: 24px;
-        /* 스크롤 시 고정되는 위치 */
-        align-self: start;
-        z-index: 1;
+        position: static;
       }
+    }
 
-      .mp-col-right {
-        min-width: 0;
-        /* 긴 내용 줄바꿈을 위해 */
-      }
+    /* === 위시리스트 카드 === */
+    .wl-wrap {
+      max-width: 1100px;
+    }
 
-      /* === 사이드박스/그리드 레이아웃 === */
-      .mp-grid {
-        display: grid;
-        grid-template-columns: 260px minmax(0, 1fr);
-        gap: 24px;
-        align-items: start;
-      }
+    .wl-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
 
-      .mp-col-left {
-        position: sticky;
-        top: 24px;
-        align-self: start;
-        z-index: 1;
-      }
+    .wl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
 
-      .mp-col-right {
-        min-width: 0;
-      }
+    .wl-card {
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      text-decoration: none;
+      color: #111827;
+      transition: background .15s, border-color .15s, transform .06s;
+    }
 
-      /* 사이드박스 내부 스타일 */
-      .mp-sidebox__title {
-        font-size: 20px;
-        font-weight: 800;
-        margin: 0 0 12px;
-      }
+    .wl-card:hover {
+      background: #f9fbff;
+      border-color: #dbe3ff;
+      transform: translateY(-1px);
+    }
 
-      .mp-sidebox__nav {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
+    .wl-thumb {
+      width: 100%;
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      background: #f3f4f6;
+    }
 
-      .mp-sidebox__link {
-        display: block;
-        padding: 8px 10px;
-        border-radius: 10px;
-        text-decoration: none;
-        color: #111827;
-        border: 1px solid #e5e7eb;
-        background: #fff;
-      }
+    .wl-body {
+      padding: 12px;
+    }
 
-      .mp-sidebox__link:hover {
-        background: #f3f7ff;
-      }
+    .wl-brand {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
 
-      .mp-sidebox__link.is-active {
-        background: #111827;
-        color: #fff;
-        border-color: #111827;
-      }
+    .wl-name {
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-      /* 모바일 대응 */
-      @media (max-width: 860px) {
-        .mp-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .mp-col-left {
-          position: static;
-        }
-      }
-</style>
+    .wl-price {
+      margin-top: 6px;
+      font-weight: 800;
+    }
+  </style>
 </th:block>
-<th:block layout:fragment="content">
-<div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
-    <div class="container my-4">
-    
-        <h2 class="mb-3">내 관심목록</h2>
-        <div class="row g-3">
-            <div class="col-6 col-md-3" th:each="p : ${paging}">
-                <a th:href="@{|/main/content/${p.id}|}" class="card h-100 text-decoration-none text-dark">
-                    <img th:src="@{|${p.imgPath}${p.imgName}|}" class="card-img-top" th:alt="${p.name}">
-                    <div class="card-body">
-                        <div class="small text-muted" th:text="${p.brand.brandName}">브랜드</div>
-                        <div class="fw-semibold text-truncate" th:text="${p.name}">상품명</div>
-                        <div class="mt-1">
-                            <span class="fw-bold"
-                                th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'">0원</span>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
 
- <!--        페이지네이션
-        <nav class="mt-4" th:if="${totalPages > 1}">
-            <ul class="pagination">
-                <li class="page-item" th:classappend="${page==0} ? 'disabled'">
-                    <a class="page-link" th:href="@{|/me/zzim?page=${page-1}&size=${size}|}">이전</a>
-                </li>
-                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages-1)}"
-                    th:classappend="${i==page}? 'active'">
-                    <a class="page-link" th:href="@{|/me/zzim?page=${i}&size=${size}|}" th:text="${i+1}">1</a>
-                </li>
-                <li class="page-item" th:classappend="${page >= totalPages-1} ? 'disabled'">
-                    <a class="page-link" th:href="@{|/me/zzim?page=${page+1}&size=${size}|}">다음</a>
-                </li>
-            </ul>
-        </nav>
-    </div> -->
+<th:block layout:fragment="content">
+  <section class="mypage-wrap">
+    <div class="mp-grid">
+      <!-- 좌측: 사이드박스(활성키는 controller에서 넣은 section='wishlist') -->
+      <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+
+      <!-- 우측: 위시리스트 본문 -->
+      <div class="mp-col-right">
+        <div class="wl-wrap">
+          <h2 class="wl-title">내 관심목록</h2>
+
+          <div class="wl-grid">
+            <a class="wl-card" th:each="p : ${paging}" th:href="@{|/main/content/${p.id}|}">
+              <img class="wl-thumb" th:src="@{|${p.imgPath}${p.imgName}|}" th:alt="${p.name}">
+              <div class="wl-body">
+                <div class="wl-brand" th:text="${p.brand.brandName}">브랜드</div>
+                <div class="wl-name" th:text="${p.name}">상품명</div>
+                <div class="wl-price" th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'">0원</div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 </th:block>
 
 </html>
