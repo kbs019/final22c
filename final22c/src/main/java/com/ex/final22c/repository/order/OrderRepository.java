@@ -137,7 +137,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   Optional<Order> findByOrderIdAndUser_UserName(long orderId, String userName);
   
   List<Order> findByUser_UserNameOrderByRegDateDesc(String userName);
-}
+
 
 
   interface MileageRow {
