@@ -465,6 +465,8 @@ public class AdminController {
 															@RequestParam("capacity") String capacity) {
 		return salesStatService.productsByBrandCapacity(brandNo, capacity);
 	}
+	// =========================================================== 매출 통계 끝 =======================================================
+
     @GetMapping("reviews/badwords")
     public List<Review> badWordReviews() {
         return adminService.getFilteredReviews();
