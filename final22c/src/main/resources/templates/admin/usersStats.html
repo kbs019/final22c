@@ -1,0 +1,297 @@
+<!-- final22c/src/main/resources/templates/admin/usersStats.html -->
+<html layout:decorate="~{/layout/adminLayout}">
+<th:block layout:fragment="css">
+  <style>
+    /* 카드 & 차트 공통 */
+    .chart-card {
+      border: 1px solid #e6e8eb;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.06);
+      overflow: hidden;
+      background: #f6f7f9;
+    }
+    .chart-card .card-body { padding: 1.25rem; }
+
+    .chart-wrap { position: relative; height: 420px; }
+    .chart-wrap canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    .page-title { margin-bottom: .25rem; }
+    .subtle { color:#6b7280; }
+
+    /* 상단 메트릭(전체 회원 / 7일 신규) */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .75rem;
+      margin: 1rem 0 1.25rem;
+    }
+    .metric {
+      border: 1px solid #e6e8eb;
+      border-radius: 12px;
+      background: #fff;
+      padding: .9rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+    }
+    .metric .label {
+      font-size: .88rem;
+      color: #6b7280;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+    .metric .value {
+      font-size: 1.6rem;
+      line-height: 1;
+      font-weight: 700;
+      color: #111827;
+    }
+    .metric .badge-soft {
+      font-size: .75rem;
+      border: 1px solid #e6e8eb;
+      padding: .25rem .5rem;
+      border-radius: 999px;
+      background: #f9fafb;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px){
+      .chart-wrap { height: 360px; }
+      .metric .value { font-size: 1.4rem; }
+    }
+  </style>
+</th:block>
+
+<div layout:fragment="content">
+  <div class="container my-4">
+    <h2 class="page-title">전체 회원 통계</h2>
+    <div class="subtle small">이 사이트에 가입한 모든 회원의 성비와 연령 분포입니다.</div>
+
+    <!-- 상단 메트릭 -->
+    <div class="metrics">
+      <div class="metric">
+        <div>
+          <div class="label">전체 회원 수</div>
+          <div id="totalUsers" class="value">0</div>
+        </div>
+        <div class="badge-soft">누적</div>
+      </div>
+      <div class="metric">
+        <div>
+          <div class="label">최근 7일 신규 회원</div>
+          <div id="newUsers7d" class="value">0</div>
+        </div>
+        <div class="badge-soft">최근 7일</div>
+      </div>
+    </div>
+
+    <!-- 차트 카드 -->
+    <div id="usersStatsRoot" class="chart-card">
+      <div class="card-body">
+        <div class="row g-4">
+          <!-- 성별 도넛 -->
+          <div class="col-md-6">
+            <div class="chart-wrap">
+              <canvas id="genderChart" aria-label="전체 회원 성별 비율"></canvas>
+            </div>
+          </div>
+
+          <!-- 연령대 수평 막대 -->
+          <div class="col-md-6">
+            <div class="chart-wrap">
+              <canvas id="ageChart" aria-label="전체 회원 연령대 분포"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script layout:fragment="script" type="text/javascript">
+(() => {
+  /* ===== 공통 플러그인/유틸 ===== */
+  const shadowPlugin = {
+    id: 'softShadow',
+    beforeDatasetsDraw(chart){ const {ctx}=chart; ctx.save(); ctx.shadowColor='rgba(0,0,0,0.18)'; ctx.shadowBlur=8; ctx.shadowOffsetY=4; },
+    afterDatasetsDraw(chart){ chart.ctx.restore(); }
+  };
+
+  const hideLegendForBar = {
+    id: 'hideLegendForBar',
+    beforeInit(chart){
+      if(chart.config.type==='bar'){
+        chart.options.plugins ||= {};
+        chart.options.plugins.legend ||= {};
+        chart.options.plugins.legend.display = false;
+        chart.options.plugins.legend.labels = { generateLabels:()=>[] };
+      }
+    }
+  };
+
+  // 도넛 중앙 합계
+  const centerTotalPlugin = {
+    id: 'centerTotal',
+    afterDraw(chart){
+      const {ctx, chartArea} = chart;
+      if(!chartArea) return;
+      const total = (chart.data.datasets?.[0]?.data||[]).reduce((a,b)=>a+b,0);
+      const cx = (chartArea.left + chartArea.right)/2;
+      const cy = (chartArea.top + chartArea.bottom)/2;
+      ctx.save();
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillStyle='#111';
+      ctx.font='600 20px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      ctx.fillText(`${total}명`, cx, cy-4);
+      ctx.fillStyle='#666';
+      ctx.font='400 12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      ctx.fillText('총 회원', cx, cy+16);
+      ctx.restore();
+    }
+  };
+
+  // 값 라벨(정수만)
+  const valueLabelPlugin = {
+    id: 'valueLabel',
+    afterDatasetsDraw(chart){
+      const {ctx, options} = chart;
+      const meta = chart.getDatasetMeta(0);
+      const vals = chart.data.datasets?.[0]?.data || [];
+      const horizontal = options?.indexAxis === 'y';
+      ctx.save();
+      ctx.textAlign = horizontal ? 'left' : 'center';
+      ctx.textBaseline = horizontal ? 'middle' : 'bottom';
+      ctx.font = '600 12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      meta.data.forEach((bar,i)=>{
+        const v = vals[i] ?? 0;
+        if(v>0){
+          ctx.fillStyle='#111';
+          ctx.shadowColor='rgba(255,255,255,0.9)';
+          ctx.shadowBlur=6;
+          if(horizontal){ ctx.fillText(String(Math.trunc(v)), bar.x + 10, bar.y); }
+          else { ctx.fillText(String(Math.trunc(v)), bar.x, bar.y - 6); }
+          ctx.shadowBlur=0;
+        }
+      });
+      ctx.restore();
+    }
+  };
+
+  // 막대 그라데이션
+  function barGradient(context){
+    const {chart} = context;
+    const area = chart.chartArea;
+    if(!area) return '#686e77';
+    const horizontal = chart.options?.indexAxis === 'y';
+    const g = horizontal
+      ? chart.ctx.createLinearGradient(area.left, 0, area.right, 0)
+      : chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+    g.addColorStop(0, '#4f545c');
+    g.addColorStop(1, '#c7ccd6');
+    return g;
+  }
+
+  /* ===== 차트 렌더링 ===== */
+  let genderChart, ageChart;
+
+  async function loadStats(){
+    const res = await fetch('/admin/usersStats/api', { headers: { Accept: 'application/json' } });
+    const data = await res.json();
+
+    // 상단 메트릭 업데이트
+    const totalUsers = data?.totalUserCount ?? 0;
+    const newUsers7d = data?.newUserCount7d ?? 0;
+    document.getElementById('totalUsers').textContent = String(totalUsers);
+    document.getElementById('newUsers7d').textContent = String(newUsers7d);
+
+    // --- 성별 도넛 ---
+    const gFemale = data?.gender?.female ?? 0;
+    const gMale   = data?.gender?.male   ?? 0;
+    const gUnknown= data?.gender?.unknown?? 0;
+
+    const totalG = gFemale + gMale + gUnknown;
+    const labelsG = (gUnknown>0)? ['여성','남성','기타'] : ['여성','남성'];
+    const datasetG= (gUnknown>0)? [gFemale,gMale,gUnknown] : [gFemale,gMale];
+    const colorsG = (gUnknown>0)? ['#ffffff','#111111','#9e9e9e'] : ['#ffffff','#111111'];
+
+    genderChart?.destroy();
+    genderChart = new Chart(document.getElementById('genderChart').getContext('2d'), {
+      type:'doughnut',
+      data:{ labels:labelsG, datasets:[{ data:datasetG, backgroundColor:colorsG, borderWidth:0, hoverOffset:6 }] },
+      options:{
+        responsive:true, maintainAspectRatio:false, cutout:'60%',
+        layout:{ padding:{ top:6, right:6, bottom:6, left:6 } },
+        plugins:{
+          legend:{ position:'top', labels:{ usePointStyle:true } },
+          tooltip:{ callbacks:{ label:(c)=>` ${c.label}: ${c.parsed}명 (${ totalG? Math.round(c.parsed*1000/totalG)/10:0 }%)` } }
+        },
+        animation:{ duration:600, easing:'easeOutCubic' }
+      },
+      plugins:[shadowPlugin, centerTotalPlugin]
+    });
+
+    // --- 연령대 수평 막대 ---
+    const a10 = data?.age?.t10  ?? 0;
+    const a20 = data?.age?.t20  ?? 0;
+    const a30 = data?.age?.t30  ?? 0;
+    const a40 = data?.age?.t40  ?? 0;
+    const a50p= data?.age?.t50p ?? 0;
+
+    const maxRaw = Math.max(a10,a20,a30,a40,a50p,0);
+    const step = (maxRaw<=10)?1 : (maxRaw<=50)?5 : (maxRaw<=100)?10 : Math.ceil(maxRaw/10);
+    const axisMax = Math.max(step, Math.ceil((maxRaw||1)/step)*step);
+
+    ageChart?.destroy();
+    ageChart = new Chart(document.getElementById('ageChart').getContext('2d'), {
+      type:'bar',
+      data:{
+        labels:['10대','20대','30대','40대','50대+'],
+        datasets:[{
+          data:[a10,a20,a30,a40,a50p],
+          backgroundColor:(c)=>barGradient(c),
+          borderWidth:0,
+          borderSkipped:false,
+          borderRadius:8,
+          barThickness:18,
+          maxBarThickness:18,
+          categoryPercentage:.58,
+          barPercentage:.9
+        }]
+      },
+      options:{
+        indexAxis:'y',
+        responsive:true,
+        maintainAspectRatio:false,
+        layout:{ padding:{ top:8, right:16, bottom:12, left:8 } },
+        scales:{
+          x:{
+            min:0, max:axisMax,
+            grid:{ color:'rgba(0,0,0,0.05)', borderDash:[3,3] },
+            ticks:{ stepSize:step, precision:0, callback:(v)=>Number.isInteger(v)?String(v):'' },
+            title:{ display:true, text:'명' }
+          },
+          y:{ grid:{ display:false }, ticks:{ font:{ weight:600 } } }
+        },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{ callbacks:{ label:(c)=>` ${Math.trunc(c.parsed.x)}명` }, displayColors:false }
+        },
+        animation:{ duration:650, easing:'easeOutCubic', delay:(ctx)=>ctx.dataIndex*60 }
+      },
+      plugins:[shadowPlugin, hideLegendForBar, valueLabelPlugin]
+    });
+  }
+
+  loadStats();
+})();
+</script>
+</html>

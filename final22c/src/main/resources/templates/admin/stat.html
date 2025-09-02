@@ -1,4 +1,4 @@
-<html layout:decorate="~{/layout/adminLayout}">
+<html layout:decorate="~{/layout/adminLayout}"> 
 <th:block layout:fragment="css">
   <style>
     /* 세그먼트형 라디오 (중앙 정렬) */
@@ -169,7 +169,7 @@
       }
     };
 
-    /* ===== ▼ 구매자 통계: 성별(도넛) + 연령대(막대 업그레이드) ▼ ===== */
+    /* ===== ▼ 구매자 통계: 성별(도넛) + 연령대(막대 리디자인) ▼ ===== */
     let genderChart, ageChart;
 
     // 도넛 중앙 합계
@@ -194,34 +194,48 @@
       }
     };
 
-    // 막대 위 값(정수) 라벨
+    // 막대 값 라벨(수평/수직 자동 대응, 정수만)
     const valueLabelPlugin = {
       id: 'valueLabel',
       afterDatasetsDraw(chart) {
-        const { ctx } = chart;
+        const { ctx, options } = chart;
         const meta = chart.getDatasetMeta(0);
         const values = chart.data.datasets?.[0]?.data || [];
+        const horizontal = options?.indexAxis === 'y';
         ctx.save();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillStyle = '#111';
+        ctx.textAlign = horizontal ? 'left' : 'center';
+        ctx.textBaseline = horizontal ? 'middle' : 'bottom';
         ctx.font = '600 12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
         meta.data.forEach((bar, i) => {
           const v = values[i] ?? 0;
-          if (v > 0) ctx.fillText(String(Math.trunc(v)), bar.x, bar.y - 6);
+          if (v > 0) {
+            ctx.fillStyle = '#111';
+            // 흰 배경 글로우로 가독성 보정
+            ctx.shadowColor = 'rgba(255,255,255,0.9)';
+            ctx.shadowBlur = 6;
+            if (horizontal) {
+              ctx.fillText(String(Math.trunc(v)), bar.x + 10, bar.y);
+            } else {
+              ctx.fillText(String(Math.trunc(v)), bar.x, bar.y - 6);
+            }
+            ctx.shadowBlur = 0;
+          }
         });
         ctx.restore();
       }
     };
 
-    // 막대 그라데이션(상단 진한 그레이 → 하단 연한 그레이)
+    // 막대 그라데이션(방향 자동)
     function barGradient(context) {
       const { chart } = context;
       const area = chart.chartArea;
-      if (!area) return '#4a4a4a';
-      const g = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
-      g.addColorStop(0, '#2e2e2e');
-      g.addColorStop(1, '#9a9a9a');
+      if (!area) return '#686e77';
+      const horizontal = chart.options?.indexAxis === 'y';
+      const g = horizontal
+        ? chart.ctx.createLinearGradient(area.left, 0, area.right, 0)
+        : chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+      g.addColorStop(0, '#4f545c');
+      g.addColorStop(1, '#c7ccd6');
       return g;
     }
 
@@ -229,7 +243,7 @@
       const res = await fetch(`/admin/stats/${productId}/buyers`, { headers: { Accept: 'application/json' } });
       const data = await res.json();
 
-      /* --- 성별: 도넛 (변경 없음, 미세 톤 유지) --- */
+      /* --- 성별: 도넛 (변경 없음) --- */
       const gMale = data?.gender?.male ?? 0;
       const gFemale = data?.gender?.female ?? 0;
       const gUnknown = data?.gender?.unknown ?? 0;
@@ -266,7 +280,7 @@
         plugins: [shadowPlugin, centerTotalPlugin]
       });
 
-      /* --- 연령대: 막대 (깔끔/미니멀 리디자인) --- */
+      /* --- 연령대: 막대 (수평형으로 리디자인) --- */
       const a10 = data?.age?.t10 ?? 0;
       const a20 = data?.age?.t20 ?? 0;
       const a30 = data?.age?.t30 ?? 0;
@@ -288,42 +302,52 @@
             data: [a10, a20, a30, a40, a50p],
             backgroundColor: (c) => barGradient(c),
             borderWidth: 0,
-            borderSkipped: 'bottom',
+            borderSkipped: false,
 
-            // ✅ 막대 스타일은 dataset 안에 둬야 적용됨
-            borderRadius: 10,         // 상단 둥글게 (v4는 단일 값으로도 가능)
-            barThickness: 12,         // 막대 폭 고정(px)
-            maxBarThickness: 12,      // 최대 폭 제한
-            categoryPercentage: 0.4,  // 카테고리 전체 폭 대비 비율
-            barPercentage: 0.8        // 한 카테고리 내 막대 폭 비율
+            /* 둥근 모서리 & 두께/간격 정제 */
+            borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 8, bottomRight: 8 },
+            barThickness: 18,
+            maxBarThickness: 18,
+            categoryPercentage: 0.58,
+            barPercentage: 0.9
           }]
         },
         options: {
+          indexAxis: 'y',  // ▶ 수평 막대
           responsive: true,
           maintainAspectRatio: false,
-          layout: { padding: { top: 10, right: 10, bottom: 18, left: 10 } },
+          layout: { padding: { top: 8, right: 16, bottom: 12, left: 8 } },
           scales: {
-            y: {
+            x: {
               min: 0, max: axisMax,
-              grid: { color: 'rgba(0,0,0,0.06)' },
+              grid: {
+                color: 'rgba(0,0,0,0.05)',
+                borderDash: [3, 3]
+              },
               ticks: {
                 stepSize: step,
                 precision: 0,
-                format: { maximumFractionDigits: 0 },
                 callback: (v) => Number.isInteger(v) ? String(v) : ''
               },
               title: { display: true, text: '명' }
             },
-            x: {
+            y: {
               grid: { display: false },
               ticks: { font: { weight: 600 } }
             }
           },
           plugins: {
             legend: { display: false },
-            tooltip: { callbacks: { label: (c) => ` ${c.parsed.y}명` } }
+            tooltip: {
+              callbacks: { label: (c) => ` ${Math.trunc(c.parsed.x)}명` },
+              displayColors: false
+            }
           },
-          animation: { duration: 700, easing: 'easeOutCubic' }
+          animation: {
+            duration: 650,
+            easing: 'easeOutCubic',
+            delay: (ctx) => ctx.dataIndex * 60
+          }
         },
         plugins: [shadowPlugin, hideLegendForBar, valueLabelPlugin]
       });

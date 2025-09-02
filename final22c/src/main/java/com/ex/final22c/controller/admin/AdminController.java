@@ -406,6 +406,19 @@ public class AdminController {
 		return "admin/reviewList";
 	}
 
+	// 페이지 진입: /admin/usersStats
+	@GetMapping("usersStats")
+	public String usersStatsPage() {
+		return "admin/usersStats";
+	}
+
+	// 전체 회원 통계 API (성별/연령대 + 전체/최근7일 카운트)
+	@ResponseBody
+	@GetMapping("usersStats/api")
+	public Map<String, Object> usersStatsApi() {
+		return adminService.buildAllUserStats(); // Service에서 totalUserCount, newUserCount7d 포함 반환
+	}
+
 	// ========================================== 매출 통계 =======================================
 
 	/** 페이지 진입: /admin/sales-stats -> templates/admin/salesStats.html */

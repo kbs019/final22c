@@ -787,4 +787,59 @@ public class AdminService {
         review.setStatus(status);
         // JPA에서는 save() 안 해도 @Transactional 걸려 있으면 flush 때 반영됨
     }
+
+    public Map<String, Object> buildAllUserStats() {
+        List<Users> all = userRepository.findAll();
+
+        int male=0, female=0, unknown=0;
+        int a10=0, a20=0, a30=0, a40=0, a50p=0;
+
+        // 신규 가입(최근 7일)
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate since = today.minusDays(7);
+        long newUsers7d = 0;
+
+        for (Users u : all) {
+            // 성별 집계
+            String g = java.util.Optional.ofNullable(u.getGender()).orElse("").trim().toUpperCase();
+            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자")) female++;
+            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자")) male++;
+            else unknown++;
+
+            // 연령대 집계
+            Integer age = u.getAge();
+            if (age != null) {
+                if (age >= 10 && age < 20) a10++;
+                else if (age < 30) a20++;
+                else if (age < 40) a30++;
+                else if (age < 50) a40++;
+                else a50p++;
+            }
+
+            // 최근 7일 신규 (reg가 LocalDate 기준, since 이상이면 포함)
+            java.time.LocalDate reg = u.getReg();
+            if (reg != null && (reg.isAfter(since) || reg.isEqual(since))) {
+                newUsers7d++;
+            }
+        }
+
+        Map<String,Object> gender = new java.util.LinkedHashMap<>();
+        gender.put("female", female);
+        gender.put("male", male);
+        gender.put("unknown", unknown);
+
+        Map<String,Object> age = new java.util.LinkedHashMap<>();
+        age.put("t10", a10);
+        age.put("t20", a20);
+        age.put("t30", a30);
+        age.put("t40", a40);
+        age.put("t50p", a50p);
+
+        return java.util.Map.of(
+            "gender", gender,
+            "age", age,
+            "totalUserCount", all.size(),
+            "newUserCount7d", newUsers7d
+        );
+    }
 }
