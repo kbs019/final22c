@@ -141,6 +141,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 
   interface MileageRow {
+
+
+
+
+
+
+
+
+
+
+    
     Long getOrderId();
     java.time.LocalDateTime getProcessedAt();
     Long getUsedPoint();
