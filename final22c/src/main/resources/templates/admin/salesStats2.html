@@ -158,74 +158,170 @@
 <th:block layout:fragment="script">
     <script>
         /* ========= 공통(상단) : 여기 블록은 기존과 동일 ========= */
-        const BASE = '/admin/salesStats/api';
+        const BASE = '/admin/salesStats/api';       // 모든 통계 API의 공통 베이스 경로
 
         // 색상: 매출액=빨강, 지출액=파랑, 순이익=초록
         const SALES = '#dc2626';   // 매출액 (red-600)
         const EXP   = '#2563eb';   // 지출액 (blue-600)
         const PROF  = '#16a34a';   // 순이익 (green-600)
 
-        Chart.defaults.locale = 'ko-KR';
-        const KR = new Intl.NumberFormat('ko-KR'), KRW = n => `${KR.format(n ?? 0)}원`;
-        const STATE = { unit: 'DAY', from: null, to: null };
-        const $day = document.getElementById('pick-day-date');
-        const $wmon = document.getElementById('pick-week-month');
-        const $year = document.getElementById('pick-month-year');
+        Chart.defaults.locale = 'ko-KR';                // Chart.js의 숫자/날짜 로케일을 한국어로 설정
+        const KR = new Intl.NumberFormat('ko-KR'),      // 숫자 포매터(3자리 콤마 등)
+            KRW = n => `${KR.format(n ?? 0)}원`;        // 원 단위로 문자열 포맷팅하는 헬퍼
 
-        const d2s = d => d.toISOString().slice(0, 10);
+        const STATE = { unit: 'DAY', from: null, to: null };            // 현재 선택된 단위/조회기간 상태(전역 공유)
+
+        // 기간 선택기 DOM 참조(일/월/연)
+        const $day = document.getElementById('pick-day-date');          // 일간용 date input
+        const $wmon = document.getElementById('pick-week-month');       // 주간용 month input(달 선택)
+        const $year = document.getElementById('pick-month-year');       // 월간용 year select(연 선택)
+
+        // 유틸: Date -> 'yyyy-MM-dd' 문자열
+        const d2s = d => d.toISOString().slice(0, 10);                  // ISO 문자열 앞부분만 잘라 'YYYY-MM-DD'로 반환
+
+        // 유틸: 'yyyy-MM-dd' 기준 n일 더한 'yyyy-MM-dd' 반환
         const addDays = (s, n) => { const d = new Date(s); d.setDate(d.getDate() + n); return d2s(d); };
 
+        // 초기화 즉시실행 함수(IIFE): 오늘 날짜 기반으로 피커 값/STATE 기본 세팅
         (function initPickers() {
-            const today = new Date();
-            $day.value = d2s(today);
+            const today = new Date();           // 오늘
+            $day.value = d2s(today);            // 일간 date input에 오늘 채움
+            // 해당 월의 1일을 'YYYY-MM'으로 세팅(주간 조회는 특정 '월'을 고르게 함)
             $wmon.value = d2s(new Date(today.getFullYear(), today.getMonth(), 1)).slice(0, 7);
-            const yNow = today.getFullYear(); $year.innerHTML = '';
-            for (let y = yNow - 5; y <= yNow + 1; y++) { const o = document.createElement('option'); o.value = y; o.textContent = y; $year.appendChild(o); }
-            $year.value = String(yNow);
-            applyDayRange($day.value);
-        })();
-        function showPicker(u) {
-            document.getElementById('pick-day-date').classList.toggle('d-none', u !== 'DAY');
-            document.getElementById('pick-week-month').classList.toggle('d-none', u !== 'WEEK');
-            document.getElementById('pick-month-year').classList.toggle('d-none', u !== 'MONTH');
-        }
-        function applyDayRange(d) { STATE.unit = 'DAY'; STATE.from = addDays(d, -3); STATE.to = addDays(d, +3); }
-        function applyWeekRange(ym) { const [y, m] = ym.split('-').map(Number); STATE.unit = 'WEEK'; STATE.from = d2s(new Date(y, m - 1, 1)); STATE.to = d2s(new Date(y, m, 0)); STATE._weekYm = ym; }
-        function applyMonthRange(y) { STATE.unit = 'MONTH'; STATE.from = `${y}-01-01`; STATE.to = `${y}-12-31`; }
-        function applyYearRange() { const y = new Date().getFullYear(); STATE.unit = 'YEAR'; STATE.from = `${y - 4}-01-01`; STATE.to = `${y}-12-31`; }
 
+            // 월간용 연도 셀렉트 옵션 생성(현재연도-5 ~ 현재연도+1)
+            const yNow = today.getFullYear(); $year.innerHTML = '';
+            for (let y = yNow - 5; y <= yNow + 1; y++) { 
+                const o = document.createElement('option'); o.value = y; o.textContent = y; $year.appendChild(o); 
+            }
+            $year.value = String(yNow);             // 기본값: 올해
+
+            applyDayRange($day.value);              // 기본 STATE: 일간(선택일 -3 ~ +3일)
+        })();
+
+        // 단위에 따라 보일 입력 컨트롤 전환
+        function showPicker(u) {
+            document.getElementById('pick-day-date').classList.toggle('d-none', u !== 'DAY');           // 일간만 date 표시
+            document.getElementById('pick-week-month').classList.toggle('d-none', u !== 'WEEK');        // 주간만 month 표시
+            document.getElementById('pick-month-year').classList.toggle('d-none', u !== 'MONTH');       // 월간만 year 표시
+        }
+
+        // 단위별 기간 계산(STATE 업데이트)
+        function applyDayRange(d) {                     // 일간: 선택일 기준 -3~+3일
+            STATE.unit = 'DAY'; 
+            STATE.from = addDays(d, -3); 
+            STATE.to = addDays(d, +3); 
+        }
+
+        function applyWeekRange(ym) {                   // 주간: 특정 월의 1일 ~ 말일
+            const [y, m] = ym.split('-').map(Number); 
+            STATE.unit = 'WEEK'; 
+            STATE.from = d2s(new Date(y, m - 1, 1));    // 그 달 1일
+            STATE.to = d2s(new Date(y, m, 0));          // 그 달 말일(다음달 0일)
+            STATE._weekYm = ym;                         // 주차 라벨 계산에 사용할 월 보관
+        }
+
+        function applyMonthRange(y) {                   // 월간: 해당 연도 1/1 ~ 12/31
+            STATE.unit = 'MONTH'; 
+            STATE.from = `${y}-01-01`; 
+            STATE.to = `${y}-12-31`; 
+        }
+
+        function applyYearRange() {                     // 연간: 최근 5년(과거→현재)
+            const y = new Date().getFullYear(); 
+            STATE.unit = 'YEAR'; 
+            STATE.from = `${y - 4}-01-01`; 
+            STATE.to = `${y}-12-31`; 
+        }
+
+        // 단위별 그래프 X축 라벨 기대값 생성(결측치를 0으로 채우기 위한 기준)
         function expectedLabels(unit) {
-            if (unit === 'DAY') { const out = [], d0 = new Date(STATE.from), d1 = new Date(STATE.to); for (let d = new Date(d0); d <= d1; d.setDate(d.getDate() + 1)) out.push(d2s(d)); return out; }
-            if (unit === 'WEEK') { return ['1주', '2주', '3주', '4주', '5주']; }
-            if (unit === 'MONTH') { return Array.from({ length: 12 }, (_, i) => `${STATE.from.slice(0, 4)}-${String(i + 1).padStart(2, '0')}`); }
-            if (unit === 'YEAR') { const yTo = +STATE.to.slice(0, 4); return Array.from({ length: 5 }, (_, i) => String(yTo - 4 + i)); }
+            if (unit === 'DAY') {                       // 일간: from..to 모든 날짜
+                const out = [], d0 = new Date(STATE.from), d1 = new Date(STATE.to); 
+                for (let d = new Date(d0); d <= d1; d.setDate(d.getDate() + 1)) out.push(d2s(d)); 
+                return out;
+            }
+
+            if (unit === 'WEEK') {                      // 주간: 1~5주 고정 라벨(월 단위 주버킷)
+                return ['1주', '2주', '3주', '4주', '5주']; 
+            }
+
+            if (unit === 'MONTH') {                     // 월간: 1~12월 라벨('YYYY-MM')
+                return Array.from({ length: 12 }, (_, i) => `${STATE.from.slice(0, 4)}-${String(i + 1).padStart(2, '0')}`); 
+            }
+
+            if (unit === 'YEAR') {                      // 연간: 최근 5년 (좌→우: 과거→현재)
+                const yTo = +STATE.to.slice(0, 4); 
+                return Array.from({ length: 5 }, (_, i) => String(yTo - 4 + i)); 
+            }
+
             return [];
         }
-        function weekBucket(dateStr) { const [y, m, d] = dateStr.split('-').map(Number); const first = new Date(y, m - 1, 1), cur = new Date(y, m - 1, d); const diff = Math.floor((cur - first) / (1000 * 60 * 60 * 24)); return Math.min(4, Math.floor(diff / 7)); }
 
+        // 'yyyy-MM-dd'가 해당 월의 몇 번째 주(0~4)에 속하는지 계산(주간 집계를 위해)
+        function weekBucket(dateStr) { 
+            const [y, m, d] = dateStr.split('-').map(Number); 
+            const first = new Date(y, m - 1, 1);                                // 그 달 1일
+            const cur = new Date(y, m - 1, d);                                  // 해당 날짜
+            const diff = Math.floor((cur - first) / (1000 * 60 * 60 * 24));     // 1일 단위 차이
+            return Math.min(4, Math.floor(diff / 7));                           // 0~4(=1~5주)
+        }
+
+        // 서버 rows를 기대 라벨에 맞춰 정규화(결측치는 0 채움, 주간은 5버킷 재집계)
         function normalizeSeries(rows) {
-            const m = new Map();
-            rows.forEach(r => m.set(String(r.date), { revenue: +r.revenue || 0, cogs: +r.cogs || 0, profit: +r.profit || 0 }));
-            const labels = expectedLabels(STATE.unit);
-            if (STATE.unit === 'WEEK') {
+            const m = new Map();                            // dateKey -> {revenue,cogs,profit}
+            rows.forEach(r => m.set(String(r.date), { 
+                revenue: +r.revenue || 0, cogs: +r.cogs || 0, profit: +r.profit || 0 
+            }));
+
+            const labels = expectedLabels(STATE.unit);          // 단위별 기대 라벨
+
+            if (STATE.unit === 'WEEK') {                        // 주간: 날짜키들을 5주 버킷으로 합산
                 const buckets = Array.from({ length: 5 }, () => ({ revenue: 0, cogs: 0, profit: 0 }));
-                for (const [k, v] of m) { const idx = weekBucket(k); buckets[idx].revenue += v.revenue; buckets[idx].cogs += v.cogs; buckets[idx].profit += v.profit; }
-                return { labels, revenue: buckets.map(b => b.revenue), cogs: buckets.map(b => b.cogs), profit: buckets.map(b => b.profit) };
+                for (const [k, v] of m) { 
+                    const idx = weekBucket(k);                  // 0~4 인덱스
+                    buckets[idx].revenue += v.revenue; 
+                    buckets[idx].cogs += v.cogs; 
+                    buckets[idx].profit += v.profit; 
+                }
+                return { 
+                    labels, 
+                    revenue: buckets.map(b => b.revenue), 
+                    cogs: buckets.map(b => b.cogs), 
+                    profit: buckets.map(b => b.profit) 
+                };
             }
-            const revenue = [], cogs = [], profit = []; labels.forEach(l => { const v = m.get(l) || { revenue: 0, cogs: 0, profit: 0 }; revenue.push(v.revenue); cogs.push(v.cogs); profit.push(v.profit); });
+
+            // 일/월/연: 라벨 순서대로 값 매핑(없으면 0)
+            const revenue = [], cogs = [], profit = []; 
+            labels.forEach(l => { 
+                const v = m.get(l) || { revenue: 0, cogs: 0, profit: 0 }; 
+                revenue.push(v.revenue); cogs.push(v.cogs); profit.push(v.profit); 
+            });
+
             return { labels, revenue, cogs, profit };
         }
 
-        let totalChart;
-        function renderCards(s) { const sum = a => a.reduce((x, y) => x + (+y || 0), 0); revSum.textContent = KRW(sum(s.revenue)); cogsSum.textContent = KRW(sum(s.cogs)); profitSum.textContent = KRW(sum(s.profit)); }
+        let totalChart;             // 상단 전체 그래프 인스턴스 보관
+
+        // 상단 합계 카드 렌더(각 배열 합산 후 KRW 포맷 적용)
+        function renderCards(s) { 
+            const sum = a => a.reduce((x, y) => x + (+y || 0), 0); 
+            revSum.textContent = KRW(sum(s.revenue));                   // 매출액 합계
+            cogsSum.textContent = KRW(sum(s.cogs));                     // 지출액 합계
+            profitSum.textContent = KRW(sum(s.profit));                 // 순이익 합계
+        }
+
+        // 상단 전체 라인차트 렌더
         function renderTotalChart(s) {
-            if (totalChart) totalChart.destroy();
+            if (totalChart) totalChart.destroy();                       // 기존 차트 있으면 제거(갱신 위해)
+
             totalChart = new Chart(document.getElementById('totalSeries'), {
-                type: 'line',
+                type: 'line',                   // 선형 차트
                 data: {
-                    labels: s.labels,
+                    labels: s.labels,           // X축 라벨(기간)
                     datasets: [
-                        {
+                        {                               // 1) 매출액(빨강)
                             label: '매출액',
                             data: s.revenue,
                             borderColor: SALES,
@@ -233,9 +329,9 @@
                             fill: false,
                             borderWidth: 2,
                             pointRadius: 2,
-                            tension: .2
+                            tension: 0
                         },
-                        {
+                        {                               // 2) 지출액(파랑)
                             label: '지출액',
                             data: s.cogs,
                             borderColor: EXP,
@@ -243,10 +339,9 @@
                             fill: false,
                             borderWidth: 2,
                             pointRadius: 2,
-                            tension: .2
-
+                            tension: 0
                         },
-                        {
+                        {                               // 3) 영업이익(초록)
                             label: '영업이익',
                             data: s.profit,
                             borderColor: PROF,
@@ -254,15 +349,14 @@
                             fill: false,
                             borderWidth: 2,
                             pointRadius: 2,
-                            tension: .2
-
+                            tension: 0
                         },
                     ]
                 },
                 options: {
-                    responsive: true,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: {
+                    responsive: true,                                       // 반응형
+                    interaction: { mode: 'index', intersect: false },       // 툴팁: X축 같은 인덱스 모두 표시
+                    scales: {                                               // Y축 포맷(0부터, 콤마)
                         y: {
                             beginAtZero: true,
                             ticks: {
@@ -271,7 +365,7 @@
                         }
                     },
                     plugins: {
-                        tooltip: {
+                        tooltip: {                                          // 툴팁: '라벨: 1,234원' 형태
                             callbacks: {
                                 label: ctx => `${ctx.dataset.label}: ${KRW(ctx.parsed.y || 0)}`
                             }
@@ -280,84 +374,135 @@
                 }
             });
         }
+
+        // 상단 그래프/카드 데이터 로드(fetch) 후 렌더
         async function loadSeries() {
-            const rows = await fetch(`${BASE}/series?from=${STATE.from}&to=${STATE.to}&unit=${STATE.unit}`, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
-            const s = normalizeSeries(rows); renderCards(s); renderTotalChart(s);
+            const rows = await fetch(`${BASE}/series?from=${STATE.from}&to=${STATE.to}&unit=${STATE.unit}`, 
+                                    { headers: { 'Accept': 'application/json' } })
+                                .then(r => r.json());                                   // API 호출 → JSON 파싱
+            const s = normalizeSeries(rows);                // 라벨 기준 정규화
+            renderCards(s);                                 // 합계 카드 갱신
+            renderTotalChart(s);                            // 차트 갱신
         }
+
+        // 상단 리프레시(단순 래퍼)
         async function refresh() { await loadSeries(); }
 
+        // 단위 탭(일/주/월/연) 클릭 이벤트: 단위 전환 + 피커 토글 + 기간 재계산 + 리프레시
         document.querySelectorAll('#unitTabs [data-unit]').forEach(btn => {
             btn.addEventListener('click', e => {
                 document.querySelectorAll('#unitTabs [data-unit]').forEach(b => b.classList.remove('active'));
-                e.currentTarget.classList.add('active');
-                const u = e.currentTarget.dataset.unit; STATE.unit = u; showPicker(u);
+                e.currentTarget.classList.add('active');                    // 클릭된 탭 active
+
+                const u = e.currentTarget.dataset.unit; STATE.unit = u;     // 단위 상태 변경
+                showPicker(u);                                              // 단위별 입력폼 토글
+
+                // 현재 입력값 기반으로 기간 계산
                 if (u === 'DAY') applyDayRange($day.value);
                 if (u === 'WEEK') applyWeekRange($wmon.value);
                 if (u === 'MONTH') applyMonthRange($year.value);
                 if (u === 'YEAR') applyYearRange();
-                refresh();
+
+                refresh();              // 상단 데이터 재조회
             });
         });
+
+        // 각 피커 변경 시(현재 단위와 일치할 때만) 기간 재계산 후 리프레시
         $day.addEventListener('change', e => { if (STATE.unit === 'DAY') { applyDayRange(e.target.value); refresh(); } });
         $wmon.addEventListener('change', e => { if (STATE.unit === 'WEEK') { applyWeekRange(e.target.value); refresh(); } });
         $year.addEventListener('change', e => { if (STATE.unit === 'MONTH') { applyMonthRange(e.target.value); refresh(); } });
+
+        // “조회” 버튼: 수동 새로고침
         document.getElementById('btnSearch').addEventListener('click', refresh);
+
+        // 최초 1회 상단 그래프/카드 로드
         refresh();
 
         /* ========= 하단(상품/브랜드) ========= */
-        const selProdBrand = document.getElementById('selProdBrand');
-        const selProdCapacity = document.getElementById('selProdCapacity');
-        const selProd = document.getElementById('selProd');
-        const btnProdApply = document.getElementById('btnProdApply');
+        // 하단 상품/브랜드 선택 컨트롤 참조
+        const selProdBrand = document.getElementById('selProdBrand');               // (상품 섹션) 브랜드 셀렉트
+        const selProdCapacity = document.getElementById('selProdCapacity');         // (상품 섹션) 용량 셀렉트
+        const selProd = document.getElementById('selProd');                         // (상품 섹션) 상품 셀렉트
+        const btnProdApply = document.getElementById('btnProdApply');               // (상품 섹션) 적용 버튼
 
-        const selBrand = document.getElementById('selBrand');
-        const btnBrandApply = document.getElementById('btnBrandApply');
+        const selBrand = document.getElementById('selBrand');                       // (브랜드 섹션) 브랜드 셀렉트
+        const btnBrandApply = document.getElementById('btnBrandApply');             // (브랜드 섹션) 적용 버튼
 
-        let prodChart, brandChart;
+        let prodChart, brandChart;                      // 하단 차트 인스턴스 보관
 
+        // 최초 1회 브랜드 옵션 로드(두 곳의 브랜드 셀렉트를 동시에 채움)
         async function loadBrandOptionsOnce() {
-            const list = await fetch(`${BASE}/brand/options`, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
-            const opts = '<option value="">브랜드 선택</option>' + (list || []).map(b => `<option value="${b.brandNo}">${b.brandName}</option>`).join('');
-            selProdBrand.innerHTML = opts; selBrand.innerHTML = opts;
-        }
-        loadBrandOptionsOnce();
+            const list = await fetch(`${BASE}/brand/options`, { headers: { 'Accept': 'application/json' } })
+                                .then(r => r.json());                // [{brandNo,brandName}, ...]
 
+            const opts = '<option value="">브랜드 선택</option>' + (list || []).map(b => `<option value="${b.brandNo}">${b.brandName}</option>`).join('');
+
+            selProdBrand.innerHTML = opts;              // 상품 섹션의 브랜드 셀렉트 채움
+            selBrand.innerHTML = opts;                  // 브랜드 섹션의 브랜드 셀렉트 채움
+        }
+        loadBrandOptionsOnce();                         // 페이지 로드 시 즉시 실행
+
+        // (상품 섹션) 브랜드 선택 시 → 용량 옵션 로드 → 용량 셀렉트 활성화
         selProdBrand.addEventListener('change', async e => {
+            // 하위 선택 초기화/비활성화
             selProdCapacity.disabled = true; selProdCapacity.innerHTML = '<option value="">용량 선택</option>';
-            selProd.disabled = true; selProd.innerHTML = '<option value="">상품 선택</option>'; btnProdApply.disabled = true;
-            const bno = e.target.value; if (!bno) return;
-            const caps = await fetch(`${BASE}/product/capacities?brandNo=${bno}`, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+            selProd.disabled = true; selProd.innerHTML = '<option value="">상품 선택</option>'; 
+            btnProdApply.disabled = true;
+
+            const bno = e.target.value; if (!bno) return;           // 미선택이면 종료
+
+            // 해당 브랜드의 '용량' 목록 조회
+            const caps = await fetch(`${BASE}/product/capacities?brandNo=${bno}`, { headers: { 'Accept': 'application/json' } })
+                                .then(r => r.json());               // ['30ml','50ml', ...]
+
             selProdCapacity.innerHTML = '<option value="">용량 선택</option>' + (caps || []).map(c => `<option>${c}</option>`).join('');
-            selProdCapacity.disabled = false;
+            selProdCapacity.disabled = false;                       // 용량 셀렉트 활성화
         });
 
+        // (상품 섹션) 용량 선택 시 → 해당 브랜드+용량의 상품 목록 로드 → 상품 셀렉트 활성화
         selProdCapacity.addEventListener('change', async e => {
             selProd.disabled = true; selProd.innerHTML = '<option value="">상품 선택</option>'; btnProdApply.disabled = true;
-            const bno = selProdBrand.value, cap = e.target.value; if (!bno || !cap) return;
-            const prods = await fetch(`${BASE}/product/byBrandCapacity?brandNo=${bno}&capacity=${encodeURIComponent(cap)}`, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+
+            const bno = selProdBrand.value, cap = e.target.value; 
+            if (!bno || !cap) return;                   // 둘 다 있어야 함
+
+            // (브랜드, 용량) 기준의 상품 리스트 조회
+            const prods = await fetch(`${BASE}/product/byBrandCapacity?brandNo=${bno}&capacity=${encodeURIComponent(cap)}`, { headers: { 'Accept': 'application/json' } })
+                                .then(r => r.json());           // [{id,name}, ...]
+
             selProd.innerHTML = '<option value="">상품 선택</option>' + (prods || []).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            selProd.disabled = false;
+            selProd.disabled = false;                   // 상품 셀렉트 활성화
         });
+
+        // (상품 섹션) 상품 선택되면 적용 버튼 활성화
         selProd.addEventListener('change', () => { btnProdApply.disabled = !selProd.value; });
+
+        // (브랜드 섹션) 브랜드 선택되면 적용 버튼 활성화
         selBrand.addEventListener('change', () => { btnBrandApply.disabled = !selBrand.value; });
 
+        // 하단 “상품” 라인차트 로드(현재 상단 STATE 범위/단위와 동기화)
         async function loadProductSeries() {
-            const pid = selProd.value; if (!pid) return;
+            const pid = selProd.value; if (!pid) return;            // 상품 미선택 시 종료
+
+            // product/series API 호출 URL 구성(+쿼리스트링)
             const url = new URL(`${location.origin}${BASE}/product/series`);
             url.searchParams.set('productId', pid);
             url.searchParams.set('from', STATE.from);
             url.searchParams.set('to', STATE.to);
             url.searchParams.set('unit', STATE.unit);
-            const rows = await fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
-            const s = normalizeSeries(rows);
-            if (prodChart) prodChart.destroy();
-            prodChart = new Chart(document.getElementById('productSeries'), {
+
+            const rows = await fetch(url, { headers: { 'Accept': 'application/json' } })
+                                .then(r => r.json());                   // [{date,revenue,cogs,profit}, ...]
+            const s = normalizeSeries(rows);                            // 라벨 정규화
+
+            if (prodChart) prodChart.destroy();                         // 기존 차트 제거
+            prodChart = new Chart(document.getElementById('productSeries'), {       // 새 차트 생성
                 type: 'line',
                 data: {
                     labels: s.labels, datasets: [
-                        { label: '매출액', data: s.revenue, borderColor: SALES, backgroundColor: SALES, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
-                        { label: '지출액', data: s.cogs, borderColor: EXP, backgroundColor: EXP, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
-                        { label: '순이익', data: s.profit, borderColor: PROF, backgroundColor: PROF, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '매출액', data: s.revenue, borderColor: SALES, backgroundColor: SALES, borderWidth: 2, pointRadius: 2, tension: 0, fill: false },
+                        { label: '지출액', data: s.cogs, borderColor: EXP, backgroundColor: EXP, borderWidth: 2, pointRadius: 2, tension: 0, fill: false },
+                        { label: '순이익', data: s.profit, borderColor: PROF, backgroundColor: PROF, borderWidth: 2, pointRadius: 2, tension: 0, fill: false },
                     ]
                 },
                 options: {
@@ -366,23 +511,30 @@
                 }
             });
         }
+
+        // 하단 “브랜드” 라인차트 로드(상단 STATE와 동기화)
         async function loadBrandSeries() {
-            const bno = selBrand.value; if (!bno) return;
+            const bno = selBrand.value; if (!bno) return;                   // 브랜드 미선택 시 종료
+
+            // brand/series API 호출 URL 구성(+쿼리스트링)
             const url = new URL(`${location.origin}${BASE}/brand/series`);
             url.searchParams.set('brandNo', bno);
             url.searchParams.set('from', STATE.from);
             url.searchParams.set('to', STATE.to);
             url.searchParams.set('unit', STATE.unit);
-            const rows = await fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+
+            const rows = await fetch(url, { headers: { 'Accept': 'application/json' } })
+                                .then(r => r.json());
             const s = normalizeSeries(rows);
-            if (brandChart) brandChart.destroy();
-            brandChart = new Chart(document.getElementById('brandSeries'), {
+
+            if (brandChart) brandChart.destroy();                               // 기존 차트 제거
+            brandChart = new Chart(document.getElementById('brandSeries'), {    // 새 차트 생성
                 type: 'line',
                 data: {
                     labels: s.labels, datasets: [
-                        { label: '매출액', data: s.revenue, borderColor: SALES, backgroundColor: SALES, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
-                        { label: '지출액', data: s.cogs, borderColor: EXP, backgroundColor: EXP, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
-                        { label: '순이익', data: s.profit, borderColor: PROF, backgroundColor: PROF, borderWidth: 2, pointRadius: 2, tension: .2, fill: false },
+                        { label: '매출액', data: s.revenue, borderColor: SALES, backgroundColor: SALES, borderWidth: 2, pointRadius: 2, tension: 0, fill: false },
+                        { label: '지출액', data: s.cogs, borderColor: EXP, backgroundColor: EXP, borderWidth: 2, pointRadius: 2, tension: 0, fill: false },
+                        { label: '순이익', data: s.profit, borderColor: PROF, backgroundColor: PROF, borderWidth: 2, pointRadius: 2, tension: 0, fill: false },
                     ]
                 },
                 options: {
@@ -392,15 +544,16 @@
             });
         }
 
+        // 하단 “적용” 버튼들 클릭 시 각 차트 로드
         btnProdApply.addEventListener('click', loadProductSeries);
         btnBrandApply.addEventListener('click', loadBrandSeries);
 
-        // 상단 기간/단위 바뀌면 하단도 동기 갱신
-        const _oldRefresh = refresh;
+        // 상단 refresh를 확장: 상단 갱신 후, 하단에서 선택돼 있으면 각각도 재조회(기간/단위 동기화)
+        const _oldRefresh = refresh;                                // 기존 함수 백업
         refresh = async function () {
-            await _oldRefresh();
-            if (selProd.value) await loadProductSeries();
-            if (selBrand.value) await loadBrandSeries();
+            await _oldRefresh();                                    // 상단(전체) 먼저 갱신
+            if (selProd.value) await loadProductSeries();           // 상품 선택돼 있으면 상품 차트 재로드
+            if (selBrand.value) await loadBrandSeries();            // 브랜드 선택돼 있으면 브랜드 차트 재로드
         };
     </script>
 

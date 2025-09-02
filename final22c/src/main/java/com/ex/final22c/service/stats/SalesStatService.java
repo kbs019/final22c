@@ -118,249 +118,249 @@ public class SalesStatService {
     // }
 
     /** 하단: 상품별 총매출(이익) 맵(Map<productId, profit>) */
-    @Transactional(readOnly = true)
-    public Map<Long, Long> productProfit(LocalDate from, LocalDate to) {
-        LocalDateTime fromDt = from.atStartOfDay();
-        LocalDateTime toDt = to.plusDays(1).atStartOfDay();
+    // @Transactional(readOnly = true)
+    // public Map<Long, Long> productProfit(LocalDate from, LocalDate to) {
+    //     LocalDateTime fromDt = from.atStartOfDay();
+    //     LocalDateTime toDt = to.plusDays(1).atStartOfDay();
 
-        Map<Long, Long> revenue = new HashMap<>();
-        List<Object[]> rRows = orderDetailRepository.revenueByProduct(fromDt, toDt);
-        for (Object[] row : rRows) {
-            Number id = (Number) row[0];
-            Number v = (Number) row[1];
-            long val = (v == null) ? 0L : v.longValue();
-            revenue.put(id.longValue(), val);
-        }
+    //     Map<Long, Long> revenue = new HashMap<>();
+    //     List<Object[]> rRows = orderDetailRepository.revenueByProduct(fromDt, toDt);
+    //     for (Object[] row : rRows) {
+    //         Number id = (Number) row[0];
+    //         Number v = (Number) row[1];
+    //         long val = (v == null) ? 0L : v.longValue();
+    //         revenue.put(id.longValue(), val);
+    //     }
 
-        Map<Long, Long> cogs = new HashMap<>();
-        List<Object[]> cRows = purchaseDetailRepository.cogsByProduct(fromDt, toDt);
-        for (Object[] row : cRows) {
-            Number id = (Number) row[0];
-            Number v = (Number) row[1];
-            long val = (v == null) ? 0L : v.longValue();
-            cogs.put(id.longValue(), val);
-        }
+    //     Map<Long, Long> cogs = new HashMap<>();
+    //     List<Object[]> cRows = purchaseDetailRepository.cogsByProduct(fromDt, toDt);
+    //     for (Object[] row : cRows) {
+    //         Number id = (Number) row[0];
+    //         Number v = (Number) row[1];
+    //         long val = (v == null) ? 0L : v.longValue();
+    //         cogs.put(id.longValue(), val);
+    //     }
 
-        Set<Long> keys = new HashSet<>();
-        keys.addAll(revenue.keySet());
-        keys.addAll(cogs.keySet());
+    //     Set<Long> keys = new HashSet<>();
+    //     keys.addAll(revenue.keySet());
+    //     keys.addAll(cogs.keySet());
 
-        Map<Long, Long> profit = new HashMap<>();
-        for (Long k : keys) {
-            long r = revenue.getOrDefault(k, 0L);
-            long c = cogs.getOrDefault(k, 0L);
-            profit.put(k, r - c);
-        }
-        return profit;
-    }
+    //     Map<Long, Long> profit = new HashMap<>();
+    //     for (Long k : keys) {
+    //         long r = revenue.getOrDefault(k, 0L);
+    //         long c = cogs.getOrDefault(k, 0L);
+    //         profit.put(k, r - c);
+    //     }
+    //     return profit;
+    // }
 
-    /** 하단: 브랜드별 총매출(이익) 맵(Map<brandNo, profit>) */
-    @Transactional(readOnly = true)
-    public Map<Long, Long> brandProfit(LocalDate from, LocalDate to) {
-        LocalDateTime fromDt = from.atStartOfDay();
-        LocalDateTime toDt = to.plusDays(1).atStartOfDay();
+    // /** 하단: 브랜드별 총매출(이익) 맵(Map<brandNo, profit>) */
+    // @Transactional(readOnly = true)
+    // public Map<Long, Long> brandProfit(LocalDate from, LocalDate to) {
+    //     LocalDateTime fromDt = from.atStartOfDay();
+    //     LocalDateTime toDt = to.plusDays(1).atStartOfDay();
 
-        Map<Long, Long> revenue = new HashMap<>();
-        List<Object[]> rRows = orderDetailRepository.revenueByBrand(fromDt, toDt);
-        for (Object[] row : rRows) {
-            Number id = (Number) row[0];
-            Number v = (Number) row[1];
-            long val = (v == null) ? 0L : v.longValue();
-            revenue.put(id.longValue(), val);
-        }
+    //     Map<Long, Long> revenue = new HashMap<>();
+    //     List<Object[]> rRows = orderDetailRepository.revenueByBrand(fromDt, toDt);
+    //     for (Object[] row : rRows) {
+    //         Number id = (Number) row[0];
+    //         Number v = (Number) row[1];
+    //         long val = (v == null) ? 0L : v.longValue();
+    //         revenue.put(id.longValue(), val);
+    //     }
 
-        Map<Long, Long> cogs = new HashMap<>();
-        List<Object[]> cRows = purchaseDetailRepository.cogsByBrand(fromDt, toDt);
-        for (Object[] row : cRows) {
-            Number id = (Number) row[0];
-            Number v = (Number) row[1];
-            long val = (v == null) ? 0L : v.longValue();
-            cogs.put(id.longValue(), val);
-        }
+    //     Map<Long, Long> cogs = new HashMap<>();
+    //     List<Object[]> cRows = purchaseDetailRepository.cogsByBrand(fromDt, toDt);
+    //     for (Object[] row : cRows) {
+    //         Number id = (Number) row[0];
+    //         Number v = (Number) row[1];
+    //         long val = (v == null) ? 0L : v.longValue();
+    //         cogs.put(id.longValue(), val);
+    //     }
 
-        Set<Long> keys = new HashSet<>();
-        keys.addAll(revenue.keySet());
-        keys.addAll(cogs.keySet());
+    //     Set<Long> keys = new HashSet<>();
+    //     keys.addAll(revenue.keySet());
+    //     keys.addAll(cogs.keySet());
 
-        Map<Long, Long> profit = new HashMap<>();
-        for (Long k : keys) {
-            long r = revenue.getOrDefault(k, 0L);
-            long c = cogs.getOrDefault(k, 0L);
-            profit.put(k, r - c);
-        }
-        return profit;
-    }
+    //     Map<Long, Long> profit = new HashMap<>();
+    //     for (Long k : keys) {
+    //         long r = revenue.getOrDefault(k, 0L);
+    //         long c = cogs.getOrDefault(k, 0L);
+    //         profit.put(k, r - c);
+    //     }
+    //     return profit;
+    // }
 
-    /** 전체 총매출(= 순매출 합 - 매입원가 합) */
-    @Transactional(readOnly = true)
-    public long totalProfit(LocalDate from, LocalDate to) {
-        LocalDateTime fromDt = from.atStartOfDay();
-        LocalDateTime toDt = to.plusDays(1).atStartOfDay();
+    // /** 전체 총매출(= 순매출 합 - 매입원가 합) */
+    // @Transactional(readOnly = true)
+    // public long totalProfit(LocalDate from, LocalDate to) {
+    //     LocalDateTime fromDt = from.atStartOfDay();
+    //     LocalDateTime toDt = to.plusDays(1).atStartOfDay();
 
-        Long r = orderDetailRepository.revenueTotal(fromDt, toDt);
-        Long c = purchaseDetailRepository.cogsTotal(fromDt, toDt);
-        long rv = (r == null) ? 0L : r.longValue();
-        long cg = (c == null) ? 0L : c.longValue();
-        return rv - cg;
-    }
+    //     Long r = orderDetailRepository.revenueTotal(fromDt, toDt);
+    //     Long c = purchaseDetailRepository.cogsTotal(fromDt, toDt);
+    //     long rv = (r == null) ? 0L : r.longValue();
+    //     long cg = (c == null) ? 0L : c.longValue();
+    //     return rv - cg;
+    // }
 
-    /** 한 번에 내려주는 편의 응답(합계 + 상품별 + 브랜드별) */
-    @Transactional(readOnly = true)
-    public Map<String, Object> allStats(LocalDate from, LocalDate to) {
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("totalProfit", totalProfit(from, to));
-        out.put("products", productProfit(from, to));
-        out.put("brands", brandProfit(from, to));
-        return out;
-    }
+    // /** 한 번에 내려주는 편의 응답(합계 + 상품별 + 브랜드별) */
+    // @Transactional(readOnly = true)
+    // public Map<String, Object> allStats(LocalDate from, LocalDate to) {
+    //     Map<String, Object> out = new LinkedHashMap<>();
+    //     out.put("totalProfit", totalProfit(from, to));
+    //     out.put("products", productProfit(from, to));
+    //     out.put("brands", brandProfit(from, to));
+    //     return out;
+    // }
 
     // ======================================== 상품별 - 브랜드별 통계 =================================================
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> productProfitNamed(LocalDate from, LocalDate to, String q, int limit) {
-        LocalDateTime f = from.atStartOfDay(), t = to.plusDays(1).atStartOfDay();
+    // @Transactional(readOnly = true)
+    // public List<Map<String, Object>> productProfitNamed(LocalDate from, LocalDate to, String q, int limit) {
+    //     LocalDateTime f = from.atStartOfDay(), t = to.plusDays(1).atStartOfDay();
 
-        // revenue: id,name,sum
-        List<Object[]> rs = orderDetailRepository.revenueByProductWithName(f, t, q);
-        // cogs: id,name,sum
-        List<Object[]> cs = purchaseDetailRepository.cogsByProductWithName(f, t, q);
+    //     // revenue: id,name,sum
+    //     List<Object[]> rs = orderDetailRepository.revenueByProductWithName(f, t, q);
+    //     // cogs: id,name,sum
+    //     List<Object[]> cs = purchaseDetailRepository.cogsByProductWithName(f, t, q);
 
-        // id -> {name, revenue, cogs}
-        Map<Long, Map<String, Object>> acc = new HashMap<>();
-        for (Object[] r : rs) {
-            Long id = ((Number) r[0]).longValue();
-            String name = (String) r[1];
-            long v = ((Number) (r[2] == null ? 0 : r[2])).longValue();
-            acc.computeIfAbsent(id, k -> {
-                Map<String, Object> m = new HashMap<>();
-                m.put("name", name);
-                m.put("revenue", 0L);
-                m.put("cogs", 0L);
-                return m;
-            });
-            acc.get(id).put("revenue", v);
-        }
-        for (Object[] r : cs) {
-            Long id = ((Number) r[0]).longValue();
-            String name = (String) r[1];
-            long v = ((Number) (r[2] == null ? 0 : r[2])).longValue();
-            acc.computeIfAbsent(id, k -> {
-                Map<String, Object> m = new HashMap<>();
-                m.put("name", name);
-                m.put("revenue", 0L);
-                m.put("cogs", 0L);
-                return m;
-            });
-            acc.get(id).put("cogs", v);
-        }
+    //     // id -> {name, revenue, cogs}
+    //     Map<Long, Map<String, Object>> acc = new HashMap<>();
+    //     for (Object[] r : rs) {
+    //         Long id = ((Number) r[0]).longValue();
+    //         String name = (String) r[1];
+    //         long v = ((Number) (r[2] == null ? 0 : r[2])).longValue();
+    //         acc.computeIfAbsent(id, k -> {
+    //             Map<String, Object> m = new HashMap<>();
+    //             m.put("name", name);
+    //             m.put("revenue", 0L);
+    //             m.put("cogs", 0L);
+    //             return m;
+    //         });
+    //         acc.get(id).put("revenue", v);
+    //     }
+    //     for (Object[] r : cs) {
+    //         Long id = ((Number) r[0]).longValue();
+    //         String name = (String) r[1];
+    //         long v = ((Number) (r[2] == null ? 0 : r[2])).longValue();
+    //         acc.computeIfAbsent(id, k -> {
+    //             Map<String, Object> m = new HashMap<>();
+    //             m.put("name", name);
+    //             m.put("revenue", 0L);
+    //             m.put("cogs", 0L);
+    //             return m;
+    //         });
+    //         acc.get(id).put("cogs", v);
+    //     }
 
-        // to list (name, profit)
-        return acc.values().stream()
-                .map(m -> {
-                    long profit = ((Number) m.get("revenue")).longValue() - ((Number) m.get("cogs")).longValue();
-                    Map<String, Object> o = new LinkedHashMap<>();
-                    o.put("name", (String) m.get("name"));
-                    o.put("profit", profit);
-                    return o;
-                })
-                .sorted((a, b) -> Long.compare((Long) b.get("profit"), (Long) a.get("profit")))
-                .limit(Math.max(1, limit))
-                .toList();
-    }
+    //     // to list (name, profit)
+    //     return acc.values().stream()
+    //             .map(m -> {
+    //                 long profit = ((Number) m.get("revenue")).longValue() - ((Number) m.get("cogs")).longValue();
+    //                 Map<String, Object> o = new LinkedHashMap<>();
+    //                 o.put("name", (String) m.get("name"));
+    //                 o.put("profit", profit);
+    //                 return o;
+    //             })
+    //             .sorted((a, b) -> Long.compare((Long) b.get("profit"), (Long) a.get("profit")))
+    //             .limit(Math.max(1, limit))
+    //             .toList();
+    // }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> brandProfitNamed(LocalDate from, LocalDate to, Long brandNo) {
-        LocalDateTime f = from.atStartOfDay(), t = to.plusDays(1).atStartOfDay();
+    // @Transactional(readOnly = true)
+    // public List<Map<String, Object>> brandProfitNamed(LocalDate from, LocalDate to, Long brandNo) {
+    //     LocalDateTime f = from.atStartOfDay(), t = to.plusDays(1).atStartOfDay();
 
-        List<Object[]> rs = orderDetailRepository.revenueByBrandWithName(f, t, brandNo);
-        List<Object[]> cs = purchaseDetailRepository.cogsByBrandWithName(f, t, brandNo);
+    //     List<Object[]> rs = orderDetailRepository.revenueByBrandWithName(f, t, brandNo);
+    //     List<Object[]> cs = purchaseDetailRepository.cogsByBrandWithName(f, t, brandNo);
 
-        Map<Long, Map<String, Object>> acc = new HashMap<>();
-        for (Object[] r : rs) {
-            Long no = ((Number) r[0]).longValue();
-            String name = (String) r[1];
-            long v = ((Number) (r[2] == null ? 0 : r[2])).longValue();
-            acc.computeIfAbsent(no, k -> {
-                Map<String, Object> m = new HashMap<>();
-                m.put("brandName", name);
-                m.put("revenue", 0L);
-                m.put("cogs", 0L);
-                return m;
-            });
-            acc.get(no).put("revenue", v);
-        }
-        for (Object[] r : cs) {
-            Long no = ((Number) r[0]).longValue();
-            String name = (String) r[1];
-            long v = ((Number) (r[2] == null ? 0 : r[2])).longValue();
-            acc.computeIfAbsent(no, k -> {
-                Map<String, Object> m = new HashMap<>();
-                m.put("brandName", name);
-                m.put("revenue", 0L);
-                m.put("cogs", 0L);
-                return m;
-            });
-            acc.get(no).put("cogs", v);
-        }
+    //     Map<Long, Map<String, Object>> acc = new HashMap<>();
+    //     for (Object[] r : rs) {
+    //         Long no = ((Number) r[0]).longValue();
+    //         String name = (String) r[1];
+    //         long v = ((Number) (r[2] == null ? 0 : r[2])).longValue();
+    //         acc.computeIfAbsent(no, k -> {
+    //             Map<String, Object> m = new HashMap<>();
+    //             m.put("brandName", name);
+    //             m.put("revenue", 0L);
+    //             m.put("cogs", 0L);
+    //             return m;
+    //         });
+    //         acc.get(no).put("revenue", v);
+    //     }
+    //     for (Object[] r : cs) {
+    //         Long no = ((Number) r[0]).longValue();
+    //         String name = (String) r[1];
+    //         long v = ((Number) (r[2] == null ? 0 : r[2])).longValue();
+    //         acc.computeIfAbsent(no, k -> {
+    //             Map<String, Object> m = new HashMap<>();
+    //             m.put("brandName", name);
+    //             m.put("revenue", 0L);
+    //             m.put("cogs", 0L);
+    //             return m;
+    //         });
+    //         acc.get(no).put("cogs", v);
+    //     }
 
-        return acc.values().stream()
-                .map(m -> {
-                    long profit = ((Number) m.get("revenue")).longValue() - ((Number) m.get("cogs")).longValue();
-                    Map<String, Object> o = new LinkedHashMap<>();
-                    o.put("brandName", (String) m.get("brandName"));
-                    o.put("profit", profit);
-                    return o;
-                })
-                .sorted((a, b) -> Long.compare((Long) b.get("profit"), (Long) a.get("profit")))
-                .toList();
-    }
+    //     return acc.values().stream()
+    //             .map(m -> {
+    //                 long profit = ((Number) m.get("revenue")).longValue() - ((Number) m.get("cogs")).longValue();
+    //                 Map<String, Object> o = new LinkedHashMap<>();
+    //                 o.put("brandName", (String) m.get("brandName"));
+    //                 o.put("profit", profit);
+    //                 return o;
+    //             })
+    //             .sorted((a, b) -> Long.compare((Long) b.get("profit"), (Long) a.get("profit")))
+    //             .toList();
+    // }
 
-    // 검색
-    @Transactional(readOnly = true)
-    public List<Map<String,Object>> searchProductsByName(String q) {
-        return orderDetailRepository.searchProductsByName(q).stream().map(r -> {
-            Map<String,Object> m = new LinkedHashMap<>();
-            m.put("id", ((Number)r[0]).longValue());
-            m.put("name", (String) r[1]);
-            return m;
-        }).toList();
-    }
+    // // 검색
+    // @Transactional(readOnly = true)
+    // public List<Map<String,Object>> searchProductsByName(String q) {
+    //     return orderDetailRepository.searchProductsByName(q).stream().map(r -> {
+    //         Map<String,Object> m = new LinkedHashMap<>();
+    //         m.put("id", ((Number)r[0]).longValue());
+    //         m.put("name", (String) r[1]);
+    //         return m;
+    //     }).toList();
+    // }
 
-    // 상품 타임시리즈 (unit 동일 로직 재사용)
-    @Transactional(readOnly = true)
-    public List<Map<String,Object>> totalSeriesForProduct(Long productId, LocalDate from, LocalDate to, String unit) {
-        LocalDateTime f = from.atStartOfDay(), t = to.plusDays(1).atStartOfDay();
-        List<Object[]> rRows, cRows;
-        switch ((unit==null?"DAY":unit.toUpperCase())) {
-            case "WEEK"  -> { rRows = orderDetailRepository.revenueSeriesByWeekForProduct(productId, f, t);
-                            cRows = purchaseDetailRepository.cogsSeriesByWeekForProduct(productId, f, t); }
-            case "MONTH" -> { rRows = orderDetailRepository.revenueSeriesByMonthForProduct(productId, f, t);
-                            cRows = purchaseDetailRepository.cogsSeriesByMonthForProduct(productId, f, t); }
-            case "YEAR"  -> { rRows = orderDetailRepository.revenueSeriesByYearForProduct(productId, f, t);
-                            cRows = purchaseDetailRepository.cogsSeriesByYearForProduct(productId, f, t); }
-            default      -> { rRows = orderDetailRepository.revenueSeriesByDayForProduct(productId, f, t);
-                            cRows = purchaseDetailRepository.cogsSeriesByDayForProduct(productId, f, t); }
-        }
-        return mergeSeries(rRows, cRows, unit);
-    }
+    // // 상품 타임시리즈 (unit 동일 로직 재사용)
+    // @Transactional(readOnly = true)
+    // public List<Map<String,Object>> totalSeriesForProduct(Long productId, LocalDate from, LocalDate to, String unit) {
+    //     LocalDateTime f = from.atStartOfDay(), t = to.plusDays(1).atStartOfDay();
+    //     List<Object[]> rRows, cRows;
+    //     switch ((unit==null?"DAY":unit.toUpperCase())) {
+    //         case "WEEK"  -> { rRows = orderDetailRepository.revenueSeriesByWeekForProduct(productId, f, t);
+    //                         cRows = purchaseDetailRepository.cogsSeriesByWeekForProduct(productId, f, t); }
+    //         case "MONTH" -> { rRows = orderDetailRepository.revenueSeriesByMonthForProduct(productId, f, t);
+    //                         cRows = purchaseDetailRepository.cogsSeriesByMonthForProduct(productId, f, t); }
+    //         case "YEAR"  -> { rRows = orderDetailRepository.revenueSeriesByYearForProduct(productId, f, t);
+    //                         cRows = purchaseDetailRepository.cogsSeriesByYearForProduct(productId, f, t); }
+    //         default      -> { rRows = orderDetailRepository.revenueSeriesByDayForProduct(productId, f, t);
+    //                         cRows = purchaseDetailRepository.cogsSeriesByDayForProduct(productId, f, t); }
+    //     }
+    //     return mergeSeries(rRows, cRows, unit);
+    // }
 
-    // 브랜드 타임시리즈
-    @Transactional(readOnly = true)
-    public List<Map<String,Object>> totalSeriesForBrand(Long brandNo, LocalDate from, LocalDate to, String unit) {
-        LocalDateTime f = from.atStartOfDay(), t = to.plusDays(1).atStartOfDay();
-        List<Object[]> rRows, cRows;
-        switch ((unit==null?"DAY":unit.toUpperCase())) {
-            case "WEEK"  -> { rRows = orderDetailRepository.revenueSeriesByWeekForBrand(brandNo, f, t);
-                            cRows = purchaseDetailRepository.cogsSeriesByWeekForBrand(brandNo, f, t); }
-            case "MONTH" -> { rRows = orderDetailRepository.revenueSeriesByMonthForBrand(brandNo, f, t);
-                            cRows = purchaseDetailRepository.cogsSeriesByMonthForBrand(brandNo, f, t); }
-            case "YEAR"  -> { rRows = orderDetailRepository.revenueSeriesByYearForBrand(brandNo, f, t);
-                            cRows = purchaseDetailRepository.cogsSeriesByYearForBrand(brandNo, f, t); }
-            default      -> { rRows = orderDetailRepository.revenueSeriesByDayForBrand(brandNo, f, t);
-                            cRows = purchaseDetailRepository.cogsSeriesByDayForBrand(brandNo, f, t); }
-        }
-        return mergeSeries(rRows, cRows, unit);
-    }
+    // // 브랜드 타임시리즈
+    // @Transactional(readOnly = true)
+    // public List<Map<String,Object>> totalSeriesForBrand(Long brandNo, LocalDate from, LocalDate to, String unit) {
+    //     LocalDateTime f = from.atStartOfDay(), t = to.plusDays(1).atStartOfDay();
+    //     List<Object[]> rRows, cRows;
+    //     switch ((unit==null?"DAY":unit.toUpperCase())) {
+    //         case "WEEK"  -> { rRows = orderDetailRepository.revenueSeriesByWeekForBrand(brandNo, f, t);
+    //                         cRows = purchaseDetailRepository.cogsSeriesByWeekForBrand(brandNo, f, t); }
+    //         case "MONTH" -> { rRows = orderDetailRepository.revenueSeriesByMonthForBrand(brandNo, f, t);
+    //                         cRows = purchaseDetailRepository.cogsSeriesByMonthForBrand(brandNo, f, t); }
+    //         case "YEAR"  -> { rRows = orderDetailRepository.revenueSeriesByYearForBrand(brandNo, f, t);
+    //                         cRows = purchaseDetailRepository.cogsSeriesByYearForBrand(brandNo, f, t); }
+    //         default      -> { rRows = orderDetailRepository.revenueSeriesByDayForBrand(brandNo, f, t);
+    //                         cRows = purchaseDetailRepository.cogsSeriesByDayForBrand(brandNo, f, t); }
+    //     }
+    //     return mergeSeries(rRows, cRows, unit);
+    // }
 
     // // 브랜드 옵션
     // @Transactional(readOnly = true)
