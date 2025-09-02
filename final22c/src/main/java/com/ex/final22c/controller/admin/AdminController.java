@@ -415,7 +415,7 @@ public class AdminController {
 	/** 페이지 진입: /admin/sales-stats -> templates/admin/salesStats.html */
 	@GetMapping("/salesStats")
 	public String page() {
-		return "admin/salesStats2";
+		return "admin/salesStats";
 	}
 
 	/** 최상단: 전체 매출 타임시리즈 (unit = DAY | WEEK | MONTH) */
@@ -428,77 +428,12 @@ public class AdminController {
 		return salesStatService.totalSeries(from, to, unit);
 	}
 
-	// /** 한 번에: 전체합계 + 상품별 + 브랜드별 */
-	// @ResponseBody
-	// @GetMapping("/salesStats/api/all")
-	// public Map<String, Object> all(
-	// 		@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-	// 		@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-	// 	return salesStatService.allStats(from, to);
-	// }
-
-	// /** 상품별 총매출(이익) Map<productId, profit> */
-	// @ResponseBody
-	// @GetMapping("/salesStats/api/product")
-	// public Map<Long, Long> byProduct(
-	// 		@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-	// 		@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-	// 	return salesStatService.productProfit(from, to);
-	// }
-
-	// /** 브랜드별 총매출(이익) Map<brandNo, profit> */
-	// @ResponseBody
-	// @GetMapping("/salesStats/api/brand")
-	// public Map<Long, Long> byBrand(
-	// 		@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-	// 		@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-	// 	return salesStatService.brandProfit(from, to);
-	// }
-
-	// /** 전체 총매출(= 순매출합 - 매입원가합) 단일 값 */
-	// @ResponseBody
-	// @GetMapping("/salesStats/api/total")
-	// public long total(
-	// 		@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-	// 		@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-	// 	return salesStatService.totalProfit(from, to);
-	// }
-
-	// // 이름까지 내려주는 상품 이익 Top N
-	// @ResponseBody
-	// @GetMapping("/salesStats/api/productNamed")
-	// public List<Map<String, Object>> productNamed(
-	// 		@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-	// 		@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-	// 		@RequestParam(name = "q", required = false) String q,
-	// 		@RequestParam(name = "limit", defaultValue = "20") int limit) {
-	// 	return salesStatService.productProfitNamed(from, to, q, limit);
-	// }
-
-	// // 이름까지 내려주는 브랜드 이익 (전체 or 특정 브랜드)
-	// @ResponseBody
-	// @GetMapping("/salesStats/api/brandNamed")
-	// public List<Map<String, Object>> brandNamed(
-	// 		@RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-	// 		@RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-	// 		@RequestParam(name = "brandNo", required = false) Long brandNo) {
-	// 	return salesStatService.brandProfitNamed(from, to, brandNo);
-	// }
-
 	// 브랜드 드롭다운 옵션
 	@ResponseBody
 	@GetMapping("/salesStats/api/brand/options")
 	public List<Map<String, Object>> brandOptions() {
 		return salesStatService.brandOptions();
 	}
-
-	// ================================
-	// // 상품 검색 (셀렉트 채우기)
-	// @ResponseBody
-	// @GetMapping("/salesStats/api/product/search")
-	// public List<Map<String,Object>> productSearch(@RequestParam("q") String q) {
-	// 	return salesStatService.searchProductsByName(q);
-	// }
 
 	// 특정 상품 타임시리즈
 	@ResponseBody
@@ -522,7 +457,6 @@ public class AdminController {
 		return salesStatService.brandSeries(brandNo, from, to, unit);
 	}
 
-// ======================================== 23 : 38 ===============================================
 	@ResponseBody
 	@GetMapping("/salesStats/api/product/capacities")
 	public List<String> productCaps(@RequestParam("brandNo") Long brandNo) {
