@@ -320,4 +320,19 @@ public class ProductService {
         out.put("datasets", datasets);
         return out;
     }
+    
+    /**
+     * AI 추천용 상품 조회 (재고 있는 상품만)
+     */
+    public List<Map<String, Object>> getAvailableProductsForAI() {
+        return productMapper.selectProducts(null, null, null, null, null)
+            .stream()
+            .filter(p -> {
+                Integer count = (Integer) p.get("count");
+                String status = (String) p.get("status");
+                return count != null && count > 0 && 
+                       (status == null || !"inactive".equals(status));
+            })
+            .collect(Collectors.toList());
+    }
 }

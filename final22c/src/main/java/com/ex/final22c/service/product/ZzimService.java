@@ -1,5 +1,6 @@
 package com.ex.final22c.service.product;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
@@ -51,5 +52,12 @@ public class ZzimService {
         if (removed) {
             user.getZzimedProducts().removeIf(p -> Objects.equals(p.getId(), product.getId()));
         }
+    }
+    @Transactional(readOnly = true)
+    public List<Product> listMyZzim(String userName) {
+        Users user = userRepository.findByUserName(userName)
+                .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
+
+        return List.copyOf(user.getZzimedProducts());
     }
 }

@@ -1,7 +1,9 @@
 package com.ex.final22c.service.order;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class OrderService {
     private final UserRepository usersRepository;
     private final OrderDetailRepository orderDetailRepository;
     private final CartService cartService;
+   
 
     private static final int SHIPPING_FEE = 3000;
 
@@ -271,5 +274,27 @@ public class OrderService {
         }
 
         return orderRepository.save(order);
+    }
+    
+    /**
+     * 사용자 주문 이력 조회
+     */
+    public List<Order> getUserOrders(String userName) {
+        Users user = usersRepository.findByUserName(userName)
+            .orElse(null);
+        if (user == null) return Collections.emptyList();
+        
+        return orderRepository.findByUser_UserNameOrderByRegDateDesc(user.getUserName());
+    }
+    
+    /**
+     * 사용자 구매 상품 상세 조회
+     */
+    public List<OrderDetail> getUserPurchaseHistory(String userName) {
+        List<Order> orders = getUserOrders(userName);
+        return orders.stream()
+            .flatMap(order -> order.getDetails().stream())
+            .filter(detail -> "CONFIRMED".equals(detail.getOrder().getStatus()))
+            .collect(Collectors.toList());
     }
 }

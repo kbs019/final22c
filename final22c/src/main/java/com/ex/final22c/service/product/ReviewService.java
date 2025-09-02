@@ -1,15 +1,22 @@
 package com.ex.final22c.service.product;
 
+
 import java.util.List;
+import java.util.Collections;
+
 import java.util.Iterator;
+import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
+import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.productRepository.ReviewRepository;
+import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,12 +26,35 @@ import lombok.RequiredArgsConstructor;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
+    private final ProfanityFilter profanityFilter;
+    private final UserRepository userRepository;
 
-    public List<Review> getReviews(Product product, String sort) {
+    public List<ReviewDto> getReviews(Product product, String sort) {
+        List<Review> reviews;
+
+
         if ("recent".equalsIgnoreCase(sort)) {
-            return reviewRepository.findByProductOrderByCreateDateDesc(product);
+            reviews = reviewRepository.findByProductOrderByCreateDateDesc(product);
+        } else {
+            reviews = reviewRepository.findByProductOrderByRatingDescCreateDateDesc(product);
         }
-        return reviewRepository.findByProductOrderByRatingDescCreateDateDesc(product);
+
+        // DTO로 변환 + 필터 적용
+        return reviews.stream()
+                .<ReviewDto>map(rv -> toDto(rv, profanityFilter))
+                .collect(Collectors.toList());
+    }
+    private ReviewDto toDto(Review review, ProfanityFilter filter) {
+        return new ReviewDto(
+                review.getReviewId(),
+                review.getRating(),
+                filter.maskProfanity(review.getContent()), // 욕설 * 처리
+                review.getWriter().getUserName(),
+                review.getCreateDate(), // 필요하면 포맷 적용
+                review.getLikers().stream()
+                        .map(u -> u.getUserName())
+                        .collect(Collectors.toSet()) // 공감 사용자 이름 집합
+        );
     }
 
     public long count(Product product) {
@@ -106,5 +136,16 @@ public class ReviewService {
         Long productId = r.getProduct().getId();
         reviewRepository.delete(r);
         return productId;
+    }
+    
+    /**
+     * 사용자별 리뷰 조회
+     */
+    public List<Review> getReviewsByUser(String userName) {
+        Users user = userRepository.findByUserName(userName)
+            .orElse(null);
+        if (user == null) return Collections.emptyList();
+        
+        return reviewRepository.findByWriter(user);
     }
 }

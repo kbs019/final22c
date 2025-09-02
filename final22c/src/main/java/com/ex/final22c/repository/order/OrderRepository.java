@@ -139,4 +139,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   int updateStatus(@Param("id") Long id, @Param("status") String status);
 
   Optional<Order> findByOrderIdAndUser_UserName(long orderId, String userName);
+  
+  List<Order> findByUser_UserNameOrderByRegDateDesc(String userName);
 }

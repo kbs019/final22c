@@ -27,58 +27,145 @@
 			                <td th:text="${list.product.brand.brandName}"></td>
 							<td th:text="${list.product.name}"></td>
 			                <td th:text="${list.rating}"></td>
-			                <td th:text="${#strings.abbreviate(list.content, 40)}"></td>
-			                <td th:text="${list.writer.userName}"></td>
+			                <td>
+							    <a href="javascript:void(0);" 
+							       class="open-review text-decoration-none text-dark"
+							       th:attr="data-content=${list.content}">
+							       [[${#strings.abbreviate(list.content, 40)}]]
+							    </a>
+							</td>
+							<td>
+							    <a href="javascript:void(0);" 
+							       class="open-writer text-decoration-none text-dark"
+							       th:attr="data-username=${list.writer.userName}, 
+							                data-status=${list.writer.status}">
+							       [[${list.writer.userName}]]
+							    </a>
+							</td>
 			                <td th:text="${#temporals.format(list.createDate, 'yyyy-MM-dd HH:mm')}"></td>
 		            	</tr>
 					</tbody>
 				</table>
 			</div>
+			<!-- 리뷰 내용 모달 -->
+			<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+			  <div class="modal-dialog modal-lg">
+			    <div class="modal-content">
+			      <div class="modal-header">
+			        <h5 class="modal-title" id="reviewModalLabel">리뷰 내용</h5>
+			        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+			      </div>
+			      <div class="modal-body" id="reviewModalContent">
+			        <!-- 리뷰내용 들어가는 자리 -->
+			      </div>
+			    </div>
+			  </div>
+			</div>
 		</div>
-<button id="filterBadBtn" class="btn btn-danger">비속어 필터</button>
-
-<table id="datatablesSimple" class="table">
-    <thead>
-        <tr>
-            <th>리뷰번호</th>
-            <th>브랜드</th>
-            <th>상품명</th>
-            <th>평점</th>
-            <th>리뷰내용</th>
-            <th>작성자</th>
-            <th>작성일</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
+		<!-- 작성자 모달 -->
+		<div class="modal fade" id="writerModal" tabindex="-1" aria-labelledby="writerModalLabel" aria-hidden="true">
+		  <div class="modal-dialog">
+		    <div class="modal-content">
+		      
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="writerModalLabel">작성자</h5>
+		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+		      </div>
+		
+		      <div class="modal-body">
+		        <div class="mb-3">
+		          <label class="form-label">아이디 :</label>
+		          <span id="writerId"></span>
+		        </div>
+		        <div class="mb-3">
+		          <label class="form-label">상태 :</label>
+		          <span id="writerStatus"></span>
+		        </div>
+		        <div class="mb-3">
+		          <label class="form-label">제재 :</label>
+		          <select id="writerSanction" class="form-select">
+		            <option selected disabled>선택하세요</option>
+		            <option value="7d">7일 정지</option>
+		            <option value="30d">30일 정지</option>
+		            <option value="permanent">영구 정지</option>
+		          </select>
+		        </div>
+		      </div>
+		
+		      <!-- 버튼 영역 -->
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+		        <button type="button" id="writerConfirmBtn" class="btn btn-primary">확인</button>
+		      </div>
+		
+		    </div>
+		  </div>
+		</div>
 </div>
+<script layout:fragment="script" type="text/javascript">
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("open-review")) {
+        let content = e.target.getAttribute("data-content");
+        document.getElementById("reviewModalContent").innerText = content;
+        let modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+        modal.show();
+    }
+});
+
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("open-writer")) {
+        let username = e.target.getAttribute("data-username");
+        let status = e.target.getAttribute("data-status");
+
+        document.getElementById("writerId").innerText = username;
+
+        // 상태 변환
+        let displayStatus = "";
+        switch(status) {
+            case "active":
+                displayStatus = "정상";
+                break;
+            case "suspended":
+                displayStatus = "일시정지";
+                break;
+            case "banned":
+                displayStatus = "영구정지";
+                break;
+            default:
+                displayStatus = "알 수 없음";
+        }
+
+        document.getElementById("writerStatus").innerText = displayStatus;
+
+        let modal = new bootstrap.Modal(document.getElementById('writerModal'));
+        modal.show();
+    }
+});
 
 
-<script type="text/javascript">
-    let datatable = new simpleDatatables.DataTable("#datatablesSimple");
+document.getElementById("writerConfirmBtn").addEventListener("click", function() {
+    let username = document.getElementById("writerId").innerText;
+    let sanction = document.getElementById("writerSanction").value;
 
-    document.getElementById("filterBadBtn").addEventListener("click", function () {
-        fetch("/admin/reviews/badwords")
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
+    if (!sanction) {
+        alert("제재 사유를 선택하세요!");
+        return;
+    }
 
-                // 기존 데이터 삭제
-                datatable.clear();
-
-                // 새 데이터 추가
-                data.forEach(re => {
-                    datatable.rows().add([
-                        re.reviewId,
-                        re.product?.brand?.brandName || "",
-                        re.product?.name || "",
-                        re.rating,
-                        re.content,
-                        re.writer?.userName || "",
-                        re.createDate ? new Date(re.createDate).toLocaleString() : ""
-                    ]);
-                });
-            });
+    // 서버로 전송 (Ajax 예시)
+    fetch("/admin/sanction", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ username: username, sanction: sanction })
+    })
+    .then(res => {
+        if (res.ok) {
+            alert("제재가 적용되었습니다.");
+            location.reload(); // 필요하면 새로고침
+        } else {
+            alert("처리 중 오류가 발생했습니다.");
+        }
     });
+});
 </script>
 </html>

@@ -2,9 +2,9 @@ package com.ex.final22c.controller.product;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,13 +15,19 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
+import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.user.Users;
-import com.ex.final22c.repository.productRepository.ProductRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.ProductService;
 import com.ex.final22c.service.product.ReviewService;
@@ -70,14 +76,14 @@ public class ProductController {
 
         long reviewCount = reviewService.count(product);
         double avg = reviewService.avg(product);
-        List<Review> reviews = reviewService.getReviews(product, sort);
+        List<ReviewDto> reviews = reviewService.getReviews(product, sort);
 
         // 로그인 사용자가 누른 리뷰 id 세트(템플릿에서 상태 표시용)
         Set<Long> likedReviewIds = new HashSet<>();
         if (principal != null) {
             String me = principal.getUsername();
-            for (Review rv : reviews) {
-                if (rv.getLikers().stream().anyMatch(u -> me.equals(u.getUserName()))) {
+            for (ReviewDto rv : reviews) {
+                if (rv.getLikers().stream().anyMatch(u -> me.equals(u))) { // u 자체가 String
                     likedReviewIds.add(rv.getReviewId());
                 }
             }

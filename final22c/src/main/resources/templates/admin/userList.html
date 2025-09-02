@@ -34,7 +34,7 @@
 		        <!-- 상태 표시 -->
 		        <td th:switch="${list.status}">
 		            <span th:case="'active'">정상</span>
-		            <span th:case="'suspended'">일시정지</span>
+		            <span th:case="'suspended'">일시정지([[${list.banReg}]])</span>
 		            <span th:case="'banned'">영구정지</span>
 		        </td>
 		

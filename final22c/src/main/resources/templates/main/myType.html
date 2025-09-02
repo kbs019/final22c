@@ -1,469 +1,499 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/layout}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>22°C - 나만의 향수 찾기</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --soft-pink: #fdf2f8;
-            --soft-blue: #eff6ff;
-            --soft-green: #f0fdf4;
-            --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .survey-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header-section {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 40px 20px;
-            background: var(--gradient-bg);
-            border-radius: 20px;
-            color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .header-section h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .header-section p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            margin: 0;
-        }
-
-        .question-card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            border: 1px solid rgba(0,0,0,0.04);
-            display: none;
-            transform: translateY(20px);
-            opacity: 0;
-            transition: all 0.6s ease;
-        }
-
-        .question-card.active {
-            display: block;
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .question-title {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .option-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 25px;
-        }
-
-        .option-card {
-            background: #f8f9fa;
-            border: 2px solid transparent;
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .option-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transition: left 0.5s ease;
-        }
-
-        .option-card:hover::before {
-            left: 100%;
-        }
-
-        .option-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            background: #ffffff;
-        }
-
-        .option-card.selected {
-            border-color: var(--secondary-color);
-            background: var(--soft-blue);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.2);
-        }
-
-        .option-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            color: var(--secondary-color);
-        }
-
-        .option-title {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--primary-color);
-        }
-
-        .option-desc {
-            font-size: 0.9rem;
-            color: #6c757d;
-            line-height: 1.4;
-        }
-
-        .progress-section {
-            margin: 30px 0;
-            text-align: center;
-        }
-
-        .progress-bar-custom {
-            background: #e9ecef;
-            height: 8px;
-            border-radius: 50px;
-            overflow: hidden;
-            margin: 15px 0;
-        }
-
-        .progress-fill {
-            background: var(--gradient-bg);
-            height: 100%;
-            border-radius: 50px;
-            transition: width 0.8s ease;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-        }
-
-        .progress-text {
-            font-size: 0.9rem;
-            color: #6c757d;
-            font-weight: 500;
-        }
-
-        .navigation-buttons {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
-        }
-
-        .btn-custom {
-            padding: 12px 30px;
-            border-radius: 50px;
-            font-weight: 600;
-            border: none;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-prev {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-prev:hover {
-            background: #545b62;
-            transform: translateX(-5px);
-        }
-
-        .btn-next {
-            background: var(--gradient-bg);
-            color: white;
-        }
-
-        .btn-next:hover {
-            transform: translateX(5px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-next:disabled {
-            background: #dee2e6 !important;
-            color: #6c757d !important;
-            cursor: not-allowed !important;
-            transform: none !important;
-            opacity: 0.6 !important;
-        }
-
-        .result-section {
-            display: none;
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .result-card {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-
-        .result-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 20px;
-        }
-
-        .recommended-perfumes {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .perfume-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            border: 1px solid #f1f3f4;
-        }
-
-        .perfume-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        }
-
-        .perfume-image {
-            width: 80px;
-            height: 80px;
-            background: var(--soft-pink);
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-        }
-
-        .perfume-name {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: var(--primary-color);
-        }
-
-        .perfume-brand {
-            color: #6c757d;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-        }
-
-        .perfume-notes {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            color: #495057;
-        }
-
-        .fade-in {
-            animation: fadeInUp 0.6s ease forwards;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
+    <title>AI 향수 추천 - 22°C</title>
+    <th:block layout:fragment="css">
+        <style>
+            :root {
+                --primary-color: #2c3e50;
+                --secondary-color: #3498db;
+                --accent-color: #e74c3c;
+                --soft-pink: #fdf2f8;
+                --soft-blue: #eff6ff;
+                --soft-green: #f0fdf4;
+                --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+
+            body {
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                min-height: 100vh;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
-        }
 
-        .loading-spinner {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(255, 255, 255, 0.95);
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            flex-direction: column;
-        }
-
-        .loading-spinner div {
-            text-align: center;
-        }
-
-        .loading-spinner .spinner {
-            margin: 0 auto 20px;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--secondary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .option-grid {
-                grid-template-columns: 1fr;
+            .survey-container {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
             }
-            
+
+            .header-section {
+                text-align: center;
+                margin-bottom: 40px;
+                padding: 40px 20px;
+                background: var(--gradient-bg);
+                border-radius: 20px;
+                color: white;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            }
+
             .header-section h1 {
-                font-size: 2rem;
+                font-size: 2.5rem;
+                font-weight: 700;
+                margin-bottom: 10px;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
-            
-            .navigation-buttons {
-                flex-direction: column;
-                gap: 15px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="survey-container">
-        <!-- 헤더 섹션 -->
-        <div class="header-section fade-in">
-            <h1><i class="fas fa-magic"></i> 나만의 향수 찾기</h1>
-            <p>몇 가지 질문으로 당신에게 완벽한 향수를 찾아드려요</p>
-        </div>
 
+            .header-section p {
+                font-size: 1.1rem;
+                opacity: 0.9;
+                margin: 0;
+            }
+
+            .question-card {
+                background: white;
+                border-radius: 20px;
+                padding: 30px;
+                margin-bottom: 30px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+                border: 1px solid rgba(0,0,0,0.04);
+                display: none;
+                transform: translateY(20px);
+                opacity: 0;
+                transition: all 0.6s ease;
+            }
+
+            .question-card.active {
+                display: block;
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            .question-title {
+                font-size: 1.4rem;
+                font-weight: 600;
+                color: var(--primary-color);
+                margin-bottom: 20px;
+                text-align: center;
+            }
+
+            .option-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin-top: 25px;
+            }
+
+            .option-card {
+                background: #f8f9fa;
+                border: 2px solid transparent;
+                border-radius: 15px;
+                padding: 20px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .option-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+                transition: left 0.5s ease;
+            }
+
+            .option-card:hover::before {
+                left: 100%;
+            }
+
+            .option-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                background: #ffffff;
+            }
+
+            .option-card.selected {
+                border-color: var(--secondary-color);
+                background: var(--soft-blue);
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(52, 152, 219, 0.2);
+            }
+
+            .option-icon {
+                font-size: 2rem;
+                margin-bottom: 10px;
+                color: var(--secondary-color);
+            }
+
+            .option-title {
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: var(--primary-color);
+            }
+
+            .option-desc {
+                font-size: 0.9rem;
+                color: #6c757d;
+                line-height: 1.4;
+            }
+
+            .progress-section {
+                margin: 30px 0;
+                text-align: center;
+            }
+
+            .progress-bar-custom {
+                background: #e9ecef;
+                height: 8px;
+                border-radius: 50px;
+                overflow: hidden;
+                margin: 15px 0;
+            }
+
+            .progress-fill {
+                background: var(--gradient-bg);
+                height: 100%;
+                border-radius: 50px;
+                transition: width 0.8s ease;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            }
+
+            .progress-text {
+                font-size: 0.9rem;
+                color: #6c757d;
+                font-weight: 500;
+            }
+
+            .navigation-buttons {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 30px;
+            }
+
+            .btn-custom {
+                padding: 12px 30px;
+                border-radius: 50px;
+                font-weight: 600;
+                border: none;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .btn-prev {
+                background: #6c757d;
+                color: white;
+            }
+
+            .btn-prev:hover {
+                background: #545b62;
+                transform: translateX(-5px);
+            }
+
+            .btn-next {
+                background: var(--gradient-bg);
+                color: white;
+            }
+
+            .btn-next:hover {
+                transform: translateX(5px);
+                box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            }
+
+            .btn-next:disabled {
+                background: #dee2e6 !important;
+                color: #6c757d !important;
+                cursor: not-allowed !important;
+                transform: none !important;
+                opacity: 0.6 !important;
+            }
+
+            .result-section {
+                display: none;
+                text-align: center;
+                padding: 40px 20px;
+            }
+
+            .result-card {
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+                margin-bottom: 30px;
+            }
+
+            .result-title {
+                font-size: 2rem;
+                font-weight: 700;
+                color: var(--primary-color);
+                margin-bottom: 20px;
+            }
+
+            .situation-tabs {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin: 30px 0;
+                flex-wrap: wrap;
+            }
+
+            .situation-tab {
+                padding: 12px 24px;
+                border: 2px solid #dee2e6;
+                border-radius: 25px;
+                background: white;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-weight: 500;
+                color: #6c757d;
+            }
+
+            .situation-tab:hover {
+                background: #f8f9fa;
+                border-color: #ced4da;
+            }
+
+            .situation-tab.active {
+                background: var(--secondary-color);
+                color: white;
+                border-color: var(--secondary-color);
+                box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            }
+
+            .analysis-box {
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                border-radius: 15px;
+                padding: 25px;
+                margin: 25px 0;
+                text-align: left;
+                border-left: 5px solid var(--secondary-color);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            }
+
+            .analysis-box h5 {
+                color: var(--primary-color);
+                margin-bottom: 15px;
+                font-weight: 600;
+            }
+
+            .recommended-perfumes {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 25px;
+                margin-top: 30px;
+            }
+
+            .perfume-card {
+                background: white;
+                border-radius: 15px;
+                padding: 25px;
+                text-align: center;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+                transition: all 0.3s ease;
+                border: 1px solid #f1f3f4;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .perfume-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.1), transparent);
+                transition: left 0.5s ease;
+            }
+
+            .perfume-card:hover::before {
+                left: 100%;
+            }
+
+            .perfume-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            }
+
+            .perfume-image {
+                width: 100px;
+                height: 100px;
+                background: var(--soft-pink);
+                border-radius: 50%;
+                margin: 0 auto 15px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+            }
+
+            .perfume-image img {
+                width: 80px;
+                height: 80px;
+                object-fit: contain;
+            }
+
+            .perfume-name {
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: var(--primary-color);
+                font-size: 1.1rem;
+            }
+
+            .perfume-brand {
+                color: #6c757d;
+                font-size: 0.9rem;
+                margin-bottom: 12px;
+            }
+
+            .perfume-reason {
+                background: #f8f9fa;
+                padding: 12px;
+                border-radius: 10px;
+                font-size: 0.85rem;
+                color: #495057;
+                margin-bottom: 15px;
+                border-left: 3px solid var(--secondary-color);
+            }
+
+            .perfume-price {
+                font-weight: 700;
+                color: var(--accent-color);
+                font-size: 1.1rem;
+                margin-bottom: 15px;
+            }
+
+            .loading-spinner {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(255, 255, 255, 0.95);
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+                flex-direction: column;
+            }
+
+            .loading-spinner div {
+                text-align: center;
+            }
+
+            .loading-spinner .spinner {
+                margin: 0 auto 20px;
+            }
+
+            .spinner {
+                width: 50px;
+                height: 50px;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid var(--secondary-color);
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+            .fade-in {
+                animation: fadeInUp 0.6s ease forwards;
+            }
+
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @media (max-width: 768px) {
+                .option-grid {
+                    grid-template-columns: 1fr;
+                }
+                
+                .header-section h1 {
+                    font-size: 2rem;
+                }
+                
+                .navigation-buttons {
+                    flex-direction: column;
+                    gap: 15px;
+                }
+
+                .situation-tabs {
+                    flex-direction: column;
+                    align-items: center;
+                }
+            }
+        </style>
+    </th:block>
+</head>
+
+<body>
+<div layout:fragment="content" class="survey-container">
+    <!-- 헤더 섹션 -->
+    <div class="header-section fade-in">
+        <h1><i class="fas fa-magic"></i> AI 향수 추천</h1>
+        <p>AI가 당신의 취향을 분석해서 완벽한 향수를 찾아드려요</p>
+    </div>
+
+    <!-- 로그인 체크 -->
+    <div sec:authorize="isAnonymous()" class="text-center">
+        <div class="question-card">
+            <i class="fas fa-user-circle fa-4x text-secondary mb-3"></i>
+            <h3 class="question-title">로그인이 필요해요!</h3>
+            <p class="mb-4">AI가 당신의 구매 이력과 취향을 분석해서<br>더 정확한 추천을 해드릴 수 있어요</p>
+            <a href="/user/login" class="btn-custom btn-next btn-lg">
+                <i class="fas fa-sign-in-alt"></i> 로그인하고 시작하기
+            </a>
+        </div>
+    </div>
+
+    <!-- 로그인한 사용자만 설문조사 표시 -->
+    <div sec:authorize="isAuthenticated()">
         <!-- 진행률 표시 -->
         <div class="progress-section">
             <div class="progress-text">
-                <span id="current-step">1</span> / <span id="total-steps">7</span>
+                <span id="current-step">1</span> / <span id="total-steps">5</span>
             </div>
             <div class="progress-bar-custom">
-                <div class="progress-fill" id="progress-fill" style="width: 14.3%"></div>
+                <div class="progress-fill" id="progress-fill" style="width: 20%"></div>
             </div>
         </div>
 
         <!-- 질문 섹션들 -->
         <div id="questions-container">
-            <!-- 질문 1: 성별 -->
+            <!-- 질문 1: 향의 강도 -->
             <div class="question-card active" data-question="1">
-                <h3 class="question-title">성별을 선택해주세요</h3>
-                <div class="option-grid" data-type="demographics">
-                    <div class="option-card" data-value="female">
-                        <div class="option-icon"><i class="fas fa-venus"></i></div>
-                        <div class="option-title">여성</div>
-                        <div class="option-desc">우아하고 세련된</div>
-                    </div>
-                    <div class="option-card" data-value="male">
-                        <div class="option-icon"><i class="fas fa-mars"></i></div>
-                        <div class="option-title">남성</div>
-                        <div class="option-desc">카리스마 있는</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 질문 2: 선호하는 분위기 -->
-            <div class="question-card" data-question="2">
-                <h3 class="question-title">어떤 분위기를 좋아하시나요?</h3>
-                <div class="option-grid" data-type="mood">
-                    <div class="option-card" data-value="romantic">
-                        <div class="option-icon"><i class="fas fa-heart"></i></div>
-                        <div class="option-title">로맨틱</div>
-                        <div class="option-desc">달콤하고 감성적인</div>
-                    </div>
-                    <div class="option-card" data-value="professional">
-                        <div class="option-icon"><i class="fas fa-briefcase"></i></div>
-                        <div class="option-title">프로페셔널</div>
-                        <div class="option-desc">깔끔하고 신뢰감 있는</div>
-                    </div>
-                    <div class="option-card" data-value="casual">
-                        <div class="option-icon"><i class="fas fa-leaf"></i></div>
-                        <div class="option-title">캐주얼</div>
-                        <div class="option-desc">편안하고 자연스러운</div>
-                    </div>
-                    <div class="option-card" data-value="luxurious">
-                        <div class="option-icon"><i class="fas fa-crown"></i></div>
-                        <div class="option-title">럭셔리</div>
-                        <div class="option-desc">고급스럽고 독특한</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 질문 3: 선호하는 계절감 -->
-            <div class="question-card" data-question="3">
-                <h3 class="question-title">어떤 계절감을 선호하시나요?</h3>
-                <div class="option-grid" data-type="season">
-                    <div class="option-card" data-value="spring">
-                        <div class="option-icon" style="color: #10b981;"><i class="fas fa-seedling"></i></div>
-                        <div class="option-title">봄</div>
-                        <div class="option-desc">상큼하고 생기 넘치는</div>
-                    </div>
-                    <div class="option-card" data-value="summer">
-                        <div class="option-icon" style="color: #f59e0b;"><i class="fas fa-sun"></i></div>
-                        <div class="option-title">여름</div>
-                        <div class="option-desc">시원하고 상쾌한</div>
-                    </div>
-                    <div class="option-card" data-value="autumn">
-                        <div class="option-icon" style="color: #d97706;"><i class="fas fa-leaf"></i></div>
-                        <div class="option-title">가을</div>
-                        <div class="option-desc">따뜻하고 깊이 있는</div>
-                    </div>
-                    <div class="option-card" data-value="winter">
-                        <div class="option-icon" style="color: #3b82f6;"><i class="fas fa-snowflake"></i></div>
-                        <div class="option-title">겨울</div>
-                        <div class="option-desc">신비롭고 강렬한</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 질문 4: 향의 강도 -->
-            <div class="question-card" data-question="4">
                 <h3 class="question-title">향의 강도는 어느 정도를 선호하시나요?</h3>
-                <div class="option-grid" data-type="intensity">
+                <div class="option-grid" data-name="intensity">
                     <div class="option-card" data-value="light">
                         <div class="option-icon"><i class="fas fa-feather"></i></div>
                         <div class="option-title">라이트</div>
-                        <div class="option-desc">은은하고 부드러운<br><small class="text-muted">(오드코롱, 오드뜨왈렛)</small></div>
+                        <div class="option-desc">은은하고 부드러운<br><small class="text-muted">(오드코롱, 오드뚜왈렛)</small></div>
                     </div>
                     <div class="option-card" data-value="medium">
                         <div class="option-icon"><i class="fas fa-balance-scale"></i></div>
                         <div class="option-title">미디움</div>
-                        <div class="option-desc">적당히 느껴지는<br><small class="text-muted">(오드뜨왈렛, 오드퍼퓸)</small></div>
+                        <div class="option-desc">적당히 느껴지는<br><small class="text-muted">(오드뚜왈렛, 오드퍼퓸)</small></div>
                     </div>
                     <div class="option-card" data-value="strong">
                         <div class="option-icon"><i class="fas fa-fire"></i></div>
@@ -473,10 +503,10 @@
                 </div>
             </div>
 
-            <!-- 질문 5: 선호하는 노트 계열 (8개 메인노트) -->
-            <div class="question-card" data-question="5">
+            <!-- 질문 2: 선호하는 노트 계열 -->
+            <div class="question-card" data-question="2">
                 <h3 class="question-title">어떤 향 계열을 가장 좋아하시나요?</h3>
-                <div class="option-grid" data-type="notes">
+                <div class="option-grid" data-name="notes">
                     <div class="option-card" data-value="floral">
                         <div class="option-icon" style="color: #ec4899;"><i class="fas fa-seedling"></i></div>
                         <div class="option-title">플로랄</div>
@@ -520,10 +550,37 @@
                 </div>
             </div>
 
-            <!-- 질문 6: 개성 표현 -->
-            <div class="question-card" data-question="6">
+            <!-- 질문 3: 선호하는 분위기 -->
+            <div class="question-card" data-question="3">
+                <h3 class="question-title">어떤 분위기를 좋아하시나요?</h3>
+                <div class="option-grid" data-name="mood">
+                    <div class="option-card" data-value="romantic">
+                        <div class="option-icon"><i class="fas fa-heart"></i></div>
+                        <div class="option-title">로맨틱</div>
+                        <div class="option-desc">달콤하고 감성적인</div>
+                    </div>
+                    <div class="option-card" data-value="professional">
+                        <div class="option-icon"><i class="fas fa-briefcase"></i></div>
+                        <div class="option-title">프로페셔널</div>
+                        <div class="option-desc">깔끔하고 신뢰감 있는</div>
+                    </div>
+                    <div class="option-card" data-value="casual">
+                        <div class="option-icon"><i class="fas fa-leaf"></i></div>
+                        <div class="option-title">캐주얼</div>
+                        <div class="option-desc">편안하고 자연스러운</div>
+                    </div>
+                    <div class="option-card" data-value="luxurious">
+                        <div class="option-icon"><i class="fas fa-crown"></i></div>
+                        <div class="option-title">럭셔리</div>
+                        <div class="option-desc">고급스럽고 독특한</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 질문 4: 개성 표현 -->
+            <div class="question-card" data-question="4">
                 <h3 class="question-title">향수로 어떤 개성을 표현하고 싶나요?</h3>
-                <div class="option-grid" data-type="personality">
+                <div class="option-grid" data-name="personality">
                     <div class="option-card" data-value="gentle">
                         <div class="option-icon" style="color: #ec4899;"><i class="fas fa-dove"></i></div>
                         <div class="option-title">부드러운</div>
@@ -547,10 +604,10 @@
                 </div>
             </div>
 
-            <!-- 질문 7: 사용 시기 -->
-            <div class="question-card" data-question="7">
-                <h3 class="question-title">주로 언제 향수를 사용하시나요?</h3>
-                <div class="option-grid" data-type="usage">
+            <!-- 질문 5: 주 사용 목적 -->
+            <div class="question-card" data-question="5">
+                <h3 class="question-title">주로 어떤 목적으로 향수를 사용하시나요?</h3>
+                <div class="option-grid" data-name="usage">
                     <div class="option-card" data-value="daily">
                         <div class="option-icon"><i class="fas fa-calendar-day"></i></div>
                         <div class="option-title">데일리</div>
@@ -590,18 +647,38 @@
         <div class="loading-spinner" id="loading">
             <div>
                 <div class="spinner"></div>
-                <div class="mt-3">당신만의 향수를 찾고 있어요...</div>
+                <div class="mt-3">AI가 당신의 취향을 분석하고 있어요...</div>
+                <div class="small text-muted mt-2">구매 이력, 찜 목록, 리뷰를 종합해서 분석 중입니다</div>
             </div>
         </div>
 
         <!-- 결과 섹션 -->
         <div class="result-section" id="result-section">
             <div class="result-card fade-in">
-                <div class="result-title" id="result-title">당신에게 추천하는 향수</div>
-                <div id="result-description" class="mb-4"></div>
+                <div class="result-title" id="result-title">AI가 분석한 당신만의 향수</div>
                 
+                <!-- 상황별 탭 -->
+                <div class="situation-tabs">
+                    <div class="situation-tab active" data-situation="daily">
+                        <i class="fas fa-sun"></i> 일상용
+                    </div>
+                    <div class="situation-tab" data-situation="special">
+                        <i class="fas fa-star"></i> 특별한 날
+                    </div>
+                    <div class="situation-tab" data-situation="gift">
+                        <i class="fas fa-gift"></i> 선물용
+                    </div>
+                </div>
+
+                <!-- AI 분석 결과 -->
+                <div class="analysis-box" id="analysis-box">
+                    <h5><i class="fas fa-brain"></i> AI 분석 결과</h5>
+                    <p id="analysis-text">분석 중...</p>
+                </div>
+
+                <!-- 추천 향수들 -->
                 <div class="recommended-perfumes" id="recommended-perfumes">
-                    <!-- 추천 향수들이 여기에 동적으로 추가됩니다 -->
+                    <!-- 동적으로 채워짐 -->
                 </div>
 
                 <div class="mt-4">
@@ -615,453 +692,274 @@
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        class PerfumeSurvey {
-            constructor() {
-                this.currentStep = 1;
-                this.totalSteps = 7;
-                this.answers = {};
-                this.init();
-            }
+<th:block layout:fragment="script">
+<script>
+class AIPerfumeSurvey {
+    constructor() {
+        this.currentStep = 1;
+        this.totalSteps = 5;
+        this.answers = {};
+        this.currentSituation = 'daily';
+        this.aiResults = {};
+        this.init();
+    }
 
-            getIconByNote(noteId) {
-                const iconMap = {
-                    1: '🌶️', // 스파이시
-                    2: '🌳',  // 우디
-                    3: '🌿',  // 허벌
-                    4: '🍎',  // 푸루티
-                    5: '🍫',  // 구르망
-                    6: '🌸',  // 플로랄
-                    7: '🍋',  // 시트러스
-                    8: '🍰'   // 바닐라
-                };
-                return iconMap[noteId] || '🎯';
-            }
+    init() {
+        this.bindEvents();
+        this.updateProgress();
+    }
 
-            // ★ 새로 추가: 향의 강도에 따른 grade ID 필터링
-            getGradeIdsByIntensity(intensity) {
-                const gradeMapping = {
-                    // 라이트: 오드코롱(2), 오드뚜왈렛(4)
-                    'light': [2, 4],
-                    // 미디움: 오드퍼퓸(3), 오드뚜왈렛(4)  
-                    'medium': [3, 4],
-                    // 스트롱: 퍼퓸(1), 오드퍼퓸(3)
-                    'strong': [1, 3]
-                };
-                return gradeMapping[intensity] || [];
-            }
-
-            getGradeNamesByIntensity(intensity) {
-                const gradeNameMapping = {
-                    'light': ['오드 코롱', '오드 뚜왈렛'],
-                    'medium': ['오드 퍼퓸', '오드 뚜왈렛'], 
-                    'strong': ['퍼퓸', '오드 퍼퓸']
-                };
-                return gradeNameMapping[intensity] || [];
-            }
-
-            init() {
-                this.bindEvents();
-                this.updateProgress();
-            }
-
-            bindEvents() {
-                document.querySelectorAll('.option-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        this.handleOptionSelect(card);
-                    });
-                });
-
-                document.getElementById('btn-next').addEventListener('click', () => {
-                    this.nextStep();
-                });
-
-                document.getElementById('btn-prev').addEventListener('click', () => {
-                    this.prevStep();
-                });
-            }
-
-            handleOptionSelect(optionCard) {
-                const questionCard = optionCard.closest('.question-card');
-                const questionType = optionCard.closest('.option-grid').dataset.type;
-                const value = optionCard.dataset.value;
-
-                questionCard.querySelectorAll('.option-card').forEach(card => {
-                    card.classList.remove('selected');
-                });
-
-                optionCard.classList.add('selected');
-
-                this.answers[questionType] = value;
-
-                const nextBtn = document.getElementById('btn-next');
-                nextBtn.disabled = false;
-                nextBtn.style.opacity = '1';
-                nextBtn.style.cursor = 'pointer';
-            }
-
-            nextStep() {
-                if (this.currentStep < this.totalSteps) {
-                    this.hideCurrentStep();
-                    this.currentStep++;
-                    this.showCurrentStep();
-                    this.updateProgress();
-                    this.updateNavigation();
-                } else {
-                    this.showResults();
-                }
-            }
-
-            prevStep() {
-                if (this.currentStep > 1) {
-                    this.hideCurrentStep();
-                    this.currentStep--;
-                    this.showCurrentStep();
-                    this.updateProgress();
-                    this.updateNavigation();
-                }
-            }
-
-            hideCurrentStep() {
-                const currentCard = document.querySelector(`[data-question="${this.currentStep}"]`);
-                if (currentCard) currentCard.classList.remove('active');
-            }
-
-            showCurrentStep() {
-                const currentCard = document.querySelector(`[data-question="${this.currentStep}"]`);
-                if (currentCard) {
-                    setTimeout(() => currentCard.classList.add('active'), 100);
-                }
-            }
-
-            updateProgress() {
-                const progressFill = document.getElementById('progress-fill');
-                const currentStepEl = document.getElementById('current-step');
-                
-                const percentage = (this.currentStep / this.totalSteps) * 100;
-                progressFill.style.width = percentage + '%';
-                currentStepEl.textContent = this.currentStep;
-            }
-
-            updateNavigation() {
-                const btnPrev = document.getElementById('btn-prev');
-                const btnNext = document.getElementById('btn-next');
-
-                btnPrev.style.display = this.currentStep > 1 ? 'inline-flex' : 'none';
-
-                const currentCard = document.querySelector(`[data-question="${this.currentStep}"]`);
-                const hasAnswer = currentCard && currentCard.querySelector('.option-card.selected');
-                btnNext.disabled = !hasAnswer;
-
-                if (this.currentStep === this.totalSteps) {
-                    btnNext.innerHTML = '결과 보기 <i class="fas fa-magic"></i>';
-                } else {
-                    btnNext.innerHTML = '다음 <i class="fas fa-chevron-right"></i>';
-                }
-            }
-
-            showResults() {
-                document.getElementById('loading').style.display = 'flex';
-                document.querySelector('.navigation-buttons').style.display = 'none';
-                document.getElementById('questions-container').style.display = 'none';
-
-                setTimeout(() => {
-                    this.generateRecommendations();
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('result-section').style.display = 'block';
-                }, 500);
-            }
-
-            generateRecommendations() {
-                const recommendations = this.getRecommendationsByAnswers();
-                
-                this.fetchRecommendedPerfumes(recommendations.mainNoteIds, this.answers.intensity)
-                    .then(perfumes => {
-                        document.getElementById('result-title').textContent = recommendations.title;
-                        document.getElementById('result-description').textContent = recommendations.description;
-                        
-                        const perfumesContainer = document.getElementById('recommended-perfumes');
-                        perfumesContainer.innerHTML = '';
-
-                        if (perfumes && perfumes.length > 0) {
-                            perfumes.forEach(perfume => {
-                                const perfumeCard = document.createElement('div');
-                                perfumeCard.className = 'perfume-card';
-                                perfumeCard.innerHTML = `
-                                    <div class="perfume-image">
-                                        <img src="${perfume.imageUrl || '/images/default-perfume.png'}" 
-                                             alt="${perfume.name}" style="width: 60px; height: 60px; object-fit: contain;">
-                                    </div>
-                                    <div class="perfume-name">${perfume.name}</div>
-                                    <div class="perfume-brand">${perfume.brand || ''}</div>
-                                    <div class="perfume-notes">
-                                        <div class="small text-primary">${perfume.gradeName || ''}</div>
-                                        <div>${perfume.mainNote || ''}</div>
-                                    </div>
-                                    <div class="fw-bold text-primary">${(perfume.price || 0).toLocaleString()}원</div>
-                                    <a href="/main/content/${perfume.id}" class="btn btn-sm btn-outline-primary mt-2">
-                                        자세히 보기
-                                    </a>
-                                `;
-                                perfumesContainer.appendChild(perfumeCard);
-                            });
-                        } else {
-                            this.showSamplePerfumes(recommendations, perfumesContainer);
-                        }
-                    })
-                    .catch(() => {
-                        this.showSamplePerfumes(recommendations, document.getElementById('recommended-perfumes'));
-                    });
-            }
-
-            // ★ 수정된 메소드: intensity 정보를 API로 전달 (gradeIds 사용)
-            async fetchRecommendedPerfumes(mainNoteIds, intensity) {
-                try {
-                    const params = new URLSearchParams();
-                    mainNoteIds.forEach(id => params.append('mainNoteIds', id));
-                    
-                    // ★ 강도에 따른 grade ID 필터링 추가
-                    if (intensity) {
-                        const allowedGradeIds = this.getGradeIdsByIntensity(intensity);
-                        allowedGradeIds.forEach(gradeId => params.append('gradeIds', gradeId));
-                    }
-                    
-                    params.append('size', '6');
-                    
-                    const response = await fetch(`/api/products/recommendations?${params.toString()}`);
-                    if (!response.ok) throw new Error('API 호출 실패');
-                    
-                    const data = await response.json();
-                    if (data.success && data.items && data.items.length > 0) {
-                        return data.items;
-                    } else {
-                        throw new Error('추천 상품이 없습니다');
-                    }
-                } catch {
-                    return [];
-                }
-            }
-
-            showSamplePerfumes(recommendations, container) {
-                // ★ 샘플 향수도 강도에 따라 필터링
-                const allowedGradeIds = this.getGradeIdsByIntensity(this.answers.intensity);
-                const allowedGradeNames = this.getGradeNamesByIntensity(this.answers.intensity);
-                const intensityText = this.getIntensityText(this.answers.intensity);
-                
-                recommendations.perfumes.forEach(perfume => {
-                    const perfumeCard = document.createElement('div');
-                    perfumeCard.className = 'perfume-card';
-                    
-                    if (perfume.isCategory) {
-                        const mainNoteParam = Array.isArray(perfume.mainNoteId) ? 
-                            perfume.mainNoteId.join(',') : perfume.mainNoteId;
-                        
-                        // ★ URL에 gradeIds 필터 추가
-                        let url = `/main/list?mainNoteIds=${mainNoteParam}`;
-                        if (allowedGradeIds.length > 0) {
-                            const gradeParam = allowedGradeIds.join(',');
-                            url += `&gradeIds=${gradeParam}`;
-                        }
-                        
-                        perfumeCard.innerHTML = `
-                            <div class="perfume-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                ${perfume.icon}
-                            </div>
-                            <div class="perfume-name">${perfume.name}</div>
-                            <div class="perfume-brand">${perfume.brand}</div>
-                            <div class="perfume-notes">
-                                <div class="small text-primary">${intensityText}</div>
-                                <div>${perfume.notes}</div>
-                            </div>
-                            <a href="${url}" class="btn btn-sm btn-primary mt-2">
-                                <i class="fas fa-search"></i> 상품 보러가기
-                            </a>
-                        `;
-                    } else {
-                        perfumeCard.innerHTML = `
-                            <div class="perfume-image">
-                                <img src="${perfume.imageUrl || '/images/default-perfume.png'}" 
-                                     alt="${perfume.name}" style="width: 60px; height: 60px; object-fit: contain;">
-                            </div>
-                            <div class="perfume-name">${perfume.name}</div>
-                            <div class="perfume-brand">${perfume.brand}</div>
-                            <div class="perfume-notes">
-                                <div class="small text-primary">${perfume.gradeName || ''}</div>
-                                <div>${perfume.notes}</div>
-                            </div>
-                            <div class="fw-bold text-primary">${parseInt(perfume.price || 0).toLocaleString()}원</div>
-                            <a href="/main/content/${perfume.id}" class="btn btn-sm btn-outline-primary mt-2">
-                                자세히 보기
-                            </a>
-                        `;
-                    }
-                    container.appendChild(perfumeCard);
-                });
-
-                document.getElementById('result-title').textContent = recommendations.title;
-                document.getElementById('result-description').textContent = recommendations.description;
-            }
-
-            // ★ 새로 추가: 강도별 텍스트 반환
-            getIntensityText(intensity) {
-                const intensityMap = {
-                    'light': '라이트 (은은한 향)',
-                    'medium': '미디움 (적당한 향)',
-                    'strong': '스트롱 (진한 향)'
-                };
-                return intensityMap[intensity] || '';
-            }
-
-            getRecommendationsByAnswers() {
-                const mainNoteMapping = {
-                    'floral': 6, 'citrus': 7, 'woody': 2, 'spicy': 1,
-                    'vanilla': 8, 'fruity': 4, 'herbal': 3, 'gourmand': 5
-                };
-
-                const { demographics, mood, season, intensity, notes, personality } = this.answers;
-                
-                let primaryMainNote = mainNoteMapping[notes] || 6;
-                let additionalNotes = new Set();
-
-                if (mood === 'romantic') {
-                    if (primaryMainNote !== 6) additionalNotes.add(6);
-                    if (primaryMainNote !== 8) additionalNotes.add(8);
-                } else if (mood === 'professional') {
-                    if (primaryMainNote !== 2) additionalNotes.add(2);
-                    if (primaryMainNote !== 7) additionalNotes.add(7);
-                } else if (mood === 'casual') {
-                    if (primaryMainNote !== 7) additionalNotes.add(7);
-                    if (primaryMainNote !== 3) additionalNotes.add(3);
-                } else if (mood === 'luxurious') {
-                    if (primaryMainNote !== 1) additionalNotes.add(1);
-                    if (primaryMainNote !== 5) additionalNotes.add(5);
-                }
-
-                if (season === 'spring') {
-                    if (primaryMainNote !== 6) additionalNotes.add(6);
-                    if (primaryMainNote !== 4) additionalNotes.add(4);
-                } else if (season === 'summer') {
-                    if (primaryMainNote !== 7) additionalNotes.add(7);
-                    if (primaryMainNote !== 3) additionalNotes.add(3);
-                } else if (season === 'autumn') {
-                    if (primaryMainNote !== 2) additionalNotes.add(2);
-                    if (primaryMainNote !== 5) additionalNotes.add(5);
-                } else if (season === 'winter') {
-                    if (primaryMainNote !== 8) additionalNotes.add(8);
-                    if (primaryMainNote !== 1) additionalNotes.add(1);
-                }
-
-                if (personality === 'gentle') {
-                    if (primaryMainNote !== 6) additionalNotes.add(6);
-                    if (primaryMainNote !== 8) additionalNotes.add(8);
-                } else if (personality === 'confident') {
-                    if (primaryMainNote !== 1) additionalNotes.add(1);
-                    if (primaryMainNote !== 2) additionalNotes.add(2);
-                } else if (personality === 'fresh') {
-                    if (primaryMainNote !== 7) additionalNotes.add(7);
-                    if (primaryMainNote !== 3) additionalNotes.add(3);
-                } else if (personality === 'mysterious') {
-                    if (primaryMainNote !== 5) additionalNotes.add(5);
-                    if (primaryMainNote !== 1) additionalNotes.add(1);
-                }
-
-                const recommendedMainNotes = [primaryMainNote, ...Array.from(additionalNotes).slice(0, 2)];
-                
-                const mainNoteNames = {
-                    1: '스파이시', 2: '우디', 3: '허벌', 4: '푸루티',
-                    5: '구르망', 6: '플로랄', 7: '시트러스', 8: '바닐라'
-                };
-
-                const selectedNoteNames = recommendedMainNotes.map(id => mainNoteNames[id]).join(', ');
-                const intensityText = this.getIntensityText(intensity);
-                
-                let title = "당신만의 시그니처 향수";
-                let description = `${selectedNoteNames} 계열의 ${intensityText} 향수를 중심으로 당신에게 어울리는 향수들을 선별했어요.`;
-
-                // ★ 강도별 맞춤 메시지 추가
-                if (intensity === 'light') {
-                    description = `${selectedNoteNames} 계열의 은은하고 부드러운 향수들로 일상에서 편안하게 사용하세요.`;
-                } else if (intensity === 'strong') {
-                    description = `${selectedNoteNames} 계열의 진하고 오래가는 향수들로 특별한 순간을 더욱 인상깊게 만드세요.`;
-                }
-
-                if (mood === 'romantic' && notes === 'floral') {
-                    title = "로맨틱 플로럴의 여신";
-                    description = `${selectedNoteNames} 계열의 ${intensityText} 달콤하고 우아한 향수들을 추천해드려요.`;
-                } else if (personality === 'confident' && notes === 'spicy') {
-                    title = "강렬한 카리스마";
-                    description = `${selectedNoteNames} 계열의 ${intensityText} 파워풀한 향수로 당신의 자신감을 표현해보세요.`;
-                } else if (mood === 'casual' && notes === 'citrus') {
-                    title = "상쾌한 일상의 동반자";
-                    description = `${selectedNoteNames} 계열의 ${intensityText} 상쾌한 향수들로 매일을 특별하게 만들어보세요.`;
-                } else if (season === 'winter' && notes === 'gourmand') {
-                    title = "겨울밤의 달콤한 유혹";
-                    description = `${selectedNoteNames} 계열의 ${intensityText} 따뜻하고 달콤한 향수로 추운 겨울을 포근하게.`;
-                } else if (demographics === 'male' && notes === 'woody') {
-                    title = "남성적 매력의 완성";
-                    description = `${selectedNoteNames} 계열의 ${intensityText} 깊이 있는 향수로 당신만의 남성미를 연출하세요.`;
-                } else if (demographics === 'female' && mood === 'luxurious') {
-                    title = "우아한 여성의 품격";
-                    description = `${selectedNoteNames} 계열의 ${intensityText} 고급스러운 향수로 특별한 매력을 발산하세요.`;
-                } else if (notes === 'vanilla') {
-                    title = "달콤한 바닐라의 매력";
-                    description = `${selectedNoteNames} 계열의 ${intensityText} 부드럽고 따뜻한 향수로 포근함을 표현하세요.`;
-                } else if (notes === 'herbal') {
-                    title = "자연의 상쾌함";
-                    description = `${selectedNoteNames} 계열의 ${intensityText} 청량한 향수로 자연스러운 매력을 연출하세요.`;
-                } else if (notes === 'fruity') {
-                    title = "상큼한 과일 향연";
-                    description = `${selectedNoteNames} 계열의 ${intensityText} 달콤하고 상큼한 향수로 활기찬 매력을 표현하세요.`;
-                }
-
-                const categoryLinks = [
-                    {
-                        id: "list",
-                        name: `${mainNoteNames[recommendedMainNotes[0]]} 계열 향수`,
-                        brand: "22°C 추천",
-                        icon: this.getIconByNote(recommendedMainNotes[0]),
-                        notes: `${selectedNoteNames} 향수 모음`,
-                        isCategory: true,
-                        mainNoteId: recommendedMainNotes[0]
-                    },
-                    {
-                        id: "list", 
-                        name: `${mainNoteNames[recommendedMainNotes[1] || recommendedMainNotes[0]]} 베스트`,
-                        brand: "22°C 추천",
-                        icon: this.getIconByNote(recommendedMainNotes[1] || recommendedMainNotes[0]),
-                        notes: "인기 상품 모음",
-                        isCategory: true,
-                        mainNoteId: recommendedMainNotes[1] || recommendedMainNotes[0]
-                    },
-                    {
-                        id: "list",
-                        name: "전체 추천 상품",
-                        brand: "22°C",
-                        icon: "💫",
-                        notes: "당신을 위한 특별한 선택",
-                        isCategory: true,
-                        mainNoteId: recommendedMainNotes.join(',')
-                    }
-                ];
-
-                return {
-                    title,
-                    description,
-                    perfumes: categoryLinks,
-                    mainNoteIds: recommendedMainNotes
-                };
-            }
-        }
-
-        function restartSurvey() {
-            location.reload();
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            new PerfumeSurvey();
+    bindEvents() {
+        // 옵션 선택
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', () => {
+                this.handleOptionSelect(card);
+            });
         });
-    </script>
+
+        // 네비게이션
+        document.getElementById('btn-next')?.addEventListener('click', () => {
+            this.nextStep();
+        });
+
+        document.getElementById('btn-prev')?.addEventListener('click', () => {
+            this.prevStep();
+        });
+
+        // 상황별 탭
+        document.querySelectorAll('.situation-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                this.switchSituation(tab.dataset.situation);
+            });
+        });
+    }
+
+    handleOptionSelect(optionCard) {
+        const questionCard = optionCard.closest('.question-card');
+        const questionName = optionCard.closest('.option-grid').dataset.name;
+        const value = optionCard.dataset.value;
+
+        // 기존 선택 해제
+        questionCard.querySelectorAll('.option-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+
+        // 새 선택 활성화
+        optionCard.classList.add('selected');
+        this.answers[questionName] = value;
+
+        // 다음 버튼 활성화
+        const nextBtn = document.getElementById('btn-next');
+        nextBtn.disabled = false;
+    }
+
+    nextStep() {
+        if (this.currentStep < this.totalSteps) {
+            this.hideCurrentStep();
+            this.currentStep++;
+            this.showCurrentStep();
+            this.updateProgress();
+            this.updateNavigation();
+        } else {
+            this.submitSurvey();
+        }
+    }
+
+    prevStep() {
+        if (this.currentStep > 1) {
+            this.hideCurrentStep();
+            this.currentStep--;
+            this.showCurrentStep();
+            this.updateProgress();
+            this.updateNavigation();
+        }
+    }
+
+    hideCurrentStep() {
+        const currentCard = document.querySelector(`[data-question="${this.currentStep}"]`);
+        if (currentCard) currentCard.classList.remove('active');
+    }
+
+    showCurrentStep() {
+        const currentCard = document.querySelector(`[data-question="${this.currentStep}"]`);
+        if (currentCard) {
+            setTimeout(() => currentCard.classList.add('active'), 100);
+        }
+    }
+
+    updateProgress() {
+        const progressFill = document.getElementById('progress-fill');
+        const currentStepEl = document.getElementById('current-step');
+        
+        const percentage = (this.currentStep / this.totalSteps) * 100;
+        progressFill.style.width = percentage + '%';
+        currentStepEl.textContent = this.currentStep;
+    }
+
+    updateNavigation() {
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+
+        btnPrev.style.display = this.currentStep > 1 ? 'inline-flex' : 'none';
+
+        const currentCard = document.querySelector(`[data-question="${this.currentStep}"]`);
+        const hasAnswer = currentCard && currentCard.querySelector('.option-card.selected');
+        btnNext.disabled = !hasAnswer;
+
+        if (this.currentStep === this.totalSteps) {
+            btnNext.innerHTML = 'AI 분석 시작 <i class="fas fa-magic"></i>';
+        } else {
+            btnNext.innerHTML = '다음 <i class="fas fa-chevron-right"></i>';
+        }
+    }
+
+    async submitSurvey() {
+        // 로딩 시작
+        document.getElementById('loading').style.display = 'flex';
+        document.querySelector('.navigation-buttons').style.display = 'none';
+        document.getElementById('questions-container').style.display = 'none';
+
+        try {
+            // AI 분석 요청
+            const response = await fetch('/api/recommendation/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ answers: this.answers })
+            });
+
+            if (!response.ok) {
+                throw new Error('서버 오류가 발생했습니다.');
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                // 분석 완료까지 대기
+                await this.waitForAnalysis();
+                // 결과 표시
+                await this.showAIResults();
+            } else {
+                throw new Error(result.message || '분석 요청에 실패했습니다.');
+            }
+
+        } catch (error) {
+            console.error('Survey submission failed:', error);
+            document.getElementById('loading').style.display = 'none';
+            alert('분석 중 오류가 발생했습니다: ' + error.message);
+        }
+    }
+
+    async waitForAnalysis() {
+        const maxWait = 30000;
+        const interval = 2000;
+        let elapsed = 0;
+
+        while (elapsed < maxWait) {
+            try {
+                const response = await fetch('/api/recommendation/status');
+                const status = await response.json();
+                
+                if (status.complete) {
+                    return;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, interval));
+                elapsed += interval;
+            } catch (error) {
+                console.error('Analysis status check failed:', error);
+                break;
+            }
+        }
+        
+        throw new Error('분석 시간이 초과되었습니다. 다시 시도해주세요.');
+    }
+
+    async showAIResults() {
+        try {
+            // 각 상황별 추천 가져오기
+            const situations = ['daily', 'special', 'gift'];
+            
+            for (const situation of situations) {
+                const response = await fetch(`/api/recommendation/situational?situation=${situation}`);
+                const data = await response.json();
+                this.aiResults[situation] = data;
+            }
+
+            // 로딩 숨기고 결과 표시
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('result-section').style.display = 'block';
+            
+            // 첫 번째 상황(daily) 표시
+            this.switchSituation('daily');
+
+        } catch (error) {
+            console.error('Results loading failed:', error);
+            document.getElementById('loading').style.display = 'none';
+            alert('결과를 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+
+    switchSituation(situation) {
+        this.currentSituation = situation;
+        
+        // 탭 활성화 상태 변경
+        document.querySelectorAll('.situation-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.situation === situation);
+        });
+
+        // 해당 상황의 추천 결과 표시
+        this.displayRecommendations(situation);
+    }
+
+    displayRecommendations(situation) {
+        const data = this.aiResults[situation];
+        if (!data) return;
+
+        // 분석 텍스트 업데이트
+        document.getElementById('analysis-text').textContent = data.analysis || '분석 결과가 없습니다.';
+
+        // 추천 상품 카드 생성
+        const container = document.getElementById('recommended-perfumes');
+        container.innerHTML = '';
+
+        if (data.products && data.products.length > 0) {
+            data.products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'perfume-card';
+                card.innerHTML = `
+                    <div class="perfume-image">
+                        <img src="${product.imageUrl || '/img/noimg.png'}" alt="${product.name}">
+                    </div>
+                    <div class="perfume-name">${product.name}</div>
+                    <div class="perfume-brand">${product.brandName}</div>
+                    <div class="perfume-reason">${product.reason}</div>
+                    <div class="perfume-price">${product.price.toLocaleString()}원</div>
+                    <a href="/main/content/${product.productId}" class="btn btn-primary btn-sm">
+                        자세히 보기
+                    </a>
+                `;
+                container.appendChild(card);
+            });
+        } else {
+            container.innerHTML = '<p class="text-muted">추천할 상품이 없습니다.</p>';
+        }
+    }
+}
+
+function restartSurvey() {
+    location.reload();
+}
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    new AIPerfumeSurvey();
+});
+</script>
+</th:block>
 </body>
 </html>
