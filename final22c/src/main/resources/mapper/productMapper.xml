@@ -210,5 +210,40 @@
     FROM BRAND b
     WHERE b.BRANDNO = #{brandNo}
   </select>
+  
+  
+	<!-- 브랜드명과 상품명으로 상품 검색 -->
+	<select id="findByBrandAndName" resultType="map">
+	    SELECT 
+	        p.ID as "productId",
+	        p.NAME as "name",
+	        b.BRANDNAME as "brandName"
+	    FROM PRODUCT p
+	    LEFT JOIN BRAND b ON p.BRAND_BRANDNO = b.BRANDNO
+	    WHERE 1=1
+	        <if test="brandName != null and brandName != ''">
+	            AND LOWER(b.BRANDNAME) LIKE LOWER(CONCAT('%', #{brandName}, '%'))
+	        </if>
+	        <if test="productName != null and productName != ''">
+	            AND LOWER(p.NAME) LIKE LOWER(CONCAT('%', #{productName}, '%'))
+	        </if>
+	    ORDER BY p.ID DESC
+	</select>
+	
+	<!-- 상품명으로 상품 검색 (부분 일치) -->
+	<select id="findByProductName" resultType="map">
+	    SELECT 
+	        p.ID as "productId",
+	        p.NAME as "name",
+	        b.BRANDNAME as "brandName"
+	    FROM PRODUCT p
+	    LEFT JOIN BRAND b ON p.BRAND_BRANDNO = b.BRANDNO
+	    WHERE 1=1
+	        <if test="productName != null and productName != ''">
+	            AND LOWER(p.NAME) LIKE LOWER(CONCAT('%', #{productName}, '%'))
+	        </if>
+	    ORDER BY p.ID DESC
+	    FETCH FIRST 10 ROWS ONLY
+	</select>
 
 </mapper>

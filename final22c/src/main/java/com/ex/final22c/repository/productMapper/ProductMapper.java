@@ -49,4 +49,16 @@ public interface ProductMapper {
     // ===== 브랜드 페이지용 =====
     List<Map<String, Object>> selectBrands();                 // id, name, imgUrl
     Map<String, Object>       selectBrandById(@Param("brandNo") Long brandNo);
+    
+ // ===== 추천 시스템용 추가 메서드 =====
+    /**
+     * 브랜드명과 상품명으로 상품 검색
+     */
+    List<Map<String, Object>> findByBrandAndName(@Param("brandName") String brandName, 
+                                                 @Param("productName") String productName);
+
+    /**
+     * 상품명으로 상품 검색 (부분 일치)
+     */
+    List<Map<String, Object>> findByProductName(@Param("productName") String productName);
 }

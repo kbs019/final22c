@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -152,7 +153,7 @@ public class HybridRecommendationService {
         prompt.append("2. special: 특별한 날이나 데이트용 향수\n");
         prompt.append("3. gift: 선물용으로 적합한 향수\n\n");
         
-        prompt.append("응답은 반드시 다음 JSON 형식으로만 작성해주세요:\n");
+        prompt.append("응답은 반드시 다음 JSON 형식으로만 작성해주세요 (중요: productId는 반드시 숫자로!):\n");
         prompt.append("{\n");
         prompt.append("  \"situationalRecommendations\": {\n");
         prompt.append("    \"daily\": {\n");
@@ -176,6 +177,7 @@ public class HybridRecommendationService {
         prompt.append("    }\n");
         prompt.append("  }\n");
         prompt.append("}\n");
+        prompt.append("\n**중요**: productId는 반드시 위 목록의 실제 숫자 ID를 사용하세요!");
         
         return prompt.toString();
     }
@@ -243,10 +245,35 @@ public class HybridRecommendationService {
         }
     }
 
-    
+    /**
+     * 상품 매핑 메서드 - 수정된 버전 (문자열 productId 처리)
+     */
     private RecommendedProduct mapToRecommendedProduct(Map<String, Object> productData) {
         try {
-            Long productId = Long.valueOf(productData.get("productId").toString());
+            Object productIdObj = productData.get("productId");
+            Long productId = null;
+            
+            // 1. productId가 숫자인지 문자열인지 확인
+            if (productIdObj instanceof Number) {
+                productId = ((Number) productIdObj).longValue();
+            } else if (productIdObj instanceof String) {
+                String productIdStr = (String) productIdObj;
+                
+                // 2-1. 숫자 문자열인 경우 파싱 시도
+                try {
+                    productId = Long.parseLong(productIdStr);
+                } catch (NumberFormatException e) {
+                    // 2-2. 문자열 상품명인 경우 DB에서 검색
+                    productId = findProductIdByName(productIdStr);
+                    if (productId == null) {
+                        log.warn("상품명으로 상품을 찾을 수 없습니다: {}", productIdStr);
+                        return null;
+                    }
+                }
+            } else {
+                log.warn("productId 형식이 올바르지 않습니다: {}", productIdObj);
+                return null;
+            }
             
             // DB에서 실제 상품 정보 조회
             Product product = productService.getProduct(productId);
@@ -276,6 +303,47 @@ public class HybridRecommendationService {
                 
         } catch (Exception e) {
             log.error("상품 매핑 실패: {}", productData, e);
+            return null;
+        }
+    }
+
+    /**
+     * 상품명으로 productId 찾기 (새로 추가된 메서드)
+     */
+    private Long findProductIdByName(String productName) {
+        try {
+            // 1. 언더스코어로 분리된 경우 처리 (예: "diptyque_tam_dao")
+            if (productName.contains("_")) {
+                String[] parts = productName.split("_");
+                if (parts.length >= 2) {
+                    String brandName = parts[0];
+                    String name = String.join(" ", java.util.Arrays.copyOfRange(parts, 1, parts.length));
+                    
+                    // ProductMapper를 통해 브랜드명과 상품명으로 검색
+                    List<Map<String, Object>> products = productMapper.findByBrandAndName(brandName, name);
+                    
+                    if (!products.isEmpty()) {
+                        Object idObj = products.get(0).get("productId"); // findByBrandAndName은 "productId" 반환
+                        if (idObj instanceof Number) {
+                            return ((Number) idObj).longValue();
+                        }
+                    }
+                }
+            }
+            
+            // 2. 일반 상품명으로 검색
+            List<Map<String, Object>> products = productMapper.findByProductName(productName);
+            
+            if (!products.isEmpty()) {
+                Object idObj = products.get(0).get("productId"); // findByProductName은 "productId" 반환
+                if (idObj instanceof Number) {
+                    return ((Number) idObj).longValue();
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("상품명으로 ID 찾기 실패: {}", productName, e);
             return null;
         }
     }
@@ -321,7 +389,17 @@ public class HybridRecommendationService {
                     for (Map<String, Object> product : products) {
                         Object productIdObj = product.get("productId");
                         if (productIdObj != null) {
-                            allProductIds.add(Long.valueOf(productIdObj.toString()));
+                            try {
+                                // 수정: 안전한 Long 변환
+                                if (productIdObj instanceof Number) {
+                                    allProductIds.add(((Number) productIdObj).longValue());
+                                } else if (productIdObj instanceof String) {
+                                    Long id = Long.parseLong((String) productIdObj);
+                                    allProductIds.add(id);
+                                }
+                            } catch (NumberFormatException e) {
+                                log.warn("productId 파싱 실패, 건너뜀: {}", productIdObj);
+                            }
                         }
                     }
                 }
@@ -339,11 +417,42 @@ public class HybridRecommendationService {
     
     private UserPreference createFallbackRecommendation(Users user, Map<String, String> survey) {
         try {
+            // Fallback JSON 생성 - 기본 추천 상품들로 구성
+            Map<String, Object> fallbackJson = new HashMap<>();
+            Map<String, Object> situationalRecs = new HashMap<>();
+            
+            // 기본 일상용 추천
+            Map<String, Object> daily = new HashMap<>();
+            daily.put("products", List.of(
+                Map.of("productId", 1, "volume", "50ml", "reason", "가벼운 향으로 일상에 적합"),
+                Map.of("productId", 2, "volume", "30ml", "reason", "은은한 향으로 사무실에서 사용하기 좋음")
+            ));
+            daily.put("reason", "AI 분석이 불가하여 기본 추천을 제공합니다");
+            
+            // 기본 특별한 날 추천
+            Map<String, Object> special = new HashMap<>();
+            special.put("products", List.of(
+                Map.of("productId", 3, "volume", "100ml", "reason", "특별한 날에 어울리는 매력적인 향")
+            ));
+            special.put("reason", "기본 특별한 날 추천");
+            
+            // 기본 선물 추천
+            Map<String, Object> gift = new HashMap<>();
+            gift.put("products", List.of(
+                Map.of("productId", 4, "volume", "75ml", "reason", "누구나 좋아할 만한 무난한 향")
+            ));
+            gift.put("reason", "기본 선물 추천");
+            
+            situationalRecs.put("daily", daily);
+            situationalRecs.put("special", special);
+            situationalRecs.put("gift", gift);
+            fallbackJson.put("situationalRecommendations", situationalRecs);
+            
             return UserPreference.builder()
                 .user(user)
                 .surveyAnswers(objectMapper.writeValueAsString(survey))
-                .aiAnalysis("{\"fallback\": true, \"message\": \"AI 분석을 사용할 수 없어 기본 추천을 제공합니다\"}")
-                .recommendedProducts("1,2,3")
+                .aiAnalysis(objectMapper.writeValueAsString(fallbackJson))
+                .recommendedProducts("1,2,3,4")
                 .build();
         } catch (Exception e) {
             log.error("Fallback 추천 생성 실패", e);
@@ -360,14 +469,68 @@ public class HybridRecommendationService {
         return SituationalRecommendation.builder()
             .situation(situation)
             .products(Collections.emptyList())
-            .analysis("추천 결과를 불러올 수 없습니다")
+            .analysis("설문조사를 먼저 완료해주세요")
             .build();
     }
+
+    /**
+     * 사용자 설문 완료 여부 확인
+     */
     public boolean hasUserCompletedSurvey(String username) {
         Optional<Users> user = userRepository.findByUserName(username);
         if (user.isPresent()) {
             return userPreferenceRepository.existsByUser(user.get());
         }
         return false;
+    }
+
+    /**
+     * 사용자 선호도 정보 조회
+     */
+    public UserPreference getUserPreference(String userName) {
+        return userPreferenceRepository.findByUser_UserName(userName).orElse(null);
+    }
+
+    /**
+     * 모든 상황별 추천 한번에 조회
+     */
+    public Map<String, SituationalRecommendation> getAllSituationalRecommendations(String userName) {
+        Map<String, SituationalRecommendation> result = new HashMap<>();
+        result.put("daily", getSituationalRecommendation(userName, "daily"));
+        result.put("special", getSituationalRecommendation(userName, "special"));
+        result.put("gift", getSituationalRecommendation(userName, "gift"));
+        return result;
+    }
+
+    /**
+     * 추천 상품 ID 리스트 조회
+     */
+    public List<Long> getRecommendedProductIds(String userName) {
+        UserPreference preference = userPreferenceRepository.findByUser_UserName(userName).orElse(null);
+        if (preference == null || preference.getRecommendedProducts() == null) {
+            return Collections.emptyList();
+        }
+
+        try {
+            return java.util.Arrays.stream(preference.getRecommendedProducts().split(","))
+                .filter(s -> !s.trim().isEmpty())
+                .map(s -> Long.parseLong(s.trim()))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("추천 상품 ID 파싱 실패: {}", userName, e);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 설문 초기화 (재설문을 위한)
+     */
+    @Transactional
+    public void resetUserSurvey(String userName) {
+        Optional<Users> user = userRepository.findByUserName(userName);
+        if (user.isPresent()) {
+            userPreferenceRepository.deleteByUser_UserName(userName);
+            log.info("사용자 설문 데이터 초기화: {}", userName);
+        }
     }
 }
