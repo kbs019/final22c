@@ -1,9 +1,98 @@
 <html layout:decorate="~{/layout/layout}">
+<th:block layout:fragment="css">
+<style>
+ /* ===사이드박스/그리드 레이아웃 복구===*/
+      .mp-grid {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+      }
+
+      .mp-col-left {
+        position: sticky;
+        top: 24px;
+        /* 스크롤 시 고정되는 위치 */
+        align-self: start;
+        z-index: 1;
+      }
+
+      .mp-col-right {
+        min-width: 0;
+        /* 긴 내용 줄바꿈을 위해 */
+      }
+
+      /* === 사이드박스/그리드 레이아웃 === */
+      .mp-grid {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+      }
+
+      .mp-col-left {
+        position: sticky;
+        top: 24px;
+        align-self: start;
+        z-index: 1;
+      }
+
+      .mp-col-right {
+        min-width: 0;
+      }
+
+      /* 사이드박스 내부 스타일 */
+      .mp-sidebox__title {
+        font-size: 20px;
+        font-weight: 800;
+        margin: 0 0 12px;
+      }
+
+      .mp-sidebox__nav {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .mp-sidebox__link {
+        display: block;
+        padding: 8px 10px;
+        border-radius: 10px;
+        text-decoration: none;
+        color: #111827;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+      }
+
+      .mp-sidebox__link:hover {
+        background: #f3f7ff;
+      }
+
+      .mp-sidebox__link.is-active {
+        background: #111827;
+        color: #fff;
+        border-color: #111827;
+      }
+
+      /* 모바일 대응 */
+      @media (max-width: 860px) {
+        .mp-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .mp-col-left {
+          position: static;
+        }
+      }
+</style>
+</th:block>
 <th:block layout:fragment="content">
+<div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
     <div class="container my-4">
+    
         <h2 class="mb-3">내 관심목록</h2>
         <div class="row g-3">
-            <div class="col-6 col-md-3" th:each="p : ${paging.content}">
+            <div class="col-6 col-md-3" th:each="p : ${paging}">
                 <a th:href="@{|/main/content/${p.id}|}" class="card h-100 text-decoration-none text-dark">
                     <img th:src="@{|${p.imgPath}${p.imgName}|}" class="card-img-top" th:alt="${p.name}">
                     <div class="card-body">
@@ -18,7 +107,7 @@
             </div>
         </div>
 
-        <!-- 페이지네이션 -->
+ <!--        페이지네이션
         <nav class="mt-4" th:if="${totalPages > 1}">
             <ul class="pagination">
                 <li class="page-item" th:classappend="${page==0} ? 'disabled'">
@@ -33,7 +122,7 @@
                 </li>
             </ul>
         </nav>
-    </div>
+    </div> -->
 </th:block>
 
 </html>

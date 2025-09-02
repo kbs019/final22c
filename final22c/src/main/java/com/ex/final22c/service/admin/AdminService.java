@@ -778,4 +778,13 @@ public class AdminService {
         userRepository.save(user);
         return true;
     }
+    
+    @Transactional
+    public void changeStatus(Long reviewId, String status) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("리뷰 없음"));
+
+        review.setStatus(status);
+        // JPA에서는 save() 안 해도 @Transactional 걸려 있으면 flush 때 반영됨
+    }
 }
