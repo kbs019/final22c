@@ -7,10 +7,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
 import com.ex.final22c.data.recommendation.SituationalRecommendation;
 import com.ex.final22c.data.recommendation.SurveySubmission;
-import com.ex.final22c.data.user.UserPreference;
 import com.ex.final22c.service.chat.HybridRecommendationService;
 import com.ex.final22c.service.chat.AsyncRecommendationService;
 
