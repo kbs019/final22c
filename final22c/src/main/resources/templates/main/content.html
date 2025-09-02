@@ -181,11 +181,44 @@
               </div>
 
               <div class="mt-3 d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary" id="btn-add-cart">장바구니</button>
+                <!-- 장바구니: 품절일 때도 클릭 가능(알림 유도용) -->
+                <button type="button" class="btn btn-outline-secondary" id="btn-add-cart"
+                  th:attr="data-oos=${product.count == 0} ? 'true' : 'false'">
+                  장바구니
+                </button>
+
+                <!-- 재고 있을 때만 바로결제 -->
                 <button type="submit" class="btn btn-secondary" formaction="/checkout/order" formmethod="post"
-                  id="btn-buy-now">바로 결제</button>
+                  id="btn-buy-now" th:if="${product.count > 0}">
+                  바로 결제
+                </button>
+
+                <!-- 재고 없을 때 입고 알림 -->
+                <button type="button" class="btn btn-secondary" id="btn-restock" th:if="${product.count == 0}">
+                  입고 알림 신청
+                </button>
               </div>
             </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 공용 로그인 모달 -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loginModalTitle">로그인 필요</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body" id="loginModalBody">
+            로그인이 필요한 서비스입니다. <br>
+            로그인 하시겠습니까?
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">나중에 하기</button>
+            <a id="loginModalCta" class="btn btn-secondary" href="/user/login">로그인하기</a>
           </div>
         </div>
       </div>
@@ -210,6 +243,62 @@
             <span sec:authorize="isAnonymous()">
               <a th:href="@{/user/login}" class="btn btn-secondary" id="goCartBtn">로그인하기</a>
             </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 품절 시 장바구니 클릭 → 알림 유도 모달 -->
+    <div class="modal fade" id="restockPromptModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">입고 알림</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body">
+            품절된 상품입니다.<br>
+            이 상품의 입고 알림을 신청하시겠습니까?
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">나중에 하기</button>
+            <button class="btn btn-secondary" id="btn-restock-confirm">입고 알림 신청</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 알림 신청 완료 모달 -->
+    <div class="modal fade" id="restockDoneModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">입고 알림</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body">입고 알림이 등록되었습니다.</div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 이미 신청자 안내 모달 -->
+    <div class="modal fade" id="restockAlreadyModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">입고 알림</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body">
+            이미 알림 신청을 하신 상품입니다.<br>
+            알림 신청을 취소하시겠습니까?
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">닫기</button>
+            <button class="btn btn-danger" id="btn-restock-cancel">알림 취소</button>
           </div>
         </div>
       </div>
@@ -449,10 +538,38 @@
         };
       }
 
+      // 공용 로그인 모달 오픈 헬퍼
+      function showLoginModal({
+        title = '로그인 필요',
+        message = '로그인이 필요한 서비스입니다.',
+        redirectTo = (location.pathname + location.search)
+      } = {}) {
+        const el = document.getElementById('loginModal');
+        // 폴백: 모달이 없거나 bootstrap 미로딩 시 로그인 페이지로
+        if (!el || typeof bootstrap === 'undefined') {
+          const url = new URL('/user/login', location.origin);
+          url.searchParams.set('redirect', redirectTo);
+          location.href = url.pathname + url.search;
+          return;
+        }
+        document.getElementById('loginModalTitle').textContent = title;
+        // 줄바꿈 허용
+        document.getElementById('loginModalBody').innerHTML = message;
+
+        const cta = document.getElementById('loginModalCta');
+        const url = new URL('/user/login', location.origin);
+        url.searchParams.set('redirect', redirectTo);
+        cta.setAttribute('href', url.pathname + url.search);
+
+        new bootstrap.Modal(el).show();
+      }
+
       // 비로그인자가 '리뷰 작성' 클릭 시
       document.getElementById('btn-review-need-login')?.addEventListener('click', function () {
-        alert('로그인이 필요한 서비스입니다.');
-        location.href = '/user/login';
+        showLoginModal({
+          title: '리뷰 작성',
+          message: '로그인 후 작성할 수 있어요.'
+        });
       });
 
       // Bootstrap Modal 준비
@@ -471,6 +588,9 @@
       const PRODUCT_NAME = /*[[${product.name}]]*/ '';
       const MAX_STOCK = parseInt(qtyInput?.getAttribute('max') || '0', 10);
 
+      // 로그인 상태(서버에서 true/false로 렌더됨)
+      const LOGGED_IN = /*[[${#authorization.expression('isAuthenticated()')}]]*/ false;
+
       // 더블클릭 방지
       function withButtonLock(btn, fn) {
         if (!btn || btn.disabled) return;
@@ -480,6 +600,24 @@
 
       // 장바구니 추가
       btnAddCart?.addEventListener('click', () => withButtonLock(btnAddCart, async () => {
+
+        // ⬇️ 추가: 품절이면 /cart/add 호출 대신 알림 유도 모달
+        const isOOS = (MAX_STOCK <= 0) || btnAddCart.getAttribute('data-oos') === 'true';
+        if (isOOS) {
+          if (!LOGGED_IN) {
+            // 공용 로그인 모달 사용
+            showLoginModal({
+              title: '장바구니 담기',
+              message: '장바구니는 로그인 후 사용하실 수 있습니다.'
+            });
+          } else {
+            // 로그인 → 입고 알림 유도 모달 유지
+            const promptEl = document.getElementById('restockPromptModal');
+            if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).show();
+          }
+          return;
+        }
+
         let qty = parseInt(qtyInput.value, 10);
         if (isNaN(qty) || qty < 1) qty = 1;
         if (MAX_STOCK > 0) qty = Math.min(qty, MAX_STOCK);
@@ -585,7 +723,11 @@
             input.disabled = true;
             minusBtn.disabled = true;
             plusBtn.disabled = true;
-            document.querySelectorAll('#btn-add-cart, #btn-buy-now').forEach(b => b.disabled = true);
+
+            // ⬇️ 바로결제만 막고, 장바구니는 활성 유지 (품절 시 알림 유도용)
+            document.getElementById('btn-buy-now')?.setAttribute('disabled', 'true');
+            document.getElementById('btn-add-cart')?.removeAttribute('disabled');
+
             recalcAndRender(0);
             return;
           }
@@ -594,7 +736,10 @@
           plusBtn.disabled = (parseInt(input.value, 10) >= MAX);
           input.max = String(MAX);
           recalcAndRender(parseInt(input.value, 10));
-          document.querySelectorAll('#btn-add-cart, #btn-buy-now').forEach(b => b.disabled = false);
+
+          // 재고 있을 때는 둘 다 활성
+          document.getElementById('btn-buy-now')?.removeAttribute('disabled');
+          document.getElementById('btn-add-cart')?.removeAttribute('disabled');
         }
         updateUI();
         minusBtn.addEventListener('click', function () {
@@ -621,8 +766,10 @@
       // 비로그인: 로그인 안내
       document.querySelectorAll('.like-wrap .need-login')?.forEach(b => {
         b.addEventListener('click', () => {
-          alert('로그인이 필요한 서비스입니다.');
-          location.href = '/user/login';
+          showLoginModal({
+            title: '리뷰 공감',
+            message: '로그인 후 공감할 수 있어요.'
+          });
         });
       });
 
@@ -644,16 +791,26 @@
               credentials: 'same-origin'
             });
 
-            // 권한/세션 만료 처리
-            if (res.status === 401 || res.status === 403) {
-              alert('로그인이 필요합니다.');
-              location.href = '/user/login';
-              return;
-            }
+            // // 권한/세션 만료 처리
+            // if (res.status === 401 || res.status === 403) {
+            //   alert('로그인이 필요합니다.');
+            //   location.href = '/user/login';
+            //   return;
+            // }
+            // const ct = res.headers.get('content-type') || '';
+            // if (!ct.includes('application/json')) {
+            //   alert('세션이 만료되었습니다. 다시 로그인해 주세요.');
+            //   location.href = '/user/login';
+            //   return;
+            // }
+
+            // 401/403 또는 세션만료 응답 → 공용 로그인 모달
             const ct = res.headers.get('content-type') || '';
-            if (!ct.includes('application/json')) {
-              alert('세션이 만료되었습니다. 다시 로그인해 주세요.');
-              location.href = '/user/login';
+            if (res.status === 401 || res.status === 403 || !ct.includes('application/json')) {
+              showLoginModal({
+                title: '리뷰 공감',
+                message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.'
+              });
               return;
             }
 
@@ -673,109 +830,109 @@
     </script>
 
     <script th:inline="javascript">
-    (function(){
-      const bmBtn = document.querySelector('.bm-btn');
-      if(!bmBtn) return;
+      (function () {
+        const bmBtn = document.querySelector('.bm-btn');
+        if (!bmBtn) return;
 
-      const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+        const PRODUCT_ID = /*[[${product.id}]]*/ 0;
 
-      const zzimLoginModal  = document.getElementById('zzimLoginModal');
-      const confirmModalEl  = document.getElementById('zzimConfirmModal');
-      const doneModalEl     = document.getElementById('zzimDoneModal');
+        const zzimLoginModal = document.getElementById('zzimLoginModal');
+        const confirmModalEl = document.getElementById('zzimConfirmModal');
+        const doneModalEl = document.getElementById('zzimDoneModal');
 
-      const loginModal  = zzimLoginModal ? new bootstrap.Modal(zzimLoginModal) : null;
-      const confirmModal= confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
-      const doneModal   = doneModalEl ? new bootstrap.Modal(doneModalEl) : null;
+        const loginModal = zzimLoginModal ? new bootstrap.Modal(zzimLoginModal) : null;
+        const confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
+        const doneModal = doneModalEl ? new bootstrap.Modal(doneModalEl) : null;
 
-      function withLock(btn, fn){
-        if(!btn || btn.disabled) return;
-        btn.disabled = true;
-        return Promise.resolve(fn()).finally(()=> setTimeout(()=> btn.disabled=false, 600));
-      }
-
-      // 공통 fetch(JSON) + CSRF
-      async function fetchJSON(url, opt={}){
-        const { header, token } = getCsrfPair();
-        const base = {
-          credentials:'same-origin',
-          headers: { 'Accept':'application/json', ...(opt.body ? {'Content-Type':'application/json'}:{}), ...(token ? {[header]:token}:{}) }
-        };
-        const res = await fetch(url, {...base, ...opt});
-        if(res.status===401 || res.status===403){ throw { auth:true }; }
-        const ct = res.headers.get('content-type') || '';
-        const data = ct.includes('application/json') ? await res.json() : {};
-        if(!res.ok) throw { status:res.status, data };
-        return data;
-      }
-
-      // 서버에서 실시간 상태 확인(= product_zzimers 테이블 조회 반영)
-      const checkState = ()=> fetchJSON(`/zzim/state?productId=${PRODUCT_ID}`, { method:'GET' })
-                                .then(d => !!d.zzimed);
-
-      const addZzim    = ()=> fetchJSON(`/zzim/add`,    { method:'POST', body: JSON.stringify({ productId: PRODUCT_ID })});
-      const removeZzim = ()=> fetchJSON(`/zzim/remove?productId=${PRODUCT_ID}`, { method:'POST' });
-
-      bmBtn.addEventListener('click', ()=> withLock(bmBtn, async ()=>{
-        try {
-          // 서버에 실제 상태 질의 (비로그인 시 401 → catch에서 처리)
-          const already = await checkState();
-
-          if (already) {
-            confirmModal?.show();
-            const okBtn = confirmModalEl?.querySelector('.btn-confirm');
-            const handler = async ()=>{
-              await withLock(okBtn, async ()=>{
-                await removeZzim();
-                bmBtn.setAttribute('aria-pressed','false');
-                bmBtn.title = '관심 등록';
-                confirmModal?.hide();
-              });
-            };
-            okBtn?.addEventListener('click', handler, { once:true });
-          } else {
-            await addZzim();
-            bmBtn.setAttribute('aria-pressed','true');
-            bmBtn.title = '관심 해제';
-            doneModal?.show();
-          }
-        } catch (e) {
-          if (e && e.auth) { loginModal?.show(); return; }  // 401/403
-          alert('처리 중 오류가 발생했습니다.');
+        function withLock(btn, fn) {
+          if (!btn || btn.disabled) return;
+          btn.disabled = true;
+          return Promise.resolve(fn()).finally(() => setTimeout(() => btn.disabled = false, 600));
         }
-      }));
-    })();
+
+        // 공통 fetch(JSON) + CSRF
+        async function fetchJSON(url, opt = {}) {
+          const { header, token } = getCsrfPair();
+          const base = {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', ...(opt.body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { [header]: token } : {}) }
+          };
+          const res = await fetch(url, { ...base, ...opt });
+          if (res.status === 401 || res.status === 403) { throw { auth: true }; }
+          const ct = res.headers.get('content-type') || '';
+          const data = ct.includes('application/json') ? await res.json() : {};
+          if (!res.ok) throw { status: res.status, data };
+          return data;
+        }
+
+        // 서버에서 실시간 상태 확인(= product_zzimers 테이블 조회 반영)
+        const checkState = () => fetchJSON(`/zzim/state?productId=${PRODUCT_ID}`, { method: 'GET' })
+          .then(d => !!d.zzimed);
+
+        const addZzim = () => fetchJSON(`/zzim/add`, { method: 'POST', body: JSON.stringify({ productId: PRODUCT_ID }) });
+        const removeZzim = () => fetchJSON(`/zzim/remove?productId=${PRODUCT_ID}`, { method: 'POST' });
+
+        bmBtn.addEventListener('click', () => withLock(bmBtn, async () => {
+          try {
+            // 서버에 실제 상태 질의 (비로그인 시 401 → catch에서 처리)
+            const already = await checkState();
+
+            if (already) {
+              confirmModal?.show();
+              const okBtn = confirmModalEl?.querySelector('.btn-confirm');
+              const handler = async () => {
+                await withLock(okBtn, async () => {
+                  await removeZzim();
+                  bmBtn.setAttribute('aria-pressed', 'false');
+                  bmBtn.title = '관심 등록';
+                  confirmModal?.hide();
+                });
+              };
+              okBtn?.addEventListener('click', handler, { once: true });
+            } else {
+              await addZzim();
+              bmBtn.setAttribute('aria-pressed', 'true');
+              bmBtn.title = '관심 해제';
+              doneModal?.show();
+            }
+          } catch (e) {
+            if (e && e.auth) { loginModal?.show(); return; }  // 401/403
+            alert('처리 중 오류가 발생했습니다.');
+          }
+        }));
+      })();
     </script>
 
     <!-- Chart.js + 구매자 피라미드 렌더 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script th:inline="javascript">
-      (function() {
+      (function () {
         const productId = /*[[${product.id}]]*/ 0;
         const api = `/main/api/product/${productId}/buyer-stats`;
         const $canvas = document.getElementById('buyerStatChart');
-        const $empty  = document.getElementById('buyerStatEmpty');
+        const $empty = document.getElementById('buyerStatEmpty');
         if (!$canvas) return;
 
         // 중앙 라벨 + 중앙 여백(막대 잘라내기) 플러그인
         const centerPlugin = {
           id: 'pyramidCenter',
           beforeDatasetsDraw(chart) {
-            const {ctx, chartArea} = chart;
+            const { ctx, chartArea } = chart;
             const midX = (chartArea.left + chartArea.right) / 2;
             const gutter = 64; // 중앙 여백(px) — 필요시 조절
-            const leftW  = midX - gutter/2 - chartArea.left;
-            const rightW = chartArea.right - (midX + gutter/2);
+            const leftW = midX - gutter / 2 - chartArea.left;
+            const rightW = chartArea.right - (midX + gutter / 2);
 
             ctx.save();
             ctx.beginPath();
             // 왼쪽 영역
-            ctx.rect(chartArea.left, chartArea.top, Math.max(0,leftW), chartArea.bottom - chartArea.top);
+            ctx.rect(chartArea.left, chartArea.top, Math.max(0, leftW), chartArea.bottom - chartArea.top);
             // 오른쪽 영역
-            ctx.rect(midX + gutter/2, chartArea.top, Math.max(0,rightW), chartArea.bottom - chartArea.top);
+            ctx.rect(midX + gutter / 2, chartArea.top, Math.max(0, rightW), chartArea.bottom - chartArea.top);
             ctx.clip(); // 막대는 중앙여백을 비우고 그려짐
           },
           afterDatasetsDraw(chart) {
-            const {ctx, chartArea, scales} = chart;
+            const { ctx, chartArea, scales } = chart;
             const y = scales.y;
             const midX = (chartArea.left + chartArea.right) / 2;
 
@@ -803,7 +960,7 @@
           .then(data => {
             const labels = data?.labels || [];
             const ds = data?.datasets || [];
-            const male   = (ds.find(v => v.label === '남성')?.data || []).map(Number);
+            const male = (ds.find(v => v.label === '남성')?.data || []).map(Number);
             const female = (ds.find(v => v.label === '여성')?.data || []).map(Number);
 
             const hasData = (male.concat(female)).some(v => v > 0);
@@ -818,7 +975,7 @@
                 labels,
                 datasets: [
                   { label: '여성', data: femaleNeg, stack: 'gender' },
-                  { label: '남성', data: male,      stack: 'gender' }
+                  { label: '남성', data: male, stack: 'gender' }
                 ]
               },
               options: {
@@ -848,7 +1005,7 @@
                   x: {
                     stacked: true,
                     min: -maxAbs,
-                    max:  maxAbs,
+                    max: maxAbs,
                     grid: {
                       drawBorder: true,         // 맨 아래 축선은 표시
                       drawOnChartArea: false,   // 차트 안쪽 세로/가로선은 전부 제거
@@ -867,7 +1024,151 @@
       })();
     </script>
 
+    <script th:inline="javascript">
+      (function () {
+        const PRODUCT_ID = /*[[${product.id}]]*/ 0;
 
+        // 이미 있는 유틸: getCsrfPair(), showLoginModal(), fetchJSON() 재사용
+        async function fetchJSON(url, opt = {}) {
+          const { header, token } = getCsrfPair();
+          const base = {
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              ...(opt.body ? { 'Content-Type': 'application/json' } : {}),
+              ...(token ? { [header]: token } : {})
+            }
+          };
+          const res = await fetch(url, { ...base, ...opt });
+          const ct = res.headers.get('content-type') || '';
+          const data = ct.includes('application/json') ? await res.json() : {};
+          if (!res.ok) throw { status: res.status, data };
+          return data;
+        }
+
+        // 상태 조회: 이미 신청했는지(true/false)
+        async function isSubscribed() {
+          const d = await fetchJSON(`/restockAlert/state?productId=${PRODUCT_ID}`);
+          return !!d.subscribed;
+        }
+
+        // 신청
+        async function subscribeRestock() {
+          return fetchJSON('/restockAlert/subscribe', {
+            method: 'POST',
+            body: JSON.stringify({ productId: PRODUCT_ID })
+          });
+        }
+
+        // 취소
+        async function cancelRestock() {
+          return fetchJSON('/restockAlert/cancel', {
+            method: 'POST',
+            body: JSON.stringify({ productId: PRODUCT_ID })
+          });
+        }
+
+        // 상단 버튼 텍스트/스타일 토글
+        function markSubscribed(btn, on) {
+          if (!btn) return;
+          if (on) {
+            btn.textContent = '알림 신청됨';
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-outline-secondary');
+          } else {
+            btn.textContent = '입고 알림 신청';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-secondary');
+          }
+        }
+
+        const topBtn = document.getElementById('btn-restock');
+        const alreadyEl = document.getElementById('restockAlreadyModal');
+        const alreadyModal = (alreadyEl && typeof bootstrap !== 'undefined') ? new bootstrap.Modal(alreadyEl) : null;
+
+        // ① 상단 "입고 알림 신청" 버튼 클릭
+        topBtn?.addEventListener('click', async () => {
+          if (!LOGGED_IN) {
+            showLoginModal({ title: '입고 알림', message: '입고 알림 신청은 로그인 후 이용할 수 있어요.' });
+            return;
+          }
+          topBtn.disabled = true;
+          try {
+            if (await isSubscribed()) {
+              // 이미 신청자 → 취소 모달
+              alreadyModal?.show();
+            } else {
+              await subscribeRestock();
+              markSubscribed(topBtn, true);
+              const doneEl = document.getElementById('restockDoneModal');
+              if (doneEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(doneEl).show();
+            }
+          } catch (err) {
+            if (err?.status === 401 || err?.status === 403) {
+              showLoginModal({ title: '입고 알림', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
+            } else {
+              alert(err?.data?.message || '처리 중 오류가 발생했습니다.');
+            }
+          } finally {
+            setTimeout(() => topBtn.disabled = false, 600);
+          }
+        });
+
+        // ② OOS 유도 모달에서 "입고 알림 신청" 클릭 시에도 상태 확인 후 분기
+        document.getElementById('btn-restock-confirm')?.addEventListener('click', async (e) => {
+          const b = e.currentTarget;
+          if (b.disabled) return;
+          b.disabled = true;
+          try {
+            if (await isSubscribed()) {
+              // 유도 모달 닫고 → 이미 신청 모달 열기
+              const promptEl = document.getElementById('restockPromptModal');
+              if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).hide?.();
+              alreadyModal?.show();
+              return;
+            }
+            await subscribeRestock();
+            // 유도 모달 닫고 완료 모달
+            const promptEl = document.getElementById('restockPromptModal');
+            const doneEl = document.getElementById('restockDoneModal');
+            if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).hide?.();
+            if (doneEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(doneEl).show();
+            markSubscribed(topBtn, true);
+          } catch (err) {
+            if (err?.status === 401 || err?.status === 403) {
+              const promptEl = document.getElementById('restockPromptModal');
+              if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).hide?.();
+              showLoginModal({ title: '입고 알림', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
+            } else {
+              alert(err?.data?.message || '처리 중 오류가 발생했습니다.');
+            }
+          } finally {
+            setTimeout(() => b.disabled = false, 600);
+          }
+        });
+
+        // ③ "알림 취소" 버튼 → 취소 호출 후 상태/버튼 반영
+        document.getElementById('btn-restock-cancel')?.addEventListener('click', async (e) => {
+          const b = e.currentTarget;
+          if (b.disabled) return;
+          b.disabled = true;
+          try {
+            await cancelRestock();
+            alreadyModal?.hide();
+            markSubscribed(topBtn, false);
+          } catch (err) {
+            if (err?.status === 401 || err?.status === 403) {
+              alreadyModal?.hide();
+              showLoginModal({ title: '입고 알림', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
+            } else {
+              alert(err?.data?.message || '처리 중 오류가 발생했습니다.');
+            }
+          } finally {
+            setTimeout(() => b.disabled = false, 600);
+          }
+        });
+      })();
+    </script>
   </th:block>
 </body>
 
