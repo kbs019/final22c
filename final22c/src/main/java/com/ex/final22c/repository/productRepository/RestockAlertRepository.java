@@ -39,7 +39,7 @@ public interface RestockAlertRepository extends JpaRepository<RestockAlert, Long
         from RestockAlert ra
         where ra.user.userNo = :userNo
             and ra.status = 'REQUESTED'
-            and ra.product.stockQuantity > 0
+            and ra.product.count > 0
     """)
     List<RestockAlert> findUserRequestedWithStock(@Param("userNo") Long userNo);
 
@@ -71,4 +71,14 @@ public interface RestockAlertRepository extends JpaRepository<RestockAlert, Long
             and ra.notifiedReg >= :since
     """)
     boolean existsRecentNotified(@Param("productId") Long productId, @Param("userNo") Long userNo, @Param("since") LocalDateTime since);
+
+    // 유저 단위 쿨다운을 추가해서 “최근 N시간 내 이미 이 유저에게 재입고 문자를 보냈으면 스킵”
+    @Query("""
+    select count(ra) > 0
+    from RestockAlert ra
+    where ra.user.userNo = :userNo
+        and ra.status = 'NOTIFIED'
+        and ra.notifiedReg >= :since
+    """)
+    boolean existsUserRecentNotified(@Param("userNo") Long userNo, @Param("since") java.time.LocalDateTime since);
 }
