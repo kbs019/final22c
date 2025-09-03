@@ -8,12 +8,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +56,46 @@ public class AdminController {
 	private final RefundService refundService;
 	private final StatsService statsService;
 	private final SalesStatService salesStatService;
+
+	// ====== 대시보드 진입 ======
+	@GetMapping("dashboard")
+	public String dashboardPage() {
+		return "admin/dashboard";
+	}
+
+	// ====== KPI ======
+	@ResponseBody
+	@GetMapping("dashboard/kpis")
+	public Map<String, Object> dashboardKpis() {
+		return adminService.buildDashboardKpis();
+	}
+
+	// ====== 품절임박 Top5 ======
+	@ResponseBody
+	@GetMapping("dashboard/low-stock")
+	public List<Map<String, Object>> lowStockTop5() {
+		return adminService.findLowStockTop5();
+	}
+
+	// ====== 신규회원(일간) 시리즈: 기본 최근 7일 ======
+	@ResponseBody
+	@GetMapping("usersStats/api/daily")
+	public List<Map<String, Object>> newUserDailySeries(
+			@RequestParam(name="from", required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam(name="to",   required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate to) {
+		LocalDate today = LocalDate.now();
+		if (to == null)   to = today;
+		if (from == null) from = to.minusDays(6);
+		return adminService.buildNewUserSeries(from, to);
+	}
+
+	// 품절 Top5
+	@ResponseBody
+	@GetMapping("dashboard/sold-out")
+	public List<Map<String, Object>> soldOutTop5() {
+		return adminService.findSoldOutTop5();
+	}
+
 
 	// 회원목록
 	@GetMapping("userList")

@@ -8,6 +8,8 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,6 +21,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.LinkedHashSet;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -92,6 +95,102 @@ public class AdminService {
     private final ReviewFilterService reviewFilterService;
     private final RestockNotifyService restockNotifyService;
 
+
+    // ===== 대시보드 KPI =====
+    public Map<String, Object> buildDashboardKpis() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime from = today.atStartOfDay();
+        LocalDateTime to   = today.atTime(LocalTime.MAX);
+
+        // 오늘 매출(원): revenueSeriesByDay 사용
+        long todayRevenue = 0L;
+        var rows = orderDetailRepository.revenueSeriesByDay(from, to);
+        for (Object[] r : rows) {
+            Number rev = (Number) r[1];
+            if (rev != null) todayRevenue += rev.longValue();
+        }
+
+        // 오늘 주문건수: PAID/CONFIRMED/REFUNDED
+        List<String> okStatuses = List.of("PAID","CONFIRMED","REFUNDED");
+        long ordersToday = orderRepository.countByRegDateBetweenAndStatusIn(from, to, okStatuses);
+
+        // 전체 회원수, 최근 7일 신규
+        long totalUsers = userRepository.count();
+        LocalDate since = today.minusDays(7); // 기존 buildAllUserStats와 동일 규칙(이상 포함)
+        long newUsers7d = userRepository.findAll().stream()
+                .filter(u -> u.getReg()!=null && ( !u.getReg().isBefore(since) )) // since 이상
+                .count();
+
+        return Map.of(
+                "todayRevenue", todayRevenue,
+                "ordersToday", ordersToday,
+                "totalUsers", totalUsers,
+                "newUsers7d", newUsers7d
+        );
+    }
+
+    // ===== 품절임박 Top5 (재고 0 제외, count 오름차순) =====
+    public List<Map<String, Object>> findLowStockTop5() {
+        List<Product> all = productRepository.findAll(Sort.by(Sort.Direction.ASC, "count"));
+        return all.stream()
+                .filter(p -> p.getCount() > 0)
+                .limit(5)
+                .map(p -> {
+                    String brandName = (p.getBrand()!=null) ? p.getBrand().getBrandName() : null;
+                    return Map.<String,Object>of(
+                            "id", p.getId(),
+                            "name", p.getName(),
+                            "brand", brandName,
+                            "imgPath", p.getImgPath(),
+                            "imgName", p.getImgName(),
+                            "count", p.getCount(),
+                            "sellPrice", p.getSellPrice()
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+    // 품절(재고 0) Top5: 최근 등록(id 내림차순) 기준
+    public List<Map<String, Object>> findSoldOutTop5() {
+        // id DESC로 정렬 후 count==0만 필터링하여 상위 5개
+        List<Product> all = productRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+        return all.stream()
+                .filter(p -> p.getCount() == 0)
+                .limit(5)
+                .map(p -> {
+                    String brandName = (p.getBrand()!=null) ? p.getBrand().getBrandName() : null;
+                    return Map.<String,Object>of(
+                            "id", p.getId(),
+                            "name", p.getName(),
+                            "brand", brandName,
+                            "imgPath", p.getImgPath(),
+                            "imgName", p.getImgName(),
+                            "count", p.getCount(),
+                            "sellPrice", p.getSellPrice()
+                    );
+                })
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+
+    // ===== 신규회원 일간 시리즈 =====
+    public List<Map<String, Object>> buildNewUserSeries(LocalDate from, LocalDate to) {
+        // users 전체 가져와 reg 기준 그룹핑
+        Map<LocalDate, Long> grouped = userRepository.findAll().stream()
+                .filter(u -> u.getReg()!=null && !u.getReg().isBefore(from) && !u.getReg().isAfter(to))
+                .collect(Collectors.groupingBy(Users::getReg, Collectors.counting()));
+
+        long days = ChronoUnit.DAYS.between(from, to);
+        List<Map<String,Object>> out = new ArrayList<>();
+        for (int i=0; i<=days; i++){
+            LocalDate d = from.plusDays(i);
+            long c = grouped.getOrDefault(d, 0L);
+            out.add(Map.of("date", d.toString(), "count", c));
+        }
+        return out;
+    }
+
+    
     // 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
 
