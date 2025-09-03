@@ -53,13 +53,11 @@
         주문내역
       </a>
 
-      <!-- ✅ 마일리지 내역 추가 -->
+      <!-- 마일리지 내역 추가 -->
       <a th:href="@{/mypage/mileage}" class="mp-sidebox__link"
         th:classappend="${section}=='mileage' ? ' is-active' : ''"
         th:attr="aria-current=(${section}=='mileage') ? 'page' : null">
         <span>마일리지 내역</span>
-        <!-- 칩: me.mileage 모델 있을 때만 표시 -->
-
       </a>
 
       <a th:href="@{/mypage/profile}" class="mp-sidebox__link"

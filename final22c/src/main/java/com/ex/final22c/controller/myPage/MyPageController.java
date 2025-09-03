@@ -9,12 +9,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.user.Users;
@@ -73,21 +78,30 @@ public class MyPageController {
         return "myPage/addressForm";
     }
 
-    @PostMapping("/address")
-    public String createAddress(@Valid UsersAddressForm form,
-            BindingResult br,
+    @PostMapping(value = "/address", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.TEXT_HTML_VALUE)
+    public String createAddress(
+            @Valid @ModelAttribute("usersAddressForm") UsersAddressForm form,
+            BindingResult bindingResult,
             Principal principal,
-            Model model) {
-        if (principal == null)
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        if (principal == null) {
             return "redirect:/user/login";
-        if (br.hasErrors()) {
+        }
+
+        if (bindingResult.hasErrors()) {
             Users me = usersService.getLoginUser(principal);
             model.addAttribute("userAddresses",
                     userAddressRepository.findByUser_UserNo(me.getUserNo()));
+            model.addAttribute("section", "address"); // 사이드박스 하이라이트 유지용(있다면)
             return "myPage/addressForm";
         }
+
         Users me = usersService.getLoginUser(principal);
-        userAddressService.insertUserAddress(me.getUserNo(), form);
+        userAddressService.insertUserAddress(me.getUserNo(), form); // 첫 주소 자동 기본지정은 서비스에서 처리
+
+        redirectAttributes.addFlashAttribute("msg", "주소가 등록되었습니다.");
         return "redirect:/mypage/address";
     }
 
@@ -148,9 +162,39 @@ public class MyPageController {
         if (principal == null)
             return "redirect:/user/login";
         List<Product> list = this.zzimService.listMyZzim(principal.getName());
-        model.addAttribute("paging",list);
+        model.addAttribute("paging", list);
         model.addAttribute("section", "wishlist");
         return "mypage/zzimList";
+    }
+
+    // 수정
+    @PutMapping(value = "/address/{addressNo}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateAddress(
+            @PathVariable("addressNo") Long addressNo,
+            @RequestBody UsersAddressForm form,
+            Principal principal) {
+
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+        Users me = usersService.getLoginUser(principal);
+
+        var updated = userAddressService.updateUserAddress(me.getUserNo(), addressNo, form);
+        return ResponseEntity.ok(Map.of("ok", true, "address", MyPageController.AddressDto.from(updated)));
+    }
+
+    // 삭제
+    @DeleteMapping(value = "/address/{addressNo}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteAddress(
+            @PathVariable("addressNo") Long addressNo, Principal principal) {
+
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+        Users me = usersService.getLoginUser(principal);
+
+        userAddressService.deleteUserAddress(me.getUserNo(), addressNo);
+        return ResponseEntity.ok(Map.of("ok", true));
     }
 
 }

@@ -135,27 +135,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   int updateStatus(@Param("id") Long id, @Param("status") String status);
 
   Optional<Order> findByOrderIdAndUser_UserName(long orderId, String userName);
-  
+
   List<Order> findByUser_UserNameOrderByRegDateDesc(String userName);
-
-
 
   interface MileageRow {
 
-
-
-
-
-
-
-
-
-
-    
     Long getOrderId();
+
     java.time.LocalDateTime getProcessedAt();
+
     Long getUsedPoint();
+
     Long getEarnedPoint();
+
     String getStatus();
   }
 
