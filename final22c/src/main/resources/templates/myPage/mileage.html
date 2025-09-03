@@ -15,6 +15,7 @@
             overflow-y: scroll
         }
 
+        /* 공통 래퍼 */
         .m-wrap {
             font-family: var(--font-sans);
             font-size: 14px;
@@ -27,7 +28,7 @@
             font-size: 12px
         }
 
-        /* grid (주문내역과 동일) */
+        /* ========== 사이드박스 그리드 (배송지와 동일) ========== */
         .mp-grid {
             display: grid;
             grid-template-columns: 260px minmax(0, 1fr);
@@ -42,7 +43,7 @@
             z-index: 1
         }
 
-        /* header */
+        /* 헤더 */
         .m-header {
             display: flex;
             align-items: center;
@@ -56,6 +57,7 @@
             margin: 0
         }
 
+        /* 보유 포인트 칩 */
         .m-chip {
             display: inline-flex;
             flex-direction: column;
@@ -76,7 +78,7 @@
             letter-spacing: .5px
         }
 
-        /* table */
+        /* 테이블 */
         .m-table {
             width: 100%;
             border-collapse: separate;
@@ -118,72 +120,95 @@
             font-weight: 800
         }
 
-        /* -1,000P */
+        /* -P */
         .pt-earn {
             color: #16a34a;
             font-weight: 800
         }
 
-        /* +500P */
+        /* +P */
 
-        /* empty */
         .m-empty {
             padding: 48px 0;
             text-align: center;
             color: #9ca3af
         }
 
-        /* pager */
+        /* ===== 페이징 ===== */
         .pager {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
             justify-content: center;
-            margin: 18px 0
+            margin: 16px 0
         }
 
-        .pager .btn {
-            appearance: none;
+        .pager .page-btn {
             border: 1px solid #e5e7eb;
             background: #fff;
-            color: #111827;
-            padding: 8px 12px;
-            border-radius: 10px;
+            padding: 6px 10px;
+            border-radius: 8px;
             cursor: pointer;
-            min-width: 44px;
-            text-align: center
+            text-decoration: none;
+            color: #111827;
         }
 
-        .pager .btn:hover {
+        .pager .page-btn:hover {
             background: #f3f7ff
         }
 
-        .pager .btn[disabled] {
+        .pager .page-btn[aria-current="page"] {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb
+        }
+
+        .pager .page-btn[aria-disabled="true"],
+        .pager .page-btn.disabled {
             opacity: .5;
+            pointer-events: none;
             cursor: not-allowed
         }
 
-        .pager .num {
-            min-width: 36px;
-            padding: 8px 10px;
-            border-radius: 10px;
-            border: 1px solid #111827;
-            background: #111827;
-            color: #fff;
-            text-align: center
+        /* === 사이드박스 (공통) === */
+        .mp-sidebox__title {
+            font-size: 20px;
+            font-weight: 800;
+            margin: 0 0 12px;
         }
 
-        .pager input[type="number"] {
-            width: 56px;
-            padding: 8px 8px;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            text-align: center
+        .mp-sidebox__nav {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
+
+        .mp-sidebox__link {
+            display: block;
+            padding: 8px 10px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #111827;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+        }
+
+        .mp-sidebox__link:hover {
+            background: #f3f7ff;
+        }
+
+        .mp-sidebox__link.is-active {
+            background: #111827;
+            color: #fff;
+            border-color: #111827;
+        }
+    </style>
+
     </style>
 
     <section class="m-wrap">
         <div class="mp-grid">
+            <!-- 사이드박스 (배송지와 동일 구조) -->
             <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox('mileage')}"></div>
 
             <div class="mp-col-right">
@@ -197,8 +222,10 @@
 
                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:12px 0 16px" />
 
+                <!-- 비어있을 때 -->
                 <div th:if="${rows.content.empty}" class="m-empty">마일리지 사용/적립 내역이 없습니다.</div>
 
+                <!-- 목록 -->
                 <table th:if="${!rows.content.empty}" class="m-table" aria-describedby="pageTitle">
                     <colgroup>
                         <col style="width:160px">
@@ -218,24 +245,21 @@
                     </thead>
                     <tbody>
                         <tr th:each="r : ${rows.content}">
-                            <td class="mile-order">
+                            <td>
                                 <a class="m-link" th:href="@{|/mypage/order/${r.orderId}|}"
                                     th:text="'#' + ${r.orderId}">#0</a>
                             </td>
-                            <td th:text="${#temporals.format(r.processedAt,'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</td>
-
+                            <td th:text="${#temporals.format(r.processedAt,'yyyy-MM-dd HH:mm')}">2025-01-01 12:00</td>
                             <td>
                                 <span th:if="${(r.usedPoint?:0) > 0}" class="pt-use"
                                     th:text="${'-' + #numbers.formatInteger(r.usedPoint,1,'COMMA')} + 'P'">-0P</span>
                                 <span th:if="${(r.usedPoint?:0) == 0}" class="muted">-</span>
                             </td>
-
                             <td>
                                 <span th:if="${(r.earnedPoint?:0) > 0}" class="pt-earn"
                                     th:text="${'+' + #numbers.formatInteger(r.earnedPoint,1,'COMMA')} + 'P'">+0P</span>
                                 <span th:if="${(r.earnedPoint?:0) == 0}" class="muted">-</span>
                             </td>
-
                             <td th:switch="${#strings.toUpperCase(r.status)}">
                                 <span th:case="'CONFIRMED'">구매확정</span>
                                 <span th:case="'REFUNDED'">환불완료</span>
@@ -245,22 +269,32 @@
                     </tbody>
                 </table>
 
-                <!-- 페이징 -->
-                <div th:if="${rows.totalPages > 0}" class="pager"
-                    th:attr="data-total=${rows.totalPages}, data-number=${rows.number}">
-                    <a class="btn" th:classappend="${!rows.hasPrevious} ? ' disabled'"
-                        th:href="@{|/mypage/mileage?page=${rows.number}&size=${rows.size}|}"
-                        th:attr="aria-disabled=${!rows.hasPrevious}">이전</a>
+                <!-- ===== 버튼형 페이저 ===== -->
+                <nav class="pager" aria-label="페이지네이션" th:if="${rows.totalPages > 1}">
+                    <!-- 첫 페이지 -->
+                    <a class="page-btn" th:classappend="${rows.first} ? ' disabled'"
+                        th:attr="aria-disabled=${rows.first}"
+                        th:href="@{|/mypage/mileage?page=1&size=${rows.size}|}">«</a>
 
-                    <span class="num" th:text="${rows.number + 1}">1</span>
-                    <input id="jumpInput" type="number" min="1" th:max="${rows.totalPages}"
-                        th:value="${rows.number + 1}" aria-label="이동할 페이지 입력" />
-                    <a class="btn" th:classappend="${!rows.hasNext} ? ' disabled'"
-                        th:href="@{|/mypage/mileage?page=${rows.number + 2}&size=${rows.size}|}"
-                        th:attr="aria-disabled=${!rows.hasNext}">다음</a>
-                </div>
+                    <!-- 이전 -->
+                    <a class="page-btn" th:classappend="${!rows.hasPrevious} ? ' disabled'"
+                        th:attr="aria-disabled=${!rows.hasPrevious}"
+                        th:href="@{|/mypage/mileage?page=${rows.number}&size=${rows.size}|}">‹</a>
 
-                <div th:if="${rows.content.empty}" class="m-empty">마일리지 사용/적립 내역이 없습니다.</div>
+                    <!-- 페이지 번호들 (1-base) -->
+                    <a class="page-btn" th:each="i : ${#numbers.sequence(1, rows.totalPages)}" th:text="${i}"
+                        th:href="@{|/mypage/mileage?page=${i}&size=${rows.size}|}"
+                        th:attr="aria-current=${i == rows.number + 1} ? 'page' : null"></a>
+
+                    <!-- 다음 -->
+                    <a class="page-btn" th:classappend="${!rows.hasNext} ? ' disabled'"
+                        th:attr="aria-disabled=${!rows.hasNext}"
+                        th:href="@{|/mypage/mileage?page=${rows.number + 2}&size=${rows.size}|}">›</a>
+
+                    <!-- 마지막 -->
+                    <a class="page-btn" th:classappend="${rows.last} ? ' disabled'" th:attr="aria-disabled=${rows.last}"
+                        th:href="@{|/mypage/mileage?page=${rows.totalPages}&size=${rows.size}|}">»</a>
+                </nav>
             </div>
         </div>
     </section>
@@ -272,14 +306,15 @@
             input.addEventListener('change', () => {
                 const pager = document.querySelector('.pager');
                 const total = parseInt(pager?.dataset.total || '1', 10);
+                const size = parseInt(pager?.dataset.size || '10', 10);
                 let p = parseInt(input.value || '1', 10);
                 if (!Number.isFinite(p)) return;
                 p = Math.max(1, Math.min(total, p));
                 const params = new URLSearchParams(location.search);
                 params.set('page', String(p));
-                params.set('size', params.get('size') || '10');
-                location.href = (document.querySelector('meta[name="context-path"]')?.content || '')
-                    + '/mypage/mileage?' + params.toString();
+                params.set('size', String(size));
+                const ctx = document.querySelector('meta[name="context-path"]')?.content || '';
+                location.href = ctx + '/mypage/mileage?' + params.toString();
             });
         })();
     </script>

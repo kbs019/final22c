@@ -16,15 +16,26 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserAddressService {
+
     private final UserAddressRepository userAddressRepository;
     private final UserRepository userRepository;
 
+    /*
+     * -----------------------------------------------------------
+     * 신규 등록: 첫 주소는 자동으로 기본(Y)
+     * - 사용자가 기본지정 의사를 밝히면 그 주소를 기본으로
+     * - 주소가 하나도 없을 때는 자동으로 기본으로
+     * -----------------------------------------------------------
+     */
     @Transactional
-    public void insertUserAddress(Long userNo, UsersAddressForm form){
+    public void insertUserAddress(Long userNo, UsersAddressForm form) {
         Users user = userRepository.findById(userNo)
                 .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
-        if ("Y".equals(form.getIsDefault())) {
+        final long addressCount = userAddressRepository.countByUser_UserNo(userNo);
+        final boolean wantDefault = wantDefault(form) || addressCount == 0;
+
+        if (wantDefault) {
             userAddressRepository.clearDefaultByUserNo(userNo);
         }
 
@@ -35,27 +46,23 @@ public class UserAddressService {
                 .zonecode(form.getZonecode())
                 .roadAddress(form.getRoadAddress())
                 .detailAddress(form.getDetailAddress())
-                // isDefault는 null일 때 @PrePersist에서 'N'
-                .isDefault(Boolean.TRUE.equals(form.getIsDefault()) ? "Y" : "N") // 'Y' 또는 null
+                .isDefault(wantDefault ? "Y" : "N") // ★ 핵심
                 .build();
 
-        // 연관관계 설정 (둘 중 하나 택1, 동시에 중복 호출하지 말 것)
-        // 1) 편의 메서드 사용
-        user.addAddress(addr);
-        userRepository.save(user); // cascade=ALL 이므로 address도 저장
-
-        // 2) 또는 직접 주인 세팅 후 address 저장
-        // addr.setUser(user);
-        // userAddressRepository.save(addr);
+        addr.setUser(user);
+        userAddressRepository.save(addr);
     }
-    
-    // 기존 배송지 등록은 void 타입이라 상세페이지의 주소변경을 ajax로 구현하기 위해 UserAddress타입으로 받는다
+
+    /* Ajax 등록용: 저장된 주소를 반환 */
     @Transactional
-    public UserAddress insertUserAddressReturn(Long userNo, UsersAddressForm form){
+    public UserAddress insertUserAddressReturn(Long userNo, UsersAddressForm form) {
         Users user = userRepository.findById(userNo)
                 .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
-        if ("Y".equals(form.getIsDefault()) || Boolean.TRUE.equals(form.getIsDefault())) {
+        final long addressCount = userAddressRepository.countByUser_UserNo(userNo);
+        final boolean wantDefault = wantDefault(form) || addressCount == 0;
+
+        if (wantDefault) {
             userAddressRepository.clearDefaultByUserNo(userNo);
         }
 
@@ -66,29 +73,78 @@ public class UserAddressService {
                 .zonecode(form.getZonecode())
                 .roadAddress(form.getRoadAddress())
                 .detailAddress(form.getDetailAddress())
-                .isDefault(Boolean.TRUE.equals(form.getIsDefault()) || "Y".equals(form.getIsDefault()) ? "Y" : "N")
+                .isDefault(wantDefault ? "Y" : "N") // ★ 핵심
                 .build();
 
-        user.addAddress(addr);
-        userRepository.save(user);   // cascade로 addr도 저장되고 PK가 채워짐
-        return addr;                 // ← 저장된 주소 반환
+        addr.setUser(user);
+        return userAddressRepository.save(addr);
     }
 
-
-    // 기본 배송지 설정
+    /* 기본 배송지 단일 지정 */
     @Transactional
     public void setDefault(Long userNo, Long addressNo) {
         userAddressRepository.clearDefaultByUserNo(userNo);
         userAddressRepository.markDefault(userNo, addressNo);
     }
 
-    // 사용자 주소 목록 조회
+    /* 목록 조회 */
     public List<UserAddress> getUserAddressesList(Long userNo) {
         return userAddressRepository.findByUser_UserNo(userNo);
     }
-    
-    // 기본 배송지 조회
+
+    /* 기본 배송지 조회 */
     public UserAddress getDefaultAddress(Long userNo) {
-        return userAddressRepository.findDefaultByUserNo(userNo);
+        return userAddressRepository.findDefaultByUserNo(userNo).orElse(null);
+    }
+
+    /* 수정 */
+    @Transactional
+    public UserAddress updateUserAddress(Long userNo, Long addressNo, UsersAddressForm form) {
+        UserAddress ua = userAddressRepository
+                .findByUser_UserNoAndAddressNo(userNo, addressNo)
+                .orElseThrow(() -> new IllegalArgumentException("주소를 찾을 수 없습니다."));
+
+        if (notBlank(form.getAddressName()))
+            ua.setAddressName(form.getAddressName().trim());
+        if (notBlank(form.getRecipient()))
+            ua.setRecipient(form.getRecipient().trim());
+        if (notBlank(form.getPhone()))
+            ua.setPhone(form.getPhone().trim());
+        if (notBlank(form.getZonecode()))
+            ua.setZonecode(form.getZonecode().trim());
+        if (notBlank(form.getRoadAddress()))
+            ua.setRoadAddress(form.getRoadAddress().trim());
+        if (notBlank(form.getDetailAddress()))
+            ua.setDetailAddress(form.getDetailAddress().trim());
+
+        // 기본주소로 지정 요청 시
+        if (wantDefault(form)) {
+            userAddressRepository.clearDefaultByUserNo(userNo);
+            ua.setIsDefault("Y");
+        }
+
+        return userAddressRepository.save(ua);
+    }
+
+    /* 삭제 */
+    @Transactional
+    public void deleteUserAddress(Long userNo, Long addressNo) {
+        userAddressRepository.deleteByUser_UserNoAndAddressNo(userNo, addressNo);
+    }
+
+    /* ---------- helpers ---------- */
+
+    private boolean notBlank(String s) {
+        return s != null && !s.trim().isEmpty();
+    }
+
+    /**
+     * 폼에서 기본지정 의사 파싱:
+     * - isDefault 값이 "Y" / "y" / "true" / "on" 인 경우를 모두 허용
+     * (checkbox, hidden, 문자열/불리언 혼용 대응)
+     */
+    private boolean wantDefault(UsersAddressForm form) {
+        String v = String.valueOf(form.getIsDefault());
+        return "Y".equalsIgnoreCase(v) || "true".equalsIgnoreCase(v) || "on".equalsIgnoreCase(v);
     }
 }

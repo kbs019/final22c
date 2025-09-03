@@ -1,6 +1,11 @@
 <html layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
   <style>
+    .muted {
+      color: #6b7280;
+    }
+
+    /* ===== 공통 기본 ===== */
     .to-top {
       display: none !important;
     }
@@ -13,7 +18,7 @@
       overflow-y: scroll;
     }
 
-    /* ===== Modal 기본 스타일 ===== */
+    /* ===== 모달 ===== */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -37,11 +42,8 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
       height: auto !important;
       max-height: 90vh;
-      /* 화면 기준 최대 높이 */
       overflow-y: auto;
-      /* 내용 스크롤 */
       box-sizing: border-box;
-      /* 패딩 포함 계산 */
     }
 
     .modal>form {
@@ -51,50 +53,54 @@
 
     .modal.open,
     .modal-backdrop.open {
-      display: block
+      display: block;
     }
 
+    /* ===== 공용 UI ===== */
     .row {
       display: flex;
       gap: 8px;
-      align-items: center
+      align-items: center;
     }
 
     .btn {
       padding: 8px 12px;
       border-radius: 8px;
       border: 1px solid #ddd;
-      cursor: pointer
+      background: #fff;
+      cursor: pointer;
     }
 
     .btn.primary {
-      background: #111;
+      background: #111827;
       color: #fff;
-      border-color: #111
+      border-color: #111827;
     }
 
+    /* 기존 .field (다른 화면에서도 쓰이므로 유지) */
     .field {
-      margin: 10px 0
+      margin: 10px 0;
     }
 
     .field>label {
       display: block;
       margin-bottom: 6px;
-      font-weight: 600
+      font-weight: 600;
     }
 
     .field>input {
       width: 100%;
       padding: 10px;
       border: 1px solid #ddd;
-      border-radius: 10px
+      border-radius: 10px;
+      box-sizing: border-box;
     }
 
-    /* X버튼 1시 방향 */
+    /* 닫기 버튼 */
     .x-close {
       position: absolute;
-      top: 0px;
-      right: 0px;
+      top: 0;
+      right: 0;
       width: 36px;
       height: 36px;
       border-radius: 50%;
@@ -108,13 +114,12 @@
       font-size: 20px;
     }
 
+    /* ===== 주소 카드 / 목록 ===== */
     .addr-card {
       display: grid;
       grid-template-columns: 28px 1fr auto;
-      /* 라디오 | 본문 | 버튼 */
-      align-items: center;
-      /* 세로 정렬 통일 */
       gap: 12px;
+      align-items: center;
       padding: 12px;
       border: 1px solid #ddd;
       border-radius: 12px;
@@ -130,8 +135,6 @@
       min-width: 0;
     }
 
-    /* 긴 텍스트 줄바꿈 허용 */
-
     .addr-row {
       display: flex;
       flex-wrap: wrap;
@@ -144,34 +147,33 @@
       border-radius: 6px;
       background: #222;
       color: #fff;
-      margin-left: 6px
+      margin-left: 6px;
     }
 
-    /* 좌/우 2단 */
-    /* 좌/우 2단 레이아웃 */
+    /* ===== 페이지 레이아웃 ===== */
     .mp-grid {
       display: grid;
       grid-template-columns: 260px minmax(0, 1fr);
       gap: 24px;
-      align-items: start
+      align-items: start;
     }
 
     .mp-col-left {
       position: sticky;
       top: 24px;
-      align-self: start
+      align-self: start;
     }
 
     .mp-sidebox__title {
       font-size: 20px;
       font-weight: 800;
-      margin: 0 0 12px
+      margin: 0 0 12px;
     }
 
     .mp-sidebox__nav {
       display: flex;
       flex-direction: column;
-      gap: 6px
+      gap: 6px;
     }
 
     .mp-sidebox__link {
@@ -181,58 +183,44 @@
       text-decoration: none;
       color: #111827;
       border: 1px solid #e5e7eb;
-      background: #fff
+      background: #fff;
     }
 
     .mp-sidebox__link:hover {
-      background: #f3f7ff
+      background: #f3f7ff;
     }
 
     .mp-sidebox__link.is-active {
       background: #111827;
       color: #fff;
-      border-color: #111827
+      border-color: #111827;
     }
 
     .mypage-body {
       max-width: 900px;
-      margin: 0 auto
+      margin: 0 auto;
     }
 
     .page-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px
+      margin-bottom: 12px;
     }
 
     .page-title {
       font-size: 20px;
       font-weight: 800;
-      margin: 0
+      margin: 0;
     }
 
-    .btn {
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      background: #fff;
-      cursor: pointer
-    }
-
-    .btn.primary {
-      background: #111827;
-      color: #fff;
-      border-color: #111827
-    }
-
-    /* 기본 배송지 카드 & 목록 */
+    /* 기본 배송지 카드 */
     #defaultAddressBox {
       border: 1px solid #e5e7eb;
       padding: 12px;
       border-radius: 12px;
       margin: 12px 0 16px;
-      background: #fff
+      background: #fff;
     }
 
     .addr-list {
@@ -240,40 +228,11 @@
       gap: 10px;
       margin: 0;
       padding: 0;
-      list-style: none
-    }
-
-    .addr-card {
-      display: grid;
-      grid-template-columns: 28px 1fr auto;
-      gap: 12px;
-      align-items: center;
-      padding: 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      background: #fff
-    }
-
-    .addr-radio-wrap {
-      width: 28px;
-      display: flex;
-      justify-content: center
-    }
-
-    .addr-body {
-      min-width: 0
-    }
-
-    .addr-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-      color: #111827
+      list-style: none;
     }
 
     .addr-name {
-      font-weight: 800
+      font-weight: 800;
     }
 
     .addr-chip {
@@ -283,7 +242,7 @@
       border-radius: 6px;
       background: #111827;
       color: #fff;
-      font-size: 12px
+      font-size: 12px;
     }
 
     .addr-chip:empty::after {
@@ -298,16 +257,84 @@
       padding: 0;
       overflow: hidden;
       clip: rect(0 0 0 0);
-      border: 0
+      border: 0;
+    }
+
+    /* ===== 라벨 왼쪽, 인풋 오른쪽 — 이미지1 스타일 ===== */
+    .field-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .field-row>label {
+      font-weight: 700;
+      color: #374151;
+      white-space: nowrap;
+    }
+
+    .field-row input {
+      width: 100%;
+      min-height: 38px;
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .field-row input[readonly] {
+      background: #f9fafb;
+      cursor: default;
+    }
+
+    .field-row input::placeholder {
+      color: #9ca3af;
+    }
+
+    .field-row input:focus {
+      outline: 0;
+      border-color: #cfd5dd;
+      box-shadow: none;
+    }
+
+    /* 우편번호 줄: 버튼 + 인풋 (HTML의 .zipline 클래스와 일치) */
+    .zipline {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #btnFindZip,
+    #e_btnFindZip {
+      padding: 8px 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    /* (모달 내 기존 .field 규칙은 다른 곳 호환용으로 두되, form-row로 렌더링) */
+    .modal .row {
+      gap: 8px;
+    }
+
+    .is-hidden {
+      display: none;
+    }
+
+    .addr-chip:empty::after {
+      content: '기본';
     }
   </style>
 
   <section class="mypage-wrap">
     <div class="mp-grid">
-      <!-- 좌측: 사이드박스 -->
       <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
 
-      <!-- 우측: 본문 (★ 이하 전부 이 안에) -->
       <div class="mp-col-right">
         <section class="mypage-body" role="region" aria-labelledby="pageTitle">
           <h1 id="pageTitle" class="sr-only">마이페이지 - 배송지 관리</h1>
@@ -320,10 +347,17 @@
           <!-- 기본 배송지 출력 -->
           <div id="defaultAddressBox">
             <strong style="display:block;margin-bottom:6px">기본 배송지</strong>
-            <div><span id="outAddrName">-</span></div>
-            <div><span id="outRecipient">-</span> <span id="outPhone"></span></div>
-            <div><span id="outZonecode"></span> <span id="outRoadAddress"></span> <span id="outDetailAddress"></span>
+
+            <div><span id="outAddrName"></span></div>
+            <div><span id="outRecipient"></span> <span id="outPhone"></span></div>
+            <div>
+              <span id="outZonecode"></span>
+              <span id="outRoadAddress"></span>
+              <span id="outDetailAddress"></span>
             </div>
+
+            <!-- 주소 목록이 비었을 때 기본박스 내부에 문구 표시 -->
+            <div class="muted" th:if="${#lists.isEmpty(userAddresses)}" style="margin-top:8px;">등록된 배송지가 없습니다.</div>
           </div>
 
           <!-- 주소 목록 -->
@@ -332,17 +366,17 @@
               <label class="addr-radio-wrap">
                 <input type="radio" name="defaultAddress" class="addr-radio" th:value="${a.addressNo}"
                   th:checked="${a.isDefault == 'Y'}" th:attr="data-addrname=${a.addressName},
-                                data-recipient=${a.recipient},
-                                data-phone=${a.phone},
-                                data-zonecode=${a.zonecode},
-                                data-road=${a.roadAddress},
-                                data-detail=${a.detailAddress}">
+                           data-recipient=${a.recipient},
+                           data-phone=${a.phone},
+                           data-zonecode=${a.zonecode},
+                           data-road=${a.roadAddress},
+                           data-detail=${a.detailAddress}">
               </label>
 
               <div class="addr-body">
                 <div class="addr-top">
                   <strong class="addr-name" th:text="${a.addressName}">주소</strong>
-                  <span class="addr-chip" th:if="${a.isDefault == 'Y'}"></span>
+                  <span class="addr-chip" th:classappend="${a.isDefault == 'Y'} ? '' : 'is-hidden'"></span>
                 </div>
                 <div class="addr-row">
                   <span class="label">수령인</span>
@@ -359,79 +393,163 @@
                 </div>
               </div>
 
-              <div class="addr-side"><!-- 필요 시 우측 액션 --></div>
+              <div class="addr-side">
+                <a href="#" class="btn btn--link js-edit" th:attr="data-id=${a.addressNo},
+                            data-name=${a.addressName},
+                            data-recipient=${a.recipient},
+                            data-phone=${a.phone},
+                            data-zonecode=${a.zonecode},
+                            data-road=${a.roadAddress},
+                            data-detail=${a.detailAddress},
+                            data-default=${a.isDefault}">수정</a>
+                <a href="#" class="btn btn--link js-delete"
+                  th:attr="data-id=${a.addressNo}, data-name=${a.addressName}">삭제</a>
+              </div>
             </li>
           </ul>
-
-          <p th:if="${#lists.isEmpty(userAddresses)}">등록된 배송지가 없습니다.</p>
 
           <!-- ========== 주소 등록 모달 ========== -->
           <div id="modalBackdrop" class="modal-backdrop"></div>
           <div id="addressModal" class="modal" aria-modal="true" role="dialog">
             <button class="x-close" id="btnCloseModal">×</button>
             <form th:action="@{/mypage/address}" method="post" th:object="${usersAddressForm}" id="addressForm">
-              <div class="field">
-                <label class="sr-only" for="addressName">배송지명</label>
-                <input id="addressName" type="text" th:field="*{addressName}" placeholder="배송지명" required />
+              <div class="field-row">
+                <label for="addressName">배송지명</label>
+                <input id="addressName" type="text" th:field="*{addressName}" placeholder="예: 우리집" required />
               </div>
-              <div class="field">
-                <label class="sr-only" for="recipient">받는 사람</label>
-                <input id="recipient" type="text" th:field="*{recipient}" placeholder="받는 사람" required />
+
+              <div class="field-row">
+                <label for="recipient">받는 사람</label>
+                <input id="recipient" type="text" th:field="*{recipient}" placeholder="수령인" required />
               </div>
-              <div class="field">
-                <label class="sr-only" for="phone">전화번호</label>
-                <input id="phone" type="text" th:field="*{phone}" maxlength="11" placeholder="전화번호" required />
+
+              <div class="field-row">
+                <label for="phone">전화번호</label>
+                <input id="phone" type="text" th:field="*{phone}" maxlength="11" placeholder="수령인 번호 : 01012345678"
+                  required />
               </div>
-              <div class="field" style="display:flex;gap:8px;align-items:center">
-                <button type="button" class="btn" id="btnFindZip">주소 찾기</button>
-                <input style="flex:1" type="text" th:field="*{zonecode}" placeholder="우편번호" readonly required />
+
+              <div class="field-row">
+                <label for="zonecode">우편번호</label>
+                <div class="zipline">
+                  <button type="button" class="btn" id="btnFindZip">주소 찾기</button>
+                  <input id="zonecode" type="text" th:field="*{zonecode}" placeholder="우편번호" readonly required />
+                </div>
               </div>
-              <div class="field"><input type="text" th:field="*{roadAddress}" placeholder="도로명" readonly required />
+
+              <div class="field-row">
+                <label for="roadAddress">도로명</label>
+                <input id="roadAddress" type="text" th:field="*{roadAddress}" placeholder="도로명" readonly required />
               </div>
-              <div class="field"><input type="text" th:field="*{detailAddress}" placeholder="상세주소" required /></div>
-              <div style="display:flex;justify-content:flex-end;gap:8px">
-                <button type="button" class="btn" id="btnCancel">취소</button>
+
+              <div class="field-row">
+                <label for="detailAddress">상세주소</label>
+                <input id="detailAddress" type="text" th:field="*{detailAddress}" placeholder="예: OO아파트 101동 1001호"
+                  required />
+              </div>
+
+              <div class="row" style="justify-content:center;gap:8px;margin-top:12px">
                 <button type="submit" class="btn primary">등록</button>
+                <button type="button" class="btn" id="btnCancel">취소</button>
               </div>
+
               <div id="postcodeLayer"
                 style="display:none; position:relative; height:400px; margin-top:10px; border:1px solid #eee; border-radius:10px;">
               </div>
             </form>
           </div>
-          <!-- ========== /주소 등록 모달 ========== -->
 
+          <!-- ===== 주소 수정 모달 ===== -->
+          <div id="editBackdrop" class="modal-backdrop"></div>
+          <div id="editModal" class="modal" aria-modal="true" role="dialog">
+            <button class="x-close" id="btnCloseEdit">×</button>
+            <form id="editForm">
+              <div class="field-row">
+                <label for="e_addressName">배송지명</label>
+                <input id="e_addressName" name="addressName" placeholder="예: 우리집" />
+              </div>
+
+              <div class="field-row">
+                <label for="e_recipient">받는 사람</label>
+                <input id="e_recipient" name="recipient" placeholder="수령인" />
+              </div>
+
+              <div class="field-row">
+                <label for="e_phone">전화번호</label>
+                <input id="e_phone" name="phone" maxlength="11" placeholder="수령인 번호 : 01012345678" />
+              </div>
+
+              <div class="field-row">
+                <label for="e_zonecode">우편번호</label>
+                <div class="zipline">
+                  <button type="button" class="btn" id="e_btnFindZip">주소 찾기</button>
+                  <input id="e_zonecode" name="zonecode" placeholder="우편번호" readonly />
+                </div>
+              </div>
+
+              <div class="field-row">
+                <label for="e_roadAddress">도로명</label>
+                <input id="e_roadAddress" name="roadAddress" placeholder="도로명" readonly />
+              </div>
+
+              <div class="field-row">
+                <label for="e_detailAddress">상세주소</label>
+                <input id="e_detailAddress" name="detailAddress" placeholder="예: OO아파트 101동 1001호" />
+              </div>
+
+              <div class="row" style="justify-content:center;gap:8px;margin-top:12px">
+                <button type="submit" class="btn primary">수정</button>
+                <button type="button" class="btn" id="btnCancelEdit">취소</button>
+              </div>
+
+              <div id="e_postcodeLayer"
+                style="display:none; position:relative; height:400px; margin-top:10px; border:1px solid #eee; border-radius:10px;">
+              </div>
+            </form>
+          </div>
+
+          <!-- ===== 삭제 확인 모달 ===== -->
+          <div id="delBackdrop" class="modal-backdrop"></div>
+          <div id="delModal" class="modal" aria-modal="true" role="dialog" style="min-width:360px">
+            <button class="x-close" id="btnCloseDel">×</button>
+            <div style="font-weight:700; margin-bottom:12px" id="delTitle">이 주소를 삭제할까요?</div>
+            <div class="row" style="justify-content:flex-end; gap:8px">
+              <button class="btn primary" id="btnDelYes">예</button>
+              <button class="btn" id="btnDelNo">아니요</button>
+            </div>
+          </div>
         </section>
       </div>
-      <!-- // mp-col-right -->
     </div>
   </section>
 
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <script>
-    // ===== 유틸: 안전한 바인딩 (jQuery와 충돌 방지용) =====
+    // ===== 유틸 =====
     const qs = (sel, ctx = document) => ctx.querySelector(sel);
     const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 
-    // ===== 모달 열고 닫기 =====
+    // CSRF
+    function getCsrf() {
+      const token = document.querySelector('meta[name="_csrf"]')?.content;
+      const header = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
+      return { token, header };
+    }
+
+    // ===== 등록 모달 =====
     const modal = qs('#addressModal');
     const backdrop = qs('#modalBackdrop');
-
-    function openModal() { modal?.classList.add('open'); backdrop?.classList.add('open'); }
-    function closeModal() { modal?.classList.remove('open'); backdrop?.classList.remove('open'); }
-
+    const openModal = () => { modal?.classList.add('open'); backdrop?.classList.add('open'); };
+    const closeModal = () => { modal?.classList.remove('open'); backdrop?.classList.remove('open'); };
     qs('#btnOpenModal')?.addEventListener('click', openModal);
     qs('#btnCloseModal')?.addEventListener('click', closeModal);
     qs('#btnCancel')?.addEventListener('click', closeModal);
     backdrop?.addEventListener('click', closeModal);
 
-    // ===== 다음 주소 레이어 =====
+    // 등록 모달 - 다음 주소 레이어
     const layer = qs('#postcodeLayer');
     function openDaumLayer() {
-      if (!window.daum || !daum.Postcode) {
-        console.warn('daum Postcode 스크립트를 찾을 수 없습니다.');
-        return;
-      }
+      if (!window.daum || !daum.Postcode) { console.warn('daum Postcode not found'); return; }
       new daum.Postcode({
         oncomplete(data) {
           const addr = (data.userSelectedType === "R") ? data.roadAddress : data.jibunAddress;
@@ -440,14 +558,13 @@
           if (layer) layer.style.display = 'none';
           qs('#detailAddress')?.focus();
         },
-        width: '100%',
-        height: '100%'
+        width: '100%', height: '100%'
       }).embed(layer);
       if (layer) layer.style.display = 'block';
     }
     qs('#btnFindZip')?.addEventListener('click', openDaumLayer);
 
-    // ===== 출력란 요소 =====
+    // ===== 기본 배송지 출력 영역 =====
     const out = {
       addrName: qs('#outAddrName'),
       recipient: qs('#outRecipient'),
@@ -456,87 +573,75 @@
       road: qs('#outRoadAddress'),
       detail: qs('#outDetailAddress')
     };
-
-    // (A) 라디오의 data-*로부터 채우기
     function fillOutputFrom(el) {
       const d = el?.dataset || {};
-      out.addrName && (out.addrName.textContent = d.addrname ?? '-');
-      out.recipient && (out.recipient.textContent = d.recipient ?? '-');
-      out.phone && (out.phone.textContent = d.phone ?? '-');
-      out.zonecode && (out.zonecode.textContent = d.zonecode ?? '-');
-      out.road && (out.road.textContent = d.road ?? '-');
-      out.detail && (out.detail.textContent = d.detail ?? '-');
+      if (out.addrName) out.addrName.textContent = d.addrname ?? '-';
+      if (out.recipient) out.recipient.textContent = d.recipient ?? '-';
+      if (out.phone) out.phone.textContent = d.phone ?? '-';
+      if (out.zonecode) out.zonecode.textContent = d.zonecode ?? '-';
+      if (out.road) out.road.textContent = d.road ?? '-';
+      if (out.detail) out.detail.textContent = d.detail ?? '-';
     }
-
-    // (B) 서버 AddressDto로부터 채우기
-    // AddressDto: {addressNo,addressName,recipient,phone,zonecode,roadAddress,detailAddress,isDefault}
     function fillOutputFromDto(dto) {
       if (!dto) { fillOutputFrom({ dataset: {} }); return; }
-      out.addrName && (out.addrName.textContent = dto.addressName ?? '-');
-      out.recipient && (out.recipient.textContent = dto.recipient ?? '-');
-      out.phone && (out.phone.textContent = dto.phone ?? '-');
-      out.zonecode && (out.zonecode.textContent = dto.zonecode ?? '-');
-      out.road && (out.road.textContent = dto.roadAddress ?? '-');
-      out.detail && (out.detail.textContent = dto.detailAddress ?? '-');
+      if (out.addrName) out.addrName.textContent = dto.addressName ?? '-';
+      if (out.recipient) out.recipient.textContent = dto.recipient ?? '-';
+      if (out.phone) out.phone.textContent = dto.phone ?? '-';
+      if (out.zonecode) out.zonecode.textContent = dto.zonecode ?? '-';
+      if (out.road) out.road.textContent = dto.roadAddress ?? '-';
+      if (out.detail) out.detail.textContent = dto.detailAddress ?? '-';
     }
 
-    // ===== 라디오 & UI 갱신 =====
+    // ===== 기본 배송지 라디오/뱃지 =====
     const radios = qsa('input.addr-radio[name="defaultAddress"]');
 
+    // .addr-chip 보장
+    function ensureBadge(li) {
+      let chip = qs('.addr-chip', li);
+      if (!chip) {
+        chip = document.createElement('span');
+        chip.className = 'addr-chip is-hidden';
+        (qs('.addr-top', li) || li).appendChild(chip);
+      }
+      return chip;
+    }
+
+    // 선택된 ID 기준으로 라디오/뱃지 토글
     function applyDefaultUI(newId) {
       qsa('li.addr-card').forEach(li => {
         const r = qs('input.addr-radio', li);
-        const chip = qs('.addr-chip', li); // "기본" 뱃지
         if (!r) return;
+        const chip = ensureBadge(li);
         const isNew = String(r.value) === String(newId);
         r.checked = isNew;
-        if (chip) chip.style.display = isNew ? '' : 'none';
+        chip.classList.toggle('is-hidden', !isNew);
       });
     }
 
-    // ===== CSRF (Spring Security) =====
-    function getCsrf() {
-      const token = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-      const header = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
-      return { token, header };
-    }
-
-    // ===== 서버 저장 (AJAX 전용 endpoint) =====
     async function persistDefault(addressNo) {
       const { token, header } = getCsrf();
       const res = await fetch('/mypage/address/default.json', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { [header]: token } : {})
-        },
+        headers: { 'Content-Type': 'application/json', ...(token ? { [header]: token } : {}) },
         body: JSON.stringify({ addressNo: Number(addressNo) })
       });
-
-      let data;
-      try { data = await res.json(); } catch (_) { data = { ok: false, message: 'Invalid JSON' }; }
-
-      // 상태별 처리
-      if (res.status === 401) {
-        // 로그인 필요
-        throw new Error('로그인이 필요합니다.');
-      }
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.message || '기본 배송지 저장에 실패했습니다.');
-      }
-      return data; // {ok:true, address: {...}}
+      let data; try { data = await res.json(); } catch { data = { ok: false }; }
+      if (res.status === 401) throw new Error('로그인이 필요합니다.');
+      if (!res.ok || !data?.ok) throw new Error(data?.message || '기본 배송지 저장 실패');
+      return data; // {ok:true, address:{...}}
     }
 
-    // 현재 기본 ID 추적
     let currentDefaultId = (radios.find(r => r.checked) || {}).value ?? null;
 
-    // 초기 출력 채우기
     window.addEventListener('DOMContentLoaded', () => {
       const cur = radios.find(r => r.checked);
-      if (cur) fillOutputFrom({ dataset: cur.dataset });
+      if (cur) {
+        fillOutputFrom({ dataset: cur.dataset });
+        applyDefaultUI(cur.value); // 초기 뱃지 상태 동기화
+        currentDefaultId = cur.value;
+      }
     });
 
-    // 라디오 변경 핸들러: 낙관적 갱신 → 서버 요청 → 실패 시 롤백
     radios.forEach(r => {
       r.addEventListener('change', async (e) => {
         const selected = e.currentTarget;
@@ -545,41 +650,156 @@
         const prevId = currentDefaultId;
         const newId = selected.value;
 
-        // 1) 즉시 화면 반영(낙관)
+        // ① 낙관적 갱신 (즉시 반영)
         currentDefaultId = newId;
         applyDefaultUI(newId);
         fillOutputFrom({ dataset: selected.dataset });
 
-        // 2) 서버 반영
         try {
+          // ② 서버 확정
           const { address } = await persistDefault(newId);
-
-          // 서버 스냅샷으로 최종 동기화(혹시 화면/라디오의 데이터와 차이날 경우 보정)
           fillOutputFromDto(address);
 
-          // (선택) 서버가 다른 기본값을 결정하는 로직이 있다면 여기서 currentDefaultId를 재보정
-          if (address?.addressNo && String(address.addressNo) !== String(currentDefaultId)) {
-            currentDefaultId = String(address.addressNo);
-            applyDefaultUI(currentDefaultId);
+          const confirmedId = String(address?.addressNo ?? newId);
+          if (confirmedId !== String(currentDefaultId)) {
+            currentDefaultId = confirmedId;
+            applyDefaultUI(confirmedId);
           }
-
         } catch (err) {
-          // 3) 실패 시 롤백
+          // ③ 실패 시 롤백
           console.warn(err);
           currentDefaultId = prevId;
           applyDefaultUI(prevId);
+
           const prevRadio = radios.find(r => String(r.value) === String(prevId));
           fillOutputFrom(prevRadio ? { dataset: prevRadio.dataset } : { dataset: {} });
 
-          alert(err.message || '기본 배송지 저장에 실패했습니다. 다시 시도해 주세요.');
+          alert(err.message || '기본 배송지 저장 실패');
+
           if (String(prevId) !== String(newId)) {
-            // 화면 라디오 체크상태 복원
             const newRadio = radios.find(r => String(r.value) === String(newId));
             if (newRadio) newRadio.checked = false;
             if (prevRadio) prevRadio.checked = true;
           }
         }
       });
+    });
+
+    // ===== 수정 모달 =====
+    const eModal = qs('#editModal');
+    const eBack = qs('#editBackdrop');
+    const openEdit = () => { eModal.classList.add('open'); eBack.classList.add('open'); };
+    const closeEdit = () => { eModal.classList.remove('open'); eBack.classList.remove('open'); };
+    qs('#btnCloseEdit')?.addEventListener('click', closeEdit);
+    qs('#btnCancelEdit')?.addEventListener('click', closeEdit);
+    eBack?.addEventListener('click', closeEdit);
+
+    let editingId = null;
+
+    // 수정 모달 - 다음 주소 레이어
+    const eLayer = qs('#e_postcodeLayer');
+    function openDaumLayerEdit() {
+      if (!window.daum || !daum.Postcode) return;
+      new daum.Postcode({
+        oncomplete(data) {
+          const addr = (data.userSelectedType === "R") ? data.roadAddress : data.jibunAddress;
+          qs('#e_zonecode').value = data.zonecode;
+          qs('#e_roadAddress').value = addr;
+          if (eLayer) eLayer.style.display = 'none';
+          qs('#e_detailAddress').focus();
+        },
+        width: '100%', height: '100%'
+      }).embed(eLayer);
+      if (eLayer) eLayer.style.display = 'block';
+    }
+    qs('#e_btnFindZip')?.addEventListener('click', openDaumLayerEdit);
+
+    // 수정 버튼 → 모달 값 채우기
+    qsa('.js-edit').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const d = btn.dataset; editingId = d.id;
+
+        const setVal = (id, v, ph = '') => {
+          const el = qs('#' + id); if (!el) return;
+          el.value = v ?? ''; el.placeholder = ph;
+        };
+        setVal('e_addressName', d.name, '예: 우리집, 회사, 부모님 댁');
+        setVal('e_recipient', d.recipient, '수령인 실명');
+        setVal('e_phone', d.phone, '01012345678');
+        setVal('e_zonecode', d.zonecode, '예: 06801');
+        setVal('e_roadAddress', d.road, '검색으로 자동입력');
+        setVal('e_detailAddress', d.detail, '예: (건물명) 101동 1203호');
+
+        openEdit();
+      });
+    });
+
+    // 수정 제출
+    qs('#editForm')?.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      if (!editingId) return;
+
+      const payload = {
+        addressName: qs('#e_addressName').value.trim(),
+        recipient: qs('#e_recipient').value.trim(),
+        phone: qs('#e_phone').value.trim(),
+        zonecode: qs('#e_zonecode').value.trim(),
+        roadAddress: qs('#e_roadAddress').value.trim(),
+        detailAddress: qs('#e_detailAddress').value.trim()
+      };
+      if (!payload.addressName || !payload.recipient || !payload.phone || !payload.zonecode || !payload.roadAddress) {
+        alert('필수 값을 입력해 주세요.'); return;
+      }
+
+      const { token, header } = getCsrf();
+      try {
+        const res = await fetch(`/mypage/address/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { [header]: token } : {}) },
+          body: JSON.stringify(payload), credentials: 'same-origin'
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok !== true) throw new Error(data.message || '수정 실패');
+        closeEdit(); location.reload();
+      } catch (err) {
+        alert(err.message || '수정 중 오류가 발생했습니다.');
+      }
+    });
+
+    // ===== 삭제 모달 =====
+    const dModal = qs('#delModal');
+    const dBack = qs('#delBackdrop');
+    const openDel = () => { dModal.classList.add('open'); dBack.classList.add('open'); };
+    const closeDel = () => { dModal.classList.remove('open'); dBack.classList.remove('open'); };
+    qs('#btnCloseDel')?.addEventListener('click', closeDel);
+    qs('#btnDelNo')?.addEventListener('click', (e) => { e.preventDefault(); closeDel(); });
+    dBack?.addEventListener('click', closeDel);
+
+    let deletingId = null;
+    qsa('.js-delete').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        deletingId = btn.dataset.id;
+        qs('#delTitle').textContent = `‘${btn.dataset.name}’ 주소를 삭제할까요?`;
+        openDel();
+      });
+    });
+
+    qs('#btnDelYes')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (!deletingId) return;
+      const { token, header } = getCsrf();
+      try {
+        const res = await fetch(`/mypage/address/${deletingId}`, {
+          method: 'DELETE', headers: token ? { [header]: token } : {}, credentials: 'same-origin'
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok !== true) throw new Error(data.message || '삭제 실패');
+        closeDel(); location.reload();
+      } catch (err) {
+        alert(err.message || '삭제 중 오류가 발생했습니다.');
+      }
     });
   </script>
 
