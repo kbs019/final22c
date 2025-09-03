@@ -8,6 +8,8 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +29,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ex.final22c.DataNotFoundException;
@@ -57,6 +64,7 @@ import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.user.UserRepository;
+import com.ex.final22c.service.product.RestockNotifyService;
 import com.ex.final22c.service.product.ReviewFilterService;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -85,8 +93,103 @@ public class AdminService {
     private final ReviewRepository reviewRepository;
     private final OrderDetailRepository orderDetailRepository;
     private final ReviewFilterService reviewFilterService;
-    
-    
+    private final RestockNotifyService restockNotifyService;
+
+
+    // ===== 대시보드 KPI =====
+    public Map<String, Object> buildDashboardKpis() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime from = today.atStartOfDay();
+        LocalDateTime to   = today.atTime(LocalTime.MAX);
+
+        // 오늘 매출(원): revenueSeriesByDay 사용
+        long todayRevenue = 0L;
+        var rows = orderDetailRepository.revenueSeriesByDay(from, to);
+        for (Object[] r : rows) {
+            Number rev = (Number) r[1];
+            if (rev != null) todayRevenue += rev.longValue();
+        }
+
+        // 오늘 주문건수: PAID/CONFIRMED/REFUNDED
+        List<String> okStatuses = List.of("PAID","CONFIRMED","REFUNDED");
+        long ordersToday = orderRepository.countByRegDateBetweenAndStatusIn(from, to, okStatuses);
+
+        // 전체 회원수, 최근 7일 신규
+        long totalUsers = userRepository.count();
+        LocalDate since = today.minusDays(7); // 기존 buildAllUserStats와 동일 규칙(이상 포함)
+        long newUsers7d = userRepository.findAll().stream()
+                .filter(u -> u.getReg()!=null && ( !u.getReg().isBefore(since) )) // since 이상
+                .count();
+
+        return Map.of(
+                "todayRevenue", todayRevenue,
+                "ordersToday", ordersToday,
+                "totalUsers", totalUsers,
+                "newUsers7d", newUsers7d
+        );
+    }
+
+    // ===== 품절임박 Top5 (재고 0 제외, count 오름차순) =====
+    public List<Map<String, Object>> findLowStockTop5() {
+        List<Product> all = productRepository.findAll(Sort.by(Sort.Direction.ASC, "count"));
+        return all.stream()
+                .filter(p -> p.getCount() > 0)
+                .limit(5)
+                .map(p -> {
+                    String brandName = (p.getBrand()!=null) ? p.getBrand().getBrandName() : null;
+                    return Map.<String,Object>of(
+                            "id", p.getId(),
+                            "name", p.getName(),
+                            "brand", brandName,
+                            "imgPath", p.getImgPath(),
+                            "imgName", p.getImgName(),
+                            "count", p.getCount(),
+                            "sellPrice", p.getSellPrice()
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+    // 품절(재고 0) Top5: 최근 등록(id 내림차순) 기준
+    public List<Map<String, Object>> findSoldOutTop5() {
+        // id DESC로 정렬 후 count==0만 필터링하여 상위 5개
+        List<Product> all = productRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+        return all.stream()
+                .filter(p -> p.getCount() == 0)
+                .limit(5)
+                .map(p -> {
+                    String brandName = (p.getBrand()!=null) ? p.getBrand().getBrandName() : null;
+                    return Map.<String,Object>of(
+                            "id", p.getId(),
+                            "name", p.getName(),
+                            "brand", brandName,
+                            "imgPath", p.getImgPath(),
+                            "imgName", p.getImgName(),
+                            "count", p.getCount(),
+                            "sellPrice", p.getSellPrice()
+                    );
+                })
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+
+    // ===== 신규회원 일간 시리즈 =====
+    public List<Map<String, Object>> buildNewUserSeries(LocalDate from, LocalDate to) {
+        // users 전체 가져와 reg 기준 그룹핑
+        Map<LocalDate, Long> grouped = userRepository.findAll().stream()
+                .filter(u -> u.getReg()!=null && !u.getReg().isBefore(from) && !u.getReg().isAfter(to))
+                .collect(Collectors.groupingBy(Users::getReg, Collectors.counting()));
+
+        long days = ChronoUnit.DAYS.between(from, to);
+        List<Map<String,Object>> out = new ArrayList<>();
+        for (int i=0; i<=days; i++){
+            LocalDate d = from.plusDays(i);
+            long c = grouped.getOrDefault(d, 0L);
+            out.add(Map.of("date", d.toString(), "count", c));
+        }
+        return out;
+    }
+
     
     // 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
@@ -103,6 +206,7 @@ public class AdminService {
 
         };
     }
+
     // 정지 시간 갱신
     public void updateUserStatusIfExpired(Users user) {
         if ("suspended".equals(user.getStatus()) && user.getBanReg() != null) {
@@ -114,6 +218,7 @@ public class AdminService {
             }
         }
     }
+
     // 전체 회원목록
     public Page<Users> getList(int page, String kw, String filter) {
         List<Sort.Order> sorts = new ArrayList<>();
@@ -125,18 +230,15 @@ public class AdminService {
 
         // ✅ filter 추가
         if ("suspended".equals(filter)) {
-            spec = spec.and((root, query, cb) ->
-                cb.or(
+            spec = spec.and((root, query, cb) -> cb.or(
                     cb.equal(root.get("status"), "suspended"),
-                    cb.equal(root.get("status"), "banned")
-                )
-            );
+                    cb.equal(root.get("status"), "banned")));
         }
 
         Page<Users> result = this.userRepository.findAll(spec, pageable);
         result.forEach(this::updateUserStatusIfExpired);
         return result;
-        
+
     }
 
     // 회원 정보
@@ -563,58 +665,132 @@ public class AdminService {
         }
         return response;
     }
-    
-    // 발주 신청
+
+    // ==================== 기존 발주 신청 ========================
+    // // 발주 신청
+    // @Transactional
+    // public void confirmPurchase(List<Map<String, Object>> items) {
+    // // 1. 발주 마스터 생성
+    // Purchase purchase = new Purchase();
+    // purchase.setReg(LocalDateTime.now());
+    // purchaseRepository.save(purchase);
+
+    // int totalPrice = 0;
+    // // 2. 발주 상세 생성
+    // for (Map<String, Object> item : items) {
+    // Object productIdObj = item.get("productId");
+    // Object qtyObj = item.get("qty");
+
+    // if (productIdObj == null || qtyObj == null) {
+    // throw new RuntimeException("productId 또는 qty 값이 없습니다.");
+    // }
+    // Long productId = Long.valueOf(item.get("productId").toString());
+    // int qty = Integer.valueOf(item.get("qty").toString());
+
+    // Product product = productRepository.findById(productId)
+    // .orElseThrow(() -> new RuntimeException("상품 없음"));
+
+    // PurchaseDetail detail = new PurchaseDetail();
+    // detail.setProduct(product);
+    // detail.setQty(qty);
+    // detail.setPurchase(purchase);
+    // detail.setTotalPrice(product.getCostPrice()*qty);
+    // purchaseDetailRepository.save(detail);
+
+    // // 재고 업데이트
+    // product.setCount(product.getCount() + qty);
+    // productRepository.save(product); // 변경된 재고 저장
+
+    // // 총금액 계산
+    // totalPrice += product.getCostPrice() * qty;
+    // }
+    // // 발주 품목 개수 계산
+    // purchase.setCount(items.size());
+    // purchase.setTotalPrice(totalPrice);
+    // purchaseRepository.save(purchase);
+
+    // // 3. 발주신청목록 전체 삭제
+    // purchaseRequestRepository.deleteAll();
+    // }
+
     @Transactional
     public void confirmPurchase(List<Map<String, Object>> items) {
-        // 1. 발주 마스터 생성
+        // ===== 1) 발주 마스터 생성 =====
         Purchase purchase = new Purchase();
         purchase.setReg(LocalDateTime.now());
         purchaseRepository.save(purchase);
 
-        int totalPrice = 0; 
-        // 2. 발주 상세 생성
+        int totalPrice = 0;
+        int itemCount = 0;
+
+        // 알림 대상(0→양수 전환된 상품)
+        Set<Long> toNotify = new LinkedHashSet<>();
+
+        // ===== 2) 발주 상세 생성 + 재고 증가 =====
         for (Map<String, Object> item : items) {
-        	Object productIdObj = item.get("productId");
+            Object productIdObj = item.get("productId");
             Object qtyObj = item.get("qty");
 
             if (productIdObj == null || qtyObj == null) {
                 throw new RuntimeException("productId 또는 qty 값이 없습니다.");
             }
-            Long productId = Long.valueOf(item.get("productId").toString());
-            int qty = Integer.valueOf(item.get("qty").toString());
+
+            Long productId = Long.valueOf(productIdObj.toString());
+            int qty = Integer.parseInt(qtyObj.toString());
 
             Product product = productRepository.findById(productId)
-                                .orElseThrow(() -> new RuntimeException("상품 없음"));
+                    .orElseThrow(() -> new RuntimeException("상품 없음"));
 
+            // 상세 생성/저장
             PurchaseDetail detail = new PurchaseDetail();
             detail.setProduct(product);
             detail.setQty(qty);
             detail.setPurchase(purchase);
-            detail.setTotalPrice(product.getCostPrice()*qty);
+            detail.setTotalPrice(product.getCostPrice() * qty);
             purchaseDetailRepository.save(detail);
-            
-            // 재고 업데이트
-            product.setCount(product.getCount() + qty);
-            productRepository.save(product); // 변경된 재고 저장
-            
-            // 총금액 계산
+
+            // 재고 업데이트 (필드명: count 사용 중)
+            int prev = product.getCount();
+            int now = prev + qty;
+            product.setCount(now);
+            productRepository.save(product);
+
+            // 총금액/품목수 집계
             totalPrice += product.getCostPrice() * qty;
+            itemCount += 1;
+
+            // 0 → 양수 전환 시 알림 후보
+            if (prev == 0 && now > 0) {
+                toNotify.add(productId);
+            }
         }
-     // 발주 품목 개수 계산
-        purchase.setCount(items.size());
+
+        // ===== 3) 발주 요약값 업데이트 =====
+        purchase.setCount(itemCount);
         purchase.setTotalPrice(totalPrice);
         purchaseRepository.save(purchase);
 
-      // 3. 발주신청목록 전체 삭제
-       purchaseRequestRepository.deleteAll();
+        // ===== 4) 발주신청목록 전체 삭제(기존 동작 유지) =====
+        purchaseRequestRepository.deleteAll();
+
+        // ===== 5) 커밋 후(afterCommit) 알림 예약 =====
+        TransactionSynchronizationManager.registerSynchronization(
+            new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    for (Long pid : toNotify) {
+                        restockNotifyService.notifyForProduct(pid);
+                    }
+                }
+            }
+        );
     }
-    
+
     // 발주 목록
-    public List<Purchase> getPurchase(){
-    	return this.purchaseRepository.findAll();
+    public List<Purchase> getPurchase() {
+        return this.purchaseRepository.findAll();
     }
-    
+
     // 발주 상세 내역
     public Map<String, Object> getPurchaseDetail(Long purchaseId) {
         Purchase purchase = purchaseRepository.findById(purchaseId)
@@ -626,40 +802,39 @@ public class AdminService {
             item.put("productId", d.getProduct().getId()); // 오타 주의
             item.put("productName", d.getProduct().getName());
             item.put("qty", d.getQty());
-            item.put("price", d.getProduct().getCostPrice());                   // 단가
-            item.put("total", d.getTotalPrice());      // 합계
+            item.put("price", d.getProduct().getCostPrice()); // 단가
+            item.put("total", d.getTotalPrice()); // 합계
             items.add(item);
         }
 
         return Map.of(
-            "reg", purchase.getReg().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
-            "totalPrice", purchase.getTotalPrice(),
-            "items", items
-        );
+                "reg", purchase.getReg().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                "totalPrice", purchase.getTotalPrice(),
+                "items", items);
     }
-    
+
     // 주문 내역
-    public List<Order> getOrders(){
-    	return this.orderRepository.findAll(Sort.by(Sort.Direction.DESC, "regDate"));
+    public List<Order> getOrders() {
+        return this.orderRepository.findAll(Sort.by(Sort.Direction.DESC, "regDate"));
     }
-    
+
     @Transactional(readOnly = true)
     public Order findMyOrderWithDetails(Long orderId) {
         return orderRepository.findOneWithDetails(orderId)
-            .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
     }
 
     @Transactional(readOnly = true)
     public List<Payment> findPaymentsofOrder(Long orderId) {
         return paymentRepository.findByOrder_OrderId(orderId);
     }
-    
 
-    private static final List<String> OK = List.of("PAID","CONFIRMED","REFUNDED");
+    private static final List<String> OK = List.of("PAID", "CONFIRMED", "REFUNDED");
 
     // 판매량 조회
     public Map<Long, Long> getConfirmedQtySumMap(Collection<Long> productIds) {
-        if (productIds == null || productIds.isEmpty()) return Collections.emptyMap();
+        if (productIds == null || productIds.isEmpty())
+            return Collections.emptyMap();
 
         List<Object[]> rows = orderDetailRepository.sumConfirmQuantityByProductIds(productIds, OK);
         Map<Long, Long> map = new HashMap<>();
@@ -675,51 +850,60 @@ public class AdminService {
         return map;
     }
 
-    public Product findProduct(Long id){
+    public Product findProduct(Long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("상품을 찾을 수 없습니다. id="+id));
+                .orElseThrow(() -> new NoSuchElementException("상품을 찾을 수 없습니다. id=" + id));
     }
 
     /** 구매자 통계(고유 구매자 기준) */
-    public Map<String, Object> buildBuyerStats(Long productId){
+    public Map<String, Object> buildBuyerStats(Long productId) {
         // confirmQuantity > 0 인 주문 상세만 집계
         List<OrderDetail> details = orderDetailRepository.findConfirmedByProductId(productId);
 
         // 고유 구매자
         Map<Long, Users> uniqueBuyers = new LinkedHashMap<>();
         for (OrderDetail d : details) {
-            if (d.getOrder() == null || d.getOrder().getUser() == null) continue;
+            if (d.getOrder() == null || d.getOrder().getUser() == null)
+                continue;
             Users u = d.getOrder().getUser();
             uniqueBuyers.put(u.getUserNo(), u);
         }
 
-        int male=0, female=0, unknown=0;
-        int a10=0, a20=0, a30=0, a40=0, a50p=0;
+        int male = 0, female = 0, unknown = 0;
+        int a10 = 0, a20 = 0, a30 = 0, a40 = 0, a50p = 0;
 
         for (Users u : uniqueBuyers.values()) {
             // 성별
             String g = Optional.ofNullable(u.getGender()).orElse("").trim().toUpperCase();
-            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자")) female++;
-            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자")) male++;
-            else unknown++;
+            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자"))
+                female++;
+            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자"))
+                male++;
+            else
+                unknown++;
 
             // 연령대 (10~19: 10대, 20~29: 20대, 30~39: 30대, 40~49: 40대, 50+: 50+)
             Integer age = u.getAge(); // Users.prePersist/Update에서 계산됨
             if (age != null) {
-                if (age >= 10 && age < 20) a10++;
-                else if (age < 30) a20++;
-                else if (age < 40) a30++;
-                else if (age < 50) a40++;
-                else a50p++;
+                if (age >= 10 && age < 20)
+                    a10++;
+                else if (age < 30)
+                    a20++;
+                else if (age < 40)
+                    a30++;
+                else if (age < 50)
+                    a40++;
+                else
+                    a50p++;
             }
         }
 
-        Map<String,Object> gender = new LinkedHashMap<>();
+        Map<String, Object> gender = new LinkedHashMap<>();
         gender.put("female", female);
         gender.put("male", male);
         gender.put("unknown", unknown);
 
-        Map<String,Object> age = new LinkedHashMap<>();
+        Map<String, Object> age = new LinkedHashMap<>();
         age.put("t10", a10);
         age.put("t20", a20);
         age.put("t30", a30);
@@ -727,27 +911,26 @@ public class AdminService {
         age.put("t50p", a50p);
 
         return Map.of(
-            "productId", productId,
-            "gender", gender,
-            "age", age,
-            "uniqueBuyerCount", uniqueBuyers.size()
-        );
+                "productId", productId,
+                "gender", gender,
+                "age", age,
+                "uniqueBuyerCount", uniqueBuyers.size());
     }
 
     // 리뷰 목록
-    public List<Review> getReview(){
-    	
-    	return reviewRepository.findAll(Sort.by(Sort.Direction.DESC, "createDate"));
+    public List<Review> getReview() {
+
+        return reviewRepository.findAll(Sort.by(Sort.Direction.DESC, "createDate"));
 
     }
-    
+
     public List<Review> getFilteredReviews() {
         List<Review> all = reviewRepository.findAll();
         return all.stream()
                 .filter(r -> reviewFilterService.containsBadWord(r.getContent()))
                 .toList();
     }
-    
+
     public boolean applySanction(String username, String sanction) {
         Optional<Users> optionalUser = userRepository.findByUserName(username);
 
@@ -778,7 +961,7 @@ public class AdminService {
         userRepository.save(user);
         return true;
     }
-    
+
     @Transactional
     public void changeStatus(Long reviewId, String status) {
         Review review = reviewRepository.findById(reviewId)
@@ -786,5 +969,67 @@ public class AdminService {
 
         review.setStatus(status);
         // JPA에서는 save() 안 해도 @Transactional 걸려 있으면 flush 때 반영됨
+    }
+
+    public Map<String, Object> buildAllUserStats() {
+        List<Users> all = userRepository.findAll();
+
+        int male = 0, female = 0, unknown = 0;
+        int a10 = 0, a20 = 0, a30 = 0, a40 = 0, a50p = 0;
+
+        // 신규 가입(최근 7일)
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate since = today.minusDays(7);
+        long newUsers7d = 0;
+
+        for (Users u : all) {
+            // 성별 집계
+            String g = java.util.Optional.ofNullable(u.getGender()).orElse("").trim().toUpperCase();
+            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자"))
+                female++;
+            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자"))
+                male++;
+            else
+                unknown++;
+
+            // 연령대 집계
+            Integer age = u.getAge();
+            if (age != null) {
+                if (age >= 10 && age < 20)
+                    a10++;
+                else if (age < 30)
+                    a20++;
+                else if (age < 40)
+                    a30++;
+                else if (age < 50)
+                    a40++;
+                else
+                    a50p++;
+            }
+
+            // 최근 7일 신규 (reg가 LocalDate 기준, since 이상이면 포함)
+            java.time.LocalDate reg = u.getReg();
+            if (reg != null && (reg.isAfter(since) || reg.isEqual(since))) {
+                newUsers7d++;
+            }
+        }
+
+        Map<String, Object> gender = new java.util.LinkedHashMap<>();
+        gender.put("female", female);
+        gender.put("male", male);
+        gender.put("unknown", unknown);
+
+        Map<String, Object> age = new java.util.LinkedHashMap<>();
+        age.put("t10", a10);
+        age.put("t20", a20);
+        age.put("t30", a30);
+        age.put("t40", a40);
+        age.put("t50p", a50p);
+
+        return java.util.Map.of(
+                "gender", gender,
+                "age", age,
+                "totalUserCount", all.size(),
+                "newUserCount7d", newUsers7d);
     }
 }

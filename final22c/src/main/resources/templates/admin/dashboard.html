@@ -1,0 +1,356 @@
+<!-- final22c/src/main/resources/templates/admin/dashboard.html -->
+<html layout:decorate="~{/layout/adminLayout}" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>관리자 대시보드</title>
+  <th:block layout:fragment="css">
+    <style>
+      .page-title { font-weight: 800; letter-spacing:.2px; }
+      /* 레이아웃 */
+      .dash-wrap { padding-top:.5rem; }
+      .kpi-card { cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
+      .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 .35rem 1rem rgba(0,0,0,.06); }
+      .kpi-sub { font-size:.8rem; color:#6c757d; } /* 회색 작은 글씨 */
+      .kpi-value { font-weight:700; font-size:1.5rem; }
+      .chart-card { height: 460px; } /* 그래프 카드 높이: 위 Fold를 꽉 채우도록 */
+      .chart-body { height: calc(100% - 56px); } /* header 제외 */
+      .chart-canvas { width:100%; height:100%; }
+      .card-header .goto { font-weight:700; text-decoration:none; color:#6c757d; }
+      .card-header .goto:hover { color:#212529; }
+      /* 접점: 상단 4카드 + 2그래프가 1스크린에 들어오도록 여백 최소화 */
+      @media (min-width: 992px){
+        .kpi-row { margin-bottom:.75rem; }
+      }
+      /* 품절임박(아래 스크롤 영역) */
+      .lowstock-img { width:44px; height:44px; object-fit:cover; border-radius:.5rem; }
+      .sticky-note { position:sticky; top:0; z-index:1; background:var(--bs-body-bg); }
+    </style>
+  </th:block>
+</head>
+<body>
+<th:block layout:fragment="content">
+  <div class="container-fluid dash-wrap">
+    <div class="d-flex align-items-center mb-2">
+        <h3 class="page-title mb-0">Dashboard</h3>
+    </div>
+
+    <!-- 상단: KPI 4개 -->
+    <div class="row g-3 kpi-row">
+      <!-- 오늘 매출 -->
+      <div class="col-6 col-lg-3">
+        <a th:href="@{/admin/salesStats}" class="text-decoration-none text-reset">
+          <div class="card kpi-card">
+            <div class="card-body">
+              <div class="kpi-sub">이동: 매출통계</div>
+              <div class="mt-1 mb-1">오늘 매출</div>
+              <div id="kpi-todayRevenue" class="kpi-value">-</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- 오늘 주문건수 -->
+      <div class="col-6 col-lg-3">
+        <a th:href="@{/admin/orderList}" class="text-decoration-none text-reset">
+          <div class="card kpi-card">
+            <div class="card-body">
+              <div class="kpi-sub">이동: 주문관리</div>
+              <div class="mt-1 mb-1">오늘 주문</div>
+              <div id="kpi-ordersToday" class="kpi-value">-</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- 전체 회원수 -->
+      <div class="col-6 col-lg-3">
+        <a th:href="@{/admin/usersStats}" class="text-decoration-none text-reset">
+          <div class="card kpi-card">
+            <div class="card-body">
+              <div class="kpi-sub">이동: 전체회원통계</div>
+              <div class="mt-1 mb-1">전체 회원수</div>
+              <div id="kpi-totalUsers" class="kpi-value">-</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- 최근 7일 신규 -->
+      <div class="col-6 col-lg-3">
+        <a th:href="@{/admin/usersStats}" class="text-decoration-none text-reset">
+          <div class="card kpi-card">
+            <div class="card-body">
+              <div class="kpi-sub">이동: 전체회원통계(신규)</div>
+              <div class="mt-1 mb-1">최근 7일 신규</div>
+              <div id="kpi-newUsers7d" class="kpi-value">-</div>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 중단: 2개의 그래프 (좌: 매출 꺾은선 / 우: 신규회원 막대) -->
+    <div class="row g-3">
+      <!-- 매출통계 (최근 7일 꺾은선) -->
+      <div class="col-12 col-lg-6">
+        <div class="card chart-card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">최근 7일 매출</span>
+            <a th:href="@{/admin/salesStats}" class="goto" aria-label="매출통계로 이동"> &gt; </a>
+          </div>
+          <div class="card-body chart-body">
+            <canvas id="sales7d" class="chart-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 신규회원통계 (최근 7일 막대) -->
+      <div class="col-12 col-lg-6">
+        <div class="card chart-card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">최근 7일 신규회원</span>
+            <a th:href="@{/admin/usersStats}" class="goto" aria-label="전체회원통계로 이동"> &gt; </a>
+          </div>
+          <div class="card-body chart-body">
+            <canvas id="newUsers7d" class="chart-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 아래(스크롤 다운): 품절임박 Top5 -->
+    <div class="row g-3 mt-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header sticky-note d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-semibold">품절 임박 상품 Top 5</span>
+                <span class="text-secondary ms-2">(품절 제외, 재고 오름차순)</span>
+            </div>
+            <!-- 이동 버튼: 발주 신청으로 -->
+            <a th:href="@{/admin/purchaseOrder}" class="goto" aria-label="상품 관리로 이동"> &gt; </a>
+          </div>
+
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                  <th style="width:64px;">이미지</th>
+                  <th>상품명</th>
+                  <th style="width:20%;">브랜드</th>
+                  <th class="text-end" style="width:12%;">재고</th>
+                  <th class="text-end" style="width:14%;">판매가</th>
+                </tr>
+                </thead>
+                <tbody id="lowstock-tbody">
+                  <tr>
+                    <td colspan="5" class="py-4 text-center text-secondary">로딩 중…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer text-secondary small">
+            목록은 재고가 0개인 상품을 제외하고, 재고가 가장 적은 순으로 5개만 표기됩니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 품절 상품 Top5 -->
+    <div class="row g-3 mt-3">
+    <div class="col-12">
+        <div class="card">
+        <div class="card-header sticky-note d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-semibold">품절 상품 Top 5</span>
+                <span class="text-secondary ms-2">(재고 0, 최근 등록순)</span>
+            </div>
+            <!-- 이동 버튼: 발주 신청으로 -->
+            <a th:href="@{/admin/purchaseOrder}" class="goto" aria-label="상품 관리로 이동"> &gt; </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th style="width:64px;">이미지</th>
+                    <th>상품명</th>
+                    <th style="width:20%;">브랜드</th>
+                    <th class="text-end" style="width:12%;">재고</th>
+                    <th class="text-end" style="width:14%;">판매가</th>
+                </tr>
+                </thead>
+                <tbody id="soldout-tbody">
+                <tr>
+                    <td colspan="5" class="py-4 text-center text-secondary">로딩 중…</td>
+                </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+        <div class="card-footer text-secondary small">
+            목록은 재고가 0인 상품만 표시되며, 최근 등록된 순으로 5개만 표기됩니다.
+        </div>
+        </div>
+    </div>
+    </div>
+
+
+  </div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    // 날짜 유틸 (로컬 기준, YYYY-MM-DD)
+    function fmt(d){ const y=d.getFullYear(); const m=('0'+(d.getMonth()+1)).slice(-2); const dd=('0'+d.getDate()).slice(-2); return `${y}-${m}-${dd}`; }
+    function today(){ const now=new Date(); return new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
+    function addDays(d, n){ const t=new Date(d); t.setDate(t.getDate()+n); return t; }
+
+    // 숫자 포맷(원)
+    const won = (n)=> (n??0).toLocaleString('ko-KR') + '원';
+
+    // ===== KPI 로드 =====
+    async function loadKpis(){
+      const res = await fetch('/admin/dashboard/kpis');
+      const json = await res.json();
+      document.getElementById('kpi-todayRevenue').textContent = won(json.todayRevenue||0);
+      document.getElementById('kpi-ordersToday').textContent = (json.ordersToday??0).toLocaleString('ko-KR') + '건';
+      document.getElementById('kpi-totalUsers').textContent = (json.totalUsers??0).toLocaleString('ko-KR') + '명';
+      document.getElementById('kpi-newUsers7d').textContent = (json.newUsers7d??0).toLocaleString('ko-KR') + '명';
+    }
+
+    // ===== 매출 7일 시리즈 =====
+    async function loadSalesSeries(){
+      const to   = today();
+      const from = addDays(to, -6);
+      const url = `/admin/salesStats/api/series?from=${fmt(from)}&to=${fmt(to)}&unit=DAY`;
+      const res = await fetch(url);
+      const list = await res.json(); // [{date|d|k, revenue|value|v}, ...]
+
+      // 키 자동 추론
+      const dateKey = list.length? (['date','d','k'].find(k=>k in list[0]) || Object.keys(list[0])[0]) : 'date';
+      const valKey  = list.length? (['revenue','value','v'].find(k=>k in list[0]) || Object.keys(list[0])[1]) : 'revenue';
+
+      // x축 레이블(7일 보정)
+      const labels = [];
+      const data   = [];
+      for(let i=0;i<7;i++){
+        const d = fmt(addDays(from, i));
+        labels.push(d);
+        const row = list.find(it=> (String(it[dateKey]).slice(0,10)===d));
+        data.push(row? Number(row[valKey]||0) : 0);
+      }
+
+      const ctx = document.getElementById('sales7d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: '매출(원)',
+            data,
+            tension: .35,
+            fill: false
+          }]
+        },
+        options: {
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(c)=> won(c.parsed.y) } } },
+          scales:{
+            x:{ grid:{ display:false }},
+            y:{ grid:{ color:'rgba(0,0,0,.05)' }, ticks:{ callback:(v)=> v.toLocaleString('ko-KR') } }
+          }
+        }
+      });
+    }
+
+    // ===== 신규회원 7일 시리즈 =====
+    async function loadNewUsersSeries(){
+      const to   = today();
+      const from = addDays(to, -6);
+      const res = await fetch(`/admin/usersStats/api/daily?from=${fmt(from)}&to=${fmt(to)}`);
+      const list = await res.json(); // [{date:'YYYY-MM-DD', count:n}, ...]
+
+      const labels = [];
+      const data   = [];
+      for(let i=0;i<7;i++){
+        const d = fmt(addDays(from, i));
+        labels.push(d);
+        const row = list.find(it=> (it.date===d));
+        data.push(row? Number(row.count||0) : 0);
+      }
+
+      const ctx = document.getElementById('newUsers7d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets:[{ label:'신규', data }] },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{ legend:{ display:false },
+            tooltip:{ callbacks:{ label:(c)=> (c.parsed.y??0).toLocaleString('ko-KR')+'명' } } },
+          scales:{
+            x:{ grid:{ display:false }},
+            y:{ grid:{ color:'rgba(0,0,0,.05)' }, ticks:{ stepSize:1, precision:0, callback:(v)=> v.toLocaleString('ko-KR') } }
+          }
+        }
+      });
+    }
+
+    // ===== 품절임박 Top5 =====
+    async function loadLowStock(){
+      const res = await fetch('/admin/dashboard/low-stock');
+      const list = await res.json(); // [{id,name,brand,imgPath,imgName,count,sellPrice}]
+      const tbody = document.getElementById('lowstock-tbody');
+      if(!list.length){
+        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-secondary">표시할 상품이 없습니다.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(p=>{
+        const img = (p.imgPath||'') + (p.imgName||'');
+        const brand = p.brand || '-';
+        return `
+          <tr>
+            <td><img src="${img}" alt="${p.name||''}" class="lowstock-img"/></td>
+            <td>${p.name||''}</td>
+            <td>${brand}</td>
+            <td class="text-end">${(p.count??0).toLocaleString('ko-KR')}</td>
+            <td class="text-end">${won(p.sellPrice||0)}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    // ===== 품절 Top5 =====
+    async function loadSoldOut(){
+    const res = await fetch('/admin/dashboard/sold-out');
+    const list = await res.json(); // [{id,name,brand,imgPath,imgName,count,sellPrice}]
+    const tbody = document.getElementById('soldout-tbody');
+    if(!list.length){
+        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-secondary">표시할 상품이 없습니다.</td></tr>`;
+        return;
+    }
+    const won = (n)=> (n??0).toLocaleString('ko-KR') + '원';
+    tbody.innerHTML = list.map(p=>{
+        const img = (p.imgPath||'') + (p.imgName||'');
+        const brand = p.brand || '-';
+        return `
+        <tr>
+            <td><img src="${img}" alt="${p.name||''}" class="lowstock-img"/></td>
+            <td>${p.name||''}</td>
+            <td>${brand}</td>
+            <td class="text-end">${(p.count??0).toLocaleString('ko-KR')}</td>
+            <td class="text-end">${won(p.sellPrice||0)}</td>
+        </tr>`;
+    }).join('');
+    }
+
+    (async function init(){
+      await Promise.all([loadKpis(), loadSalesSeries(), loadNewUsersSeries(), loadLowStock(), loadSoldOut()]);
+    })();
+  </script>
+</th:block>
+</body>
+</html>

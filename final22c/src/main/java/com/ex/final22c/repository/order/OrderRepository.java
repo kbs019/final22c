@@ -3,6 +3,7 @@ package com.ex.final22c.repository.order;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,10 +20,19 @@ import com.ex.final22c.repository.order.OrderRepository.MileageRow;
 
 import jakarta.persistence.LockModeType;
 
-import java.util.Collection;
-
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
+  // 관리자 대시보드용
+  @Query("""
+          select count(o)
+            from Order o
+          where o.regDate >= :from and o.regDate <= :to
+            and o.status in :statuses
+        """)
+  long countByRegDateBetweenAndStatusIn(@Param("from") LocalDateTime from,
+                                        @Param("to")   LocalDateTime to,
+                                        @Param("statuses") Collection<String> statuses);
 
   /**
    * 마이페이지 목록: 사용자 + 상태(예: PAID) 페이징 조회
