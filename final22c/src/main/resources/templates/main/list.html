@@ -17,13 +17,15 @@
 
   <div class="row g-4">
 
-    <!-- 좌측 필터(기존 유지) -->
+    <!-- 좌측 필터 -->
     <aside class="col-12 col-md-3 col-lg-2">
-      <div class="filter-panel position-sticky" style="top: 1rem;">
-        <h6 class="mb-3 fw-semibold">필터</h6>
+      <div class="filter-panel filter-sticky">
+        <h6 class="mb-3 fw-semibold filter-title">필터</h6>
 
-        <div class="accordion" id="filterAccordion">
+        <div class="filter-scroll">
 
+          <div class="accordion minimalist" id="filterAccordion">
+            
           <!-- Brand -->
           <div class="accordion-item">
             <h2 class="accordion-header" id="headingBrand">
@@ -32,11 +34,11 @@
               </button>
             </h2>
             <div id="collapseBrand" class="accordion-collapse collapse" aria-labelledby="headingBrand" data-bs-parent="#filterAccordion">
-              <div class="accordion-body p-2">
+              <div class="accordion-body p-0">
                 <div class="filter-list">
                   <div class="form-check" th:each="b : ${brands}">
                     <input class="form-check-input filter-check" type="checkbox" name="brand"
-                          th:id="${'brand-'+b['id']}" th:value="${b['id']}">
+                    th:id="${'brand-'+b['id']}" th:value="${b['id']}">
                     <label class="form-check-label small" th:for="${'brand-'+b['id']}">
                       <span th:text="${b['name']}">Brand</span>
                       <span class="text-secondary" th:text="' (' + ${b['count']} + ')'"> (0)</span>
@@ -46,7 +48,7 @@
               </div>
             </div>
           </div>
-
+          
           <!-- Grade -->
           <div class="accordion-item">
             <h2 class="accordion-header" id="headingGrade">
@@ -55,11 +57,11 @@
               </button>
             </h2>
             <div id="collapseGrade" class="accordion-collapse collapse" aria-labelledby="headingGrade" data-bs-parent="#filterAccordion">
-              <div class="accordion-body p-2">
+              <div class="accordion-body p-0">
                 <div class="filter-list">
                   <div class="form-check" th:each="g : ${grades}">
                     <input class="form-check-input filter-check" type="checkbox" name="grade"
-                          th:id="${'grade-'+g['id']}" th:value="${g['id']}">
+                           th:id="${'grade-'+g['id']}" th:value="${g['id']}">
                     <label class="form-check-label small" th:for="${'grade-'+g['id']}">
                       <span th:text="${g['name']}">Grade</span>
                       <span class="text-secondary" th:text="' (' + ${g['count']} + ')'"> (0)</span>
@@ -69,7 +71,7 @@
               </div>
             </div>
           </div>
-
+          
           <!-- Main Note -->
           <div class="accordion-item">
             <h2 class="accordion-header" id="headingMainNote">
@@ -78,14 +80,14 @@
               </button>
             </h2>
             <div id="collapseMainNote" class="accordion-collapse collapse" aria-labelledby="headingMainNote" data-bs-parent="#filterAccordion">
-              <div class="accordion-body p-2">
+              <div class="accordion-body p-0">
                 <div class="filter-list">
                   <div class="form-check" th:each="m : ${mainNotes}">
                     <input class="form-check-input filter-check" type="checkbox" name="mainNote"
-                          th:id="${'mainNote-'+m['id']}" th:value="${m['id']}">
-                    <label class="form-check-label small" th:for="${'mainNote-'+m['id']}">
-                      <span th:text="${m['name']}">MainNote</span>
-                      <span class="text-secondary" th:text="' (' + ${m['count']} + ')'"> (0)</span>
+                           th:id="${'mainNote-'+m['id']}" th:value="${m['id']}">
+                           <label class="form-check-label small" th:for="${'mainNote-'+m['id']}">
+                             <span th:text="${m['name']}">MainNote</span>
+                             <span class="text-secondary" th:text="' (' + ${m['count']} + ')'"> (0)</span>
                     </label>
                   </div>
                 </div>
@@ -101,11 +103,11 @@
               </button>
             </h2>
             <div id="collapseVolume" class="accordion-collapse collapse" aria-labelledby="headingVolume" data-bs-parent="#filterAccordion">
-              <div class="accordion-body p-2">
+              <div class="accordion-body p-0">
                 <div class="filter-list">
                   <div class="form-check" th:each="v : ${volumes}">
                     <input class="form-check-input filter-check" type="checkbox" name="volume"
-                            th:id="${'volume-'+v['id']}" th:value="${v['id']}">
+                    th:id="${'volume-'+v['id']}" th:value="${v['id']}">
                     <label class="form-check-label small" th:for="${'volume-'+v['id']}">
                       <span th:text="${v['name']}">Volume</span>
                       <span class="text-secondary" th:text="' (' + ${v['count']} + ')'"> (0)</span>
@@ -115,11 +117,12 @@
               </div>
             </div>
           </div>
-
         </div>
 
+        </div>
+        
         <div class="d-grid mt-3">
-          <button id="btn-reset" class="btn btn-outline-dark btn-sm">필터 초기화</button>
+          <button id="btn-reset" class="btn btn-reset btn-sm">필터 초기화</button>
         </div>
       </div>
     </aside>
@@ -146,7 +149,7 @@
 
           <!-- 정렬 드롭다운 -->
           <div class="sort-wrap ms-auto">
-            <select id="sort-select" class="form-select form-select-sm sort-select">
+            <select id="sort-select" class="form-select form-select-sm sort-select minimalist-select">
               <option th:value="'id'"         th:selected="${sort == 'id'}">기본순</option>
               <option th:value="'popular'"    th:selected="${sort == 'popular'}">인기순</option>
               <option th:value="'priceAsc'"   th:selected="${sort == 'priceAsc'}">가격</option>
@@ -158,15 +161,14 @@
 
         <div id="product-grid" class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3">
           <div class="col" th:each="p : ${products}">
-            <div class="card product-card h-100 shadow-sm">
-              <!-- 이미지 영역: 축소 + 화이트 여백 -->
+            <div class="card product-card h-100">
               <div class="card-media">
                 <img th:src="${p['imgUrl']}" th:alt="${p['name']}">
               </div>
 
               <div class="card-body p-2">
                 <div class="small text-secondary brand-compact" th:text="${p['brandName']}">Brand</div>
-                <div class="fw-semibold name-compact text-truncate" th:title="${p['name']}" th:text="${p['name']}">Name</div>
+                <div class="fw-semibold name-compact text-truncate linkish" th:title="${p['name']}" th:text="${p['name']}">Name</div>
 
                 <!-- 가격영역 -->
                 <div class="price-row mt-1">
@@ -190,7 +192,7 @@
 
         <!-- 페이지네이션 -->
         <nav class="mt-3" aria-label="상품 목록 페이지">
-          <ul class="pagination pagination-sm justify-content-center pager-rounded">
+          <ul class="pagination pagination-sm justify-content-center pager-minimal">
             <li class="page-item" th:classappend="${page <= 1} ? ' disabled'">
               <a class="page-link" href="#" data-page="1" aria-label="처음">«</a>
             </li>
@@ -198,7 +200,6 @@
               <a class="page-link" href="#" th:attr="data-page=${page-1}" aria-label="이전">‹</a>
             </li>
 
-            <!-- 페이지 숫자 (최대 7개 윈도우) -->
             <th:block th:with="
               tp=${totalPages.intValue()},
               pg=${page},
