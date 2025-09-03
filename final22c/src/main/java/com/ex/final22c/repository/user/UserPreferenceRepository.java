@@ -4,9 +4,6 @@ package com.ex.final22c.repository.user;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.user.UserPreference;
@@ -14,24 +11,12 @@ import com.ex.final22c.data.user.Users;
 
 @Repository
 public interface UserPreferenceRepository extends JpaRepository<UserPreference, Long> {
-    
-    /**
-     * 사용자명으로 사용자 선호도 조회
-     */
+
     Optional<UserPreference> findByUser_UserName(String userName);
-    
-    /**
-     * 사용자 번호로 사용자 선호도 조회
-     */
     Optional<UserPreference> findByUser_UserNo(Long userNo);
-    
-    /**
-     * 사용자명으로 사용자 선호도 삭제
-     */
-    void deleteByUser_UserName(String userName);
+
     boolean existsByUser(Users user);
-    
-    @Modifying
-    @Query("DELETE FROM UserPreference up WHERE up.user.userName = :userName")
-    void deleteByUserName(@Param("userName") String userName);
+
+    // 둘 중 하나만 사용하세요 (파생 메서드 권장)
+    void deleteByUser_UserName(String userName);
 }

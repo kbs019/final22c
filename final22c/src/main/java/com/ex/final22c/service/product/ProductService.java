@@ -222,9 +222,11 @@ public class ProductService {
                     String imgPath = (String) product.get("imgPath");
                     String imgName = (String) product.get("imgName");
                     if (imgPath != null && imgName != null && !imgPath.isEmpty() && !imgName.isEmpty()) {
-                        item.put("imageUrl", "/upload/" + imgPath + "/" + imgName);
+                        String path = imgPath.trim();
+                        if (!path.endsWith("/")) path += "/";
+                        item.put("imageUrl", path + imgName.trim());  // DB의 imgPath 그대로 사용
                     } else {
-                        item.put("imageUrl", "/img/default-product.png");
+                        item.put("imageUrl", "/img/noimg.png");
                     }
                     
                     // 메인노트명 처리
