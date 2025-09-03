@@ -158,8 +158,13 @@ public class CartController {
     public String list(Model model, Principal principal) {
         String userName = requireLogin(principal);
         Users user = usersService.getUser(userName);
+
+        var products = cartService.findMyCart(userName);
         model.addAttribute("userMileage", user.getMileage());
-        model.addAttribute("products", cartService.findMyCart(userName));
+        model.addAttribute("products", products);
+
+        model.addAttribute("cartCount", products == null ? 0 : products.size());
+        model.addAttribute("cartLimit", 20);
         return "cart/list";
     }
 
