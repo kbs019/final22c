@@ -4,6 +4,9 @@ package com.ex.final22c.repository.user;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.user.UserPreference;
@@ -27,4 +30,8 @@ public interface UserPreferenceRepository extends JpaRepository<UserPreference, 
      */
     void deleteByUser_UserName(String userName);
     boolean existsByUser(Users user);
+    
+    @Modifying
+    @Query("DELETE FROM UserPreference up WHERE up.user.userName = :userName")
+    void deleteByUserName(@Param("userName") String userName);
 }

@@ -12,9 +12,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ex.final22c.data.order.OrderDetail;
+
 import com.ex.final22c.data.product.Product;
-import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.recommendation.RecommendedProduct;
 import com.ex.final22c.data.recommendation.SituationalRecommendation;
 import com.ex.final22c.data.recommendation.UserActivityData;
@@ -138,7 +137,8 @@ public class HybridRecommendationService {
         
         prompt.append("\n=== 추천 후보 상품들 ===\n");
         candidates.forEach(product -> {
-            prompt.append("상품ID: ").append(product.get("id"))
+            prompt.append("상품ID: ").append(product.get("id")).append(" - ").append(product.get("name")).append(" (")
+            	  .append(product.get("brandName")).append(")\n")
                   .append(", 이름: ").append(product.get("name"))
                   .append(", 브랜드: ").append(product.get("brandName"))
                   .append(", 용량: ").append(product.get("volume"))
@@ -177,7 +177,7 @@ public class HybridRecommendationService {
         prompt.append("    }\n");
         prompt.append("  }\n");
         prompt.append("}\n");
-        prompt.append("\n**중요**: productId는 반드시 위 목록의 실제 숫자 ID를 사용하세요!");
+        prompt.append("\n**중요: 위에 나열된 상품ID만 사용해서 추천해주세요. 다른 ID는 절대 사용하지 마세요.**\n");
         
         return prompt.toString();
     }
@@ -529,7 +529,7 @@ public class HybridRecommendationService {
     public void resetUserSurvey(String userName) {
         Optional<Users> user = userRepository.findByUserName(userName);
         if (user.isPresent()) {
-            userPreferenceRepository.deleteByUser_UserName(userName);
+            userPreferenceRepository.deleteByUserName(userName);
             log.info("사용자 설문 데이터 초기화: {}", userName);
         }
     }

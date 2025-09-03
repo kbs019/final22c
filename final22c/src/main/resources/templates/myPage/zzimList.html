@@ -1,39 +1,260 @@
-<html layout:decorate="~{/layout/layout}">
-<th:block layout:fragment="content">
-    <div class="container my-4">
-        <h2 class="mb-3">내 관심목록</h2>
-        <div class="row g-3">
-            <div class="col-6 col-md-3" th:each="p : ${paging.content}">
-                <a th:href="@{|/main/content/${p.id}|}" class="card h-100 text-decoration-none text-dark">
-                    <img th:src="@{|${p.imgPath}${p.imgName}|}" class="card-img-top" th:alt="${p.name}">
-                    <div class="card-body">
-                        <div class="small text-muted" th:text="${p.brand.brandName}">브랜드</div>
-                        <div class="fw-semibold text-truncate" th:text="${p.name}">상품명</div>
-                        <div class="mt-1">
-                            <span class="fw-bold"
-                                th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'">0원</span>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{/layout/layout}">
 
-        <!-- 페이지네이션 -->
-        <nav class="mt-4" th:if="${totalPages > 1}">
-            <ul class="pagination">
-                <li class="page-item" th:classappend="${page==0} ? 'disabled'">
-                    <a class="page-link" th:href="@{|/me/zzim?page=${page-1}&size=${size}|}">이전</a>
-                </li>
-                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages-1)}"
-                    th:classappend="${i==page}? 'active'">
-                    <a class="page-link" th:href="@{|/me/zzim?page=${i}&size=${size}|}" th:text="${i+1}">1</a>
-                </li>
-                <li class="page-item" th:classappend="${page >= totalPages-1} ? 'disabled'">
-                    <a class="page-link" th:href="@{|/me/zzim?page=${page+1}&size=${size}|}">다음</a>
-                </li>
-            </ul>
-        </nav>
-    </div>
+<head>
+  <meta charset="UTF-8" />
+  <title>마이페이지 - 위시리스트</title>
+</head>
+
+<th:block layout:fragment="css">
+  <style>
+    /* === 사이드박스 공통 레이아웃 === */
+    .mp-grid {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .mp-col-left {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      z-index: 1;
+    }
+
+    .mp-col-right {
+      min-width: 0;
+    }
+
+    .mp-sidebox__title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+
+    .mp-sidebox__nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mp-sidebox__link {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #111827;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+    }
+
+    .mp-sidebox__link:hover {
+      background: #f3f7ff;
+    }
+
+    .mp-sidebox__link.is-active {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    @media (max-width:860px) {
+      .mp-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mp-col-left {
+        position: static;
+      }
+    }
+
+    /* === 위시리스트 카드 === */
+    .wl-wrap {
+      max-width: 1100px;
+    }
+
+    .wl-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .wl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .wl-card {
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      text-decoration: none;
+      color: #111827;
+      transition: background .15s, border-color .15s, transform .06s;
+    }
+
+    .wl-card:hover {
+      background: #f9fbff;
+      border-color: #dbe3ff;
+      transform: translateY(-1px);
+    }
+
+    .wl-thumb {
+      width: 100%;
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      background: #f3f4f6;
+    }
+
+    .wl-body {
+      padding: 12px;
+    }
+
+    .wl-brand {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
+
+    .wl-name {
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wl-price {
+      margin-top: 6px;
+      font-weight: 800;
+    }
+/* 찜 취소 버튼 (카드 오른쪽 상단 고정) */
+.zzim-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.zzim-remove-btn:hover {
+  background: rgba(229, 231, 235, 0.95); /* hover 시 약간 진하게 */
+}
+
+.zzim-remove-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: #555;
+  transition: fill 0.2s ease;
+}
+
+.zzim-remove-btn:hover svg {
+  fill: #111;
+}
+  </style>
 </th:block>
 
+<th:block layout:fragment="content">
+  <section class="mypage-wrap">
+    <div class="mp-grid">
+      <!-- 좌측: 사이드박스(활성키는 controller에서 넣은 section='wishlist') -->
+      <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+
+      <!-- 우측: 위시리스트 본문 -->
+      <div class="mp-col-right">
+		 <div class="wl-grid">
+		  <div class="wl-card position-relative" th:each="p : ${paging}">
+		    <!-- 찜 취소 버튼 -->
+		    <button type="button" class="btn btn-sm btn-light zzim-remove-btn"
+		            th:attr="data-productid=${p.id}">
+		                      <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
+                  <path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+                </svg>
+		    </button>
+		
+		    <a th:href="@{|/main/content/${p.id}|}" class="d-block text-decoration-none text-dark">
+		      <img class="wl-thumb" th:src="@{|${p.imgPath}${p.imgName}|}" th:alt="${p.name}">
+		      <div class="wl-body">
+		        <div class="wl-brand" th:text="${p.brand.brandName}">브랜드</div>
+		        <div class="wl-name" th:text="${p.name}">상품명</div>
+		        <div class="wl-price"
+		             th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'">0원</div>
+		      </div>
+		    </a>
+		  </div>
+		</div>
+      </div>
+    </div>
+   <!-- === 알림 모달 === -->
+	<div class="modal fade" id="zzimRemoveModal" tabindex="-1" aria-hidden="true">
+	  <div class="modal-dialog modal-dialog-centered">
+	    <div class="modal-content">
+	      
+	      <div class="modal-header">
+	        <h5 class="modal-title">관심상품 삭제</h5>
+	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+	      </div>
+	      
+	      <div class="modal-body">
+	        이 상품을 관심목록에서 삭제하시겠습니까?
+	      </div>
+	      
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+	        <button type="button" class="btn btn-danger" id="zzimRemoveConfirmBtn">삭제</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+  </section>
+</th:block>
+<script layout:fragment="script">
+let targetProductId = null;
+let targetCard = null;
+
+document.addEventListener("click", function(e) {
+  if (e.target.closest(".zzim-remove-btn")) {
+    let btn = e.target.closest(".zzim-remove-btn");
+    targetProductId = btn.getAttribute("data-productid");
+    targetCard = btn.closest(".wl-card");
+
+    // 모달 열기
+    let modal = new bootstrap.Modal(document.getElementById("zzimRemoveModal"));
+    modal.show();
+  }
+});
+
+// 모달 내 "삭제" 버튼 클릭 시 실행
+document.getElementById("zzimRemoveConfirmBtn").addEventListener("click", function() {
+  if (!targetProductId) return;
+
+  fetch("zzimList/remove", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ productId: targetProductId })
+  })
+  .then(res => {
+    if (res.ok) {
+      // 카드 삭제
+      if (targetCard) targetCard.remove();
+      bootstrap.Modal.getInstance(document.getElementById("zzimRemoveModal")).hide();
+    } else {
+      alert("삭제 처리 중 오류가 발생했습니다.");
+    }
+  });
+});
+</script>
 </html>

@@ -24,7 +24,10 @@
           "Segoe UI", Roboto, "Helvetica Neue", Arial,
           "Apple SD Gothic Neo", "Apple Color Emoji", "Segoe UI Emoji";
       }
-      html { overflow-y: scroll; }
+
+      html {
+        overflow-y: scroll;
+      }
 
       .mypage-wrap,
       .amodal {
@@ -415,7 +418,7 @@
             <div class="amodal__backdrop" data-close></div>
             <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="editTitle">
               <div class="amodal__head">
-                <div class="amodal__thumb"><img id="emImg" src="/img/noimg.png" alt=""></div>
+                <div class="amodal__thumb"><img id="emImg" alt=""></div>
                 <div>
                   <div class="amodal__title" id="editTitle">상품명</div>
                   <div class="meta" id="emBrand">브랜드</div>
@@ -519,26 +522,26 @@
           }
           listEl.innerHTML = items.map(it => {
             const href = it.productId ? (`/main/content/${it.productId}`) : '#';
-            const img = it.imageUrl || '/img/noimg.png';
+            const img = it.imageUrl;
             const name = it.productName || '상품명';
             const brand = it.brandName || '브랜드';
             const date = it.createDate || '';
             const rating = (it.rating ?? 0);
             const content = esc(it.content || '');
             return `
-            <article class="card" data-id="${it.reviewId}">
-              <img class="thumb" src="${esc(img)}" alt="">
-              <div>
-                <div class="title"><a href="${href}">${esc(name)}</a></div>
-                <div class="meta">${esc(brand)} <span class="rating">★ ${rating}</span> <span style="margin-left:6px">${esc(date)}</span></div>
-                <div class="content">${content}</div>
-              </div>
-              <div class="actions">
-                <a class="btn-edit" href="/review/${it.reviewId}/edit">수정</a>
-                <a class="btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
-              </div>
-            </article>
-          `;
+          <article class="card" data-id="${it.reviewId}">
+            <img class="thumb" src="${esc(img)}" alt="">
+            <div>
+              <div class="title"><a href="${href}">${esc(name)}</a></div>
+              <div class="meta">${esc(brand)} <span class="rating">★ ${rating}</span> <span style="margin-left:6px">${esc(date)}</span></div>
+              <div class="content">${content}</div>
+            </div>
+            <div class="actions">
+              <a class="btn-edit" href="/review/${it.reviewId}/edit">수정</a>
+              <a class="btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
+            </div>
+          </article>
+        `;
           }).join('');
         }
 
@@ -557,18 +560,18 @@
             const date = it.createDate || '';
             const content = esc(it.content || '');
             return `
-            <article class="card" data-id="${it.reviewId}">
-              <img class="thumb" src="${esc(img)}" alt="">
-              <div>
-                <div class="title"><a href="${href}">${esc(name)}</a></div>
-                <div class="meta">${esc(brand)}<span class="rating">★ ${rating}</span><span style="margin-left:6px">${esc(date)}</span></div>
-                <div class="content">${content}</div>
-              </div>
-              <div class="actions">
-                <button type="button" class="btn-unlike" data-id="${it.reviewId}">공감 취소</button>
-              </div>
-            </article>
-          `;
+          <article class="card" data-id="${it.reviewId}">
+            <img class="thumb" src="${esc(img)}" alt="">
+            <div>
+              <div class="title"><a href="${href}">${esc(name)}</a></div>
+              <div class="meta">${esc(brand)}<span class="rating">★ ${rating}</span><span style="margin-left:6px">${esc(date)}</span></div>
+              <div class="content">${content}</div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn-unlike" data-id="${it.reviewId}">공감 취소</button>
+            </div>
+          </article>
+        `;
           }).join('');
 
           // 공감 취소 이벤트 바인딩
@@ -598,12 +601,12 @@
             return `<button type="button" class="page-btn"${currentAttr} data-page="${i}">${i + 1}</button>`;
           }).join('');
           pagerBtns.innerHTML = `
-          <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
-          <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
-          ${pagesHtml}
-          <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="다음 페이지">›</button>
-          <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
-        `;
+        <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
+        <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
+        ${pagesHtml}
+        <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="다음 페이지">›</button>
+        <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
+      `;
           pagerBtns.querySelectorAll('.page-btn').forEach(btn => {
             btn.addEventListener('click', () => {
               if (btn.disabled) return;
@@ -640,6 +643,183 @@
       })();
     </script>
 
+    <!-- ===== 스크립트: 목록/탭/페이지네이션 ===== -->
+    <script>
+      (function () {
+        const listEl = document.getElementById('list');
+        const pagerEl = document.getElementById('pager');
+        const pagerBtns = document.getElementById('pagerBtns');
+        const pagerStatus = document.getElementById('pagerStatus');
+        const tabs = document.querySelectorAll('.pill-tabs button');
+
+        const state = { tab: 'reviews', page: 0, size: 10, totalPages: 0 };
+
+        function getInitialTab() {
+          const params = new URLSearchParams(location.search);
+          const p = (params.get('tab') || '').toLowerCase();
+          return (p === 'likes' || p === 'reviews') ? p : 'reviews';
+        }
+
+        function setActiveTab(tab) {
+          state.tab = (tab === 'likes') ? 'likes' : 'reviews';
+          tabs.forEach(b => {
+            const on = (b.dataset.tab === state.tab);
+            b.classList.toggle('is-active', on);
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          const url = new URL(location.href);
+          url.searchParams.set('tab', state.tab);
+          history.replaceState({}, '', url);
+        }
+
+        function fetchAndRender() {
+          const url = state.tab === 'reviews'
+            ? `/mypage/reviews?page=${state.page}&size=${state.size}`
+            : `/mypage/likes?page=${state.page}&size=${state.size}`;
+
+          fetch(url)
+            .then(r => {
+              const ct = r.headers.get('content-type') || '';
+              if (!ct.includes('application/json')) throw new Error('NOT_JSON');
+              return r.json();
+            })
+            .then(data => {
+              state.totalPages = data.totalPages || 0;
+              if (state.tab === 'reviews') renderReviewCards(data.content || []);
+              else renderLikeCards(data.content || []);
+              renderPager(data);
+            })
+            .catch(err => {
+              console.error(err);
+              listEl.innerHTML = `<div class="empty">목록을 불러오지 못했습니다.</div>`;
+              pagerEl.hidden = true;
+            });
+        }
+
+        tabs.forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.page = 0;
+            setActiveTab(btn.dataset.tab);
+            fetchAndRender();
+          });
+        });
+
+        function renderReviewCards(items) {
+          if (!items.length) {
+            listEl.innerHTML = `<div class="empty">작성한 리뷰가 없습니다.</div>`;
+            return;
+          }
+          listEl.innerHTML = items.map(it => {
+            const href = it.productId ? (`/main/content/${it.productId}`) : '#';
+            const img = it.imageUrl;
+            const name = it.productName || '상품명';
+            const brand = it.brandName || '브랜드';
+            const date = it.createDate || '';
+            const rating = (it.rating ?? 0);
+            const content = esc(it.content || '');
+            return `
+        <article class="card" data-id="${it.reviewId}">
+          <img class="thumb" src="${esc(img)}" alt="">
+          <div>
+            <div class="title"><a href="${href}">${esc(name)}</a></div>
+            <div class="meta">${esc(brand)} <span class="rating">★ ${rating}</span> <span style="margin-left:6px">${esc(date)}</span></div>
+            <div class="content">${content}</div>
+          </div>
+          <div class="actions">
+            <a class="btn-edit" href="/review/${it.reviewId}/edit">수정</a>
+            <a class="btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
+          </div>
+        </article>
+      `;
+          }).join('');
+        }
+
+        function renderLikeCards(items) {
+          if (!items.length) {
+            listEl.innerHTML = `<div class="empty">공감한 리뷰가 없습니다.</div>`;
+            return;
+          }
+          listEl.innerHTML = items.map(it => {
+            const href = it.productId ? (`/main/content/${it.productId}`) : '#';
+            const img = it.imageUrl;
+            const name = it.productName || '상품명';
+            const brand = it.brandName || '브랜드';
+            const rating = (it.rating ?? 0);
+            const date = it.createDate || '';
+            const content = esc(it.content || '');
+            return `
+        <article class="card" data-id="${it.reviewId}">
+          <img class="thumb" src="${esc(img)}" alt="">
+          <div>
+            <div class="title"><a href="${href}">${esc(name)}</a></div>
+            <div class="meta">${esc(brand)}<span class="rating">★ ${rating}</span><span style="margin-left:6px">${esc(date)}</span></div>
+            <div class="content">${content}</div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn-unlike" data-id="${it.reviewId}">공감 취소</button>
+          </div>
+        </article>
+      `;
+          }).join('');
+
+          listEl.querySelectorAll('.btn-unlike').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const id = btn.dataset.id;
+              try {
+                const res = await fetch(`/mypage/likes/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+                if (!res.ok) throw new Error();
+                fetchAndRender();
+              } catch (e) { alert('공감 취소 중 오류가 발생했습니다.'); }
+            });
+          });
+        }
+
+        function renderPager(data) {
+          const total = Math.max(0, Number(data.totalPages) || 0);
+          const page = Math.min(Math.max(0, Number(data.page) || 0), Math.max(0, total - 1));
+          if (total <= 1) { pagerEl.hidden = true; return; }
+          pagerEl.hidden = false;
+          pagerStatus.textContent = `현재 ${page + 1} / ${total} 페이지`;
+          const isFirst = page === 0;
+          const isLast = page === total - 1;
+          const pagesHtml = Array.from({ length: total }, (_, i) => {
+            const currentAttr = i === page ? ' aria-current="page"' : '';
+            return `<button type="button" class="page-btn"${currentAttr} data-page="${i}">${i + 1}</button>`;
+          }).join('');
+          pagerBtns.innerHTML = `
+      <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
+      <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
+      ${pagesHtml}
+      <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="다음 페이지">›</button>
+      <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
+    `;
+          pagerBtns.querySelectorAll('.page-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              if (btn.disabled) return;
+              const nav = btn.dataset.nav;
+              let next = page;
+              if (nav === 'first') next = 0;
+              else if (nav === 'prev') next = Math.max(0, page - 1);
+              else if (nav === 'next') next = Math.min(total - 1, page + 1);
+              else if (nav === 'last') next = total - 1;
+              else if (btn.dataset.page != null) next = Number(btn.dataset.page);
+              if (next === page) return;
+              state.page = next;
+              fetchAndRender();
+            });
+          });
+        }
+
+        function esc(s) {
+          return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        setActiveTab(getInitialTab());
+        fetchAndRender();
+        window.fetchAndRender = fetchAndRender;
+      })();
+    </script>
+
     <!-- ===== 스크립트: 수정/삭제 모달 & 액션 ===== -->
     <script>
       (function () {
@@ -660,7 +840,6 @@
           }
         });
 
-        // ====== 수정 모달 ======
         const em = document.getElementById('editModal');
         const emImg = document.getElementById('emImg');
         const editTitle = document.getElementById('editTitle');
@@ -695,7 +874,7 @@
 
             const d = await res.json();
 
-            emImg.src = d.imageUrl || '/img/noimg.png';
+            emImg.src = d.imageUrl;
             editTitle.textContent = d.productName || '상품명';
             emBrand.textContent = d.brandName || '';
             emContent.value = d.content || '';
@@ -729,7 +908,6 @@
           }
         });
 
-        // ====== 삭제 모달 ======
         const dm = document.getElementById('deleteModal');
         const dmYes = document.getElementById('dmYes');
 
@@ -763,6 +941,7 @@
         });
       })();
     </script>
+
 
   </div>
 </body>

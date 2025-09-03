@@ -53,13 +53,22 @@
         주문내역
       </a>
 
+      <!-- ✅ 마일리지 내역 추가 -->
+      <a th:href="@{/mypage/mileage}" class="mp-sidebox__link"
+        th:classappend="${section}=='mileage' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='mileage') ? 'page' : null">
+        <span>마일리지 내역</span>
+        <!-- 칩: me.mileage 모델 있을 때만 표시 -->
+
+      </a>
+
       <a th:href="@{/mypage/profile}" class="mp-sidebox__link"
         th:classappend="${section}=='profile' ? ' is-active' : ''"
         th:attr="aria-current=(${section}=='profile') ? 'page' : null">
         개인정보
       </a>
 
-      <a th:href="@{/mypage/wishlist}" class="mp-sidebox__link"
+      <a th:href="@{/mypage/zzimList}" class="mp-sidebox__link"
         th:classappend="${section}=='wishlist' ? ' is-active' : ''"
         th:attr="aria-current=(${section}=='wishlist') ? 'page' : null">
         위시리스트

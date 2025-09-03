@@ -1,6 +1,7 @@
 package com.ex.final22c.controller.myPage;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.MediaType;
@@ -15,10 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersAddressForm;
 import com.ex.final22c.repository.mypage.UserAddressRepository;
 import com.ex.final22c.service.mypage.UserAddressService;
+import com.ex.final22c.service.product.ZzimService;
 import com.ex.final22c.service.user.UsersService;
 
 import jakarta.validation.Valid;
@@ -32,6 +35,7 @@ public class MyPageController {
     private final UsersService usersService;
     private final UserAddressRepository userAddressRepository;
     private final UserAddressService userAddressService;
+    private final ZzimService zzimService;
 
     // ====== DTO ======
     public record AddressDto(
@@ -139,12 +143,23 @@ public class MyPageController {
     }
 
     // ====== 찜목록 ======
-    @GetMapping("/wishlist")
+    @GetMapping("/zzimList")
     public String wishlistPage(Model model, Principal principal) {
         if (principal == null)
             return "redirect:/user/login";
+        List<Product> list = this.zzimService.listMyZzim(principal.getName());
+        model.addAttribute("paging",list);
         model.addAttribute("section", "wishlist");
-        return "mypage/wishlist";
+        return "mypage/zzimList";
     }
-
+    
+    @PostMapping("/zzimList/remove")
+    @ResponseBody
+    public ResponseEntity<?> removeZzim(Principal principal,
+                                        @RequestBody Map<String, Long> body) {
+        Long productId = body.get("productId");
+        String user = principal.getName();
+        zzimService.remove(user, productId);
+        return ResponseEntity.ok().build();
+    }
 }

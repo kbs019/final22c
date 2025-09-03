@@ -406,6 +406,19 @@ public class AdminController {
 		return "admin/reviewList";
 	}
 
+	// 페이지 진입: /admin/usersStats
+	@GetMapping("usersStats")
+	public String usersStatsPage() {
+		return "admin/usersStats";
+	}
+
+	// 전체 회원 통계 API (성별/연령대 + 전체/최근7일 카운트)
+	@ResponseBody
+	@GetMapping("usersStats/api")
+	public Map<String, Object> usersStatsApi() {
+		return adminService.buildAllUserStats(); // Service에서 totalUserCount, newUserCount7d 포함 반환
+	}
+
 	// ========================================== 매출 통계 =======================================
 
 	/** 페이지 진입: /admin/sales-stats -> templates/admin/salesStats.html */
@@ -481,5 +494,13 @@ public class AdminController {
         } else {
             return ResponseEntity.badRequest().body("사용자를 찾을 수 없거나 잘못된 제재 유형입니다.");
         }
+    }
+    
+    // 리뷰 숨김처리
+    @PostMapping("reviewList/changeStatus")
+    @ResponseBody
+    public ResponseEntity<?> changeStatus(@RequestBody Review review) {
+        adminService.changeStatus(review.getReviewId(), review.getStatus());
+        return ResponseEntity.ok().build();
     }
 }
