@@ -1,874 +1,880 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-  xmlns:sec="https://www.thymeleaf.org/extras/spring-security" layout:decorate="~{layout/layout}">
-
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security" 
+      layout:decorate="~{layout/layout}">
 <head>
-  <title>상품 상세</title>
-  <!-- 개인적으로 넣을 css 부분 추가 시작 -->
-  <th:block layout:fragment="css">
-    <link rel="stylesheet" href="/css/content.css">
-
-    <!-- 필요 클래스만 최소치로 보강(원하시면 content.css로 이동하세요) -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 향수 추천</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-      /* 우측 날짜/액션 컬럼: 줄바꿈 최소화용 폭 */
-      .review-right {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        min-width: 116px;
-      }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-      /* 액션 공통(크기/간격) - 요청대로 작게(11px) */
-      .review-actions {
-        line-height: 1;
-      }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            color: #334155;
+        }
 
-      .review-actions .ra-link,
-      .review-actions .ra-box {
-        font-size: 11px;
-        margin-left: 8px;
-      }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
 
-      /* 언더라인 호버형(흑/백/회색만) */
-      .ra-link {
-        appearance: none;
-        background: none;
-        border: 0;
-        padding: 0;
-        color: #666;
-        text-decoration: none;
-        cursor: pointer;
-        background-image: linear-gradient(currentColor, currentColor);
-        background-position: 0 100%;
-        background-size: 0% 1px;
-        background-repeat: no-repeat;
-        transition: background-size .18s ease, color .18s ease;
-      }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+        }
 
-      .ra-link:hover {
-        color: #111;
-        background-size: 100% 1px;
-      }
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
 
-      .ra-danger {
-        color: #b55;
-      }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
 
-      .ra-danger:hover {
-        color: #922;
-        background-size: 100% 1px;
-      }
+        .header p {
+            font-size: 1.1rem;
+            color: #64748b;
+        }
 
-      /* 좋아요 UI(무채색) */
-      .like-wrap {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        color: #666;
-      }
+        .progress-section {
+            margin-bottom: 2rem;
+        }
 
-      .like-wrap .btn-like {
-        appearance: none;
-        border: 0;
-        background: none;
-        padding: 0 2px;
-        cursor: pointer;
-        line-height: 1;
-        color: inherit;
-        background-image: linear-gradient(currentColor, currentColor);
-        background-position: 0 100%;
-        background-size: 0% 1px;
-        background-repeat: no-repeat;
-        transition: background-size .18s ease, color .18s ease, transform .06s ease;
-        font-size: 12px;
-      }
+        .step-counter {
+            text-align: center;
+            color: #475569;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
 
-      .like-wrap .btn-like:hover {
-        color: #111;
-        background-size: 100% 1px;
-      }
+        .progress-bar {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
 
-      .like-wrap .btn-like:active {
-        transform: scale(0.96);
-      }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
 
-      .like-wrap .like-count {
-        font-size: 12px;
-        color: #444;
-      }
+        .question-container {
+            margin-bottom: 2rem;
+        }
 
-      .like-wrap.is-liked {
-        color: #111;
-      }
+        .question-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
 
-      .like-wrap.is-liked .btn-like i {
-        font-weight: 900;
-      }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .option-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .option-card:hover {
+            border-color: #3b82f6;
+            background: #f1f5f9;
+        }
+
+        .option-card.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .option-icon {
+            font-size: 2rem;
+            color: #3b82f6;
+            margin-bottom: 1rem;
+        }
+
+        .option-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .option-desc {
+            font-size: 0.9rem;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .question-card {
+            display: none;
+        }
+
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loading-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-icon {
+            font-size: 3rem;
+            color: #3b82f6;
+            margin-bottom: 1.5rem;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-subtitle {
+            color: #64748b;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .situation-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .situation-tab {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            background: #f1f5f9;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .situation-tab.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .analysis-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .analysis-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .analysis-text {
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .perfumes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .perfume-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .perfume-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .perfume-image {
+            width: 100%;
+            height: 160px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .perfume-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .perfume-name {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .perfume-brand {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .perfume-reason {
+            color: #475569;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 1rem;
+        }
+
+        .perfume-price {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+
+        .perfume-link {
+            background: #3b82f6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .perfume-link:hover {
+            background: #2563eb;
+            color: white;
+        }
+
+        .action-buttons {
+            text-align: center;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .login-section {
+            text-align: center;
+        }
+
+        .login-icon {
+            font-size: 3rem;
+            color: #3b82f6;
+            margin-bottom: 2rem;
+        }
+
+        .login-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+        }
+
+        .benefits-list {
+            margin: 2rem 0;
+            text-align: left;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            color: #475569;
+        }
+
+        .benefit-icon {
+            color: #3b82f6;
+            width: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 2rem 1.5rem;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .perfumes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
     </style>
-  </th:block>
 </head>
-
 <body>
-  <div layout:fragment="content">
-    <div class="productInfoWrap">
-      <!-- 좌측의 향수 이미지 -->
-      <div class="slideWrap" th:classappend="${product.count == 0} ? ' soldout'">
-        <img th:src="@{|${product.imgPath}${product.imgName}|}" alt="상품 이미지">
-        <div class="overlay" aria-hidden="true"></div>
-      </div>
-
-      <!-- 우측 상품 정보 -->
-      <div class="productInfo">
-        <div id="product-detail">
-          <div class="mb-3 py-3 border-bottom pd-head">
-            <div class="brand-row bm-wrap">
-              <a class="brand-link" th:href="@{|/main/brand/${product.brand.id}|}">
-                <span th:text="${product.brand.brandName}"></span>
-              </a>
-              <button type="button" class="bm-btn" th:attr="aria-pressed=${zzimedByMe} ? 'true' : 'false',
-                data-logged-in=${loggedIn}" th:title="${zzimedByMe} ? '관심 해제' : '관심 등록'">
-                <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
-                  <path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-                </svg>
-              </button>
-            </div>
-            <div>
-              <strong class="title" th:text="${product.name}"></strong>
+    <div class="container">
+        <div class="card">
+            <!-- 헤더 -->
+            <div class="header">
+                <h1>AI 향수 추천</h1>
+                <p>당신의 취향을 분석해 완벽한 향수를 찾아드립니다</p>
             </div>
 
-            <div class="mb-3 pt-3 price-area">
-              <div>
-                <strong class="rate"
-                  th:text="${#numbers.formatDecimal(T(java.lang.Math).floor(product.discount), 0, 0)} + '%'"></strong>
-                <span class="sale" th:text="${#numbers.formatInteger(product.sellPrice,3,'COMMA')} + '원'"></span>
-              </div>
-              <div>
-                <del class="list" th:if="${product.price > product.sellPrice}"
-                  th:text="${#numbers.formatInteger(product.price,3,'COMMA')} + '원'"></del>
-              </div>
-            </div>
-          </div>
-
-          <div class="mb-3 pb-3 border-bottom">
-            <div>배송 정보</div><br>
-            <div>
-              <h5>배송비 3,000 원</h5>
-            </div>
-            <div>
-              <h5>예상 배송일 3 일</h5>
-            </div>
-          </div>
-
-          <div class="my-3 py-3 border-bottom">
-            <div>구매 확정 시, 결제금액의 5% 적립</div>
-            <form id="buy-form" method="post">
-              <input type="hidden" name="id" th:value="${product.id}">
-
-              <div class="d-flex align-items-center gap-2" id="buy-qty-wrap">
-                <button type="button" class="btn btn-outline-secondary btn-sm btn-minus">-</button>
-
-                <!-- 수량 입력: min=1, max=재고 -->
-                <input type="number" class="form-control text-center qty-input" style="width:80px;" name="quantity"
-                  th:attr="max=${product.count}" min="1" value="1">
-
-                <button type="button" class="btn btn-outline-secondary btn-sm btn-plus">+</button>
-
-                <div class="ms-3">
-                  <div class="fw-semibold">합계: <span class="total-amount">0</span> 원</div>
-                  <div class="text-muted small">적립 예정(5%): <span class="reward-amount">0</span> P</div>
+            <!-- 설문조사 섹션 (바로 시작) -->
+            <div id="survey-section">
+                <div class="progress-section">
+                    <div class="step-counter">
+                        <span id="current-step">1</span> / <span id="total-steps">5</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 20%"></div>
+                    </div>
                 </div>
-              </div>
 
-              <div class="mt-3 d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary" id="btn-add-cart">장바구니</button>
-                <button type="submit" class="btn btn-secondary" formaction="/checkout/order" formmethod="post"
-                  id="btn-buy-now">바로 결제</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 장바구니 모달 -->
-    <div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">장바구니 담기</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">
-            <div id="cartModalMsg">장바구니에 제품이 등록되었습니다.</div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
-            <span sec:authorize="isAuthenticated()">
-              <a th:href="@{/cart/list}" class="btn btn-secondary" id="goCartBtn">장바구니로 이동</a>
-            </span>
-            <span sec:authorize="isAnonymous()">
-              <a th:href="@{/user/login}" class="btn btn-secondary" id="goCartBtn">로그인하기</a>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- [신규] 찜 로그인 안내 모달 -->
-    <div class="modal fade" id="zzimLoginModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">관심등록</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">로그인이 되어있지 않습니다. 로그인하시겠습니까?</div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
-            <a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 찜 등록 완료 모달(문구 정정) -->
-    <div class="modal fade" id="zzimDoneModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">관심등록</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">관심등록이 되었습니다.</div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 찜 해제 확인 모달(기존 문구 유지) -->
-    <div class="modal fade" id="zzimConfirmModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">관심등록 해제</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">
-            이미 관심등록이 된 상품입니다.<br>관심등록을 해제하시겠습니까?
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
-            <button class="btn btn-danger btn-confirm">확인</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 비로그인 전용: 바로결제 로그인 안내 모달 -->
-    <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-hidden="true" sec:authorize="isAnonymous()">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">바로결제</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">로그인이 필요합니다.</div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
-            <a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 하단의 향 소개 -->
-    <div class="productDescription">
-      <h2>향 소개</h2>
-      <br>
-      <div>
-        <span>[부향률]</span>
-        <div>- <span th:text="${product.grade.gradeName}"></span></div>
-      </div>
-      <br>
-      <div>
-        <span>[메인 어코드]</span>
-        <div>- <span th:text="${product.mainNote.mainNoteName}"></span></div>
-      </div>
-      <br>
-      <div>
-        <span>[메인 노트]</span>
-        <div th:if="${product.singleNote != null}">
-          - <span>싱글 노트 : </span><span th:text="${product.singleNote}"></span>
-        </div>
-        <div th:if="${product.singleNote == null}">
-          <div>- <span>탑 노트 : </span><span th:text="${product.topNote}"></span></div>
-          <div>- <span>미들 노트 : </span><span th:text="${product.middleNote}"></span></div>
-          <div>- <span>베이스 노트 : </span><span th:text="${product.baseNote}"></span></div>
-        </div>
-      </div>
-      <br>
-      <div>
-        <span>[향 설명]</span>
-        <div>- <span th:text="${product.description}"></span></div>
-      </div>
-
-      <!-- 구매자 통계 (명수, 인구피라미드) -->
-      <div id="buyer-stats" class="mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="mb-0">구매자 통계</h2>
-          <div class="text-muted small">구매자 수(명) · 확정 수량 존재 기준</div>
-        </div>
-
-        <div class="card p-3">
-          <div class="d-flex justify-content-between small text-muted mb-1">
-            <span>WOMAN</span>
-            <span>MAN</span>
-          </div>
-          <div style="height:300px;">
-            <canvas id="buyerStatChart" aria-label="나이/성별별 구매자 수 피라미드 차트"></canvas>
-          </div>
-          <div id="buyerStatEmpty" class="text-muted small mt-2" style="display:none;">데이터가 없습니다.</div>
-        </div>
-      </div>
-
-      <!-- 리뷰 섹션 -->
-      <div id="review-section" class="mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="mb-0">Review</h2>
-          <div>
-            <a class="btn btn-outline-dark" th:href="@{|/main/etc/review/new?productId=${product.id}|}"
-              sec:authorize="isAuthenticated()">리뷰 작성</a>
-
-            <button class="btn btn-outline-dark" id="btn-review-need-login" sec:authorize="isAnonymous()">리뷰 작성</button>
-          </div>
-        </div>
-
-        <!-- 평균 평점 -->
-        <div class="mb-4">
-          <div class="mb-2 fw-semibold">평균 평점</div>
-          <div class="d-flex align-items-center gap-3">
-            <div class="rating-bars" th:with="filled=${T(java.lang.Math).round(reviewAvg)}">
-              <div th:each="i : ${#numbers.sequence(1,5)}" th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
-              </div>
-            </div>
-            <span th:text="${#numbers.formatDecimal(reviewAvg,1,1)}">0.0</span>
-          </div>
-        </div>
-
-        <hr class="my-4">
-
-        <!-- 전체 개수 + 정렬 -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div class="fw-semibold">전체 리뷰 <span th:text="${reviewCount}">0</span>개</div>
-          <form method="get" th:action="@{|/main/content/${product.id}|}">
-            <select class="form-select form-select-sm w-auto d-inline-block" name="sort" onchange="this.form.submit()">
-              <option value="best" th:selected="${sort=='best'}">추천순</option>
-              <option value="recent" th:selected="${sort=='recent'}">최신순</option>
-            </select>
-          </form>
-        </div>
-
-        <!-- 리스트 -->
-        <div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">작성된 리뷰가 없습니다.</div>
-
-        <div th:each="rv : ${reviews}" class="py-4 border-top">
-          <div class="d-flex align-items-start justify-content-between">
-            <!-- 좌측: 메타 + 본문 -->
-            <div class="d-flex align-items-start gap-3 flex-grow-1">
-              <div class="review-meta">
-                <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
-                  th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
-                  kv**</div>
-
-                <div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
-                  <div th:each="i : ${#numbers.sequence(1,5)}" th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
-                  </div>
+                <!-- 질문 1: 성별 -->
+                <div class="question-card active" data-question="1">
+                    <div class="question-container">
+                        <h3 class="question-title">성별을 선택하세요</h3>
+                        <div class="options-grid" data-name="gender">
+                            <div class="option-card" data-value="male">
+                                <div class="option-icon"><i class="fas fa-mars"></i></div>
+                                <div class="option-title">남자</div>
+                                <div class="option-desc">남성용 향수 추천</div>
+                            </div>
+                            <div class="option-card" data-value="female">
+                                <div class="option-icon"><i class="fas fa-venus"></i></div>
+                                <div class="option-title">여자</div>
+                                <div class="option-desc">여성용 향수 추천</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
 
-              <!-- 본문 영역 -->
-              <div class="flex-grow-1">
-                <div class="mb-2 text-break" th:text="${rv.content}">내용</div>
-
-                <!-- 좋아요 -->
-                <div class="like-wrap" th:attr="data-id=${rv.reviewId}"
-                  th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
-                  <button type="button" class="btn-like" aria-label="공감" title="공감" sec:authorize="isAuthenticated()">
-                    <i class="fa-regular fa-thumbs-up"></i>
-                  </button>
-                  <button type="button" class="btn-like need-login" aria-label="로그인 필요" sec:authorize="isAnonymous()">
-                    <i class="fa-regular fa-thumbs-up"></i>
-                  </button>
-                  <span class="like-count" th:text="${#lists.size(rv.likers)}">0</span>
+                <!-- 질문 2: 사용 용도 -->
+                <div class="question-card" data-question="2">
+                    <div class="question-container">
+                        <h3 class="question-title">향수를 사용하는 용도를 선택하세요</h3>
+                        <div class="options-grid" data-name="usage">
+                            <div class="option-card" data-value="daily">
+                                <div class="option-icon"><i class="fas fa-sun"></i></div>
+                                <div class="option-title">일상</div>
+                                <div class="option-desc">매일 사용하는 시그니처 향</div>
+                            </div>
+                            <div class="option-card" data-value="office">
+                                <div class="option-icon"><i class="fas fa-briefcase"></i></div>
+                                <div class="option-title">직장</div>
+                                <div class="option-desc">프로페셔널한 향</div>
+                            </div>
+                            <div class="option-card" data-value="special">
+                                <div class="option-icon"><i class="fas fa-heart"></i></div>
+                                <div class="option-title">특별한 날</div>
+                                <div class="option-desc">특별함을 연출하는 향</div>
+                            </div>
+                            <div class="option-card" data-value="gift">
+                                <div class="option-icon"><i class="fas fa-gift"></i></div>
+                                <div class="option-title">선물용</div>
+                                <div class="option-desc">선물하기 좋은 향</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
+
+                <!-- 질문 3: 가격대 -->
+                <div class="question-card" data-question="3">
+                    <div class="question-container">
+                        <h3 class="question-title">원하는 가격대를 선택하세요</h3>
+                        <div class="options-grid" data-name="priceRange">
+                            <div class="option-card" data-value="low">
+                                <div class="option-icon"><i class="fas fa-dollar-sign"></i></div>
+                                <div class="option-title">저가형</div>
+                                <div class="option-desc">10만원 이하</div>
+                            </div>
+                            <div class="option-card" data-value="medium">
+                                <div class="option-icon"><i class="fas fa-coins"></i></div>
+                                <div class="option-title">중가형</div>
+                                <div class="option-desc">10~30만원</div>
+                            </div>
+                            <div class="option-card" data-value="high">
+                                <div class="option-icon"><i class="fas fa-gem"></i></div>
+                                <div class="option-title">고가형</div>
+                                <div class="option-desc">30만원 이상</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 질문 4: 선호하는 향 -->
+                <div class="question-card" data-question="4">
+                    <div class="question-container">
+                        <h3 class="question-title">선호하는 향을 선택하세요</h3>
+                        <div class="options-grid" data-name="notes">
+                            <div class="option-card" data-value="citrus">
+                                <div class="option-icon"><i class="fas fa-lemon"></i></div>
+                                <div class="option-title">시트러스</div>
+                                <div class="option-desc">레몬, 오렌지, 자몽</div>
+                            </div>
+                            <div class="option-card" data-value="woody">
+                                <div class="option-icon"><i class="fas fa-tree"></i></div>
+                                <div class="option-title">우디</div>
+                                <div class="option-desc">샌달우드, 시더, 나무향</div>
+                            </div>
+                            <div class="option-card" data-value="herbal">
+                                <div class="option-icon"><i class="fas fa-leaf"></i></div>
+                                <div class="option-title">허벌</div>
+                                <div class="option-desc">허브, 그린 계열</div>
+                            </div>
+                            <div class="option-card" data-value="floral">
+                                <div class="option-icon"><i class="fas fa-seedling"></i></div>
+                                <div class="option-title">플로랄</div>
+                                <div class="option-desc">장미, 자스민, 피오니</div>
+                            </div>
+                            <div class="option-card" data-value="spicy">
+                                <div class="option-icon"><i class="fas fa-pepper-hot"></i></div>
+                                <div class="option-title">스파이시</div>
+                                <div class="option-desc">후추, 계피, 생강</div>
+                            </div>
+                            <div class="option-card" data-value="fruity">
+                                <div class="option-icon"><i class="fas fa-apple-alt"></i></div>
+                                <div class="option-title">프루티</div>
+                                <div class="option-desc">과일의 달콤함</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 질문 5: 지속력 -->
+                <div class="question-card" data-question="5">
+                    <div class="question-container">
+                        <h3 class="question-title">지속력을 선택하세요</h3>
+                        <div class="options-grid" data-name="intensity">
+                            <div class="option-card" data-value="오드 코롱">
+                                <div class="option-icon"><i class="fas fa-clock"></i></div>
+                                <div class="option-title">오드 코롱</div>
+                                <div class="option-desc">2-3시간 지속</div>
+                            </div>
+                            <div class="option-card" data-value="오드 뚜왈렛">
+                                <div class="option-icon"><i class="fas fa-hourglass-half"></i></div>
+                                <div class="option-title">오드 뚜왈렛</div>
+                                <div class="option-desc">3-5시간 지속</div>
+                            </div>
+                            <div class="option-card" data-value="오드 퍼퓸">
+                                <div class="option-icon"><i class="fas fa-hourglass-end"></i></div>
+                                <div class="option-title">오드 퍼퓸</div>
+                                <div class="option-desc">5-8시간 지속</div>
+                            </div>
+                            <div class="option-card" data-value="퍼퓸">
+                                <div class="option-icon"><i class="fas fa-infinity"></i></div>
+                                <div class="option-title">퍼퓸</div>
+                                <div class="option-desc">8시간 이상 지속</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- 우측: 날짜 + 액션(날짜 바로 아래) — 날짜 위치는 그대로 유지 -->
-            <div class="review-right ms-3">
-              <div class="review-date text-muted small text-nowrap"
-                th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
-
-              <!-- 로그인 + (소유자 또는 관리자)만 노출 -->
-              <div class="review-actions mt-1" sec:authorize="isAuthenticated()"
-                th:with="isOwner=${#authentication.name == rv.userName}">
-                <div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
-                  <a class="ra-link" th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${product.id}|}">수정</a>
-
-                  <form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
-                    onsubmit="return confirm('후기를 삭제하시겠습니까?');">
-                    <input type="hidden" name="productId" th:value="${product.id}">
-                    <button type="submit" class="ra-link ra-danger">삭제</button>
-                  </form>
+            <!-- 결과 섹션 -->
+            <div id="results-section" class="results-section">
+                <div class="situation-tabs">
+                    <div class="situation-tab active" data-situation="daily">
+                        일상용
+                    </div>
+                    <div class="situation-tab" data-situation="special">
+                        특별한 날
+                    </div>
+                    <div class="situation-tab" data-situation="gift">
+                        선물용
+                    </div>
                 </div>
-              </div>
+
+                <div class="analysis-box">
+                    <div class="analysis-title">
+                        <i class="fas fa-brain"></i> AI 분석 결과
+                    </div>
+                    <div class="analysis-text" id="analysis-text">
+                        분석 중입니다...
+                    </div>
+                </div>
+
+                <div class="perfumes-grid" id="perfumes-grid">
+                    <!-- 동적으로 채워짐 -->
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="restartSurvey()">
+                        다시 테스트하기
+                    </button>
+                    <a href="/main/list" class="btn btn-primary">
+                        전체 상품 보기
+                    </a>
+                </div>
             </div>
-          </div>
         </div>
-
-        <!-- 리뷰 끝 -->
-      </div>
     </div>
-  </div>
 
-  <!-- 스크립트 -->
-  <th:block layout:fragment="script">
-    <script th:inline="javascript">
-      // === CSRF: 메타 태그 또는 Thymeleaf 인라인 값 둘 다 지원 ===
-      function getCsrfPair() {
-        const metaToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-        const metaHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-        const inlineHeader = /*[[${_csrf?.headerName}]]*/ 'X-CSRF-TOKEN';
-        const inlineToken = /*[[${_csrf?.token}]]*/ '';
-        return {
-          header: metaHeader || inlineHeader || 'X-CSRF-TOKEN',
-          token: metaToken || inlineToken || ''
-        };
-      }
+    <!-- 로딩 화면 -->
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-icon">
+            <i class="fas fa-cog"></i>
+        </div>
+        <div class="loading-text">AI 분석 중</div>
+        <div class="loading-subtitle">당신의 취향을 분석하고 있습니다</div>
+    </div>
 
-      // 비로그인자가 '리뷰 작성' 클릭 시
-      document.getElementById('btn-review-need-login')?.addEventListener('click', function () {
-        alert('로그인이 필요한 서비스입니다.');
-        location.href = '/user/login';
-      });
-
-      // Bootstrap Modal 준비
-      const cartModalEl = document.getElementById('cartModal');
-      const cartModal = cartModalEl ? new bootstrap.Modal(cartModalEl) : null;
-
-      // 공통 DOM
-      const btnAddCart = document.getElementById('btn-add-cart');
-      const buyForm = document.getElementById('buy-form');
-      const qtyInput = document.querySelector('.qty-input');
-      const msgBox = document.getElementById('cartModalMsg');
-      const badgeEl = document.getElementById('cart-count');
-
-      // 상품 정보(템플릿 값 주입)
-      const PRODUCT_ID = /*[[${product.id}]]*/ 0;
-      const PRODUCT_NAME = /*[[${product.name}]]*/ '';
-      const MAX_STOCK = parseInt(qtyInput?.getAttribute('max') || '0', 10);
-
-      // 더블클릭 방지
-      function withButtonLock(btn, fn) {
-        if (!btn || btn.disabled) return;
-        btn.disabled = true;
-        Promise.resolve(fn()).finally(() => setTimeout(() => btn.disabled = false, 800));
-      }
-
-      // 장바구니 추가
-      btnAddCart?.addEventListener('click', () => withButtonLock(btnAddCart, async () => {
-        let qty = parseInt(qtyInput.value, 10);
-        if (isNaN(qty) || qty < 1) qty = 1;
-        if (MAX_STOCK > 0) qty = Math.min(qty, MAX_STOCK);
-
-        // 1) 사전 카운트 체크 (UX)
-        try {
-          const cRes = await fetch('/cart/count', { credentials: 'same-origin' });
-          const cData = await cRes.json().catch(() => ({}));
-          if (Number(cData.count) >= 20) {
-            if (msgBox) msgBox.textContent = '장바구니에 담을 수 있는 최대 수량은 20개 입니다.';
-            cartModal?.show();
-            return;
-          }
-        } catch (_) {
-          // 사전 체크 실패해도 /cart/add 단계에서 다시 막힘
-        }
-
-        try {
-          const res = await fetch('/cart/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ productId: PRODUCT_ID, qty })
-          });
-
-          const data = await res.json().catch(() => ({}));
-
-          if (res.ok) {
-            if (badgeEl && typeof data.count === 'number') {
-              badgeEl.textContent = String(data.count);
-            }
-            if (msgBox) msgBox.textContent = `“${PRODUCT_NAME}” ${qty}개가 장바구니에 담겼습니다.`;
-            cartModal?.show();
-          } else {
-            if (msgBox) msgBox.textContent = (data && data.message) ? data.message : '처리 중 오류가 발생했습니다.';
-            cartModal?.show();
-          }
-        } catch (e) {
-          if (msgBox) msgBox.textContent = '네트워크 오류가 발생했습니다.';
-          cartModal?.show();
-        }
-      }));
-
-      // 바로결제 더블클릭 방지
-      document.getElementById('buy-form')?.addEventListener('submit', (e) => {
-        const btn = e.submitter;
-        if (!btn) return;
-        btn.disabled = true;
-        setTimeout(() => btn.disabled = false, 2000);
-      });
-
-      // 비로그인일 때 buy-form 제출 막고 모달 오픈
-    </script>
-
-    <script sec:authorize="isAnonymous()">
-      (function () {
-        const form = document.getElementById('buy-form');
-        const modalEl = document.getElementById('loginRequiredModal');
-        if (!form || !modalEl || typeof bootstrap === 'undefined') return;
-        const modal = new bootstrap.Modal(modalEl);
-
-        form.addEventListener('submit', function (e) {
-          e.preventDefault();
-          const btn = e.submitter;
-          if (btn) { btn.disabled = true; setTimeout(() => btn.disabled = false, 1200); }
-          modal.show();
-        });
-      })();
-    </script>
-
-    <script th:inline="javascript">
-      // 수량/합계 계산
-      document.querySelectorAll('#buy-qty-wrap').forEach(container => {
-        const minusBtn = container.querySelector('.btn-minus');
-        const plusBtn = container.querySelector('.btn-plus');
-        const input = container.querySelector('.qty-input');
-        const totalEl = container.querySelector('.total-amount');
-        const rewardEl = container.querySelector('.reward-amount');
-
-        const MIN = parseInt(input.getAttribute('min')) || 1;
-        const MAX = parseInt(input.getAttribute('max')) || 0;
-        const SELLPRICE = /*[[${product.sellPrice}]]*/ 0;
-        const RATE = 0.05;
-
-        const fmt = n => Number(n || 0).toLocaleString('ko-KR');
-        function clamp(v) {
-          if (isNaN(v)) v = MIN;
-          v = Math.floor(v);
-          if (v < MIN) v = MIN;
-          if (v > MAX) v = MAX;
-          return v;
-        }
-        function recalcAndRender(qty) {
-          const total = SELLPRICE * qty;
-          const point = Math.floor(total * RATE);
-          totalEl.textContent = fmt(total);
-          rewardEl.textContent = fmt(point);
-        }
-        function updateUI() {
-          const v = parseInt(input.value, 10);
-          if (MAX < 1) {
-            input.value = 0;
-            input.disabled = true;
-            minusBtn.disabled = true;
-            plusBtn.disabled = true;
-            document.querySelectorAll('#btn-add-cart, #btn-buy-now').forEach(b => b.disabled = true);
-            recalcAndRender(0);
-            return;
-          }
-          input.value = clamp(v);
-          minusBtn.disabled = (parseInt(input.value, 10) <= MIN);
-          plusBtn.disabled = (parseInt(input.value, 10) >= MAX);
-          input.max = String(MAX);
-          recalcAndRender(parseInt(input.value, 10));
-          document.querySelectorAll('#btn-add-cart, #btn-buy-now').forEach(b => b.disabled = false);
-        }
-        updateUI();
-        minusBtn.addEventListener('click', function () {
-          if (this.disabled) return;
-          input.value = clamp(parseInt(input.value, 10) - 1);
-          updateUI();
-        });
-        plusBtn.addEventListener('click', function () {
-          if (this.disabled) return;
-          input.value = clamp(parseInt(input.value, 10) + 1);
-          updateUI();
-        });
-        input.addEventListener('input', function () {
-          this.value = this.value.replace(/[^0-9]/g, '');
-          updateUI();
-        });
-        input.addEventListener('blur', function () {
-          this.value = clamp(parseInt(this.value, 10));
-          updateUI();
-        });
-      });
-
-      // ===== 좋아요(공감) 토글 =====
-      // 비로그인: 로그인 안내
-      document.querySelectorAll('.like-wrap .need-login')?.forEach(b => {
-        b.addEventListener('click', () => {
-          alert('로그인이 필요한 서비스입니다.');
-          location.href = '/user/login';
-        });
-      });
-
-      // 로그인: Ajax 토글
-      document.querySelectorAll('.like-wrap .btn-like:not(.need-login)')?.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          const wrap = e.currentTarget.closest('.like-wrap');
-          if (!wrap) return;
-          const id = wrap.getAttribute('data-id');
-          const { header, token } = getCsrfPair();
-
-          try {
-            const res = await fetch(`/main/etc/review/${id}/like`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { [header]: token } : {})   // CSRF 헤더
-              },
-              credentials: 'same-origin'
-            });
-
-            // 권한/세션 만료 처리
-            if (res.status === 401 || res.status === 403) {
-              alert('로그인이 필요합니다.');
-              location.href = '/user/login';
-              return;
-            }
-            const ct = res.headers.get('content-type') || '';
-            if (!ct.includes('application/json')) {
-              alert('세션이 만료되었습니다. 다시 로그인해 주세요.');
-              location.href = '/user/login';
-              return;
+    <script>
+        class SimplePerfumeSurvey {
+            constructor() {
+                this.currentStep = 1;
+                this.totalSteps = 5;
+                this.answers = {};
+                this.currentSituation = 'daily';
+                this.results = {};
+                this.init();
             }
 
-            const data = await res.json();
-            if (res.ok) {
-              wrap.classList.toggle('is-liked', !!data.liked);
-              const cnt = wrap.querySelector('.like-count');
-              if (cnt) cnt.textContent = String(data.count ?? 0);
-            } else {
-              alert(data?.message || `처리 중 오류가 발생했습니다. [${res.status}]`);
+            async init() {
+                // 로그인 섹션 제거, 바로 설문 시작
+                this.showSurveySection();
             }
-          } catch (err) {
-            alert('네트워크 오류가 발생했습니다.');
-          }
-        });
-      });
-    </script>
 
-    <script th:inline="javascript">
-    (function(){
-      const bmBtn = document.querySelector('.bm-btn');
-      if(!bmBtn) return;
+            showSurveySection() {
+                document.getElementById('survey-section').style.display = 'block';
+                document.getElementById('results-section').style.display = 'none';
+                
+                this.bindEvents();
+                this.updateProgress();
+            }
 
-      const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+            showResultsSection() {
+                document.getElementById('survey-section').style.display = 'none';
+                document.getElementById('results-section').style.display = 'block';
+                
+                this.bindResultsEvents();
+                this.displayResults('daily');
+            }
 
-      const zzimLoginModal  = document.getElementById('zzimLoginModal');
-      const confirmModalEl  = document.getElementById('zzimConfirmModal');
-      const doneModalEl     = document.getElementById('zzimDoneModal');
+            bindEvents() {
+                document.querySelectorAll('.option-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        this.selectOption(card);
+                    });
+                });
+            }
 
-      const loginModal  = zzimLoginModal ? new bootstrap.Modal(zzimLoginModal) : null;
-      const confirmModal= confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
-      const doneModal   = doneModalEl ? new bootstrap.Modal(doneModalEl) : null;
+            bindResultsEvents() {
+                document.querySelectorAll('.situation-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        this.switchSituation(tab.dataset.situation);
+                    });
+                });
+            }
 
-      function withLock(btn, fn){
-        if(!btn || btn.disabled) return;
-        btn.disabled = true;
-        return Promise.resolve(fn()).finally(()=> setTimeout(()=> btn.disabled=false, 600));
-      }
+            selectOption(card) {
+                const grid = card.closest('.options-grid');
+                const dataName = grid.getAttribute('data-name');
+                const value = card.getAttribute('data-value');
 
-      // 공통 fetch(JSON) + CSRF
-      async function fetchJSON(url, opt={}){
-        const { header, token } = getCsrfPair();
-        const base = {
-          credentials:'same-origin',
-          headers: { 'Accept':'application/json', ...(opt.body ? {'Content-Type':'application/json'}:{}), ...(token ? {[header]:token}:{}) }
-        };
-        const res = await fetch(url, {...base, ...opt});
-        if(res.status===401 || res.status===403){ throw { auth:true }; }
-        const ct = res.headers.get('content-type') || '';
-        const data = ct.includes('application/json') ? await res.json() : {};
-        if(!res.ok) throw { status:res.status, data };
-        return data;
-      }
+                grid.querySelectorAll('.option-card').forEach(c => {
+                    c.classList.remove('selected');
+                });
 
-      // 서버에서 실시간 상태 확인(= product_zzimers 테이블 조회 반영)
-      const checkState = ()=> fetchJSON(`/zzim/state?productId=${PRODUCT_ID}`, { method:'GET' })
-                                .then(d => !!d.zzimed);
+                card.classList.add('selected');
+                this.answers[dataName] = value;
 
-      const addZzim    = ()=> fetchJSON(`/zzim/add`,    { method:'POST', body: JSON.stringify({ productId: PRODUCT_ID })});
-      const removeZzim = ()=> fetchJSON(`/zzim/remove?productId=${PRODUCT_ID}`, { method:'POST' });
+                this.updateProgress();
 
-      bmBtn.addEventListener('click', ()=> withLock(bmBtn, async ()=>{
-        try {
-          // 서버에 실제 상태 질의 (비로그인 시 401 → catch에서 처리)
-          const already = await checkState();
-
-          if (already) {
-            confirmModal?.show();
-            const okBtn = confirmModalEl?.querySelector('.btn-confirm');
-            const handler = async ()=>{
-              await withLock(okBtn, async ()=>{
-                await removeZzim();
-                bmBtn.setAttribute('aria-pressed','false');
-                bmBtn.title = '관심 등록';
-                confirmModal?.hide();
-              });
-            };
-            okBtn?.addEventListener('click', handler, { once:true });
-          } else {
-            await addZzim();
-            bmBtn.setAttribute('aria-pressed','true');
-            bmBtn.title = '관심 해제';
-            doneModal?.show();
-          }
-        } catch (e) {
-          if (e && e.auth) { loginModal?.show(); return; }  // 401/403
-          alert('처리 중 오류가 발생했습니다.');
-        }
-      }));
-    })();
-    </script>
-
-    <!-- Chart.js + 구매자 피라미드 렌더 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script th:inline="javascript">
-      (function() {
-        const productId = /*[[${product.id}]]*/ 0;
-        const api = `/main/api/product/${productId}/buyer-stats`;
-        const $canvas = document.getElementById('buyerStatChart');
-        const $empty  = document.getElementById('buyerStatEmpty');
-        if (!$canvas) return;
-
-        // 중앙 라벨 + 중앙 여백(막대 잘라내기) 플러그인
-        const centerPlugin = {
-          id: 'pyramidCenter',
-          beforeDatasetsDraw(chart) {
-            const {ctx, chartArea} = chart;
-            const midX = (chartArea.left + chartArea.right) / 2;
-            const gutter = 64; // 중앙 여백(px) — 필요시 조절
-            const leftW  = midX - gutter/2 - chartArea.left;
-            const rightW = chartArea.right - (midX + gutter/2);
-
-            ctx.save();
-            ctx.beginPath();
-            // 왼쪽 영역
-            ctx.rect(chartArea.left, chartArea.top, Math.max(0,leftW), chartArea.bottom - chartArea.top);
-            // 오른쪽 영역
-            ctx.rect(midX + gutter/2, chartArea.top, Math.max(0,rightW), chartArea.bottom - chartArea.top);
-            ctx.clip(); // 막대는 중앙여백을 비우고 그려짐
-          },
-          afterDatasetsDraw(chart) {
-            const {ctx, chartArea, scales} = chart;
-            const y = scales.y;
-            const midX = (chartArea.left + chartArea.right) / 2;
-
-            ctx.restore(); // 클리핑 해제
-
-            // (요청) 중앙 세로선 제거: 아무 것도 그리지 않음
-
-            // 가운데 축 라벨(10대/20대 …)
-            const labels = chart.data.labels || [];
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#333';
-            ctx.font = getComputedStyle($canvas).font || '12px system-ui';
-            labels.forEach((lab, i) => {
-              const py = y.getPixelForTick(i);
-              ctx.fillText(lab, midX, py);
-            });
-            ctx.restore();
-          }
-        };
-
-        fetch(api, { credentials: 'same-origin' })
-          .then(r => r.json())
-          .then(data => {
-            const labels = data?.labels || [];
-            const ds = data?.datasets || [];
-            const male   = (ds.find(v => v.label === '남성')?.data || []).map(Number);
-            const female = (ds.find(v => v.label === '여성')?.data || []).map(Number);
-
-            const hasData = (male.concat(female)).some(v => v > 0);
-            if (!hasData) { $empty.style.display = 'block'; return; }
-
-            const femaleNeg = female.map(v => -v);
-            const maxAbs = Math.max(...male.map(Math.abs), ...femaleNeg.map(Math.abs), 1);
-
-            new Chart($canvas.getContext('2d'), {
-              type: 'bar',
-              data: {
-                labels,
-                datasets: [
-                  { label: '여성', data: femaleNeg, stack: 'gender' },
-                  { label: '남성', data: male,      stack: 'gender' }
-                ]
-              },
-              options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { position: 'top' },
-                  tooltip: {
-                    callbacks: {
-                      label: (ctx) => {
-                        const v = Math.abs(ctx.raw ?? 0);
-                        return `${ctx.dataset.label}: ${v.toLocaleString('ko-KR')}명`;
-                      }
+                // 자동으로 다음 단계로
+                setTimeout(() => {
+                    if (this.currentStep < this.totalSteps) {
+                        this.nextStep();
+                    } else {
+                        this.submitSurvey();
                     }
-                  }
-                },
-                scales: {
-                  y: {
-                    stacked: true,
-                    ticks: { display: false },
-                    grid: {
-                      display: false,       // 가로선 전부 제거
-                      drawBorder: false     // 왼쪽 세로선 제거
-                    }
-                  },
-                  x: {
-                    stacked: true,
-                    min: -maxAbs,
-                    max:  maxAbs,
-                    grid: {
-                      drawBorder: true,         // 맨 아래 축선은 표시
-                      drawOnChartArea: false,   // 차트 안쪽 세로/가로선은 전부 제거
-                      color: '#bbb'             // 아래 축선 색상
-                    },
-                    ticks: {
-                      callback: (v) => Math.abs(v).toLocaleString('ko-KR')
-                    }
-                  }
+                }, 500);
+            }
+
+            nextStep() {
+                this.currentStep++;
+                this.showQuestion(this.currentStep);
+                this.updateProgress();
+            }
+
+            showQuestion(questionNumber) {
+                document.querySelectorAll('.question-card').forEach(card => {
+                    card.classList.remove('active');
+                });
+
+                const currentCard = document.querySelector(`[data-question="${questionNumber}"]`);
+                if (currentCard) {
+                    currentCard.classList.add('active');
                 }
-              },
-              plugins: [centerPlugin]
-            });
-          })
-          .catch(() => { if ($empty) $empty.style.display = 'block'; });
-      })();
+            }
+
+            updateProgress() {
+                const progress = (this.currentStep / this.totalSteps) * 100;
+                document.getElementById('progress-fill').style.width = progress + '%';
+                document.getElementById('current-step').textContent = this.currentStep;
+            }
+
+            async submitSurvey() {
+                this.showLoading();
+
+                try {
+                    // 비회원/회원 구분하여 API 호출
+                    const userName = this.getUserName();
+                    const url = userName ? `/api/recommendation/analyze?userName=${userName}` : `/api/recommendation/analyze`;
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.answers)
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.processResults(data);
+                    } else {
+                        throw new Error('분석 요청 실패');
+                    }
+
+                } catch (error) {
+                    console.error('Survey submission failed:', error);
+                    this.hideLoading();
+                    alert('분석 중 오류가 발생했습니다.');
+                }
+            }
+
+            getUserName() {
+                const name = localStorage.getItem("userName");
+                return name && name !== "null" ? name : null;
+            }
+
+            processResults(data) {
+                try {
+                    const recommendations = JSON.parse(data.aiAnalysis).situationalRecommendations;
+                    
+                    // 결과 데이터 구조 변환
+                    this.results = {};
+                    for (const [situation, info] of Object.entries(recommendations)) {
+                        this.results[situation] = {
+                            analysis: info.reason,
+                            products: info.products.map(p => ({
+                                productId: p.productId,
+                                name: p.productId, // 실제 상품명으로 변경 필요
+                                brandName: '', // 실제 브랜드명으로 변경 필요
+                                reason: p.reason,
+                                price: null, // 실제 가격으로 변경 필요
+                                imageUrl: '/img/noimg.png'
+                            }))
+                        };
+                    }
+
+                    this.hideLoading();
+                    this.showResultsSection();
+
+                } catch (error) {
+                    console.error('Results processing failed:', error);
+                    this.hideLoading();
+                    alert('결과를 처리하는 중 오류가 발생했습니다.');
+                }
+            }
+
+            showLoading() {
+                document.getElementById('loading-screen').style.display = 'flex';
+            }
+
+            hideLoading() {
+                document.getElementById('loading-screen').style.display = 'none';
+            }
+
+            switchSituation(situation) {
+                this.currentSituation = situation;
+                
+                document.querySelectorAll('.situation-tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.situation === situation);
+                });
+
+                this.displayResults(situation);
+            }
+
+            displayResults(situation) {
+                const data = this.results[situation];
+                if (!data) {
+                    document.getElementById('analysis-text').textContent = '분석 결과를 불러올 수 없습니다.';
+                    document.getElementById('perfumes-grid').innerHTML = '';
+                    return;
+                }
+
+                document.getElementById('analysis-text').textContent = 
+                    data.analysis || '당신의 취향을 분석한 결과입니다.';
+
+                this.renderPerfumes(data.products || []);
+            }
+
+            renderPerfumes(products) {
+                const container = document.getElementById('perfumes-grid');
+                container.innerHTML = '';
+
+                if (products.length === 0) {
+                    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #64748b;">추천할 상품이 없습니다.</div>';
+                    return;
+                }
+
+                products.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'perfume-card';
+                    card.innerHTML = `
+                        <div class="perfume-image">
+                            <img src="${product.imageUrl || '/img/noimg.png'}" alt="${product.name}">
+                        </div>
+                        <div class="perfume-name">${product.name}</div>
+                        <div class="perfume-brand">${product.brandName}</div>
+                        <div class="perfume-reason">${product.reason}</div>
+                        <div class="perfume-price">${product.price ? product.price.toLocaleString() + '원' : '가격 정보 없음'}</div>
+                        <a href="/main/content/${product.productId}" class="perfume-link">
+                            자세히 보기
+                        </a>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        function restartSurvey() {
+            if (confirm('새로 설문조사를 시작하시겠습니까?')) {
+                const userName = window.surveyManager.getUserName();
+                
+                if (userName) {
+                    // 회원인 경우 서버에 리셋 요청
+                    fetch(`/api/recommendation/reset?userName=${userName}`, { 
+                        method: 'POST' 
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            alert('초기화 중 오류가 발생했습니다.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Reset failed:', error);
+                        window.location.reload(); // 오류가 있어도 새로고침
+                    });
+                } else {
+                    // 비회원인 경우 바로 새로고침
+                    window.location.reload();
+                }
+            }
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            window.surveyManager = new SimplePerfumeSurvey();
+        });
     </script>
-
-
-  </th:block>
+    </th:block>
 </body>
-
 </html>

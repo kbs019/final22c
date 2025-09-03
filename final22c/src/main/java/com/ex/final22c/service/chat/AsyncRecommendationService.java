@@ -1,10 +1,16 @@
 package com.ex.final22c.service.chat;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import com.ex.final22c.data.recommendation.UserActivityData;
+import com.ex.final22c.data.user.UserPreference;
+import com.ex.final22c.data.user.Users;
+import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,32 +19,44 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class AsyncRecommendationService {
-    
+
     private final HybridRecommendationService hybridRecommendationService;
-    
-    @Async
-    public CompletableFuture<Void> analyzeInBackground(String userName, Map<String, String> survey) {
-        try {
-            log.info("백그라운드 AI 분석 시작: {}", userName);
-            hybridRecommendationService.analyzeUserWithAI(userName, survey);
-            log.info("백그라운드 AI 분석 완료: {}", userName);
-        } catch (Exception e) {
-            log.error("백그라운드 분석 실패: {}", userName, e);
-        }
-        return CompletableFuture.completedFuture(null);
-    }
-    
+    private final UserRepository userRepository;
+
     /**
-     * 분석 완료 여부 확인
+     * AI 분석을 백그라운드에서 수행 (회원이면 DB 저장, 비회원이면 일회성 분석)
+     */
+    @Async
+    public CompletableFuture<UserPreference> analyzeInBackground(String userName, Map<String, String> survey) {
+        try {
+            log.info("✅ 백그라운드 AI 분석 시작: {}", userName != null ? userName : "비회원");
+
+            boolean isMember = userName != null && userRepository.findByUserName(userName).isPresent();
+            UserPreference result = hybridRecommendationService.analyzeUserWithAI(userName, survey);
+
+            log.info("✅ 백그라운드 AI 분석 완료: {}", userName != null ? userName : "비회원");
+
+            return CompletableFuture.completedFuture(result);
+
+        } catch (Exception e) {
+            log.error("❌ 백그라운드 분석 실패: {}", userName, e);
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    /**
+     * 분석 완료 여부 확인 (회원만 해당)
      */
     public boolean isAnalysisComplete(String userName) {
+        if (userName == null) return false;
+
         try {
-            // HybridRecommendationService를 통해 사용자 선호도가 저장되어 있는지 확인
-            var recommendation = hybridRecommendationService.getSituationalRecommendation(userName, "daily");
-            return recommendation != null && 
-                   !recommendation.getAnalysis().contains("설문조사를 먼저 완료해주세요");
+            UserPreference preference = hybridRecommendationService.getUserPreference(userName);
+            return preference != null &&
+                   preference.getAiAnalysis() != null &&
+                   preference.getAiAnalysis().contains("situationalRecommendations");
         } catch (Exception e) {
-            log.error("분석 완료 여부 확인 실패: {}", userName, e);
+            log.error("❌ 분석 완료 여부 확인 실패: {}", userName, e);
             return false;
         }
     }

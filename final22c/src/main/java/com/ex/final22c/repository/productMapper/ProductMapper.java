@@ -23,11 +23,12 @@ public interface ProductMapper {
                        @Param("keyword")     String keyword);
 
     // (기존 - 다른 화면에서 사용)
-    List<Map<String, Object>> selectProducts(@Param("brandIds")    List<Long> brandIds,
-                                             @Param("gradeIds")    List<Long> gradeIds,
-                                             @Param("mainNoteIds") List<Long> mainNoteIds,
-                                             @Param("volumeIds")   List<Long> volumeIds,
-                                             @Param("keyword")     String keyword);
+    List<Map<String, Object>> selectProducts(
+    	    @Param("brandIds")    List<Long> brandIds,
+    	    @Param("gradeIds")    List<Long> gradeIds,
+    	    @Param("mainNoteIds") List<Long> mainNoteIds,
+    	    @Param("volumeIds")   List<Long> volumeIds,
+    	    @Param("keyword")     String keyword);
 
     // ===== 리스트용 (정렬 + 페이징) =====
     /**
@@ -61,4 +62,15 @@ public interface ProductMapper {
      * 상품명으로 상품 검색 (부분 일치)
      */
     List<Map<String, Object>> findByProductName(@Param("productName") String productName);
+    
+ // (추천용)
+    List<Map<String, Object>> selectProductsForRecommendation(
+    	    @Param("brandIds")    List<Long> brandIds,
+    	    @Param("gradeIds")    List<Long> gradeIds,
+    	    @Param("mainNoteIds") List<Long> mainNoteIds,
+    	    @Param("volumeIds")   List<Long> volumeIds,
+    	    @Param("keyword")     String keyword,
+    	    @Param("gender")      String gender,     
+    	    @Param("priceRange")  String priceRange   
+    	);
 }
