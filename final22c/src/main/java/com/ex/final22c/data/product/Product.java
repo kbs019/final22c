@@ -59,14 +59,14 @@ public class Product {
     @Column(name = "baseNote", length = 4000)
     private String baseNote;
 
-    // 상품을 찜한 사용자들 - N:N (조인 테이블 생성 - 컬럼: product_id, users_id)
-    @ManyToMany
-    @JoinTable(
-        name = "PRODUCT_ZZIMERS",
-        joinColumns = @JoinColumn(name = "ZZIMEDPRODUCTS_ID", referencedColumnName = "id"),          // 조인테이블의 상품 FK 컬럼명
-        inverseJoinColumns = @JoinColumn(name = "ZZIMERS_USERNO", referencedColumnName = "userNo")   // 조인테이블의 사용자 FK 컬럼명
-    )
-    private Set<Users> zzimers = new HashSet<>();
+    // // 상품을 찜한 사용자들 - N:N (조인 테이블 생성 - 컬럼: product_id, users_id)
+    // @ManyToMany
+    // @JoinTable(
+    //     name = "PRODUCT_ZZIMERS",
+    //     joinColumns = @JoinColumn(name = "ZZIMEDPRODUCTS_ID", referencedColumnName = "id"),          // 조인테이블의 상품 FK 컬럼명
+    //     inverseJoinColumns = @JoinColumn(name = "ZZIMERS_USERNO", referencedColumnName = "userNo")   // 조인테이블의 사용자 FK 컬럼명
+    // )
+    // private Set<Users> zzimers = new HashSet<>();
 
     // 상품의 리뷰들 - 1:N
     @OneToMany(mappedBy = "product")

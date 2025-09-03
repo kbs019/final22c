@@ -121,9 +121,9 @@ public class Users {
     private Integer mileage; // 또는 Integer
 
     // 사용자가 찜한 상품들 - (조인 테이블 생성 - 컬럼: users_id, product_id)
-    @ManyToMany(mappedBy = "zzimers")
-    @Builder.Default
-    private Set<Product> zzimedProducts = new HashSet<>();
+    // @ManyToMany(mappedBy = "zzimers")
+    // @Builder.Default
+    // private Set<Product> zzimedProducts = new HashSet<>();
 
     @Column(name = "age")
     private Integer age;
