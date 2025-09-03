@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.CoolSmsSender;
@@ -33,7 +34,7 @@ public class RestockNotifyService {
     private static final int  MAX_LIST_NAMES          = 2;
 
     /** 커밋 후 새 트랜잭션에서 실행 */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifyForProduct(Long productId) {
 
         // 1) 이번에 입고된 상품에 대해 신청자 목록(REQUESTED)
@@ -122,7 +123,7 @@ public class RestockNotifyService {
         if ((brand == null || brand.isBlank()) && name != null) return name.trim();
         if ((name  == null || name.isBlank())  && brand != null) return brand.trim();
         if (brand == null && name == null) return "";
-        return (brand + " " + name).trim();
+        return ("(" + brand + ") " + name).trim();
     }
 
     /** 3개 이하면 불릿 전체 나열 / 초과 시 대표 MAX_LIST_NAMES개 + “외 n개 재입고” */

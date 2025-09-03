@@ -44,7 +44,7 @@ public interface RestockAlertRepository extends JpaRepository<RestockAlert, Long
     List<RestockAlert> findUserRequestedWithStock(@Param("userNo") Long userNo);
 
     // 발송 성공 일괄 처리 (NOTIFIED + notifiedReg 기록)
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         update RestockAlert ra
         set ra.status = 'NOTIFIED', ra.notifiedReg = CURRENT_TIMESTAMP
@@ -53,7 +53,7 @@ public interface RestockAlertRepository extends JpaRepository<RestockAlert, Long
     int bulkMarkNotified(@Param("ids") List<Long> ids);
 
     // 발송 실패 일괄 처리
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         update RestockAlert ra
         set ra.status = 'FAILED'
