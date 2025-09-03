@@ -152,5 +152,14 @@ public class MyPageController {
         model.addAttribute("section", "wishlist");
         return "mypage/zzimList";
     }
-
+    
+    @PostMapping("/zzimList/remove")
+    @ResponseBody
+    public ResponseEntity<?> removeZzim(Principal principal,
+                                        @RequestBody Map<String, Long> body) {
+        Long productId = body.get("productId");
+        String user = principal.getName();
+        zzimService.remove(user, productId);
+        return ResponseEntity.ok().build();
+    }
 }

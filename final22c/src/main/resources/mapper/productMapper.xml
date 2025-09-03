@@ -246,83 +246,85 @@
 	    FETCH FIRST 10 ROWS ONLY
 	</select>
 	
-	<!-- 추천 시스템필터링  -->
-	<select id="selectProductsForRecommendation" resultType="map">
-	  SELECT
-	    p.ID                                   AS "id",
-	    p.NAME                                 AS "name",
-	    b.BRANDNAME                            AS "brandName",
-	    p.SELLPRICE                            AS "sellPrice",
-	    p.COUNT                                AS "count",
-	    g.GRADENAME                            AS "gradeName",
-	    m.MAINNOTENAME                         AS "mainNoteName",
-	    NVL(gs.sales_qty, 0)                   AS "genderSales"
-	  FROM PRODUCT p
-	  LEFT JOIN BRAND b ON b.BRANDNO = p.BRAND_BRANDNO
-	  LEFT JOIN GRADE g ON g.GRADENO = p.GRADE_GRADENO
-	  LEFT JOIN MAINNOTE m ON m.MAINNOTENO = p.MAINNOTE_MAINNOTENO
-	  LEFT JOIN (
-	    SELECT 
-	      od.ID AS product_id, 
-	      SUM(od.CONFIRMQUANTITY) AS sales_qty
-	    FROM ORDERDETAIL od
-	    JOIN ORDERS o ON o.ORDERID = od.ORDERID
-	    JOIN USERS u ON u.USERNO = o.USERNO
-	    WHERE o.STATUS IN ('CONFIRMED', 'REFUNDED')
-	      AND UPPER(u.GENDER) = UPPER(#{gender})
-	    GROUP BY od.ID
-	  ) gs ON gs.product_id = p.ID
-	  WHERE 1=1
-	
-	  <!-- 나머지 필터 조건들은 그대로 유지 -->
-	  <if test="brandIds != null and brandIds.size() > 0">
-	    AND p.BRAND_BRANDNO IN
-	    <foreach collection="brandIds" item="v" open="(" close=")" separator=",">
-	      #{v}
-	    </foreach>
-	  </if>
-	
-	  <if test="gradeIds != null and gradeIds.size() > 0">
-	    AND p.GRADE_GRADENO IN
-	    <foreach collection="gradeIds" item="v" open="(" close=")" separator=",">
-	      #{v}
-	    </foreach>
-	  </if>
-	
-	  <if test="mainNoteIds != null and mainNoteIds.size() > 0">
-	    AND p.MAINNOTE_MAINNOTENO IN
-	    <foreach collection="mainNoteIds" item="v" open="(" close=")" separator=",">
-	      #{v}
-	    </foreach>
-	  </if>
-	
-	  <if test="volumeIds != null and volumeIds.size() > 0">
-	    AND p.VOLUME_VOLUMENO IN
-	    <foreach collection="volumeIds" item="v" open="(" close=")" separator=",">
-	      #{v}
-	    </foreach>
-	  </if>
-	
-	  <if test="keyword != null and keyword != ''">
-	    AND INSTR(LOWER(p.NAME), LOWER(#{keyword})) > 0
-	  </if>
-	
-	  <if test="priceRange != null and priceRange != ''">
-	    <choose>
-	      <when test="priceRange == 'low'">
-	        AND p.SELLPRICE &lt;= 100000
-	      </when>
-	      <when test="priceRange == 'mid'">
-	        AND p.SELLPRICE BETWEEN 100001 AND 300000
-	      </when>
-	      <when test="priceRange == 'high'">
-	        AND p.SELLPRICE &gt;= 300001
-	      </when>
-	    </choose>
-	  </if>
-	
-	  ORDER BY NVL(gs.sales_qty, 0) DESC, p.ID DESC
-	</select>
+	<!-- 추천 시스템 필터링 (성별은 정렬 가중치만) -->
+<select id="selectProductsForRecommendation" resultType="map">
+  SELECT
+    p.ID                                   AS "id",
+    p.NAME                                 AS "name",
+    b.BRANDNAME                            AS "brandName",
+    p.SELLPRICE                            AS "sellPrice",
+    p.COUNT                                AS "count",
+    g.GRADENAME                            AS "gradeName",
+    m.MAINNOTENAME                         AS "mainNoteName",
+    NVL(gs.sales_qty, 0)                   AS "genderSales"
+  FROM PRODUCT p
+  LEFT JOIN BRAND    b ON b.BRANDNO     = p.BRAND_BRANDNO
+  LEFT JOIN GRADE    g ON g.GRADENO     = p.GRADE_GRADENO
+  LEFT JOIN MAINNOTE m ON m.MAINNOTENO  = p.MAINNOTE_MAINNOTENO
+  LEFT JOIN (
+    SELECT 
+      od.ID AS product_id, 
+      SUM(od.CONFIRMQUANTITY) AS sales_qty
+    FROM ORDERDETAIL od
+    JOIN ORDERS o ON o.ORDERID = od.ORDERID
+    JOIN USERS  u ON u.USERNO  = o.USERNO
+    WHERE o.STATUS IN ('CONFIRMED', 'REFUNDED')
+      AND (#{gender} IS NULL OR UPPER(u.GENDER) = UPPER(#{gender}))  -- 성별 주면 해당 성별 매출, 아니면 전체
+    GROUP BY od.ID
+  ) gs ON gs.product_id = p.ID
+  WHERE 1=1
+    AND NVL(p.COUNT, 0) > 0  <!-- 품절 제외 -->
+
+  <if test="brandIds != null and brandIds.size() > 0">
+    AND p.BRAND_BRANDNO IN
+    <foreach collection="brandIds" item="v" open="(" close=")" separator=",">
+      #{v}
+    </foreach>
+  </if>
+
+  <if test="gradeIds != null and gradeIds.size() > 0">
+    AND p.GRADE_GRADENO IN
+    <foreach collection="gradeIds" item="v" open="(" close=")" separator=",">
+      #{v}
+    </foreach>
+  </if>
+
+  <if test="mainNoteIds != null and mainNoteIds.size() > 0">
+    AND p.MAINNOTE_MAINNOTENO IN
+    <foreach collection="mainNoteIds" item="v" open="(" close=")" separator=",">
+      #{v}
+    </foreach>
+  </if>
+
+  <if test="volumeIds != null and volumeIds.size() > 0">
+    AND p.VOLUME_VOLUMENO IN
+    <foreach collection="volumeIds" item="v" open="(" close=")" separator=",">
+      #{v}
+    </foreach>
+  </if>
+
+  <if test="keyword != null and keyword != ''">
+    AND INSTR(LOWER(p.NAME), LOWER(#{keyword})) > 0
+  </if>
+
+  <!-- 가격대 필터 -->
+  <if test="priceRange != null and priceRange != ''">
+    <choose>
+      <when test="priceRange == 'low'">
+        AND p.SELLPRICE &lt; 100000
+      </when>
+      <when test="priceRange == 'medium'">
+        AND p.SELLPRICE BETWEEN 100000 AND 300000
+      </when>
+      <when test="priceRange == 'high'">
+        AND p.SELLPRICE &gt; 300000
+      </when>
+    </choose>
+  </if>
+
+  ORDER BY NVL(gs.sales_qty, 0) DESC, p.ID DESC
+</select>
+
 
 
 </mapper>

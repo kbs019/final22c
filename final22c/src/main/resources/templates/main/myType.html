@@ -443,305 +443,379 @@
     
     
     
-	 <script>
-	/** JSON 앞뒤 잡음(코드펜스/로그 문자열 등)을 제거하고 순수 JSON만 추출 */
-	function extractJsonString(raw) {
-	  if (!raw) return "";
-	  let s = String(raw).trim();
-	  // ```json ... ``` 코드펜스 제거
-	  s = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-	  // JSON 앞/뒤의 노이즈 제거
-	  const first = s.indexOf("{");
-	  const last  = s.lastIndexOf("}");
-	  if (first !== -1 && last !== -1 && last >= first) {
-	    s = s.slice(first, last + 1);
-	  }
-	  return s;
-	}
-	
-	class SimplePerfumeSurvey {
-	  constructor() {
-	    this.currentStep = 1;
-	    this.totalSteps  = 5;
-	    this.answers     = {};
-	    this.result      = null; // 단일 결과
-	    this.init();
-	  }
-	
-	  async init() {
-	    this.showSurveySection();
-	    this.bindEvents();
-	    this.updateProgress();
-	  }
-	
-	  showSurveySection() {
-	    document.getElementById('survey-section').style.display  = 'block';
-	    document.getElementById('results-section').style.display = 'none';
-	  }
-	
-	  showResultsSection() {
-	    document.getElementById('survey-section').style.display  = 'none';
-	    document.getElementById('results-section').style.display = 'block';
-	  }
-	
-	  bindEvents() {
-	    document.querySelectorAll('.option-card').forEach(card => {
-	      card.addEventListener('click', () => this.selectOption(card));
-	    });
-	  }
-	
-	  selectOption(card) {
-	    const grid     = card.closest('.options-grid');
-	    const dataName = grid.getAttribute('data-name');
-	    const value    = card.getAttribute('data-value');
-	
-	    grid.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-	    card.classList.add('selected');
-	
-	    this.answers[dataName] = value;
-	    this.updateProgress();
-	
-	    setTimeout(() => {
-	      if (this.currentStep < this.totalSteps) {
-	        this.nextStep();
-	      } else {
-	        this.submitSurvey();
+<script>
+//============ JSON 유틸 (수정된 버전) ============
+
+/** HTML escape 제거 */
+function htmlUnescape(str) {
+  const t = document.createElement('textarea');
+  t.innerHTML = str;
+  return t.value;
+}
+
+/** 안전 JSON 파서: 다양한 JSON 형태를 처리 */
+function safeJsonParse(raw) {
+  if (raw == null) return null;
+  if (typeof raw !== 'string') return raw;
+
+  let s = htmlUnescape(String(raw).trim());
+  console.log('🔍 원본 데이터:', s);
+
+  // 코드펜스 제거
+  s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+
+  // 1. 이미 완전한 JSON 객체인지 확인
+  if (s.startsWith('{') && s.endsWith('}')) {
+    try {
+      // 트레일링 콤마 정리
+      const cleaned = s.replace(/,\s*([}\]])/g, '$1');
+      return JSON.parse(cleaned);
+    } catch (e) {
+      console.warn('⚠️ 완전한 JSON 파싱 실패:', e.message);
+    }
+  }
+
+  // 2. situationalRecommendations가 포함된 JSON 블록 추출
+  const situationalMatch = s.match(/\{"situationalRecommendations":\{[^}]*\}(?:\}|$)/);
+  if (situationalMatch) {
+    try {
+      let jsonStr = situationalMatch[0];
+      // 닫는 중괄호가 없으면 추가
+      if (!jsonStr.endsWith('}')) {
+        jsonStr += '}';
+      }
+      console.log('🔧 추출된 JSON:', jsonStr);
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      console.warn('⚠️ situationalRecommendations 파싱 실패:', e.message);
+    }
+  }
+
+  // 3. 더 복잡한 JSON 추출 로직
+  try {
+    // 첫 번째 { 찾기
+    const firstBrace = s.indexOf('{');
+    if (firstBrace === -1) {
+      throw new Error('JSON 시작 중괄호를 찾을 수 없습니다');
+    }
+
+    // 중괄호 균형 맞추기
+    let depth = 0;
+    let endIndex = firstBrace;
+    
+    for (let i = firstBrace; i < s.length; i++) {
+      const char = s[i];
+      if (char === '{') depth++;
+      else if (char === '}') {
+        depth--;
+        if (depth === 0) {
+          endIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (depth !== 0) {
+      // 균형이 맞지 않으면 강제로 닫는 중괄호 추가
+      console.warn('⚠️ JSON 중괄호 불균형, 자동 수정 시도');
+      let jsonStr = s.substring(firstBrace);
+      for (let i = 0; i < depth; i++) {
+        jsonStr += '}';
+      }
+      const cleaned = jsonStr.replace(/,\s*([}\]])/g, '$1');
+      return JSON.parse(cleaned);
+    }
+
+    const jsonStr = s.substring(firstBrace, endIndex + 1);
+    console.log('🔧 균형 맞춘 JSON:', jsonStr);
+    const cleaned = jsonStr.replace(/,\s*([}\]])/g, '$1');
+    return JSON.parse(cleaned);
+
+  } catch (e) {
+    console.error('❌ 모든 JSON 파싱 시도 실패:', e.message);
+    
+    // 4. 마지막 폴백: 기본 구조 반환
+    return {
+      situationalRecommendations: {
+        daily: {
+          products: [],
+          reason: "JSON 파싱 오류로 인한 기본 응답입니다. 다시 시도해주세요."
+        }
+      }
+    };
+  }
+}
+
+// ============ 메인 클래스 ============
+class SimplePerfumeSurvey {
+  constructor() {
+    this.currentStep = 1;
+    this.totalSteps  = 5;
+    this.answers     = {};
+    this.result      = null;
+    this.init();
+  }
+
+  async init() {
+    document.getElementById('survey-section').style.display  = 'block';
+    document.getElementById('results-section').style.display = 'none';
+    document.querySelectorAll('.option-card').forEach(card => {
+      card.addEventListener('click', () => this.selectOption(card));
+    });
+    this.updateProgress();
+  }
+
+  selectOption(card) {
+    const grid     = card.closest('.options-grid');
+    const dataName = grid.getAttribute('data-name');
+    const value    = card.getAttribute('data-value');
+    grid.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    this.answers[dataName] = value;
+    this.updateProgress();
+    setTimeout(() => {
+      if (this.currentStep < this.totalSteps) this.nextStep();
+      else this.submitSurvey();
+    }, 450);
+  }
+
+  nextStep() {
+    this.currentStep++;
+    document.querySelectorAll('.question-card').forEach(c => c.classList.remove('active'));
+    const cur = document.querySelector(`[data-question="${this.currentStep}"]`);
+    if (cur) cur.classList.add('active');
+    this.updateProgress();
+  }
+
+  updateProgress() {
+    const progress = (this.currentStep / this.totalSteps) * 100;
+    document.getElementById('progress-fill').style.width = progress + '%';
+    document.getElementById('current-step').textContent = this.currentStep;
+  }
+
+  getUserName() {
+    const bodyUser = document.body.dataset.user;
+    if (bodyUser && bodyUser !== 'anonymousUser') return bodyUser;
+    const name = localStorage.getItem('userName');
+    return name && name !== 'null' ? name : null;
+  }
+
+  showLoading() { document.getElementById('loading-screen').style.display = 'flex'; }
+  hideLoading() { document.getElementById('loading-screen').style.display = 'none'; }
+
+  // ===== 제출 & 응답 처리 (완전히 수정된 버전) =====
+  async submitSurvey() {
+    this.showLoading();
+    try {
+      const userName = this.getUserName();
+      const url = userName
+        ? `/api/recommendation/analyze?userName=${encodeURIComponent(userName)}`
+        : `/api/recommendation/analyze`;
+
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.answers)
+      });
+      
+      if (!resp.ok) throw new Error('분석 요청 실패');
+
+      // 응답 바디는 단 1회만 읽기
+      const raw = await resp.text();
+      console.log('🔍 서버 응답:', raw);
+
+      await this.processResults({ aiAnalysis: raw });
+      this.hideLoading();
+
+    } catch (e) {
+      console.error('Survey submission failed:', e);
+      this.hideLoading();
+      alert('분석 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
+  }
+
+  async processResults(data) {
+	  try {
+	    if (!data || !data.aiAnalysis) {
+	      throw new Error('AI 분석 결과가 없습니다.');
+	    }
+
+	    console.log('🔧 processResults 입력:', data.aiAnalysis);
+	    
+	    const payload = safeJsonParse(data.aiAnalysis);
+	    console.log('🔧 파싱된 payload:', payload);
+
+	    if (!payload) {
+	      throw new Error('JSON 파싱에 실패했습니다.');
+	    }
+
+	    let usage = this.answers?.usage || 'daily';
+	    let reason = '';
+	    let products = [];
+
+	    // situationalRecommendations 구조 처리
+	    if (payload.situationalRecommendations && typeof payload.situationalRecommendations === 'object') {
+	      const recommendations = payload.situationalRecommendations;
+	      const currentRecommendation = recommendations[usage] || Object.values(recommendations)[0];
+	      
+	      if (currentRecommendation) {
+	        reason = currentRecommendation.reason || '';
+	        products = Array.isArray(currentRecommendation.products) ? currentRecommendation.products : [];
 	      }
-	    }, 450);
-	  }
-	
-	  nextStep() {
-	    this.currentStep++;
-	    this.showQuestion(this.currentStep);
-	    this.updateProgress();
-	  }
-	
-	  showQuestion(questionNumber) {
-	    document.querySelectorAll('.question-card').forEach(card => card.classList.remove('active'));
-	    const currentCard = document.querySelector(`[data-question="${questionNumber}"]`);
-	    if (currentCard) currentCard.classList.add('active');
-	  }
-	
-	  updateProgress() {
-	    const progress = (this.currentStep / this.totalSteps) * 100;
-	    const pf = document.getElementById('progress-fill');
-	    pf.style.width = progress + '%';
-	    document.getElementById('current-step').textContent = this.currentStep;
-	  }
-	
-	  getUserName() {
-	    // 서버 세션 사용자명 우선 (원하면 <body data-user="...">에 주입)
-	    const bodyUser = document.body.dataset.user;
-	    if (bodyUser && bodyUser !== 'anonymousUser') return bodyUser;
-	    // 로컬스토리지 보조
-	    const name = localStorage.getItem("userName");
-	    return name && name !== "null" ? name : null;
-	  }
-	
-	  showLoading()  { document.getElementById('loading-screen').style.display = 'flex'; }
-	  hideLoading()  { document.getElementById('loading-screen').style.display = 'none'; }
-	
-	  /** 🔥 핵심: 텍스트로 받고 JSON만 발췌 후 파싱 */
-	  async submitSurvey() {
-	    this.showLoading();
-	    try {
-	      const userName = this.getUserName();
-	      const url = userName
-	        ? `/api/recommendation/analyze?userName=${encodeURIComponent(userName)}`
-	        : `/api/recommendation/analyze`;
-	
-	      const response = await fetch(url, {
-	        method:  'POST',
-	        headers: { 'Content-Type': 'application/json' },
-	        body:    JSON.stringify(this.answers)
-	      });
-	      if (!response.ok) throw new Error('분석 요청 실패');
-	
-	      // 1) 응답을 텍스트로 받고
-	      const raw = await response.text();
-	      // 2) JSON만 발췌
-	      const safeOuter = extractJsonString(raw);
-	
-	      let outer;
+	    } else {
+	      // 직접적인 구조인 경우
+	      reason = payload.reason || '';
+	      products = Array.isArray(payload.products) ? payload.products : [];
+	    }
+
+	    console.log('🔧 추출된 products:', products);
+
+	    // 제품 정보 정리 - items 변수를 let으로 명시적 선언
+	    let items = products
+	      .filter(p => p && p.productId != null)
+	      .map(p => ({
+	        productId: p.productId,
+	        reason: p.reason || '',
+	        name: String(p.name ?? `제품 ${p.productId}`),
+	        brandName: p.brandName || '',
+	        price: (p.price !== undefined && p.price !== null) ? p.price : null,
+	        imageUrl: p.imageUrl || '/img/noimg.png'
+	      }));
+
+	    console.log('🔧 정리된 items:', items);
+
+	    // 제품 메타데이터 보강
+	    if (items.length > 0) {
 	      try {
-	        // 3) 1차 파싱 시도
-	        outer = JSON.parse(safeOuter);
-	      } catch {
-	        // 게스트 케이스: AI JSON만 바로 내려오면 그대로 넘김
-	        this.processResults({ aiAnalysis: safeOuter });
-	        this.hideLoading();
-	        return;
-	      }
-	
-	      // 회원: { aiAnalysis: "<JSON 문자열>" }
-	      if (outer && typeof outer.aiAnalysis === 'string') {
-	        const safeInner = extractJsonString(outer.aiAnalysis);
-	        this.processResults({ aiAnalysis: safeInner });
-	      } else if (outer && typeof outer.aiAnalysis === 'object') {
-	        // 혹시 객체로 온다면 문자열화
-	        this.processResults({ aiAnalysis: JSON.stringify(outer.aiAnalysis) });
-	      } else {
-	        // 게스트: 루트가 곧 결과 JSON
-	        this.processResults({ aiAnalysis: JSON.stringify(outer) });
-	      }
-	
-	      this.hideLoading();
-	    } catch (error) {
-	      console.error('Survey submission failed:', error);
-	      this.hideLoading();
-	      alert('분석 중 오류가 발생했습니다.');
-	    }
-	  }
-	
-	  /** 서버/게스트 양쪽을 모두 처리하는 결과 파서 */
-	  async processResults(data) {
-	    try {
-	      if (data && typeof data.aiAnalysis === 'object') {
-	        data.aiAnalysis = JSON.stringify(data.aiAnalysis);
-	      }
-	      if (!data || !data.aiAnalysis) {
-	        throw new Error("AI 분석 결과가 없습니다.");
-	      }
-	
-	      // 문자열에 잡음이 섞였어도 다시 정제
-	      const cleaned = extractJsonString(data.aiAnalysis);
-	      const payload = JSON.parse(cleaned);
-	
-	      let usage    = this.answers?.usage || 'daily';
-	      let reason   = '';
-	      let products = [];
-	
-	      // A) 중첩 포맷: { situationalRecommendations: { usage: {reason, products} } }
-	      if (payload && payload.situationalRecommendations && typeof payload.situationalRecommendations === 'object') {
-	        const rec = payload.situationalRecommendations[usage]
-	                 || Object.values(payload.situationalRecommendations)[0]; // 없으면 첫 항목
-	        if (!rec) throw new Error('추천 결과가 없습니다.');
-	        reason   = rec.reason || '';
-	        products = Array.isArray(rec.products) ? rec.products : [];
-	      } else {
-	        // B) 평평한 포맷: { usage, reason, products }
-	        usage    = payload.usage || usage;
-	        reason   = payload.reason || '';
-	        products = Array.isArray(payload.products) ? payload.products : [];
-	      }
-	
-	      // 기본 카드 데이터 구성
-	      let items = products
-	        .filter(p => p && p.productId != null)
-	        .map(p => ({
-	          productId: p.productId,
-	          reason:    p.reason || '',
-	          name:      String(p.name ?? p.productId),
-	          brandName: p.brandName || '',
-	          price:     (p.price !== undefined && p.price !== null) ? p.price : null,
-	          imageUrl:  p.imageUrl || '/img/noimg.png'
-	        }));
-	
-	      // (선택) 서버에서 메타 제공 시 매핑
-	      if (items.length) {
 	        const ids = items.map(i => i.productId).join(',');
-	        try {
-	          const metaResp = await fetch(`/api/products/brief?ids=${encodeURIComponent(ids)}`);
-	          if (metaResp.ok) {
-	            const meta = await metaResp.json(); // [{id,name,brandName,price,imgUrl}, ...]
-	            const map  = new Map(meta.map(m => [Number(m.id), m]));
-	            items = items.map(i => {
-	              const m = map.get(Number(i.productId));
-	              return m ? {
-	                ...i,
-	                name:      m.name ?? i.name,
-	                brandName: m.brandName ?? i.brandName,
-	                price:     (m.price !== undefined && m.price !== null) ? m.price : i.price,
-	                imageUrl:  m.imgUrl || i.imageUrl
-	              } : i;
-	            });
-	          }
-	        } catch (e) {
-	          console.warn('제품 메타 매핑 실패(무시):', e);
+	        const metaResp = await fetch(`/api/recommendation/products/brief?ids=${encodeURIComponent(ids)}`);
+	        if (metaResp.ok) {
+	          const meta = await metaResp.json();
+	          const metaMap = new Map(meta.map(m => [Number(m.id), m]));
+	          
+	          items = items.map(item => {
+	            const metaData = metaMap.get(Number(item.productId));
+	            if (metaData) {
+	              return {
+	                ...item,
+	                name: metaData.name || item.name,
+	                brandName: metaData.brandName || item.brandName,
+	                price: (metaData.price !== undefined && metaData.price !== null) ? metaData.price : item.price,
+	                imageUrl: metaData.imgUrl || item.imageUrl
+	              };
+	            }
+	            return item;
+	          });
 	        }
+	      } catch (e) {
+	        console.warn('제품 메타데이터 로딩 실패:', e);
 	      }
-	
-	      this.result = { usage, reason, products: items };
-	      this.showResultsSection();
-	      this.renderResult();
-	    } catch (error) {
-	      console.error('Results processing failed:', error);
-	      this.hideLoading();
-	      alert('분석 결과를 불러오지 못했습니다. 다시 시도해주세요.');
 	    }
-	  }
-	
-	  renderResult() {
-	    const r          = this.result || { usage: '', reason: '', products: [] };
-	    const usageChip  = document.getElementById('usage-chip');
-	    const usageText  = document.getElementById('usage-text');
-	    const analysisEl = document.getElementById('analysis-text');
-	
-	    if (usageText) usageText.textContent = this.usageLabel(r.usage);
-	    if (usageChip) usageChip.style.display = 'inline-flex';
-	    if (analysisEl) analysisEl.textContent = r.reason || '분석 결과입니다.';
-	
-	    this.renderPerfumes(r.products || []);
-	  }
-	
-	  usageLabel(u) {
-	    switch (u) {
-	      case 'daily':  return '일상용';
-	      case 'office': return '직장';
-	      case 'special':return '특별한 날';
-	      case 'gift':   return '선물용';
-	      default:       return u || '용도';
-	    }
-	  }
-	
-	  renderPerfumes(products) {
-	    const container = document.getElementById('perfumes-grid');
-	    if (!container) return;
-	    container.innerHTML = '';
-	
-	    if (!products || products.length === 0) {
-	      container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #64748b;">추천할 상품이 없습니다.</div>';
-	      return;
-	    }
-	
-	    products.forEach(product => {
-	      if (!product) return;
-	      const card = document.createElement('div');
-	      card.className = 'perfume-card';
-	      card.innerHTML = `
-	        <div class="perfume-image">
-	          <img src="${product.imageUrl || '/img/noimg.png'}" alt="${(product.name || 'Unknown Product') + ''}">
-	        </div>
-	        <div class="perfume-name">${product.name || 'Unknown Product'}</div>
-	        <div class="perfume-brand">${product.brandName || ''}</div>
-	        <div class="perfume-reason">${product.reason || ''}</div>
-	        <div class="perfume-price">${(product.price !== undefined && product.price !== null) ? (Number(product.price).toLocaleString() + '원') : '가격 정보 없음'}</div>
-	        <a href="/main/content/${product.productId || '#'}" class="perfume-link" aria-label="자세히 보기">자세히 보기</a>
-	      `;
-	      container.appendChild(card);
-	    });
+
+	    this.result = { usage, reason, products: items };
+	    
+	    // 화면 전환
+	    document.getElementById('survey-section').style.display = 'none';
+	    document.getElementById('results-section').style.display = 'block';
+	    
+	    this.renderResult();
+
+	  } catch (e) {
+	    console.error('Results processing failed:', e);
+	    this.hideLoading();
+	    alert(`분석 결과를 불러오지 못했습니다: ${e.message}\n다시 시도해주세요.`);
 	  }
 	}
-	
-	/** 다시 테스트하기 버튼 핸들러 (선택) */
-	function restartSurvey() {
-	  if (!confirm('새로 설문조사를 시작하시겠습니까?')) return;
-	  const userName = document.body.dataset.user;
-	  const doReload = () => window.location.reload();
-	
-	  if (userName && userName !== 'anonymousUser') {
-	    fetch(`/api/recommendation/reset?userName=${encodeURIComponent(userName)}`, { method: 'POST' })
-	      .finally(doReload);
-	  } else {
-	    doReload();
-	  }
-	}
-	
-	// 초기화
-	document.addEventListener('DOMContentLoaded', () => {
-	  window.surveyManager = new SimplePerfumeSurvey();
-	});
-	</script>
+
+  renderResult() {
+    const r = this.result || { usage: '', reason: '', products: [] };
+    console.log('🎨 렌더링할 결과:', r);
+    
+    const usageChip = document.getElementById('usage-chip');
+    const usageText = document.getElementById('usage-text');
+    const analysisEl = document.getElementById('analysis-text');
+
+    if (usageText) usageText.textContent = this.usageLabel(r.usage);
+    if (usageChip) usageChip.style.display = 'inline-flex';
+    if (analysisEl) {
+      analysisEl.textContent = r.reason || '분석 결과입니다.';
+    }
+
+    this.renderPerfumes(r.products || []);
+  }
+
+  usageLabel(u) {
+    switch (u) {
+      case 'daily': return '일상용';
+      case 'office': return '직장';
+      case 'special': return '특별한 날';
+      case 'gift': return '선물용';
+      default: return u || '용도';
+    }
+  }
+
+  renderPerfumes(products) {
+    const container = document.getElementById('perfumes-grid');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    console.log('🎨 렌더링할 제품들:', products);
+
+    if (!products || products.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 2rem;">
+          <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+          <div>추천할 상품이 없습니다.</div>
+          <div style="font-size: 0.9rem; margin-top: 0.5rem;">다른 옵션으로 다시 시도해보세요.</div>
+        </div>
+      `;
+      return;
+    }
+
+    products.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'perfume-card';
+      card.innerHTML = `
+        <div class="perfume-image">
+          <img src="${p.imageUrl || '/img/noimg.png'}" 
+               alt="${p.name || 'Unknown Product'}" 
+               onerror="this.src='/img/noimg.png'">
+        </div>
+        <div class="perfume-name">${p.name || 'Unknown Product'}</div>
+        <div class="perfume-brand">${p.brandName || ''}</div>
+        <div class="perfume-reason">${p.reason || ''}</div>
+        <div class="perfume-price">${
+          (p.price !== undefined && p.price !== null) 
+            ? (Number(p.price).toLocaleString() + '원') 
+            : '가격 정보 없음'
+        }</div>
+        <a href="/main/content/${p.productId || '#'}" class="perfume-link">자세히 보기</a>
+      `;
+      container.appendChild(card);
+    });
+  }
+}
+
+// 다시 테스트하기 함수 (전역 함수로 유지)
+function restartSurvey() {
+  if (!confirm('새로 설문조사를 시작하시겠습니까?')) return;
+  const userName = document.body.dataset.user;
+  const reload = () => window.location.reload();
+  if (userName && userName !== 'anonymousUser') {
+    fetch(`/api/recommendation/reset?userName=${encodeURIComponent(userName)}`, { method: 'POST' })
+      .finally(reload);
+  } else {
+    reload();
+  }
+}
+
+// 초기화
+document.addEventListener('DOMContentLoaded', () => {
+  window.surveyManager = new SimplePerfumeSurvey();
+});
+</script>
+
+
 
     </th:block>
 </body>

@@ -91,16 +91,14 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
    @Query("select p from Product p where p.id = :id")
    Optional<Product> findByIdWithZzimers(@Param("id") Long id);
 
-   /** 사용자(userName)와 상품(productId)의 찜 여부 카운트(0/1) */
-   @Query("""
-         select count(p)
-         from Users u
-         join u.zzimedProducts p
-         where u.userName = :userName
-           and p.id       = :productId
-         """)
-   long countZzimByUserAndProduct(@Param("userName") String userName,
-         @Param("productId") Long productId);
+   /* 사용자(userName)와 상품(productId)의 찜 여부 카운트(0/1) */
+	/*
+	 * @Query(""" select count(p) from Users u join u.zzimedProducts p where
+	 * u.userName = :userName and p.id = :productId """) long
+	 * countZzimByUserAndProduct(@Param("userName") String userName,
+	 * 
+	 * @Param("productId") Long productId);
+	 */
 
 
    // =============================== 구매자 통계(명수 기준) ===============================

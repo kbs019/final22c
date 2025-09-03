@@ -133,6 +133,36 @@
       margin-top: 6px;
       font-weight: 800;
     }
+/* 찜 취소 버튼 (카드 오른쪽 상단 고정) */
+.zzim-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.zzim-remove-btn:hover {
+  background: rgba(229, 231, 235, 0.95); /* hover 시 약간 진하게 */
+}
+
+.zzim-remove-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: #555;
+  transition: fill 0.2s ease;
+}
+
+.zzim-remove-btn:hover svg {
+  fill: #111;
+}
   </style>
 </th:block>
 
@@ -144,23 +174,87 @@
 
       <!-- 우측: 위시리스트 본문 -->
       <div class="mp-col-right">
-        <div class="wl-wrap">
-          <h2 class="wl-title">내 관심목록</h2>
-
-          <div class="wl-grid">
-            <a class="wl-card" th:each="p : ${paging}" th:href="@{|/main/content/${p.id}|}">
-              <img class="wl-thumb" th:src="@{|${p.imgPath}${p.imgName}|}" th:alt="${p.name}">
-              <div class="wl-body">
-                <div class="wl-brand" th:text="${p.brand.brandName}">브랜드</div>
-                <div class="wl-name" th:text="${p.name}">상품명</div>
-                <div class="wl-price" th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'">0원</div>
-              </div>
-            </a>
-          </div>
-        </div>
+		 <div class="wl-grid">
+		  <div class="wl-card position-relative" th:each="p : ${paging}">
+		    <!-- 찜 취소 버튼 -->
+		    <button type="button" class="btn btn-sm btn-light zzim-remove-btn"
+		            th:attr="data-productid=${p.id}">
+		                      <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
+                  <path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+                </svg>
+		    </button>
+		
+		    <a th:href="@{|/main/content/${p.id}|}" class="d-block text-decoration-none text-dark">
+		      <img class="wl-thumb" th:src="@{|${p.imgPath}${p.imgName}|}" th:alt="${p.name}">
+		      <div class="wl-body">
+		        <div class="wl-brand" th:text="${p.brand.brandName}">브랜드</div>
+		        <div class="wl-name" th:text="${p.name}">상품명</div>
+		        <div class="wl-price"
+		             th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'">0원</div>
+		      </div>
+		    </a>
+		  </div>
+		</div>
       </div>
     </div>
+   <!-- === 알림 모달 === -->
+	<div class="modal fade" id="zzimRemoveModal" tabindex="-1" aria-hidden="true">
+	  <div class="modal-dialog modal-dialog-centered">
+	    <div class="modal-content">
+	      
+	      <div class="modal-header">
+	        <h5 class="modal-title">관심상품 삭제</h5>
+	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+	      </div>
+	      
+	      <div class="modal-body">
+	        이 상품을 관심목록에서 삭제하시겠습니까?
+	      </div>
+	      
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+	        <button type="button" class="btn btn-danger" id="zzimRemoveConfirmBtn">삭제</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
   </section>
 </th:block>
+<script layout:fragment="script">
+let targetProductId = null;
+let targetCard = null;
 
+document.addEventListener("click", function(e) {
+  if (e.target.closest(".zzim-remove-btn")) {
+    let btn = e.target.closest(".zzim-remove-btn");
+    targetProductId = btn.getAttribute("data-productid");
+    targetCard = btn.closest(".wl-card");
+
+    // 모달 열기
+    let modal = new bootstrap.Modal(document.getElementById("zzimRemoveModal"));
+    modal.show();
+  }
+});
+
+// 모달 내 "삭제" 버튼 클릭 시 실행
+document.getElementById("zzimRemoveConfirmBtn").addEventListener("click", function() {
+  if (!targetProductId) return;
+
+  fetch("zzimList/remove", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ productId: targetProductId })
+  })
+  .then(res => {
+    if (res.ok) {
+      // 카드 삭제
+      if (targetCard) targetCard.remove();
+      bootstrap.Modal.getInstance(document.getElementById("zzimRemoveModal")).hide();
+    } else {
+      alert("삭제 처리 중 오류가 발생했습니다.");
+    }
+  });
+});
+</script>
 </html>

@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +26,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ex.final22c.DataNotFoundException;
@@ -57,6 +61,7 @@ import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.user.UserRepository;
+import com.ex.final22c.service.product.RestockNotifyService;
 import com.ex.final22c.service.product.ReviewFilterService;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -85,9 +90,8 @@ public class AdminService {
     private final ReviewRepository reviewRepository;
     private final OrderDetailRepository orderDetailRepository;
     private final ReviewFilterService reviewFilterService;
-    
-    
-    
+    private final RestockNotifyService restockNotifyService;
+
     // 브랜드 이미지 경로 지정
     private final String uploadDir = "src/main/resources/static/img/brand/";
 
@@ -103,6 +107,7 @@ public class AdminService {
 
         };
     }
+
     // 정지 시간 갱신
     public void updateUserStatusIfExpired(Users user) {
         if ("suspended".equals(user.getStatus()) && user.getBanReg() != null) {
@@ -114,6 +119,7 @@ public class AdminService {
             }
         }
     }
+
     // 전체 회원목록
     public Page<Users> getList(int page, String kw, String filter) {
         List<Sort.Order> sorts = new ArrayList<>();
@@ -125,18 +131,15 @@ public class AdminService {
 
         // ✅ filter 추가
         if ("suspended".equals(filter)) {
-            spec = spec.and((root, query, cb) ->
-                cb.or(
+            spec = spec.and((root, query, cb) -> cb.or(
                     cb.equal(root.get("status"), "suspended"),
-                    cb.equal(root.get("status"), "banned")
-                )
-            );
+                    cb.equal(root.get("status"), "banned")));
         }
 
         Page<Users> result = this.userRepository.findAll(spec, pageable);
         result.forEach(this::updateUserStatusIfExpired);
         return result;
-        
+
     }
 
     // 회원 정보
@@ -563,58 +566,132 @@ public class AdminService {
         }
         return response;
     }
-    
-    // 발주 신청
+
+    // ==================== 기존 발주 신청 ========================
+    // // 발주 신청
+    // @Transactional
+    // public void confirmPurchase(List<Map<String, Object>> items) {
+    // // 1. 발주 마스터 생성
+    // Purchase purchase = new Purchase();
+    // purchase.setReg(LocalDateTime.now());
+    // purchaseRepository.save(purchase);
+
+    // int totalPrice = 0;
+    // // 2. 발주 상세 생성
+    // for (Map<String, Object> item : items) {
+    // Object productIdObj = item.get("productId");
+    // Object qtyObj = item.get("qty");
+
+    // if (productIdObj == null || qtyObj == null) {
+    // throw new RuntimeException("productId 또는 qty 값이 없습니다.");
+    // }
+    // Long productId = Long.valueOf(item.get("productId").toString());
+    // int qty = Integer.valueOf(item.get("qty").toString());
+
+    // Product product = productRepository.findById(productId)
+    // .orElseThrow(() -> new RuntimeException("상품 없음"));
+
+    // PurchaseDetail detail = new PurchaseDetail();
+    // detail.setProduct(product);
+    // detail.setQty(qty);
+    // detail.setPurchase(purchase);
+    // detail.setTotalPrice(product.getCostPrice()*qty);
+    // purchaseDetailRepository.save(detail);
+
+    // // 재고 업데이트
+    // product.setCount(product.getCount() + qty);
+    // productRepository.save(product); // 변경된 재고 저장
+
+    // // 총금액 계산
+    // totalPrice += product.getCostPrice() * qty;
+    // }
+    // // 발주 품목 개수 계산
+    // purchase.setCount(items.size());
+    // purchase.setTotalPrice(totalPrice);
+    // purchaseRepository.save(purchase);
+
+    // // 3. 발주신청목록 전체 삭제
+    // purchaseRequestRepository.deleteAll();
+    // }
+
     @Transactional
     public void confirmPurchase(List<Map<String, Object>> items) {
-        // 1. 발주 마스터 생성
+        // ===== 1) 발주 마스터 생성 =====
         Purchase purchase = new Purchase();
         purchase.setReg(LocalDateTime.now());
         purchaseRepository.save(purchase);
 
-        int totalPrice = 0; 
-        // 2. 발주 상세 생성
+        int totalPrice = 0;
+        int itemCount = 0;
+
+        // 알림 대상(0→양수 전환된 상품)
+        Set<Long> toNotify = new LinkedHashSet<>();
+
+        // ===== 2) 발주 상세 생성 + 재고 증가 =====
         for (Map<String, Object> item : items) {
-        	Object productIdObj = item.get("productId");
+            Object productIdObj = item.get("productId");
             Object qtyObj = item.get("qty");
 
             if (productIdObj == null || qtyObj == null) {
                 throw new RuntimeException("productId 또는 qty 값이 없습니다.");
             }
-            Long productId = Long.valueOf(item.get("productId").toString());
-            int qty = Integer.valueOf(item.get("qty").toString());
+
+            Long productId = Long.valueOf(productIdObj.toString());
+            int qty = Integer.parseInt(qtyObj.toString());
 
             Product product = productRepository.findById(productId)
-                                .orElseThrow(() -> new RuntimeException("상품 없음"));
+                    .orElseThrow(() -> new RuntimeException("상품 없음"));
 
+            // 상세 생성/저장
             PurchaseDetail detail = new PurchaseDetail();
             detail.setProduct(product);
             detail.setQty(qty);
             detail.setPurchase(purchase);
-            detail.setTotalPrice(product.getCostPrice()*qty);
+            detail.setTotalPrice(product.getCostPrice() * qty);
             purchaseDetailRepository.save(detail);
-            
-            // 재고 업데이트
-            product.setCount(product.getCount() + qty);
-            productRepository.save(product); // 변경된 재고 저장
-            
-            // 총금액 계산
+
+            // 재고 업데이트 (필드명: count 사용 중)
+            int prev = product.getCount();
+            int now = prev + qty;
+            product.setCount(now);
+            productRepository.save(product);
+
+            // 총금액/품목수 집계
             totalPrice += product.getCostPrice() * qty;
+            itemCount += 1;
+
+            // 0 → 양수 전환 시 알림 후보
+            if (prev == 0 && now > 0) {
+                toNotify.add(productId);
+            }
         }
-     // 발주 품목 개수 계산
-        purchase.setCount(items.size());
+
+        // ===== 3) 발주 요약값 업데이트 =====
+        purchase.setCount(itemCount);
         purchase.setTotalPrice(totalPrice);
         purchaseRepository.save(purchase);
 
-      // 3. 발주신청목록 전체 삭제
-       purchaseRequestRepository.deleteAll();
+        // ===== 4) 발주신청목록 전체 삭제(기존 동작 유지) =====
+        purchaseRequestRepository.deleteAll();
+
+        // ===== 5) 커밋 후(afterCommit) 알림 예약 =====
+        TransactionSynchronizationManager.registerSynchronization(
+            new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    for (Long pid : toNotify) {
+                        restockNotifyService.notifyForProduct(pid);
+                    }
+                }
+            }
+        );
     }
-    
+
     // 발주 목록
-    public List<Purchase> getPurchase(){
-    	return this.purchaseRepository.findAll();
+    public List<Purchase> getPurchase() {
+        return this.purchaseRepository.findAll();
     }
-    
+
     // 발주 상세 내역
     public Map<String, Object> getPurchaseDetail(Long purchaseId) {
         Purchase purchase = purchaseRepository.findById(purchaseId)
@@ -626,40 +703,39 @@ public class AdminService {
             item.put("productId", d.getProduct().getId()); // 오타 주의
             item.put("productName", d.getProduct().getName());
             item.put("qty", d.getQty());
-            item.put("price", d.getProduct().getCostPrice());                   // 단가
-            item.put("total", d.getTotalPrice());      // 합계
+            item.put("price", d.getProduct().getCostPrice()); // 단가
+            item.put("total", d.getTotalPrice()); // 합계
             items.add(item);
         }
 
         return Map.of(
-            "reg", purchase.getReg().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
-            "totalPrice", purchase.getTotalPrice(),
-            "items", items
-        );
+                "reg", purchase.getReg().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                "totalPrice", purchase.getTotalPrice(),
+                "items", items);
     }
-    
+
     // 주문 내역
-    public List<Order> getOrders(){
-    	return this.orderRepository.findAll(Sort.by(Sort.Direction.DESC, "regDate"));
+    public List<Order> getOrders() {
+        return this.orderRepository.findAll(Sort.by(Sort.Direction.DESC, "regDate"));
     }
-    
+
     @Transactional(readOnly = true)
     public Order findMyOrderWithDetails(Long orderId) {
         return orderRepository.findOneWithDetails(orderId)
-            .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
     }
 
     @Transactional(readOnly = true)
     public List<Payment> findPaymentsofOrder(Long orderId) {
         return paymentRepository.findByOrder_OrderId(orderId);
     }
-    
 
-    private static final List<String> OK = List.of("PAID","CONFIRMED","REFUNDED");
+    private static final List<String> OK = List.of("PAID", "CONFIRMED", "REFUNDED");
 
     // 판매량 조회
     public Map<Long, Long> getConfirmedQtySumMap(Collection<Long> productIds) {
-        if (productIds == null || productIds.isEmpty()) return Collections.emptyMap();
+        if (productIds == null || productIds.isEmpty())
+            return Collections.emptyMap();
 
         List<Object[]> rows = orderDetailRepository.sumConfirmQuantityByProductIds(productIds, OK);
         Map<Long, Long> map = new HashMap<>();
@@ -675,51 +751,60 @@ public class AdminService {
         return map;
     }
 
-    public Product findProduct(Long id){
+    public Product findProduct(Long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("상품을 찾을 수 없습니다. id="+id));
+                .orElseThrow(() -> new NoSuchElementException("상품을 찾을 수 없습니다. id=" + id));
     }
 
     /** 구매자 통계(고유 구매자 기준) */
-    public Map<String, Object> buildBuyerStats(Long productId){
+    public Map<String, Object> buildBuyerStats(Long productId) {
         // confirmQuantity > 0 인 주문 상세만 집계
         List<OrderDetail> details = orderDetailRepository.findConfirmedByProductId(productId);
 
         // 고유 구매자
         Map<Long, Users> uniqueBuyers = new LinkedHashMap<>();
         for (OrderDetail d : details) {
-            if (d.getOrder() == null || d.getOrder().getUser() == null) continue;
+            if (d.getOrder() == null || d.getOrder().getUser() == null)
+                continue;
             Users u = d.getOrder().getUser();
             uniqueBuyers.put(u.getUserNo(), u);
         }
 
-        int male=0, female=0, unknown=0;
-        int a10=0, a20=0, a30=0, a40=0, a50p=0;
+        int male = 0, female = 0, unknown = 0;
+        int a10 = 0, a20 = 0, a30 = 0, a40 = 0, a50p = 0;
 
         for (Users u : uniqueBuyers.values()) {
             // 성별
             String g = Optional.ofNullable(u.getGender()).orElse("").trim().toUpperCase();
-            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자")) female++;
-            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자")) male++;
-            else unknown++;
+            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자"))
+                female++;
+            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자"))
+                male++;
+            else
+                unknown++;
 
             // 연령대 (10~19: 10대, 20~29: 20대, 30~39: 30대, 40~49: 40대, 50+: 50+)
             Integer age = u.getAge(); // Users.prePersist/Update에서 계산됨
             if (age != null) {
-                if (age >= 10 && age < 20) a10++;
-                else if (age < 30) a20++;
-                else if (age < 40) a30++;
-                else if (age < 50) a40++;
-                else a50p++;
+                if (age >= 10 && age < 20)
+                    a10++;
+                else if (age < 30)
+                    a20++;
+                else if (age < 40)
+                    a30++;
+                else if (age < 50)
+                    a40++;
+                else
+                    a50p++;
             }
         }
 
-        Map<String,Object> gender = new LinkedHashMap<>();
+        Map<String, Object> gender = new LinkedHashMap<>();
         gender.put("female", female);
         gender.put("male", male);
         gender.put("unknown", unknown);
 
-        Map<String,Object> age = new LinkedHashMap<>();
+        Map<String, Object> age = new LinkedHashMap<>();
         age.put("t10", a10);
         age.put("t20", a20);
         age.put("t30", a30);
@@ -727,27 +812,26 @@ public class AdminService {
         age.put("t50p", a50p);
 
         return Map.of(
-            "productId", productId,
-            "gender", gender,
-            "age", age,
-            "uniqueBuyerCount", uniqueBuyers.size()
-        );
+                "productId", productId,
+                "gender", gender,
+                "age", age,
+                "uniqueBuyerCount", uniqueBuyers.size());
     }
 
     // 리뷰 목록
-    public List<Review> getReview(){
-    	
-    	return reviewRepository.findAll(Sort.by(Sort.Direction.DESC, "createDate"));
+    public List<Review> getReview() {
+
+        return reviewRepository.findAll(Sort.by(Sort.Direction.DESC, "createDate"));
 
     }
-    
+
     public List<Review> getFilteredReviews() {
         List<Review> all = reviewRepository.findAll();
         return all.stream()
                 .filter(r -> reviewFilterService.containsBadWord(r.getContent()))
                 .toList();
     }
-    
+
     public boolean applySanction(String username, String sanction) {
         Optional<Users> optionalUser = userRepository.findByUserName(username);
 
@@ -778,7 +862,7 @@ public class AdminService {
         userRepository.save(user);
         return true;
     }
-    
+
     @Transactional
     public void changeStatus(Long reviewId, String status) {
         Review review = reviewRepository.findById(reviewId)
@@ -791,8 +875,8 @@ public class AdminService {
     public Map<String, Object> buildAllUserStats() {
         List<Users> all = userRepository.findAll();
 
-        int male=0, female=0, unknown=0;
-        int a10=0, a20=0, a30=0, a40=0, a50p=0;
+        int male = 0, female = 0, unknown = 0;
+        int a10 = 0, a20 = 0, a30 = 0, a40 = 0, a50p = 0;
 
         // 신규 가입(최근 7일)
         java.time.LocalDate today = java.time.LocalDate.now();
@@ -802,18 +886,26 @@ public class AdminService {
         for (Users u : all) {
             // 성별 집계
             String g = java.util.Optional.ofNullable(u.getGender()).orElse("").trim().toUpperCase();
-            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자")) female++;
-            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자")) male++;
-            else unknown++;
+            if (g.equals("F") || g.equals("FEMALE") || g.equals("여") || g.equals("여자"))
+                female++;
+            else if (g.equals("M") || g.equals("MALE") || g.equals("남") || g.equals("남자"))
+                male++;
+            else
+                unknown++;
 
             // 연령대 집계
             Integer age = u.getAge();
             if (age != null) {
-                if (age >= 10 && age < 20) a10++;
-                else if (age < 30) a20++;
-                else if (age < 40) a30++;
-                else if (age < 50) a40++;
-                else a50p++;
+                if (age >= 10 && age < 20)
+                    a10++;
+                else if (age < 30)
+                    a20++;
+                else if (age < 40)
+                    a30++;
+                else if (age < 50)
+                    a40++;
+                else
+                    a50p++;
             }
 
             // 최근 7일 신규 (reg가 LocalDate 기준, since 이상이면 포함)
@@ -823,12 +915,12 @@ public class AdminService {
             }
         }
 
-        Map<String,Object> gender = new java.util.LinkedHashMap<>();
+        Map<String, Object> gender = new java.util.LinkedHashMap<>();
         gender.put("female", female);
         gender.put("male", male);
         gender.put("unknown", unknown);
 
-        Map<String,Object> age = new java.util.LinkedHashMap<>();
+        Map<String, Object> age = new java.util.LinkedHashMap<>();
         age.put("t10", a10);
         age.put("t20", a20);
         age.put("t30", a30);
@@ -836,10 +928,9 @@ public class AdminService {
         age.put("t50p", a50p);
 
         return java.util.Map.of(
-            "gender", gender,
-            "age", age,
-            "totalUserCount", all.size(),
-            "newUserCount7d", newUsers7d
-        );
+                "gender", gender,
+                "age", age,
+                "totalUserCount", all.size(),
+                "newUserCount7d", newUsers7d);
     }
 }
