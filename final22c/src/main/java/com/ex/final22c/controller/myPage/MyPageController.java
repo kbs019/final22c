@@ -156,27 +156,6 @@ public class MyPageController {
         return ResponseEntity.ok(Map.of("ok", true, "address", selected));
     }
 
-    // ====== 찜목록 ======
-    @GetMapping("/zzimList")
-    public String wishlistPage(Model model, Principal principal) {
-        if (principal == null)
-            return "redirect:/user/login";
-        List<Product> list = this.zzimService.listMyZzim(principal.getName());
-        model.addAttribute("paging", list);
-        model.addAttribute("section", "wishlist");
-        return "mypage/zzimList";
-    }
-    
-    @PostMapping("/zzimList/remove")
-    @ResponseBody
-    public ResponseEntity<?> removeZzim(Principal principal,
-                                        @RequestBody Map<String, Long> body) {
-        Long productId = body.get("productId");
-        String user = principal.getName();
-        zzimService.remove(user, productId);
-        return ResponseEntity.ok().build();
-    }
-
     // 수정
     @PutMapping(value = "/address/{addressNo}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
@@ -206,5 +185,27 @@ public class MyPageController {
         userAddressService.deleteUserAddress(me.getUserNo(), addressNo);
         return ResponseEntity.ok(Map.of("ok", true));
     }
+    
+    // ====== 찜목록 ======
+    @GetMapping("/zzimList")
+    public String wishlistPage(Model model, Principal principal) {
+        if (principal == null)
+            return "redirect:/user/login";
+        List<Product> list = this.zzimService.listMyZzim(principal.getName());
+        model.addAttribute("paging", list);
+        model.addAttribute("section", "wishlist");
+        return "mypage/zzimList";
+    }
+    
+    @PostMapping("/zzimList/remove")
+    @ResponseBody
+    public ResponseEntity<?> removeZzim(Principal principal,
+                                        @RequestBody Map<String, Long> body) {
+        Long productId = body.get("productId");
+        String user = principal.getName();
+        zzimService.remove(user, productId);
+        return ResponseEntity.ok().build();
+    }
+
 
 }
