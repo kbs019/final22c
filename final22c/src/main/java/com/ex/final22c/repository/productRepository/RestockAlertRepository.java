@@ -39,7 +39,7 @@ public interface RestockAlertRepository extends JpaRepository<RestockAlert, Long
         from RestockAlert ra
         where ra.user.userNo = :userNo
             and ra.status = 'REQUESTED'
-            and ra.product.stockQuantity > 0
+            and ra.product.count > 0
     """)
     List<RestockAlert> findUserRequestedWithStock(@Param("userNo") Long userNo);
 
