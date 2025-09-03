@@ -60,6 +60,12 @@ public class HybridRecommendationService {
         }
         if (aiJson == null || aiJson.isBlank()) {
             aiJson = buildFallbackJson(safe, candidates);
+        } else {
+            aiJson = normalizeJson(aiJson);
+            if (!isValidJson(aiJson)) {
+                log.warn("게스트 AI JSON invalid. fallback JSON 사용");
+                aiJson = buildFallbackJson(safe, candidates);
+            }
         }
         return aiJson;
     }
@@ -82,13 +88,19 @@ public class HybridRecommendationService {
         }
         if (aiResult == null || aiResult.isBlank()) {
             aiResult = buildFallbackJson(answersSafe, candidates);
+        } else {
+            aiResult = normalizeJson(aiResult);
+            if (!isValidJson(aiResult)) {
+                log.warn("AI JSON invalid. fallback JSON으로 대체");
+                aiResult = buildFallbackJson(answersSafe, candidates);
+            }
         }
 
         // 3) 회원 조회 (필수)
         Users user = userRepository.findByUserName(userName)
             .orElseThrow(() -> new RuntimeException("회원 정보가 없습니다: " + userName));
 
-        // 4) Upsert
+        // 4) Upsert (유저 1명당 1행)
         UserPreference pref = userPreferenceRepository.findByUser_UserNo(user.getUserNo())
             .orElseGet(() -> UserPreference.builder()
                 .user(user)          // ★ userNo NOT NULL/UNIQUE 대응
@@ -103,9 +115,9 @@ public class HybridRecommendationService {
             pref.setSurveyAnswers("{}");
         }
         pref.setAiAnalysis(aiResult);
-        pref.setRecommendedProducts(extractProductIds(aiResult));
+        pref.setRecommendedProducts(extractProductIds(aiResult)); // "1,2,3"
 
-        // 6) 저장
+        // 6) 저장 (있으면 UPDATE, 없으면 INSERT)
         return userPreferenceRepository.save(pref);
     }
 
@@ -134,61 +146,80 @@ public class HybridRecommendationService {
         );
     }
 
-    /** AI 프롬프트 구성 및 호출 (응답은 JSON 문자열) */
+    /** AI 프롬프트 구성 및 호출 (응답은 JSON 문자열, situationalRecommendations 고정) */
     private String callAiAnalysis(Map<String, String> survey, List<Map<String, Object>> candidates) {
+        String usage = survey.getOrDefault("usage", "daily");
+
         StringBuilder prompt = new StringBuilder();
-        prompt.append("사용자 향수 추천을 위한 AI 분석을 요청합니다.\n\n");
+        prompt.append("당신은 전자상거래 향수 추천 시스템입니다.\n")
+              .append("반드시 'JSON 한 줄'만 출력하세요. 설명/머릿말/코드펜스/마크다운 금지.\n")
+              .append("productId는 반드시 아래 후보의 ID에서만 선택하고, 숫자 타입으로 출력하세요.\n\n");
 
         // 설문 결과 요약
-        prompt.append("=== 사용자 설문조사 결과 ===\n");
+        prompt.append("=== 사용자 설문 ===\n");
         survey.forEach((k, v) -> prompt.append(k).append(": ").append(v).append("\n"));
 
         // 후보 상품 목록
-        prompt.append("\n=== 추천 후보 상품들 ===\n");
-        candidates.forEach(p -> {
-            prompt.append("상품ID: ").append(p.get("id")).append(" - ").append(p.get("name")).append("\n")
-                  .append("브랜드: ").append(p.get("brandName"))
-                  .append(", 용량: ").append(p.get("volume"))
-                  .append(", 가격: ").append(p.get("sellPrice")).append("\n");
-        });
+        prompt.append("\n=== 후보 상품 ===\n");
+        candidates.forEach(p -> prompt.append("id=").append(p.get("id"))
+            .append(", name=").append(p.get("name"))
+            .append(", brand=").append(p.get("brandName"))
+            .append(", volume=").append(p.get("volume"))
+            .append(", price=").append(p.get("sellPrice"))
+            .append("\n"));
 
-        // 추천 요청
-        String usage = survey.getOrDefault("usage", "daily");
-        prompt.append("\n=== 요청사항 ===\n");
-        prompt.append("사용자의 용도는 \"").append(usage).append("\"입니다.\n");
-        prompt.append("이 용도에 맞는 향수 2~3개를 추천하고 그 이유를 간결히 설명해주세요.\n");
-        prompt.append("- productId는 반드시 위의 '후보 상품ID'들 중에서만 고르세요.\n");
-        prompt.append("- JSON 이외의 텍스트(설명/머릿말/코드블록)는 절대 포함하지 마세요.\n");
-        prompt.append("- productId는 숫자 타입으로 반환하세요.\n");
+        // 요구사항 + 스키마 고정
+        prompt.append("\n=== 요구사항 ===\n")
+              .append("- 사용 용도는 \"").append(usage).append("\" 입니다.\n")
+              .append("- 용도에 맞는 향수 2~3개 추천 + 간단한 이유.\n")
+              .append("- 출력 스키마(키 추가 금지):\n")
+              .append("{\"situationalRecommendations\":{")
+              .append("\"").append(usage).append("\":{")
+              .append("\"reason\":\"string\",")
+              .append("\"products\":[{\"productId\":111,\"reason\":\"string\"}]")
+              .append("}}}\n")
+              .append("- JSON 이외 텍스트 금지, code fence 금지, 줄바꿈 최소화.\n");
 
-        // 고정 JSON 포맷
-        prompt.append("\n=== 반드시 아래 형식으로 'JSON만' 응답하세요 ===\n");
-        prompt.append("{\n")
-              .append("  \"situationalRecommendations\": {\n")
-              .append("    \"").append(usage).append("\": {\n")
-              .append("      \"reason\": \"추천 사유\",\n")
-              .append("      \"products\": [\n")
-              .append("        { \"productId\": 111, \"reason\": \"추천 이유\" },\n")
-              .append("        { \"productId\": 222, \"reason\": \"추천 이유\" }\n")
-              .append("      ]\n")
-              .append("    }\n")
-              .append("  }\n")
-              .append("}\n");
-
-        return chatService.ask(prompt.toString());
+        String raw = chatService.ask(prompt.toString());
+        return raw;
     }
 
-    /** AI JSON에서 productId 목록을 "1,2,3" 형태로 추출 */
+    /** 코드펜스/프리엠블 제거 등 JSON 정규화 */
+    private String normalizeJson(String raw) {
+        if (raw == null) return "";
+        String s = raw.trim();
+        // ```json ... ``` 제거
+        s = s.replaceAll("^```(json)?\\s*", "").replaceAll("\\s*```\\s*$", "");
+        // JSON 시작 전 잡음 제거 (예: zzimers 같은 쓰레기 토큰)
+        int firstBrace = s.indexOf('{');
+        if (firstBrace > 0) s = s.substring(firstBrace);
+        // 마지막 닫는 괄호 뒤 꼬리 제거
+        int lastBrace = s.lastIndexOf('}');
+        if (lastBrace >= 0 && lastBrace < s.length() - 1) {
+            s = s.substring(0, lastBrace + 1);
+        }
+        return s;
+    }
+
+    /** JSON 유효성 검사 */
+    private boolean isValidJson(String s) {
+        try { objectMapper.readTree(s); return true; } catch (Exception e) { return false; }
+    }
+
+    /** AI JSON에서 productId 목록을 "1,2,3" 형태로 추출 (situationalRecommendations 가정) */
     private String extractProductIds(String aiResult) {
         try {
             Map<String, Object> analysis = objectMapper.readValue(aiResult, Map.class);
-            Map<String, Object> situationalRecs = (Map<String, Object>) analysis.get("situationalRecommendations");
+            Map<String, Object> situationalRecs =
+                (Map<String, Object>) analysis.get("situationalRecommendations");
             if (situationalRecs == null) return "";
 
             Set<Long> ids = new HashSet<>();
             for (Object val : situationalRecs.values()) {
+                if (!(val instanceof Map)) continue;
                 Map<String, Object> sit = (Map<String, Object>) val;
-                List<Map<String, Object>> prods = (List<Map<String, Object>>) sit.get("products");
+                List<Map<String, Object>> prods =
+                    (List<Map<String, Object>>) sit.get("products");
                 if (prods != null) {
                     prods.forEach(p -> {
                         Object obj = p.get("productId");
@@ -212,13 +243,15 @@ public class HybridRecommendationService {
     /** 프론트 표시에 사용할 파싱(상황별) — 필요 시 사용 */
     public SituationalRecommendation getParsedRecommendation(String aiJson, String situation) {
         try {
-            String cleaned = aiJson.trim().replaceAll("^[^\\{]+", ""); // 혹시 모를 프리엠블 제거
+            String cleaned = normalizeJson(aiJson);
             Map<String, Object> analysis = objectMapper.readValue(cleaned, Map.class);
-            Map<String, Object> recs = (Map<String, Object>) analysis.get("situationalRecommendations");
+            Map<String, Object> recs =
+                (Map<String, Object>) analysis.get("situationalRecommendations");
             if (recs == null || !recs.containsKey(situation)) return getEmptyRecommendation(situation);
 
             Map<String, Object> sitData = (Map<String, Object>) recs.get(situation);
-            List<Map<String, Object>> prodData = (List<Map<String, Object>>) sitData.get("products");
+            List<Map<String, Object>> prodData =
+                (List<Map<String, Object>>) sitData.get("products");
             var products = prodData.stream()
                 .map(this::mapToRecommendedProduct)
                 .filter(p -> p != null)
@@ -294,17 +327,16 @@ public class HybridRecommendationService {
             "medium", List.of(3L, 4L),
             "strong", List.of(1L, 3L)
         );
+        // 너가 설문에서 "오드 뚜왈렛" 같은 한글을 쓰는 경우 여기서 변환 후 매핑해도 됨
         return m.getOrDefault(intensity.toLowerCase(), List.of(3L, 4L));
     }
 
-    // ===== Fallback(JSON 문자열) =====
+    // ===== Fallback(JSON 문자열, situationalRecommendations 포맷) =====
     private String buildFallbackJson(Map<String, String> survey, List<Map<String, Object>> candidates) {
         try {
-            // 후보가 비었으면 빈 JSON
             if (candidates == null || candidates.isEmpty()) {
                 return "{\"situationalRecommendations\":{}}";
             }
-
             // 2~3개 랜덤 픽
             Collections.shuffle(candidates);
             List<Map<String, Object>> picks = candidates.stream().limit(3).collect(Collectors.toList());
