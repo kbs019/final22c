@@ -73,7 +73,7 @@ public class HybridRecommendationService {
                 if (v != null) try { return Integer.parseInt(String.valueOf(v)) > 0; } catch (Exception ignore) {}
                 return true;
             })
-            .limit(30)  // 프롬프트 안정화
+            .limit(200)  // 프롬프트 안정화
             .collect(Collectors.toList());
 
         log.debug("filteredCandidates gender={}, priceRange={}, gradeIds={}, mainNoteIds={}, size={}",
@@ -190,54 +190,72 @@ public class HybridRecommendationService {
     private String callAiAnalysis(Map<String, String> survey, List<Map<String, Object>> candidates) {
         String usage = survey.getOrDefault("usage", "daily");
 
+        // 용도별 가이드라인
+        String usageGuide = switch (usage) {
+            case "office" -> """
+                - 사무실/밀폐 공간에 무리 없는 확산력과 잔향(EDT~EDP 중도).
+                - 너무 달거나 과자향(gourmand) 계열은 피하고, 깔끔/프로페셔널 인상 우선.
+                - 향 지속력은 4~7시간 선호, 가격은 과시적이지 않은 중간대 선호.
+                """;
+            case "special" -> """
+                - 존재감 있는 시그니처, 관능적/개성 강조(EDP~Parfum 우선).
+                - 스파이시/우디/플로럴의 인상적인 조합 선호. 프로젝트성 향도 고려.
+                - 가격 제약보다 향의 임팩트/스토리 우선.
+                """;
+            case "gift" -> """
+                - 선물 호불호 적고 브랜드 인지도/패키지 완성도 중요.
+                - 안전한 플로랄/시트러스/머스크 계열 우선. 성별 보편/유니섹스도 가점.
+                - 가격대는 사용자가 고른 범위를 반드시 존중.
+                """;
+            default /* daily */ -> """
+                - 데일리로 부담 없는 잔향과 세탁감/클린한 계열 선호(EDT~EDP).
+                - 과한 스파이시/스모키는 지양. 가격/용량 대비 가성비 고려.
+                """;
+        };
+
         StringBuilder prompt = new StringBuilder();
         prompt.append("당신은 전자상거래 향수 추천 시스템입니다.\n")
-              .append("반드시 완전한 JSON 형태로만 응답하세요. 설명문, 코드펜스, 마크다운 금지.\n")
-              .append("productId는 반드시 아래 후보의 ID에서만 선택하고, 숫자 타입으로 출력하세요.\n\n");
+              .append("반드시 완전한 JSON으로만 응답하세요. 설명/코드펜스 금지.\n")
+              .append("아래 후보들(productId)에서만 고르고, 숫자 타입으로 기입하세요.\n\n")
 
-        // 설문 결과 요약
-        prompt.append("=== 사용자 설문 ===\n");
+              .append("=== 사용자 설문 ===\n");
         survey.forEach((k, v) -> prompt.append(k).append(": ").append(v).append("\n"));
 
-        // 후보 상품 목록 (상한은 getFilteredCandidates에서 이미 적용됨)
-        prompt.append("\n=== 후보 상품 ===\n");
+        prompt.append("\n=== 용도별 선택 규칙(강제) ===\n")
+              .append(usageGuide).append("\n")
+              .append("- 동점이면 최근 판매량/인지도 높은 제품을 우선.\n")
+              .append("- 같은 브랜드 중복은 피하고, 서로 다른 캐릭터로 2개 이상 제시.\n")
+              .append("- 각 제품의 선택 이유에 용도와 설문 요소(노트/강도/가격대)를 반드시 연결해 서술.\n")
+
+              .append("\n=== 후보 상품(이 중에서만 선택) ===\n");
         candidates.forEach(p -> prompt.append("id=").append(p.get("id"))
             .append(", name=").append(p.get("name"))
             .append(", brand=").append(p.get("brandName"))
-            .append(", volume=").append(p.get("volume"))
             .append(", price=").append(p.get("sellPrice"))
             .append("\n"));
 
-        // 요구사항 + 스키마 고정
-        prompt.append("\n=== 필수 출력 형식 ===\n")
-              .append("다음 JSON 구조로만 응답하세요:\n")
+        prompt.append("\n=== 필수 출력 형식(예시 스키마, 이 구조만 허용) ===\n")
               .append("{\"situationalRecommendations\":{\"").append(usage).append("\":{")
-              .append("\"reason\":\"추천 이유 설명\",")
+              .append("\"reason\":\"요약 및 선택 기준\",")
               .append("\"products\":[")
-              .append("{\"productId\":숫자,\"reason\":\"개별 추천 이유\"},")
-              .append("{\"productId\":숫자,\"reason\":\"개별 추천 이유\"}")
+              .append("{\"productId\":숫자,\"reason\":\"왜 이 용도/설문에 맞는지\"},")
+              .append("{\"productId\":숫자,\"reason\":\"왜 이 용도/설문에 맞는지\"}")
               .append("]}}}\n")
-              .append("\n중요: JSON 이외의 텍스트, 설명, 코드펜스 절대 금지!\n");
+              .append("추가 텍스트 금지. JSON만 반환.\n");
 
         try {
             String raw = chatService.ask(prompt.toString());
-            log.debug("AI 원본 응답: {}", raw);
-
             String normalized = normalizeJson(raw);
-            log.debug("정규화된 응답: {}", normalized);
-
-            // 정규화된 결과가 유효하지 않으면 폴백 파서 시도
             if (!isValidJson(normalized)) {
-                log.warn("정규화된 JSON이 유효하지 않음, 텍스트 추출 시도");
                 normalized = extractSituationalRecommendationsFromText(raw, usage);
             }
             return normalized;
-
         } catch (Exception e) {
             log.error("AI 호출 또는 후처리 실패", e);
-            throw e; // 상위에서 폴백 처리
+            throw e;
         }
     }
+
 
     /** JSON 정규화 (과도한 절단 방지) */
     private String normalizeJson(String raw) {
