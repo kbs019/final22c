@@ -990,7 +990,6 @@
       </div>
     </div>
   </section>
-
   <script>
     'use strict';
 
@@ -1014,11 +1013,13 @@
       root.classList.remove('is-open');
       if (document.querySelectorAll('.cm-modal.is-open,.m-modal.is-open').length === 0) { unlockScroll(); }
     }
+    // 클릭으로 닫기 (m 백드롭 / cm 바깥)
     document.addEventListener('click', (e) => {
       if (e.target.matches('.m-modal [data-close], .m-modal__backdrop[data-close]')) closeModal(e.target.closest('.m-modal'));
       if (e.target.closest('.cm-modal') && !e.target.closest('.cm-modal__content')) closeModal(e.target.closest('.cm-modal'));
       if (e.target.matches('.cm-modal [data-close]')) closeModal(e.target.closest('.cm-modal'));
     });
+    // ESC로 가장 위 모달 닫기
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       const opens = Array.from(document.querySelectorAll('.m-modal.is-open, .cm-modal.is-open'));
@@ -1050,6 +1051,7 @@
           const card = s.closest('.order-card'); const del = (card?.dataset.delivery || '').trim().toUpperCase();
           step = (del === 'DELIVERED') ? 3 : (del === 'SHIPPING' ? 2 : 1);
           s.dataset.step = String(step);
+
         }
         renderStepper(s, step);
       });
@@ -1084,118 +1086,7 @@
 
     /* =================== util 시작 =================== */
     function money(n) { const v = Number(n) || 0; return v.toLocaleString() + '원'; }
-    const isHtml = (t) => /<!doctype html>|<html[\s>]/i.test(String(t || ''));
-    const parseJsonSafe = async (res) => { const text = await res.text(); if (isHtml(text)) return { __html: true, text }; try { return JSON.parse(text || '{}') } catch { return {} } };
-    function fixImgUrl(u) { if (!u) return api('/img/noimage.png'); let s = String(u).trim(); if (s.startsWith('|') && s.endsWith('|')) s = s.slice(1, -1); if (/^https?:\/\//i.test(s)) return s; if (s.startsWith('/')) return api(s); return s; }
-    const toInt = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
-
-    // 상세행 1개를 표준 형태로 변환
-    function mapRefundDetail(d) {
-      // 컬럼 이름 모든 케이스 지원
-      const orderDetailId = d?.orderDetailId ?? d?.ORDERDETAILID ?? d?.odId ?? d?.ID ?? d?.id;
-      const qty = toInt(d?.quantity ?? d?.QUANTITY ?? d?.qty);
-      const cqty = toInt(d?.confirmQuantity ?? d?.CONFIRMQUANTITY ?? d?.confirmedQty ?? d?.confirmqty);
-      const refundQty = Math.max(0, qty - cqty);
-
-      // 단가 우선순위: unitRefundAmount > sellPrice > unitPrice > totalPrice/quantity
-      const unit =
-        toInt(d?.unitRefundAmount ?? d?.UNITREFUNDAMOUNT) ||
-        toInt(d?.sellPrice ?? d?.SELLPRICE ?? d?.unitPrice ?? d?.UNITPRICE) ||
-        (qty > 0 ? Math.floor(toInt(d?.totalPrice ?? d?.TOTALPRICE) / qty) : 0);
-
-      // 소계 우선순위: subtotal > refundAmount > unit * refundQty
-      const subtotal =
-        toInt(d?.subtotal ?? d?.SUBTOTAL) ||
-        toInt(d?.refundAmount ?? d?.REFUNDAMOUNT) ||
-        (unit * refundQty);
-
-      const productName =
-        d?.productName ?? d?.PRODUCTNAME ?? d?.product?.name ?? d?.name ?? `품목 #${orderDetailId ?? '-'}`;
-
-      return { orderDetailId, productName, refundQty, unitRefundAmount: unit, subtotal };
-    }
-
-    // 배열이 "상세행"인지 판별
-    function looksLikeDetailRow(x) {
-      if (!x || typeof x !== 'object') return false;
-      return (
-        'orderDetailId' in x || 'ORDERDETAILID' in x ||
-        'quantity' in x || 'QUANTITY' in x ||
-        'confirmQuantity' in x || 'CONFIRMQUANTITY' in x ||
-        'sellPrice' in x || 'SELLPRICE' in x ||
-        'totalPrice' in x || 'TOTALPRICE' in x
-      );
-    }
-
-    // 환불결과 응답을 표준 구조로 정규화
-    function normalizeRefundResultsPayload(data) {
-      let refunds = [];
-      let payments = Array.isArray(data?.payments) ? data.payments : null;
-      const outMeta = {};
-
-      // 1) 최상위가 배열일 때
-      if (Array.isArray(data)) {
-        // a) 배열 원소가 환불객체들(각각 details/items 보유)인 경우
-        if (data.some(r => Array.isArray(r?.details) || Array.isArray(r?.items) || Array.isArray(r?.rows))) {
-          refunds = data.map(r => {
-            const raw = r.details || r.items || r.rows || [];
-            const details = raw.map(mapRefundDetail);
-            const total = details.reduce((s, d) => s + toInt(d.subtotal), 0);
-            return { ...r, details, totalRefundAmount: r?.totalRefundAmount ?? r?.refundAmount ?? total };
-          });
-          return { refunds, payments, ...outMeta };
-        }
-        // b) 배열이 상세행들인 경우 → 단일 환불객체로 감싸기
-        if (data.length && data.every(looksLikeDetailRow)) {
-          const details = data.map(mapRefundDetail);
-          const total = details.reduce((s, d) => s + toInt(d.subtotal), 0);
-          refunds = [{ details, totalRefundAmount: total }];
-          return { refunds, payments, ...outMeta };
-        }
-      }
-
-      // 2) 객체 컨테이너들
-      const fromList =
-        data?.refunds || data?.refundResults || data?.content || data?.data || data?.page?.content;
-      if (Array.isArray(fromList)) {
-        refunds = fromList.map(r => {
-          const raw = r?.details || r?.items || r?.rows || [];
-          const details = Array.isArray(raw) ? raw.map(mapRefundDetail) : [];
-          const total = details.reduce((s, d) => s + toInt(d.subtotal), 0);
-          return { ...r, details, totalRefundAmount: r?.totalRefundAmount ?? r?.refundAmount ?? total };
-        });
-        if (!payments && Array.isArray(data?.payments)) payments = data.payments;
-        return { refunds, payments, ...outMeta };
-      }
-
-      // 3) 단건(상세행 배열을 바로 가진 컨테이너)
-      const singleRows = data?.details || data?.items || data?.rows || data?.orderDetails || data?.ORDERDETAILS;
-      if (Array.isArray(singleRows)) {
-        const details = singleRows.map(mapRefundDetail);
-        const total = details.reduce((s, d) => s + toInt(d.subtotal), 0);
-        refunds = [{
-          refundId: data?.refundId ?? data?.id ?? data?.refundNo,
-          createdAt: data?.createdAt ?? data?.createDate ?? data?.regDate,
-          updateDate: data?.updateDate ?? data?.updatedAt ?? data?.refundedAt,
-          details,
-          payments: Array.isArray(data?.payments) ? data.payments : undefined,
-          totalRefundAmount: data?.totalRefundAmount ?? data?.refundAmount ?? total,
-          refundMileage: data?.refundMileage ?? data?.mileageRefund ?? 0,
-          confirmMileage: data?.confirmMileage ?? data?.mileageConfirm ?? 0,
-          reason: data?.reason ?? ''
-        }];
-        if (!payments && Array.isArray(data?.payments)) payments = data.payments;
-        outMeta.totalRefundAmount = refunds[0].totalRefundAmount;
-        outMeta.refundMileage = refunds[0].refundMileage;
-        outMeta.confirmMileage = refunds[0].confirmMileage;
-        outMeta.updateDate = refunds[0].updateDate;
-        return { refunds, payments, ...outMeta };
-      }
-
-      // 4) 매칭 실패
-      return { refunds: [], payments: null };
-    }
-    // ===== util 끝 =====
+    /* =================== util 끝 =================== */
 
     /* =================== 카드 UI 업데이트 시작 =================== */
     window.updateCardToConfirmed = function (card) {
@@ -1242,29 +1133,27 @@
       function makeRow({ odId, name, max, unit, img }) {
         const tr = document.createElement('tr');
         tr.dataset.odId = odId; tr.dataset.max = String(max); tr.dataset.unit = String(unit);
-        const imgSrc = fixImgUrl(img || '/img/noimage.png');
         tr.innerHTML = `
-      <td style="padding:10px 12px;">
-        <div style="display:flex; gap:10px; align-items:center;">
-          <div style="width:48px; height:48px; border-radius:8px; overflow:hidden; flex:0 0 48px;">
-            <img src="${imgSrc}" alt="" style="width:100%; height:100%; object-fit:cover;">
-          </div>
-          <div>
-            <div style="font-weight:600; line-height:1.3">${name}</div>
-            <div class="muted">주문수량: ${max}</div>
-          </div>
-        </div>
-      </td>
-      <td style="padding:10px 12px; text-align:center;">
-        <div style="display:inline-flex; align-items:center; gap:6px;">
-          <button type="button" class="qminus cm-btn" style="min-width:32px; height:32px; padding:0;">-</button>
-          <input type="number" class="qinput" value="0" min="0" max="${max}"
-                 style="width:64px; text-align:center; border:1px solid #e5e7eb; border-radius:8px; height:32px;">
-          <button type="button" class="qplus cm-btn"  style="min-width:32px; height:32px; padding:0;">+</button>
-        </div>
-      </td>
-      <td style="padding:10px 12px; text-align:right;"><span class="lineTotal">0원</span></td>`;
-        tr.querySelector('img')?.addEventListener('error', (ev) => { ev.currentTarget.src = api('/img/noimage.png'); });
+          <td style="padding:10px 12px;">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <div style="width:48px; height:48px; border-radius:8px; overflow:hidden; flex:0 0 48px;">
+                <img src="${img || '/img/noimage.png'}" alt="" style="width:100%; height:100%; object-fit:cover;">
+              </div>
+              <div>
+                <div style="font-weight:600; line-height:1.3">${name}</div>
+                <div class="muted">주문수량: ${max}</div>
+              </div>
+            </div>
+          </td>
+          <td style="padding:10px 12px; text-align:center;">
+            <div style="display:inline-flex; align-items:center; gap:6px;">
+              <button type="button" class="qminus cm-btn" style="min-width:32px; height:32px; padding:0;">-</button>
+              <input type="number" class="qinput" value="0" min="0" max="${max}"
+                     style="width:64px; text-align:center; border:1px solid #e5e7eb; border-radius:8px; height:32px;">
+              <button type="button" class="qplus cm-btn"  style="min-width:32px; height:32px; padding:0;">+</button>
+            </div>
+          </td>
+          <td style="padding:10px 12px; text-align:right;"><span class="lineTotal">0원</span></td>`;
         return tr;
       }
       function recalcRow(tr) {
@@ -1313,7 +1202,6 @@
       };
 
       document.getElementById('refundCancel')?.addEventListener('click', (e) => { e.preventDefault(); closeModal(modal); });
-
       btnOk?.addEventListener('click', async () => {
         const orderId = tbody.dataset.orderId;
         const text = reason.value.trim();
@@ -1321,10 +1209,8 @@
           const qty = parseInt(tr.querySelector('.qinput').value || '0', 10);
           return { orderDetailId: tr.dataset.odId, quantity: Math.max(0, qty) };
         }).filter(it => it.quantity > 0);
-
         if (items.length === 0) { alert('환불 수량을 1개 이상 선택하세요.'); return; }
         if (!text) { alert('환불 사유를 입력해주세요.'); reason.focus(); return; }
-
         try {
           const res = await fetch(api(`/pay/${orderId}/refund`), {
             method: 'POST', headers: csrfHeaders({ 'Content-Type': 'application/json' }),
@@ -1380,32 +1266,32 @@
           const details = Array.isArray(req.details) ? req.details : [];
           const total = details.reduce((s, d) => s + (Number(d?.subtotal) || 0), 0);
           const rows = details.map(d => `
-        <tr>
-          <td>${esc(d?.productName ?? '-')}</td>
-          <td class="t-right">${esc(d?.refundQty ?? '-')}</td>
-          <td class="t-right">${num(d?.unitRefundAmount ?? 0)}</td>
-          <td class="t-right"><strong>${num(d?.subtotal ?? 0)}</strong></td>
-        </tr>`).join('');
+            <tr>
+              <td>${esc(d?.productName ?? '-')}</td>
+              <td class="t-right">${esc(d?.refundQty ?? '-')}</td>
+              <td class="t-right">${num(d?.unitRefundAmount ?? 0)}</td>
+              <td class="t-right"><strong>${num(d?.subtotal ?? 0)}</strong></td>
+            </tr>`).join('');
 
           return `
-        <section class="rrm-card">
-          <header class="rrm-card__head">
-            <div class="rrm-head-left">
-              <div class="rrm-head-title">요청 #${esc(req?.refundId ?? (idx + 1))}</div>
-              <div class="rrm-meta">${esc(fmtYMDHM(req?.createdAt))}</div>
-            </div>
-          </header>
-          <div>
-            <table class="rrm-table rrm-table--refund">
-              <colgroup>
-                <col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub">
-              </colgroup>
-              <thead><tr><th>상품</th><th>수량</th><th>단가</th><th>합계</th></tr></thead>
-              <tbody>${rows}</tbody>
-              <tfoot><tr><td colspan="3" class="t-right">환불요청 총액</td><td class="t-right"><strong>${num(total)}</strong></td></tr></tfoot>
-            </table>
-          </div>
-        </section>`;
+            <section class="rrm-card">
+              <header class="rrm-card__head">
+                <div class="rrm-head-left">
+                  <div class="rrm-head-title">요청 #${esc(req?.refundId ?? (idx + 1))}</div>
+                  <div class="rrm-meta">${esc(fmtYMDHM(req?.createdAt))}</div>
+                </div>
+              </header>
+              <div>
+                <table class="rrm-table rrm-table--refund">
+                  <colgroup>
+                    <col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub">
+                  </colgroup>
+                  <thead><tr><th>상품</th><th>수량</th><th>단가</th><th>합계</th></tr></thead>
+                  <tbody>${rows}</tbody>
+                  <tfoot><tr><td colspan="3" class="t-right">환불요청 총액</td><td class="t-right"><strong>${num(total)}</strong></td></tr></tfoot>
+                </table>
+              </div>
+            </section>`;
         }).join('');
         body.innerHTML = sections;
       }
@@ -1417,27 +1303,14 @@
         body.innerHTML = `<div class="py-10 text-center text-gray-500">로딩 중…</div>`;
         openModal(modal);
         try {
-          const paths = [
-            `/pay/order/${orderId}/refund-requests`,
-            `/refund/order/${orderId}/requests`,
-            `/refund/order/${orderId}/refund-requests`
-          ];
-          let data = null, lastErr = null;
-          for (const p of paths) {
-            const url = api(p);
-            try {
-              const res = await fetch(url, { method: 'GET', headers: csrfHeaders({ 'Accept': 'application/json' }), credentials: 'same-origin' });
-              const parsed = await parseJsonSafe(res);
-              if (parsed.__html) { throw new Error('HTML response'); }
-              data = parsed; break;
-            } catch (e) { lastErr = e; }
-          }
-          if (!data) throw lastErr || new Error('no data');
-
-          const requests = normalizeRefundRequests(data);
-          renderRefundRequests({ requests });
+          const res = await fetch(api(`/pay/order/${orderId}/refund-requests`), {
+            method: 'GET', headers: csrfHeaders({ 'Accept': 'application/json' }), credentials: 'same-origin'
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          renderRefundRequests(data);
         } catch (err) {
-          console.error('[refund-requests] fail:', err);
+          console.error(err);
           body.innerHTML = `<div class="py-10 text-center" style="color:#ef4444">환불요청 내역을 불러오지 못했습니다.</div>`;
         }
       });
@@ -1450,175 +1323,124 @@
       const body = document.getElementById('rr-body');
       const title = document.getElementById('rr-title');
 
-      const esc = (s) => (s ?? '').toString()
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const esc = (s) => (s ?? '').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
       const num = (n) => { const v = Number(n); return Number.isFinite(v) ? v.toLocaleString() : (n ?? '-'); };
-
-      // YYYY.MM.DD HH:mm 로 안전하게 포맷
-      function fmtYMDHM(v) {
+      const fmtYMDHM = (v) => {
         const toDate = (x) => {
           if (!x) return null;
           if (x instanceof Date) return x;
-          if (typeof x === 'number') return new Date(x > 1e12 ? x : x * 1000);
+          if (typeof x === 'number') return new Date(x > 1e12 ? x : x * 1000); // sec/ms 모두 대응
           if (typeof x === 'string') {
-            let s = x.trim().replace(' ', 'T').replace(/\.\d+/, '');
-            const d = new Date(s); if (!isNaN(d)) return d;
+            let s = x.trim().replace(' ', 'T'); // 공백 → T
+            s = s.replace(/\.\d+/, '');        // 소수점 제거
+            const d = new Date(s);
+            if (!isNaN(d)) return d;
             const m = s.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})[ T](\d{2}):(\d{2})/);
             if (m) return new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00`);
           }
           return null;
         };
-        const d = toDate(v); if (!d || isNaN(d)) return v ?? '';
+        const d = toDate(v);
+        if (!d || isNaN(d)) return v ?? '';
         const p2 = (n) => String(n).padStart(2, '0');
         return `${d.getFullYear()}.${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
-      }
-
-      // ===== 이 프로젝트에 맞춘 정규화기 (이미 util에 있다면 이 블록 생략 가능) =====
-      function toInt(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
-      function mapRefundDetail(d) {
-        const orderDetailId = d?.orderDetailId ?? d?.ORDERDETAILID ?? d?.odId ?? d?.id;
-        const qty = toInt(d?.quantity ?? d?.qty);
-        const cqty = toInt(d?.confirmQuantity ?? d?.confirmedQty);
-        const refundQty = d?.refundQty != null ? toInt(d.refundQty) : Math.max(0, qty - cqty);
-        const unit =
-          toInt(d?.unitRefundAmount ?? d?.UNITREFUNDAMOUNT) ||
-          toInt(d?.sellPrice ?? d?.unitPrice) ||
-          (qty > 0 ? Math.floor(toInt(d?.totalPrice) / qty) : 0);
-        const subtotal =
-          toInt(d?.subtotal ?? d?.refundAmount) || unit * refundQty;
-        const productName =
-          d?.productName ?? d?.product?.name ?? `품목 #${orderDetailId ?? '-'}`;
-        return { orderDetailId, productName, refundQty, unitRefundAmount: unit, subtotal };
-      }
-      function normalizeRefundResultsPayload(data) {
-        // 1) 최상위가 배열 → 환불 리스트로 간주
-        if (Array.isArray(data)) {
-          if (data.length && (Array.isArray(data[0]?.details) || Array.isArray(data[0]?.items))) {
-            return {
-              refunds: data.map(r => {
-                const rows = (r.details || r.items || []).map(mapRefundDetail);
-                const total = rows.reduce((s, x) => s + toInt(x.subtotal), 0);
-                return { ...r, details: rows, totalRefundAmount: r.totalRefundAmount ?? total };
-              })
-            };
-          }
-          // 상세행 배열만 온 경우
-          if (data.length && !data.find(x => typeof x !== 'object')) {
-            const rows = data.map(mapRefundDetail);
-            const total = rows.reduce((s, x) => s + toInt(x.subtotal), 0);
-            return { refunds: [{ details: rows, totalRefundAmount: total }] };
-          }
-        }
-        // 2) 객체 컨테이너
-        const list = data?.refunds || data?.refundResults || data?.content || data?.data || data?.page?.content;
-        if (Array.isArray(list)) {
-          return {
-            refunds: list.map(r => {
-              const rows = (r.details || r.items || []).map(mapRefundDetail);
-              const total = rows.reduce((s, x) => s + toInt(x.subtotal), 0);
-              return { ...r, details: rows, totalRefundAmount: r.totalRefundAmount ?? total };
-            })
-          };
-        }
-        // 3) 단건
-        const rows = data?.details || data?.items || data?.rows;
-        if (Array.isArray(rows)) {
-          const d = rows.map(mapRefundDetail);
-          const total = d.reduce((s, x) => s + toInt(x.subtotal), 0);
-          return {
-            refunds: [{
-              refundId: data?.refundId ?? data?.id,
-              createdAt: data?.createdAt ?? data?.createDate,
-              updateDate: data?.updateDate ?? data?.refundedAt,
-              details: d,
-              totalRefundAmount: data?.totalRefundAmount ?? total,
-              refundMileage: data?.refundMileage ?? 0,
-              confirmMileage: data?.confirmMileage ?? 0,
-              reason: data?.reason ?? ''
-            }]
-          };
-        }
-        return { refunds: [] };
-      }
+      };
 
       function renderPayments(payments) {
         if (!Array.isArray(payments) || payments.length === 0) return '';
         return `
-    <hr style="margin:12px 0">
-    <ul class="paylist">
-      ${payments.map(p => {
+          <hr style="margin:12px 0">
+          <ul class="paylist">
+            ${payments.map(p => {
           const isPointOnly = (Number(p?.amount) === 0) || !p?.tid;
-          const method = p?.method ?? (isPointOnly ? '마일리지 전액 결제' : '카카오페이');
+          const method = isPointOnly ? '마일리지 전액 결제' : '카카오페이';
           return `
-          <li class="payitem">
-            <div>결제번호 ${esc(p?.paymentId ?? '-')}</div>
-            <div class="muted">결제 수단 : ${esc(method)}</div>
-            <div>총 결제 금액 : ${num(p?.amount || 0)}원</div>
-          </li>`;
+                <li class="payitem">
+                  <div>결제번호 ${esc(p?.paymentId ?? '-')}</div>
+                  <div class="muted">결제 수단 : ${esc(method)}</div>
+                  <div>총 결제 금액 : ${num(p?.amount || 0)}원</div>
+                </li>`;
         }).join('')}
-    </ul>`;
+          </ul>`;
       }
 
-      function renderFoot(rf) {
-        const hasAny = ['totalRefundAmount', 'refundMileage', 'confirmMileage', 'updateDate']
-          .some(k => rf?.[k] != null);
+      function renderFoot(rf, fallback) {
+        const src = {
+          totalRefundAmount: rf?.totalRefundAmount ?? fallback?.totalRefundAmount,
+          refundMileage: rf?.refundMileage ?? fallback?.refundMileage,
+          confirmMileage: rf?.confirmMileage ?? fallback?.confirmMileage,
+          updateDate: rf?.updateDate ?? rf?.refundedAt ?? fallback?.updateDate
+        };
+        const hasAny = [src.totalRefundAmount, src.refundMileage, src.confirmMileage, src.updateDate]
+          .some(v => v !== undefined && v !== null);
         if (!hasAny) return '';
         return `
-      <div class="rrm-foot">
-        <div class="foot-row foot-total"><span>최종 환급 금액</span><span>${num(rf.totalRefundAmount || 0)}</span></div>
-        <div class="foot-row"><span class="muted">환급 마일리지</span><span>${num(rf.refundMileage || 0)}</span></div>
-        <div class="foot-row"><span class="muted">적립 마일리지</span><span>${num(rf.confirmMileage || 0)}</span></div>
-        <div class="rrm-foot__ts foot-ts">처리일시: <span>${esc(fmtYMDHM(rf.updateDate || rf.refundedAt || ''))}</span></div>
-      </div>`;
+          <div class="rrm-foot">
+            <div class="foot-row foot-total"><span>최종 환급 금액</span><span>${num(src.totalRefundAmount || 0)}</span></div>
+            <div class="foot-row"><span class="muted">환급 마일리지</span><span>${num(src.refundMileage || 0)}</span></div>
+            <div class="foot-row"><span class="muted">적립 마일리지</span><span>${num(src.confirmMileage || 0)}</span></div>
+            <div class="rrm-foot__ts foot-ts">처리일시: <span>${esc(fmtYMDHM(src.updateDate || ''))}</span></div>
+          </div>`;
       }
 
-      function renderRefundResults(parsed) {
-        const refunds = Array.isArray(parsed?.refunds) ? parsed.refunds : [];
-        if (refunds.length === 0) {
-          body.innerHTML = '<div class="rrm-empty">표시할 환불결과가 없습니다.</div>';
-          return;
-        }
+      function renderRefundResults(data) {
+        const refunds = Array.isArray(data?.refunds) ? data.refunds : [];
+        const allPays = Array.isArray(data?.payments) ? data.payments : null;
+        const fallback = {
+          totalRefundAmount: data?.totalRefundAmount,
+          refundMileage: data?.refundMileage,
+          confirmMileage: data?.confirmMileage,
+          updateDate: data?.updateDate
+        };
+
+        if (refunds.length === 0) { body.innerHTML = '<div class="rrm-empty">표시할 환불결과가 없습니다.</div>'; return; }
+
         body.innerHTML = refunds.map((rf, idx) => {
-          const details = Array.isArray(rf.details) ? rf.details : [];
-          const total = details.reduce((s, d) => s + Number(d?.subtotal || 0), 0);
+          const details = Array.isArray(rf?.details) ? rf.details : [];
+          const total = details.reduce((s, d) => s + (Number(d?.subtotal) || 0), 0);
           const rows = details.map(d => `
-        <tr>
-          <td>${esc(d.productName ?? '-')}</td>
-          <td>${esc(d.refundQty ?? '-')}</td>
-          <td>${num(d.unitRefundAmount ?? 0)}</td>
-          <td><strong>${num(d.subtotal ?? 0)}</strong></td>
-        </tr>`).join('');
-          const payHtml = renderPayments(rf.payments);
-          const footHtml = renderFoot({ ...rf, totalRefundAmount: rf.totalRefundAmount ?? total });
+            <tr>
+              <td>${esc(d?.productName ?? '-')}</td>
+              <td>${esc(d?.refundQty ?? '-')}</td>
+              <td>${num(d?.unitRefundAmount ?? 0)}</td>
+              <td><strong>${num(d?.subtotal ?? 0)}</strong></td>
+            </tr>`).join('');
+
+          const payHtml = renderPayments(rf?.payments ?? allPays);
+          const footHtml = renderFoot(rf, fallback);
           const reasonHtml = `
-        <div class="rrm-reasonwrap">
-          <div class="rrm-reasonarea" aria-label="환불 사유" role="textbox">${esc(rf.reason || '')}</div>
-        </div>`;
+            <div class="rrm-reasonwrap">
+              <div class="rrm-reasonarea" aria-label="환불 사유" role="textbox">
+                ${esc(rf?.reason || '환불 사유를 입력하세요')}
+              </div>
+            </div>`;
+
           return `
-        <section class="rrm-card">
-          <header class="rrm-card__head">
-            <div class="rrm-head-left">
-              <div class="rrm-head-title">환불 #${esc(rf.refundId ?? (idx + 1))}</div>
-              <div class="rrm-meta">${esc(fmtYMDHM(rf.createdAt))}</div>
-            </div>
-          </header>
-          <div>
-            <table class="rrm-table rrm-table--refund">
-              <colgroup><col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub"></colgroup>
-              <thead><tr><th>상품</th><th>환불수량</th><th>단가</th><th>합계</th></tr></thead>
-              <tbody>${rows}</tbody>
-              <tfoot><tr><td colspan="3" class="t-right">환불 총액</td><td class="t-right"><strong>${num(total)}</strong></td></tr></tfoot>
-            </table>
-            ${payHtml}
-            ${footHtml}
-            ${reasonHtml}
-          </div>
-        </section>`;
+            <section class="rrm-card">
+              <header class="rrm-card__head">
+                <div class="rrm-head-left">
+                  <div class="rrm-head-title">환불 #${esc(rf?.refundId ?? (idx + 1))}</div>
+                  <div class="rrm-meta">${esc(fmtYMDHM(rf?.createdAt))}</div>
+                </div>
+              </header>
+              <div>
+                <table class="rrm-table rrm-table--refund">
+                  <colgroup>
+                    <col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub">
+                  </colgroup>
+                  <thead><tr><th>상품</th><th>환불수량</th><th>단가</th><th>합계</th></tr></thead>
+                  <tbody>${rows}</tbody>
+                  <tfoot><tr><td colspan="3" class="t-right">환불 총액</td><td class="t-right"><strong>${num(total)}</strong></td></tr></tfoot>
+                </table>
+
+                ${payHtml}
+                ${footHtml}
+                ${reasonHtml}
+              </div>
+            </section>`;
         }).join('');
       }
 
-      // 클릭 핸들러
       document.addEventListener('click', async (ev) => {
         const btn = ev.target.closest('.btn-refund-result'); if (!btn) return;
         const orderId = btn.getAttribute('data-order-id'); if (!orderId) return;
@@ -1627,31 +1449,27 @@
         body.innerHTML = `<div class="py-10 text-center text-gray-500">로딩 중…</div>`;
         openModal(modal);
 
-        // 컨트롤러에 맞춘 우선순위 경로
-        const paths = [
-          `/refund/pay/order/${orderId}/refund-results`,
-          `/pay/order/${orderId}/refund-results`,
-          `/refund/order/${orderId}/refund-results`,
-          `/pay/${orderId}/refund-results`
-        ];
-
         try {
-          let parsed = null, lastErr = null;
+          const paths = [
+            `/refund/pay/order/${orderId}/refund-results`,
+            `/pay/order/${orderId}/refund-results`,
+            `/refund/order/${orderId}/refund-results`
+          ];
+          let data = null, lastErr = null, lastStatus = 0, lastUrl = "";
           for (const p of paths) {
-            const url = api(p);
+            const url = api(p); lastUrl = url;
             try {
-              const res = await fetch(url, { method: 'GET', headers: csrfHeaders({ Accept: 'application/json' }), credentials: 'same-origin' });
-              const text = await res.text();
-              if (/<html[\s>]/i.test(text)) throw new Error('HTML response');
-              const data = text ? JSON.parse(text) : {};
-              parsed = normalizeRefundResultsPayload(data);
-              if (parsed && Array.isArray(parsed.refunds)) break;
+              const res = await fetch(url, { method: "GET", headers: csrfHeaders({ Accept: "application/json" }), credentials: "same-origin" });
+              const raw = await res.text();
+              if (!res.ok) { lastStatus = res.status; lastErr = new Error(`HTTP ${res.status}`); continue; }
+              data = raw ? JSON.parse(raw) : {};
+              break;
             } catch (e) { lastErr = e; }
           }
-          if (!parsed) throw lastErr || new Error('no data');
-          renderRefundResults(parsed);
+          if (!data) { console.error("[refund-results] all paths failed. last:", lastStatus, lastUrl, lastErr); throw lastErr || new Error("no data"); }
+          renderRefundResults(data);
         } catch (err) {
-          console.error('refund-results failed:', err);
+          console.error("refund-results failed:", err);
           body.innerHTML = `<div class="py-10 text-center" style="color:#ef4444">환불결과를 불러오지 못했습니다.</div>`;
         }
       });
@@ -1710,43 +1528,23 @@
         let url;
         if (pendingAction === 'cancel') url = api(`/pay/cancel-paid/${targetOrderId}`);
         if (pendingAction === 'confirm') url = api(`/pay/${targetOrderId}/confirm`);
-
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: csrfHeaders({ 'Content-Type': 'application/json' }),
-          body: '{}'
-        });
-
+        const res = await fetch(url, { method: 'POST', headers: csrfHeaders({ 'Content-Type': 'application/json' }), body: '{}' });
         let data = {}; try { data = await res.json(); } catch { }
         if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
 
         const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
-
         if (pendingAction === 'cancel') {
           card?.classList.add('is-canceled');
           card?.querySelector('.order-actions')?.remove();
           card?.querySelector('.stepper')?.remove();
           const title = card?.querySelector('.order-title');
           if (title && !title.querySelector('.badge-canceled')) {
-            const b = document.createElement('span');
-            b.className = 'badge-canceled';
-            b.textContent = '주문취소';
-            title.appendChild(b);
+            const b = document.createElement('span'); b.className = 'badge-canceled'; b.textContent = '주문취소'; title.appendChild(b);
           }
         } else if (pendingAction === 'confirm') {
           window.updateCardToConfirmed(card);
         }
-
-        let msg = data.message || (pendingAction === 'cancel' ? '취소가 완료되었습니다.' : '주문을 확정했어요.');
-        if (pendingAction === 'confirm') {
-          const amountText =
-            card?.dataset.earnBase ||
-            card?.querySelector('.order-amount')?.textContent || '0';
-          const base = parseInt(String(amountText).replace(/[^\d]/g, ''), 10) || 0;
-          const creditedLocal = Math.floor(base * 0.05);
-          msg += `\n마일리지 ${creditedLocal.toLocaleString()}원이 적립되었습니다.`;
-        }
-        openResult(msg);
+        openResult(data.message || '처리가 완료되었습니다.');
       } catch (e) {
         console.error(e);
         openResult('처리 중 오류가 발생했습니다.');
@@ -1770,11 +1568,9 @@
         });
         const html = await res.text();
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-
         const container = document.getElementById('ordersSection');
         if (!container) throw new Error('#ordersSection not found');
         container.outerHTML = html;
-
         document.querySelectorAll('.stepper').forEach(s => {
           const step = parseInt(s.dataset.step || '1', 10);
           renderStepper(s, step);
@@ -1822,7 +1618,6 @@
     })();
     /* =================== AJAX 페이지네이션 끝 =================== */
   </script>
-
 </div>
 
 </html>

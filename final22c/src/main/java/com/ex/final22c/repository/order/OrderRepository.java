@@ -3,7 +3,6 @@ package com.ex.final22c.repository.order;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Collection;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,23 +15,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.order.Order;
-import com.ex.final22c.repository.order.OrderRepository.MileageRow;
+import com.ex.final22c.repository.order.OrderRepository.MileageRowWithBalance;
 
 import jakarta.persistence.LockModeType;
 
+import java.util.Collection;
+
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-
-  // 관리자 대시보드용
-  @Query("""
-          select count(o)
-            from Order o
-          where o.regDate >= :from and o.regDate <= :to
-            and o.status in :statuses
-        """)
-  long countByRegDateBetweenAndStatusIn(@Param("from") LocalDateTime from,
-                                        @Param("to")   LocalDateTime to,
-                                        @Param("statuses") Collection<String> statuses);
 
   /**
    * 마이페이지 목록: 사용자 + 상태(예: PAID) 페이징 조회
@@ -148,35 +138,68 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
   List<Order> findByUser_UserNameOrderByRegDateDesc(String userName);
 
-  interface MileageRow {
-
+  interface MileageRowWithBalance {
     Long getOrderId();
-
     java.time.LocalDateTime getProcessedAt();
-
     Long getUsedPoint();
-
     Long getEarnedPoint();
-
     String getStatus();
+    Long getBalanceBefore();
+    Long getBalanceAfter();
   }
 
-  @Query("""
-      select
-          o.orderId                            as orderId,
-          o.regDate                            as processedAt,
-          coalesce(o.usedPoint, 0)             as usedPoint,
-          case
-              when o.status = 'REFUNDED' then 0
-              else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
-          end                                   as earnedPoint,
-          o.status                             as status
-      from Order o
-      where o.user.userNo = :userNo
-        and o.status in :statuses
-      order by o.regDate desc
-      """)
-  Page<MileageRow> findMileageByUserAndStatuses(
+  @Query(value = """
+      SELECT
+          o.ORDERID                                               AS orderId,
+          o.REGDATE                                               AS processedAt,
+          NVL(o.USEDPOINT, 0)                                     AS usedPoint,
+
+          /* CONFIRMED에서만 적립 발생 (5% 룰) */
+          CASE WHEN o.STATUS = 'CONFIRMED'
+               THEN TRUNC(NVL(o.TOTALAMOUNT, 0) * 0.05)
+               ELSE 0
+          END                                                     AS earnedPoint,
+
+          o.STATUS                                                AS status,
+
+          /* 거래 직전 잔액 = 누적합 - 이번 거래 증감 */
+          (
+            SUM(
+              (CASE WHEN o.STATUS = 'CONFIRMED'
+                    THEN TRUNC(NVL(o.TOTALAMOUNT,0) * 0.05)
+                    ELSE 0 END)
+              - NVL(o.USEDPOINT,0)
+            ) OVER (PARTITION BY o.USERNO ORDER BY o.REGDATE, o.ORDERID
+                    ROWS UNBOUNDED PRECEDING)
+            -
+            (
+              (CASE WHEN o.STATUS = 'CONFIRMED'
+                    THEN TRUNC(NVL(o.TOTALAMOUNT,0) * 0.05)
+                    ELSE 0 END)
+              - NVL(o.USEDPOINT,0)
+            )
+          )                                                       AS balanceBefore,
+
+          /* 거래 직후 잔액(이번 거래 포함 누적) */
+          SUM(
+            (CASE WHEN o.STATUS = 'CONFIRMED'
+                  THEN TRUNC(NVL(o.TOTALAMOUNT,0) * 0.05)
+                  ELSE 0 END)
+            - NVL(o.USEDPOINT,0)
+          ) OVER (PARTITION BY o.USERNO ORDER BY o.REGDATE, o.ORDERID
+                  ROWS UNBOUNDED PRECEDING)                       AS balanceAfter
+
+      FROM GLO2.ORDERS o
+      WHERE o.USERNO = :userNo
+        AND o.STATUS IN (:statuses)       -- PAID / CONFIRMED / REFUNDED
+      ORDER BY o.REGDATE DESC, o.ORDERID DESC
+      """, countQuery = """
+        SELECT COUNT(*)
+        FROM GLO2.ORDERS o
+        WHERE o.USERNO = :userNo
+          AND o.STATUS IN (:statuses)
+      """, nativeQuery = true)
+  Page<MileageRowWithBalance> findMileageWithBalanceByUserAndStatuses(
       @Param("userNo") Long userNo,
       @Param("statuses") Collection<String> statuses,
       Pageable pageable);

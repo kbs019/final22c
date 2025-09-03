@@ -80,6 +80,7 @@
 
         /* 테이블 */
         .m-table {
+            table-layout: fixed;
             width: 100%;
             border-collapse: separate;
             border-spacing: 0
@@ -103,6 +104,8 @@
 
         .m-table th:last-child,
         .m-table td:last-child {
+            white-space: nowrap;
+            text-align: center;
             padding-right: 16px
         }
 
@@ -202,6 +205,8 @@
             color: #fff;
             border-color: #111827;
         }
+
+        
     </style>
 
     </style>
@@ -214,7 +219,7 @@
             <div class="mp-col-right">
                 <header class="m-header" role="region" aria-labelledby="pageTitle">
                     <h1 id="pageTitle" class="m-title">마일리지 내역</h1>
-                    <div class="m-chip" aria-label="보유 마일리지">
+                    <div class="m-chip" aria-label="보유 마일리지" th:attr="data-now-balance=${me?.mileage?:0}">
                         <span class="muted" style="color:#e5e7ff">보유 마일리지</span>
                         <b th:text="${#numbers.formatInteger(me?.mileage?:0,1,'COMMA')} + 'P'">0P</b>
                     </div>
@@ -228,11 +233,12 @@
                 <!-- 목록 -->
                 <table th:if="${!rows.content.empty}" class="m-table" aria-describedby="pageTitle">
                     <colgroup>
-                        <col style="width:160px">
-                        <col style="width:220px">
-                        <col style="width:220px">
-                        <col style="width:220px">
-                        <col style="width:160px">
+                        <col style="width:160px"> <!-- 주문번호 -->
+                        <col style="width:200px"> <!-- 처리일시 -->
+                        <col style="width:200px"> <!-- 사용포인트 -->
+                        <col style="width:200px"> <!-- 적립포인트 -->
+                        <col style="width:160px"> <!-- 마일리지 -->
+                        <col style="width:110px"> <!-- 주문상태 (추가) -->
                     </colgroup>
                     <thead>
                         <tr>
@@ -240,6 +246,7 @@
                             <th scope="col">처리일시</th>
                             <th scope="col">사용포인트</th>
                             <th scope="col">적립포인트</th>
+                            <th scope="col">마일리지</th>
                             <th scope="col">주문상태</th>
                         </tr>
                     </thead>
@@ -260,8 +267,11 @@
                                     th:text="${'+' + #numbers.formatInteger(r.earnedPoint,1,'COMMA')} + 'P'">+0P</span>
                                 <span th:if="${(r.earnedPoint?:0) == 0}" class="muted">-</span>
                             </td>
+                            <td class="pt-balance"
+                                th:attr="data-used=${r.usedPoint?:0}, data-earned=${r.earnedPoint?:0}">-</td>
                             <td th:switch="${#strings.toUpperCase(r.status)}">
                                 <span th:case="'CONFIRMED'">구매확정</span>
+                                <span th:case="'PAID'">결제완료</span>
                                 <span th:case="'REFUNDED'">환불완료</span>
                                 <span th:case="*" th:text="${r.status}">-</span>
                             </td>
@@ -315,6 +325,48 @@
                 params.set('size', String(size));
                 const ctx = document.querySelector('meta[name="context-path"]')?.content || '';
                 location.href = ctx + '/mypage/mileage?' + params.toString();
+            });
+        })();
+
+        /* 마일리지 내역 테이블: 거래 시점의 잔액 채우기 */
+        (function () {
+            // "12,345P" / "+66,788P" / "-230,000P" / "-" → 정수로
+            function parseP(text) {
+                if (!text) return 0;
+                const m = String(text).replace(/\s+/g, '').match(/([+-]?\d[\d,]*)/);
+                return m ? parseInt(m[1].replace(/,/g, ''), 10) || 0 : 0;
+            }
+            function fmt(n) { return (Number(n) || 0).toLocaleString() + 'P'; }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                // 1) 시작 잔액: data-current-mileage 가 있으면 그 값, 없으면 칩의 표시 텍스트에서 파싱
+                const chip = document.querySelector('.m-chip');
+                let current = 0;
+                if (chip && chip.dataset.currentMileage != null) {
+                    current = parseInt(chip.dataset.currentMileage, 10) || 0;
+                } else {
+                    current = parseP(chip?.querySelector('b')?.textContent || '0');
+                }
+
+                // 2) 테이블 각 행 처리 (화면에 보이는 순서 = 최신 → 과거)
+                const rows = document.querySelectorAll('.m-table tbody tr');
+                rows.forEach((tr) => {
+                    // 컬럼 순서: 주문번호(1) / 처리일시(2) / 사용포인트(3) / 적립포인트(4) / 마일리지(5) / 주문상태(6)
+                    const usedTxt = tr.querySelector('td:nth-child(3)')?.textContent || '';
+                    const earnTxt = tr.querySelector('td:nth-child(4)')?.textContent || '';
+                    const balCell = tr.querySelector('td:nth-child(5)');
+
+                    const used = parseP(usedTxt);   // 사용은 음수(-230000P → -230000)
+                    const earn = parseP(earnTxt);   // 적립은 양수(+66788P → 66788)
+
+                    // 이 거래 "직후"의 잔액 = 현재 보유 잔액에서 최신→과거로 되감으며 기록
+                    if (balCell) balCell.textContent = fmt(current);
+
+                    // 다음(더 과거) 행을 위해 최신 거래를 되돌림
+                    // delta = earn + used (예: earn=+500, used=-200 → delta=+300)
+                    // 과거로 한 칸 이동: current -= delta
+                    current -= (earn + used);
+                });
             });
         })();
     </script>

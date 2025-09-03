@@ -17,11 +17,11 @@ public class MyMileageService {
 
     private final OrderRepository orderRepository;
 
-    private static final List<String> MILEAGE_STATUSES = List.of("CONFIRMED", "REFUNDED");
+    private static final List<String> MILEAGE_STATUSES = List.of("PAID", "CONFIRMED", "REFUNDED");
 
     @Transactional(readOnly = true)
-    public Page<OrderRepository.MileageRow> getMileageHistory(Long userNo, int page, int size) {
+    public Page<OrderRepository.MileageRowWithBalance> getMileageHistory(Long userNo, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), Math.max(size, 1));
-        return orderRepository.findMileageByUserAndStatuses(userNo, MILEAGE_STATUSES, pageable);
+        return orderRepository.findMileageWithBalanceByUserAndStatuses(userNo, MILEAGE_STATUSES, pageable);
     }
 }

@@ -787,8 +787,9 @@ public class AdminService {
     }
 
     // 발주 목록
-    public List<Purchase> getPurchase() {
-        return this.purchaseRepository.findAll();
+
+    public List<Purchase> getPurchase(){
+        return this.purchaseRepository.findAll(Sort.by(Sort.Direction.DESC, "reg"));
     }
 
     // 발주 상세 내역
