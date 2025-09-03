@@ -8,7 +8,7 @@
             <!-- 일반 사용자 메인로고 -->
             <a class="navbar-brand" sec:authorize="!hasRole('ADMIN')" href="/main">22°C</a>
             <!-- 관리자 메인로고 -->
-            <a class="navbar-brand" sec:authorize="hasRole('ADMIN')" href="/admin/userList">Main</a>
+            <a class="navbar-brand" sec:authorize="hasRole('ADMIN')" href="/admin/dashboard">22°C</a>
             <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
                 <!-- 일반 사용자 메뉴 -->
                 <ul class="navbar-nav" sec:authorize="!hasRole('ADMIN')">
