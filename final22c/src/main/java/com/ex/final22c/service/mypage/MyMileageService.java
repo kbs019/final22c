@@ -24,4 +24,5 @@ public class MyMileageService {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), Math.max(size, 1));
         return orderRepository.findMileageWithBalanceByUserAndStatuses(userNo, MILEAGE_STATUSES, pageable);
     }
+
 }
