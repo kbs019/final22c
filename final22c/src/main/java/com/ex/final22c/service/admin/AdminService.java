@@ -95,7 +95,6 @@ public class AdminService {
     private final ReviewFilterService reviewFilterService;
     private final RestockNotifyService restockNotifyService;
 
-
     // ===== 대시보드 KPI =====
     public Map<String, Object> buildDashboardKpis() {
         LocalDate today = LocalDate.now();
@@ -1047,5 +1046,37 @@ public class AdminService {
                 "age", age,
                 "totalUserCount", all.size(),
                 "newUserCount7d", newUsers7d);
+    }
+
+    public Map<String, Object> findLowStockPaged(int page, int size) {
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "count").and(Sort.by(Sort.Direction.ASC, "id")));
+        var slice = productRepository.findByCountBetween(1, 20, pageable);
+        long total = productRepository.countByCountBetween(1, 20);
+        var items = slice.getContent().stream().map(p -> Map.<String,Object>of(
+                "id", p.getId(),
+                "name", p.getName(),
+                "brand", p.getBrand()!=null? p.getBrand().getBrandName(): null,
+                "imgPath", p.getImgPath(),
+                "imgName", p.getImgName(),
+                "count", p.getCount(),
+                "sellPrice", p.getSellPrice()
+        )).toList();
+        return Map.of("total", total, "items", items);
+    }
+
+    public Map<String, Object> findSoldOutPaged(int page, int size) {
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")); // 최근 등록순
+        var slice = productRepository.findByCount(0, pageable);
+        long total = productRepository.countByCount(0);
+        var items = slice.getContent().stream().map(p -> Map.<String,Object>of(
+                "id", p.getId(),
+                "name", p.getName(),
+                "brand", p.getBrand()!=null? p.getBrand().getBrandName(): null,
+                "imgPath", p.getImgPath(),
+                "imgName", p.getImgName(),
+                "count", p.getCount(),
+                "sellPrice", p.getSellPrice()
+        )).toList();
+        return Map.of("total", total, "items", items);
     }
 }

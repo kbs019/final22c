@@ -6,24 +6,33 @@
   <th:block layout:fragment="css">
     <style>
       .page-title { font-weight: 800; letter-spacing:.2px; }
-      /* 레이아웃 */
       .dash-wrap { padding-top:.5rem; }
       .kpi-card { cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
       .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 .35rem 1rem rgba(0,0,0,.06); }
-      .kpi-sub { font-size:.65rem; color:#6c757d; } /* 회색 작은 글씨 */
+      .kpi-sub { font-size:.7rem; color:#6c757d; }
       .kpi-value { font-weight:700; font-size:1.5rem; }
-      .chart-card { height: 460px; } /* 그래프 카드 높이: 위 Fold를 꽉 채우도록 */
-      .chart-body { height: calc(100% - 56px); } /* header 제외 */
+      .chart-card { height: 460px; }
+      .chart-body { height: calc(100% - 56px); }
       .chart-canvas { width:100%; height:100%; }
       .card-header .goto { font-weight:700; text-decoration:none; color:#6c757d; }
       .card-header .goto:hover { color:#212529; }
-      /* 접점: 상단 4카드 + 2그래프가 1스크린에 들어오도록 여백 최소화 */
-      @media (min-width: 992px){
-        .kpi-row { margin-bottom:.75rem; }
-      }
-      /* 품절임박(아래 스크롤 영역) */
+      @media (min-width: 992px){ .kpi-row { margin-bottom:.75rem; } }
       .lowstock-img { width:44px; height:44px; object-fit:cover; border-radius:.5rem; }
       .sticky-note { position:sticky; top:0; z-index:1; background:var(--bs-body-bg); }
+
+      /* 헤더 좌측: 제목 + (N건) / 우측: 발주신청 > */
+      .list-title { display:flex; align-items:center; gap:.5rem; }
+      .list-count { color:#6c757d; font-weight:600; }
+
+      /* 간단 페이지네이션 */
+      .pager { display:flex; justify-content:center; gap:.25rem; padding:.5rem; }
+      .pager .btn-page {
+        border:1px solid #dee2e6; background:#fff; padding:.25rem .5rem; border-radius:.375rem;
+        font-size:.9rem; line-height:1.2; min-width:2rem; text-align:center; color:#495057;
+      }
+      .pager .btn-page:hover { background:#f8f9fa; }
+      .pager .active { background:#212529; color:#fff; border-color:#212529; }
+      .pager .disabled { pointer-events:none; opacity:.4; }
     </style>
   </th:block>
 </head>
@@ -31,98 +40,81 @@
 <th:block layout:fragment="content">
   <div class="container-fluid dash-wrap">
     <div class="d-flex align-items-center mb-2">
-        <h3 class="page-title mb-0">Dashboard</h3>
+      <h3 class="page-title mb-0">Dashboard</h3>
     </div>
 
-    <!-- 상단: KPI 4개 -->
+    <!-- 상단: KPI 5개 -->
     <div class="row g-3 kpi-row row-cols-2 row-cols-lg-4 row-cols-xl-5">
       <!-- 오늘 매출 -->
       <div class="col">
         <a th:href="@{/admin/salesStats}" class="text-decoration-none text-reset">
-          <div class="card kpi-card">
-            <div class="card-body">
-              <div class="kpi-sub">매출통계></div>
-              <div class="mt-1 mb-1">오늘 매출</div>
-              <div id="kpi-todayRevenue" class="kpi-value">-</div>
-            </div>
-          </div>
+          <div class="card kpi-card"><div class="card-body">
+            <div class="kpi-sub">매출통계&gt;</div>
+            <div class="mt-1 mb-1">오늘 매출</div>
+            <div id="kpi-todayRevenue" class="kpi-value">-</div>
+          </div></div>
         </a>
       </div>
-
-      <!-- 오늘 주문건수 -->
+      <!-- 오늘 주문 -->
       <div class="col">
         <a th:href="@{/admin/orderList}" class="text-decoration-none text-reset">
-          <div class="card kpi-card">
-            <div class="card-body">
-              <div class="kpi-sub">주문관리></div>
-              <div class="mt-1 mb-1">오늘 주문</div>
-              <div id="kpi-ordersToday" class="kpi-value">-</div>
-            </div>
-          </div>
+          <div class="card kpi-card"><div class="card-body">
+            <div class="kpi-sub">주문관리&gt;</div>
+            <div class="mt-1 mb-1">오늘 주문</div>
+            <div id="kpi-ordersToday" class="kpi-value">-</div>
+          </div></div>
         </a>
       </div>
-
       <!-- 전체 회원수 -->
       <div class="col">
         <a th:href="@{/admin/usersStats}" class="text-decoration-none text-reset">
-          <div class="card kpi-card">
-            <div class="card-body">
-              <div class="kpi-sub">전체회원통계></div>
-              <div class="mt-1 mb-1">전체 회원수</div>
-              <div id="kpi-totalUsers" class="kpi-value">-</div>
-            </div>
-          </div>
+          <div class="card kpi-card"><div class="card-body">
+            <div class="kpi-sub">전체회원통계&gt;</div>
+            <div class="mt-1 mb-1">전체 회원수</div>
+            <div id="kpi-totalUsers" class="kpi-value">-</div>
+          </div></div>
         </a>
       </div>
-
       <!-- 최근 7일 신규 -->
       <div class="col">
         <a th:href="@{/admin/usersStats}" class="text-decoration-none text-reset">
-          <div class="card kpi-card">
-            <div class="card-body">
-              <div class="kpi-sub">전체회원통계></div>
-              <div class="mt-1 mb-1">최근 7일 신규</div>
-              <div id="kpi-newUsers7d" class="kpi-value">-</div>
-            </div>
-          </div>
+          <div class="card kpi-card"><div class="card-body">
+            <div class="kpi-sub">전체회원통계&gt;</div>
+            <div class="mt-1 mb-1">최근 7일 신규</div>
+            <div id="kpi-newUsers7d" class="kpi-value">-</div>
+          </div></div>
         </a>
       </div>
-      
       <!-- 처리 대기 환불 -->
       <div class="col">
         <a th:href="@{/admin/refundList}" class="text-decoration-none text-reset">
-          <div class="card kpi-card">
-            <div class="card-body">
-              <div class="kpi-sub">환불내역></div>
-              <div class="mt-1 mb-1">처리 대기 환불</div>
-              <div id="kpi-pendingRefunds" class="kpi-value">-</div>
-            </div>
-          </div>
+          <div class="card kpi-card"><div class="card-body">
+            <div class="kpi-sub">환불내역&gt;</div>
+            <div class="mt-1 mb-1">처리 대기 환불</div>
+            <div id="kpi-pendingRefunds" class="kpi-value">-</div>
+          </div></div>
         </a>
       </div>
     </div>
-      
-    <!-- 중단: 2개의 그래프 (좌: 매출 꺾은선 / 우: 신규회원 막대) -->
+
+    <!-- 중단: 매출 & 신규회원 -->
     <div class="row g-3">
-      <!-- 매출통계 (최근 7일 꺾은선) -->
       <div class="col-12 col-lg-6">
         <div class="card chart-card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span class="fw-semibold">최근 7일 매출</span>
-            <a th:href="@{/admin/salesStats}" class="goto" aria-label="매출통계로 이동"> &gt; </a>
+            <a th:href="@{/admin/salesStats}" class="goto" aria-label="매출통계로 이동">발주통계 페이지 &gt;</a>
           </div>
           <div class="card-body chart-body">
             <canvas id="sales7d" class="chart-canvas"></canvas>
           </div>
         </div>
       </div>
-
-      <!-- 신규회원통계 (최근 7일 막대) -->
       <div class="col-12 col-lg-6">
         <div class="card chart-card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span class="fw-semibold">최근 7일 신규회원</span>
-            <a th:href="@{/admin/usersStats}" class="goto" aria-label="전체회원통계로 이동"> &gt; </a>
+            <a th:href="@{/admin/usersStats}" class="goto" aria-label="전체회원통계로 이동">회원 통계 &gt;</a>
           </div>
           <div class="card-body chart-body">
             <canvas id="newUsers7d" class="chart-canvas"></canvas>
@@ -131,146 +123,129 @@
       </div>
     </div>
 
-    <!-- 아래(스크롤 다운): 품절임박 Top5 -->
+    <!-- 품절 임박 상품 (재고 1~20) -->
     <div class="row g-3 mt-4">
       <div class="col-12">
         <div class="card">
           <div class="card-header sticky-note d-flex justify-content-between align-items-center">
-            <div>
-                <span class="fw-semibold">품절 임박 상품</span>
+            <div class="list-title">
+              <span class="fw-semibold">품절 임박 상품</span>
+              <span id="lowstock-count" class="list-count"></span>
             </div>
-            <!-- 이동 버튼: 발주 신청으로 -->
-            <a th:href="@{/admin/purchaseOrder}" class="goto" aria-label="상품 관리로 이동"> &gt; </a>
+            <a th:href="@{/admin/purchaseOrder}" class="goto" aria-label="발주 신청으로 이동">발주신청 &gt;</a>
           </div>
 
           <div class="card-body p-0">
             <div class="table-responsive">
               <table class="table align-middle mb-0">
                 <thead class="table-light">
-                <tr>
-                  <th style="width:64px;">이미지</th>
-                  <th>상품명</th>
-                  <th style="width:20%;">브랜드</th>
-                  <th class="text-end" style="width:12%;">재고</th>
-                  <th class="text-end" style="width:14%;">판매가</th>
-                </tr>
-                </thead>
-                <tbody id="lowstock-tbody">
                   <tr>
-                    <td colspan="5" class="py-4 text-center text-secondary">로딩 중…</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="card-footer text-secondary small">
-            목록은 재고가 0개인 상품을 제외하고, 재고가 가장 적은 순으로 5개만 표기됩니다.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 품절 상품 Top5 -->
-    <div class="row g-3 mt-3">
-    <div class="col-12">
-        <div class="card">
-        <div class="card-header sticky-note d-flex justify-content-between align-items-center">
-            <div>
-                <span class="fw-semibold">품절 상품</span>
-            </div>
-            <!-- 이동 버튼: 발주 신청으로 -->
-            <a th:href="@{/admin/purchaseOrder}" class="goto" aria-label="상품 관리로 이동"> &gt; </a>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead class="table-light">
-                <tr>
                     <th style="width:64px;">이미지</th>
                     <th>상품명</th>
                     <th style="width:20%;">브랜드</th>
                     <th class="text-end" style="width:12%;">재고</th>
                     <th class="text-end" style="width:14%;">판매가</th>
-                </tr>
+                  </tr>
+                </thead>
+                <tbody id="lowstock-tbody">
+                  <tr><td colspan="5" class="py-4 text-center text-secondary">로딩 중…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <!-- 페이지네이션 -->
+          <div class="pager" id="lowstock-pager"></div>
+
+          <div class="card-footer text-secondary small">
+            재고가 <b>1~20개</b>인 상품만 표시되며, 페이지당 5개씩 보여줍니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 품절 상품 -->
+    <div class="row g-3 mt-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header sticky-note d-flex justify-content-between align-items-center">
+            <div class="list-title">
+              <span class="fw-semibold">품절 상품</span>
+              <span id="soldout-count" class="list-count"></span>
+            </div>
+            <a th:href="@{/admin/purchaseOrder}" class="goto" aria-label="발주 신청으로 이동">발주신청 &gt;</a>
+          </div>
+
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:64px;">이미지</th>
+                    <th>상품명</th>
+                    <th style="width:20%;">브랜드</th>
+                    <th class="text-end" style="width:12%;">재고</th>
+                    <th class="text-end" style="width:14%;">판매가</th>
+                  </tr>
                 </thead>
                 <tbody id="soldout-tbody">
-                <tr>
-                    <td colspan="5" class="py-4 text-center text-secondary">로딩 중…</td>
-                </tr>
+                  <tr><td colspan="5" class="py-4 text-center text-secondary">로딩 중…</td></tr>
                 </tbody>
-            </table>
+              </table>
             </div>
-        </div>
-        <div class="card-footer text-secondary small">
-            목록은 재고가 0인 상품만 표시되며, 최근 등록된 순으로 5개만 표기됩니다.
-        </div>
-        </div>
-    </div>
-    </div>
+          </div>
+          <!-- 페이지네이션 -->
+          <div class="pager" id="soldout-pager"></div>
 
-
+          <div class="card-footer text-secondary small">
+            재고가 0인 상품만 표시되며, 페이지당 5개씩 보여줍니다.
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Chart.js CDN -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
-    // 날짜 유틸 (로컬 기준, YYYY-MM-DD)
+    // 날짜 유틸
     function fmt(d){ const y=d.getFullYear(); const m=('0'+(d.getMonth()+1)).slice(-2); const dd=('0'+d.getDate()).slice(-2); return `${y}-${m}-${dd}`; }
     function today(){ const now=new Date(); return new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
     function addDays(d, n){ const t=new Date(d); t.setDate(t.getDate()+n); return t; }
-
-    // 숫자 포맷(원)
     const won = (n)=> (n??0).toLocaleString('ko-KR') + '원';
 
-    // ===== KPI 로드 =====
+    // ===== KPI =====
     async function loadKpis(){
       const res = await fetch('/admin/dashboard/kpis');
       const json = await res.json();
       document.getElementById('kpi-todayRevenue').textContent = won(json.todayRevenue||0);
-      document.getElementById('kpi-ordersToday').textContent = (json.ordersToday??0).toLocaleString('ko-KR') + '건';
-      document.getElementById('kpi-totalUsers').textContent = (json.totalUsers??0).toLocaleString('ko-KR') + '명';
-      document.getElementById('kpi-newUsers7d').textContent = (json.newUsers7d??0).toLocaleString('ko-KR') + '명';
+      document.getElementById('kpi-ordersToday').textContent  = (json.ordersToday??0).toLocaleString('ko-KR') + '건';
+      document.getElementById('kpi-totalUsers').textContent   = (json.totalUsers??0).toLocaleString('ko-KR') + '명';
+      document.getElementById('kpi-newUsers7d').textContent   = (json.newUsers7d??0).toLocaleString('ko-KR') + '명';
       document.getElementById('kpi-pendingRefunds').textContent = (json.pendingRefunds??0).toLocaleString('ko-KR') + '건';
-
     }
 
-    // ===== 매출 7일 시리즈 =====
+    // ===== 최근 7일 매출 =====
     async function loadSalesSeries(){
-      const to   = today();
-      const from = addDays(to, -6);
+      const to=today(), from=addDays(to,-6);
       const url = `/admin/salesStats/api/series?from=${fmt(from)}&to=${fmt(to)}&unit=DAY`;
       const res = await fetch(url);
-      const list = await res.json(); // [{date|d|k, revenue|value|v}, ...]
-
-      // 키 자동 추론
+      const list = await res.json();
       const dateKey = list.length? (['date','d','k'].find(k=>k in list[0]) || Object.keys(list[0])[0]) : 'date';
       const valKey  = list.length? (['revenue','value','v'].find(k=>k in list[0]) || Object.keys(list[0])[1]) : 'revenue';
 
-      // x축 레이블(7일 보정)
-      const labels = [];
-      const data   = [];
+      const labels=[], data=[];
       for(let i=0;i<7;i++){
-        const d = fmt(addDays(from, i));
+        const d=fmt(addDays(from,i));
         labels.push(d);
-        const row = list.find(it=> (String(it[dateKey]).slice(0,10)===d));
-        data.push(row? Number(row[valKey]||0) : 0);
+        const row=list.find(it => String(it[dateKey]).slice(0,10)===d);
+        data.push(row? Number(row[valKey]||0):0);
       }
 
-      const ctx = document.getElementById('sales7d');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: '매출(원)',
-            data,
-            tension: .35,
-            fill: false
-          }]
-        },
-        options: {
-          responsive:true,
-          maintainAspectRatio:false,
+      new Chart(document.getElementById('sales7d'), {
+        type:'line',
+        data:{ labels, datasets:[{ label:'매출(원)', data, tension:.35, fill:false }]},
+        options:{
+          responsive:true, maintainAspectRatio:false,
           plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(c)=> won(c.parsed.y) } } },
           scales:{
             x:{ grid:{ display:false }},
@@ -280,31 +255,24 @@
       });
     }
 
-    // ===== 신규회원 7일 시리즈 =====
+    // ===== 최근 7일 신규회원 =====
     async function loadNewUsersSeries(){
-      const to   = today();
-      const from = addDays(to, -6);
+      const to=today(), from=addDays(to,-6);
       const res = await fetch(`/admin/usersStats/api/daily?from=${fmt(from)}&to=${fmt(to)}`);
-      const list = await res.json(); // [{date:'YYYY-MM-DD', count:n}, ...]
-
-      const labels = [];
-      const data   = [];
+      const list = await res.json();
+      const labels=[], data=[];
       for(let i=0;i<7;i++){
-        const d = fmt(addDays(from, i));
+        const d=fmt(addDays(from,i));
         labels.push(d);
-        const row = list.find(it=> (it.date===d));
-        data.push(row? Number(row.count||0) : 0);
+        const row=list.find(it=> it.date===d);
+        data.push(row? Number(row.count||0):0);
       }
-
-      const ctx = document.getElementById('newUsers7d');
-      new Chart(ctx, {
-        type: 'bar',
-        data: { labels, datasets:[{ label:'신규', data }] },
+      new Chart(document.getElementById('newUsers7d'), {
+        type:'bar',
+        data:{ labels, datasets:[{ label:'신규', data }] },
         options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{ legend:{ display:false },
-            tooltip:{ callbacks:{ label:(c)=> (c.parsed.y??0).toLocaleString('ko-KR')+'명' } } },
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(c)=> (c.parsed.y??0).toLocaleString('ko-KR')+'명' } } },
           scales:{
             x:{ grid:{ display:false }},
             y:{ grid:{ color:'rgba(0,0,0,.05)' }, ticks:{ stepSize:1, precision:0, callback:(v)=> v.toLocaleString('ko-KR') } }
@@ -313,55 +281,96 @@
       });
     }
 
-    // ===== 품절임박 Top5 =====
+    // ===== 공용 페이저 렌더러 =====
+    function renderPager(elId, page, size, total, onMove){
+      const el = document.getElementById(elId);
+      const totalPages = Math.max(1, Math.ceil((total||0)/size));
+      if (totalPages<=1){ el.innerHTML=''; return; }
+
+      const btn = (label, p, disabled=false, active=false)=>
+        `<button class="btn-page${active?' active':''}${disabled?' disabled':''}" data-p="${p}">${label}</button>`;
+
+      let html = '';
+      html += btn('&lt;', Math.max(0,page-1), page<=0, false);
+      const windowSize = 5;
+      const start = Math.max(0, Math.min(page - Math.floor(windowSize/2), totalPages - windowSize));
+      const end = Math.min(totalPages, start + windowSize);
+      for(let i=start;i<end;i++) html += btn((i+1), i, false, i===page);
+      html += btn('&gt;', Math.min(totalPages-1,page+1), page>=totalPages-1, false);
+      el.innerHTML = html;
+
+      el.querySelectorAll('.btn-page').forEach(b=>{
+        b.addEventListener('click', (e)=> {
+          const p = Number(e.currentTarget.getAttribute('data-p'));
+          if (!isNaN(p)) onMove(p);
+        });
+      });
+    }
+
+    // ===== 품절 임박 (1~20) =====
+    const lowState = { page:0, size:5, total:0 };
     async function loadLowStock(){
-      const res = await fetch('/admin/dashboard/low-stock');
-      const list = await res.json(); // [{id,name,brand,imgPath,imgName,count,sellPrice}]
+      const res  = await fetch(`/admin/dashboard/low-stock?page=${lowState.page}&size=${lowState.size}`);
+      const json = await res.json(); // { total, items:[...] }
+      lowState.total = json.total || 0;
+
+      document.getElementById('lowstock-count').textContent = (lowState.total||0).toLocaleString('ko-KR') + '건';
+
+      const list = json.items || [];
       const tbody = document.getElementById('lowstock-tbody');
       if(!list.length){
         tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-secondary">표시할 상품이 없습니다.</td></tr>`;
-        return;
+      } else {
+        tbody.innerHTML = list.map(p=>{
+          const img = (p.imgPath||'') + (p.imgName||'');
+          const brand = p.brand || '-';
+          return `
+            <tr>
+              <td><img src="${img}" alt="${p.name||''}" class="lowstock-img"/></td>
+              <td>${p.name||''}</td>
+              <td>${brand}</td>
+              <td class="text-end">${(p.count??0).toLocaleString('ko-KR')}</td>
+              <td class="text-end">${won(p.sellPrice||0)}</td>
+            </tr>`;
+        }).join('');
       }
-      tbody.innerHTML = list.map(p=>{
-        const img = (p.imgPath||'') + (p.imgName||'');
-        const brand = p.brand || '-';
-        return `
-          <tr>
-            <td><img src="${img}" alt="${p.name||''}" class="lowstock-img"/></td>
-            <td>${p.name||''}</td>
-            <td>${brand}</td>
-            <td class="text-end">${(p.count??0).toLocaleString('ko-KR')}</td>
-            <td class="text-end">${won(p.sellPrice||0)}</td>
-          </tr>`;
-      }).join('');
+      renderPager('lowstock-pager', lowState.page, lowState.size, lowState.total, (p)=>{ lowState.page=p; loadLowStock(); });
     }
 
-    // ===== 품절 Top5 =====
+    // ===== 품절 (재고 0) =====
+    const soldState = { page:0, size:5, total:0 };
     async function loadSoldOut(){
-    const res = await fetch('/admin/dashboard/sold-out');
-    const list = await res.json(); // [{id,name,brand,imgPath,imgName,count,sellPrice}]
-    const tbody = document.getElementById('soldout-tbody');
-    if(!list.length){
+      const res  = await fetch(`/admin/dashboard/sold-out?page=${soldState.page}&size=${soldState.size}`);
+      const json = await res.json(); // { total, items:[...] }
+      soldState.total = json.total || 0;
+
+      document.getElementById('soldout-count').textContent = (soldState.total||0).toLocaleString('ko-KR') + '건';
+
+      const list = json.items || [];
+      const tbody = document.getElementById('soldout-tbody');
+      if(!list.length){
         tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-secondary">표시할 상품이 없습니다.</td></tr>`;
-        return;
-    }
-    const won = (n)=> (n??0).toLocaleString('ko-KR') + '원';
-    tbody.innerHTML = list.map(p=>{
-        const img = (p.imgPath||'') + (p.imgName||'');
-        const brand = p.brand || '-';
-        return `
-        <tr>
-            <td><img src="${img}" alt="${p.name||''}" class="lowstock-img"/></td>
-            <td>${p.name||''}</td>
-            <td>${brand}</td>
-            <td class="text-end">${(p.count??0).toLocaleString('ko-KR')}</td>
-            <td class="text-end">${won(p.sellPrice||0)}</td>
-        </tr>`;
-    }).join('');
+      } else {
+        tbody.innerHTML = list.map(p=>{
+          const img = (p.imgPath||'') + (p.imgName||'');
+          const brand = p.brand || '-';
+          return `
+            <tr>
+              <td><img src="${img}" alt="${p.name||''}" class="lowstock-img"/></td>
+              <td>${p.name||''}</td>
+              <td>${brand}</td>
+              <td class="text-end">${(p.count??0).toLocaleString('ko-KR')}</td>
+              <td class="text-end">${won(p.sellPrice||0)}</td>
+            </tr>`;
+        }).join('');
+      }
+      renderPager('soldout-pager', soldState.page, soldState.size, soldState.total, (p)=>{ soldState.page=p; loadSoldOut(); });
     }
 
     (async function init(){
-      await Promise.all([loadKpis(), loadSalesSeries(), loadNewUsersSeries(), loadLowStock(), loadSoldOut()]);
+      await Promise.all([loadKpis(), loadSalesSeries(), loadNewUsersSeries()]);
+      await loadLowStock();
+      await loadSoldOut();
     })();
   </script>
 </th:block>

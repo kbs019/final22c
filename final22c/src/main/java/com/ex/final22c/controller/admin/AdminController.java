@@ -70,12 +70,23 @@ public class AdminController {
 	public Map<String, Object> dashboardKpis() {
 		return adminService.buildDashboardKpis();
 	}
-
-	// ====== 품절임박 Top5 ======
+	
+	// 품절 임박(1~20) 페이지네이션
 	@ResponseBody
 	@GetMapping("dashboard/low-stock")
-	public List<Map<String, Object>> lowStockTop5() {
-		return adminService.findLowStockTop5();
+	public Map<String, Object> lowStockPaged(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "5") int size) {
+		return adminService.findLowStockPaged(page, size);
+	}
+
+	// 품절(0) 페이지네이션
+	@ResponseBody
+	@GetMapping("dashboard/sold-out")
+	public Map<String, Object> soldOutPaged(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "5") int size) {
+		return adminService.findSoldOutPaged(page, size);
 	}
 
 	// ====== 신규회원(일간) 시리즈: 기본 최근 7일 ======
@@ -89,14 +100,6 @@ public class AdminController {
 		if (from == null) from = to.minusDays(6);
 		return adminService.buildNewUserSeries(from, to);
 	}
-
-	// 품절 Top5
-	@ResponseBody
-	@GetMapping("dashboard/sold-out")
-	public List<Map<String, Object>> soldOutTop5() {
-		return adminService.findSoldOutTop5();
-	}
-
 
 	// 회원목록
 	@GetMapping("userList")
