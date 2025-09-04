@@ -1,35 +1,42 @@
-package com.ex.final22c.qna;
-
+package com.ex.final22c.data.qna;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.ex.final22c.data.user.Users;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Getter
 @Setter
-@Table(name = "answer")
-public class Answer {
+@Getter
+@Table(name = "question")
+public class Question {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "answer_seq_gen")
-    @SequenceGenerator( name = "answer_seq_gen", sequenceName = "answer_seq", allocationSize = 1 )
-    private Long aId;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "question_seq_gen")
+    @SequenceGenerator( name = "question_seq_gen", sequenceName = "question_seq", allocationSize = 1 )
+    private Long qId;
     
-	@Column(name="content")
+	@Column(name="title",length=200)
+	private String title;
+	
+	@Lob
+	@Column(name="content",columnDefinition="CLOB")
 	private String content;
 	
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -39,7 +46,13 @@ public class Answer {
 	@Column(name="createDate")
 	private LocalDateTime createDate;
 	
+    @Column(name = "status")
+    private String status;
+	
 	@ManyToOne(fetch = FetchType.LAZY) 
-	private Question question;
+	private QuestionCategory qc;
+
+	@OneToMany(mappedBy="question",cascade=CascadeType.REMOVE) 
+	private List<Answer> answerList;
 
 }

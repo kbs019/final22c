@@ -7,20 +7,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -42,11 +42,11 @@ import com.ex.final22c.data.product.Grade;
 import com.ex.final22c.data.product.MainNote;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
-import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.product.Volume;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseDetail;
 import com.ex.final22c.data.purchase.PurchaseRequest;
+import com.ex.final22c.data.qna.Question;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
@@ -62,6 +62,7 @@ import com.ex.final22c.repository.productRepository.VolumeRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseDetailRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
+import com.ex.final22c.repository.qna.QuestionRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.RestockNotifyService;
@@ -94,6 +95,7 @@ public class AdminService {
     private final OrderDetailRepository orderDetailRepository;
     private final ReviewFilterService reviewFilterService;
     private final RestockNotifyService restockNotifyService;
+    private final QuestionRepository questionRepository;
 
 
     // ===== 대시보드 KPI =====
@@ -1047,5 +1049,10 @@ public class AdminService {
                 "age", age,
                 "totalUserCount", all.size(),
                 "newUserCount7d", newUsers7d);
+    }
+    
+    // 문의 내역 출력
+    public List<Question> getAllQuestions(){
+    	return questionRepository.findAllByOrderByCreateDateDesc();
     }
 }

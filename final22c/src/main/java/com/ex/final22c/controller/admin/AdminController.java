@@ -8,15 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,9 +30,9 @@ import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
-import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseRequest;
+import com.ex.final22c.data.qna.Question;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.refund.RefundDetailResponse;
@@ -547,5 +544,13 @@ public class AdminController {
     public ResponseEntity<?> changeStatus(@RequestBody Review review) {
         adminService.changeStatus(review.getReviewId(), review.getStatus());
         return ResponseEntity.ok().build();
+    }
+    
+    // 문의 내역 출력
+    @GetMapping("questionList")
+    public String questionList(Model model) {
+        List<Question> questions = adminService.getAllQuestions();
+        model.addAttribute("questions", questions);
+        return "admin/questionList"; // qna/list.html
     }
 }
