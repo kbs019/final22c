@@ -28,7 +28,67 @@ public class ChatOrchestratorService {
     private final SqlExecService sqlExec;
 
     private static final String SCHEMA_DOC = """
-            -- (생략) 기존 스키마 설명 동일
+            -- Oracle / 화이트리스트 (대문자 컬럼)
+            
+            -- 👤 사용자 관련
+            -- USERS(USERNO PK, USERNAME UK, PASSWORD, EMAIL UK, NAME, BIRTH, GENDER, TELECOM, PHONE UK, REG, STATUS, BANREG, ROLE, LOGINTYPE, KAKAOID UK, MILEAGE, AGE)
+            
+            -- 🛒 주문/결제 관련  
+            -- ORDERS(ORDERID PK, USERNO FK->USERS.USERNO, USEDPOINT, TOTALAMOUNT, STATUS, REGDATE/regDate, DELIVERYSTATUS, CONFIRMMILEAGE)
+            -- ORDERDETAIL(ORDERDETAILID PK, ORDERID FK->ORDERS.ORDERID, ID FK->PRODUCT.ID, QUANTITY, SELLPRICE, TOTALPRICE, CONFIRMQUANTITY)
+            -- PAYMENT(PAYMENTID PK, ORDERID FK->ORDERS.ORDERID, AMOUNT, STATUS, TID UK, AID, APPROVEDAT, REG)
+            
+            -- 🛍️ 상품 관련
+            -- PRODUCT(ID PK, NAME, IMGNAME, IMGPATH, PRICE, COUNT, DESCRIPTION, SINGLENOTE, TOPNOTE, MIDDLENOTE, BASENOTE, 
+            --         BRAND_BRANDNO FK->BRAND.BRANDNO, VOLUME_VOLUMENO FK->VOLUME.VOLUMENO, 
+            --         GRADE_GRADENO FK->GRADE.GRADENO, MAINNOTE_MAINNOTENO FK->MAINNOTE.MAINNOTENO,
+            --         ISPICKED, STATUS, SELLPRICE, DISCOUNT, COSTPRICE)
+            -- BRAND(BRANDNO PK, BRANDNAME, IMGNAME, IMGPATH)
+            -- GRADE(GRADENO PK, GRADENAME)  
+            -- MAINNOTE(MAINNOTENO PK, MAINNOTENAME)
+            -- VOLUME(VOLUMENO PK, VOLUMENAME)
+            
+            -- 🛒 장바구니 관련
+            -- CART(CARTID PK, USERNO FK->USERS.USERNO UK, CREATEDATE, UPDATEDATE)
+            -- CARTDETAIL(CARTDETAILID PK, CARTID FK->CART.CARTID, ID FK->PRODUCT.ID, QUANTITY, SELLPRICE, TOTALPRICE, CREATEDATE)
+            
+            -- ⭐ 리뷰 관련  
+            -- REVIEW(REVIEWID PK, PRODUCT_ID FK->PRODUCT.ID, WRITER_USERNO FK->USERS.USERNO, CONTENT, CREATEDATE, STATUS, RATING)
+            
+            -- 💰 환불 관련
+            -- REFUND(REFUNDID PK, ORDERID FK->ORDERS.ORDERID UK, USERNO FK->USERS.USERNO, STATUS, TOTALREFUNDAMOUNT, 
+            --        REQUESTEDREASON, PAYMENTID FK->PAYMENT.PAYMENTID, PGREFUNDID, PGPAYLOADJSON, REJECTEDREASON,
+            --        REFUNDMILEAGE, CONFIRMMILEAGE, CREATEDATE, UPDATEDATE)
+            -- REFUNDDETAIL(REFUNDDETAILID PK, REFUND_REFUNDID FK->REFUND.REFUNDID, ORDERDETAILID FK->ORDERDETAIL.ORDERDETAILID UK,
+            --              QUANTITY, REFUNDQTY, UNITREFUNDAMOUNT, DETAILREFUNDAMOUNT)
+            
+            -- 📦 발주 관련
+            -- PURCHASE(PURCHASEID PK, COUNT, TOTALPRICE, REG)
+            -- PURCHASEDETAIL(PDID PK, PURCHASEID FK->PURCHASE.PURCHASEID, ID FK->PRODUCT.ID, QTY, TOTALPRICE)
+            
+            -- 🔗 주요 조인 관계:
+            -- USERS 1:N ORDERS, CART, REFUND, REVIEW
+            -- ORDERS 1:N ORDERDETAIL, 1:1 PAYMENT, 1:1 REFUND  
+            -- PRODUCT 1:N ORDERDETAIL, CARTDETAIL, PURCHASEDETAIL, REVIEW
+            -- PRODUCT N:1 BRAND, GRADE, MAINNOTE, VOLUME
+            -- CART 1:N CARTDETAIL
+            -- REFUND 1:N REFUNDDETAIL
+            -- PURCHASE 1:N PURCHASEDETAIL
+            -- ORDERDETAIL 1:1 REFUNDDETAIL
+            
+            -- 📊 비즈니스 규칙 (매우 중요)
+            -- 1) '판매량'(수량) = SUM(ORDERDETAIL.CONFIRMQUANTITY) (환불 시 차감 반영)
+            -- 2) '매출'(금액) = SUM(ORDERDETAIL.CONFIRMQUANTITY * ORDERDETAIL.SELLPRICE)  
+            -- 3) 집계 대상 주문 = ORDERS.STATUS IN ('PAID','CONFIRMED','REFUNDED') 만 포함
+            -- 4) 매출/판매량 계산에는 PAYMENT 테이블을 사용하지 않음
+            -- 5) 제품별 집계 시 ORDERDETAIL.ID = PRODUCT.ID 로 조인
+            -- 6) 발주량 = SUM(PURCHASEDETAIL.QTY), 매입원가 = SUM(PURCHASEDETAIL.QTY * PRODUCT.COSTPRICE)
+            -- 7) 환불률 = (환불수량 / 확정수량(CONFIRMQUANTITY)) * 100
+            -- 8) 상품 통계에서 REVIEW는 직접 JOIN 금지. 반드시
+            --    (SELECT PRODUCT_ID, COUNT(*) AS TOTAL_REVIEWS, ROUND(AVG(RATING),1) AS AVG_RATING FROM REVIEW GROUP BY PRODUCT_ID)
+            --    서브쿼리/CTE로 집계 후 LEFT JOIN (중복 집계 방지)
+            -- 9) 기간이 명시되지 않은 '상품 통계/누적/총계' 질문은 기본을 '전체 기간'으로 가정
+
             -- 핵심 규칙: 매출=SUM(ORDERDETAIL.CONFIRMQUANTITY*ORDERDETAIL.SELLPRICE)
             -- 집계 대상 주문: ORDERS.STATUS IN ('PAID','CONFIRMED','REFUNDED')
             -- 날짜 WHERE: o.REGDATE >= :start AND o.REGDATE < :end (반열림)
@@ -44,7 +104,6 @@ public class ChatOrchestratorService {
             ":reviewId", ":userNo"
     );
 
-    private static final Pattern FIRST_INT = Pattern.compile("\\b\\d+\\b");
     private static final Pattern INTENT_ANY_CHART =
             Pattern.compile("(차트|그래프|chart)", Pattern.CASE_INSENSITIVE);
 
@@ -58,31 +117,64 @@ public class ChatOrchestratorService {
             "(?i)(전체|전체기간|누적|전기간|모든|총|all\\s*time|total|cumulative)"
     );
 
+    /* 🆕 통계/누적 키워드 & 기간 명시 키워드 */
+    private static final Pattern STATS_KEYWORDS = Pattern.compile(
+            "(?i)(통계|누적|총계|전체\\s*내역|전기간|lifetime|all\\s*-?time)"
+    );
+    private static final Pattern EXPLICIT_PERIOD_KEYWORDS = Pattern.compile(
+            "(?i)(오늘|어제|이번|지난|작년|올해|전년|전월|월별|주별|일별|분기|상반기|하반기|최근\\s*\\d+\\s*(일|주|개월|달|년)|\\bQ[1-4]\\b|\\d{4}\\s*년|\\d{1,2}\\s*월|this|last|previous)"
+    );
+
+    
+    // ✅ 전체기간 키워드 매칭
+    private static boolean isAllTimeQuery(String userMsg) {
+        if (userMsg == null) return false;
+        return ALL_TIME_KEYWORDS.matcher(userMsg).find();
+    }
+private static boolean hasExplicitPeriodWords(String msg){
+        return msg != null && EXPLICIT_PERIOD_KEYWORDS.matcher(msg).find();
+    }
+    private static boolean singleProductFilterInSql(String sql){
+        if (sql == null) return false;
+        String up = sql.toUpperCase(Locale.ROOT);
+        return up.contains(" P.ID = :PRODUCTID") || up.contains("UPPER(P.NAME) = UPPER(");
+    }
+    private static boolean shouldDefaultAllTime(String userMsg, String aiSql){
+        return isOrdersRelatedQuery(userMsg, aiSql)
+                && !hasExplicitPeriodWords(userMsg)
+                && (STATS_KEYWORDS.matcher(userMsg).find() || singleProductFilterInSql(aiSql));
+    }
+
     /**
      * ORDERS 테이블과 관련된 쿼리인지 휴리스틱으로 판단
      */
     private static boolean isOrdersRelatedQuery(String userMsg, String generatedSql) {
         if (userMsg == null && generatedSql == null) return false;
-        
+
         // 1) 생성된 SQL에 ORDERS 테이블이 포함되어 있으면 확실히 ORDERS 관련
         if (generatedSql != null && generatedSql.toUpperCase().contains("ORDERS")) {
             return true;
         }
-        
+
         // 2) 사용자 메시지에 매출/주문 관련 키워드가 있으면 ORDERS 관련
         if (userMsg != null && ORDERS_RELATED_KEYWORDS.matcher(userMsg).find()) {
             return true;
         }
-        
+
         return false;
     }
 
+    /* ✅ 비교 분석 키워드 패턴 */
+    private static final Pattern COMPARISON_KEYWORDS = Pattern.compile(
+            "(?i)(vs|대비|비교|compared|compare|차이|변화|증감|전년|전월|지난|작년|last)"
+    );
+
     /**
-     * 전체 기간을 요청하는 질문인지 판단
+     * 비교 분석이 필요한 질문인지 판단
      */
-    private static boolean isAllTimeQuery(String userMsg) {
+    private static boolean isComparisonQuery(String userMsg) {
         if (userMsg == null) return false;
-        return ALL_TIME_KEYWORDS.matcher(userMsg).find();
+        return COMPARISON_KEYWORDS.matcher(userMsg).find();
     }
 
     public AiResult handle(String userMsg, Principal principal){
@@ -92,8 +184,12 @@ public class ChatOrchestratorService {
             // 전체 기간: 2020년부터 현재까지 (충분히 넓은 범위)
             LocalDateTime startTime = LocalDateTime.of(2020, 1, 1, 0, 0);
             LocalDateTime endTime = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            // record는 단순 생성자 사용
             period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "전체 기간");
+        } else if (isComparisonQuery(userMsg)) {
+            // ✅ 비교 분석: 최근 3개월로 넓은 범위 설정
+            LocalDateTime endTime = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime startTime = endTime.minusMonths(3);
+            period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "최근 3개월");
         } else {
             period = PeriodResolver.resolveFromUtterance(userMsg);
         }
@@ -115,6 +211,13 @@ public class ChatOrchestratorService {
 
         String ai = chat.generateSql(userMsg, SCHEMA_DOC);
 
+        // 🆕 통계/단일상품인데 기간 미지정이면 전체 기간으로 강제
+        if (shouldDefaultAllTime(userMsg, ai)) {
+            LocalDateTime startTime = LocalDateTime.of(2020, 1, 1, 0, 0);
+            LocalDateTime endTime   = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "전체 기간");
+        }
+
         // ✅ 핵심 수정: ORDERS 관련 쿼리인지 판단 후 선별적으로 정규화 적용
         String normalized;
         if (isOrdersRelatedQuery(userMsg, ai)) {
@@ -124,8 +227,10 @@ public class ChatOrchestratorService {
             // 단순 조회 쿼리면 정규화 없이 그대로 사용
             normalized = SqlNormalizer.enforceDateRangeWhere(ai, false);
         }
-        
+
         normalized = fixCommonJoinMistakes(normalized);
+        // ✅ 리뷰 중복/환불률/이름매칭 교정
+        normalized = fixProductStatsQuery(normalized, userMsg);
 
         String safe;
         try {
@@ -139,13 +244,13 @@ public class ChatOrchestratorService {
         }
 
         var params = new HashMap<String,Object>();
-        
+
         // ✅ ORDERS 관련 쿼리만 날짜 파라미터 추가
         if (isOrdersRelatedQuery(userMsg, safe)) {
             params.put("start", Timestamp.valueOf(period.start()));
             params.put("end",   Timestamp.valueOf(period.end()));
         }
-        
+
         if (safe.contains(":userNo")) {
             Long userNo = (principal == null) ? null : 0L; // TODO 실제 조회
             if (userNo == null) return new AiResult("로그인이 필요한 요청이에요.", null, List.of(), null);
@@ -153,8 +258,8 @@ public class ChatOrchestratorService {
         }
         if (safe.contains(":limit")) params.put("limit", 300);
         if (containsAnyNamedParam(safe, ID_PARAMS)) {
-            Long n = extractFirstNumber(userMsg);
-            if (n == null) return new AiResult("식별자(ID)가 필요해요. 예: \"제품 237 가격\"", null, List.of(), null);
+            Long n = extractContextualId(userMsg); // 👈 맥락형 ID 추출
+            if (n == null) return new AiResult("식별자(ID)가 필요해요. 예: \"제품 ID 239 판매 통계\"", null, List.of(), null);
             for (String key : ID_PARAMS) if (safe.contains(key)) params.put(key.substring(1), n);
         }
 
@@ -171,19 +276,19 @@ public class ChatOrchestratorService {
             }
         } else {
             try {
-                String contextMsg = isOrdersRelatedQuery(userMsg, safe) 
-                    ? userMsg + " (기간: " + period.label() + ")"
-                    : userMsg;
+                String contextMsg = isOrdersRelatedQuery(userMsg, safe)
+                        ? userMsg + " (기간: " + period.label() + ")"
+                        : userMsg;
                 summary = chat.summarize(contextMsg, safe, tableMd);
             } catch (Exception ignore) { summary = null; }
             if (summary == null ||
-                summary.toLowerCase(Locale.ROOT).contains("null") ||
-                summary.contains("존재하지 않")) {
+                    summary.toLowerCase(Locale.ROOT).contains("null") ||
+                    summary.contains("존재하지 않")) {
 
                 Map<String,Object> r = rows.get(0);
                 String name  = getStr(r, "PRODUCTNAME","NAME","LABEL");
                 String brand = getStr(r, "BRANDNAME");
-                Number qty   = getNum(r, "TOTALQUANTITY","TOTAL_SOLD_QUANTITY","QUANTITY");
+                Number qty   = getNum(r, "TOTALQUANTITY","TOTAL_SOLD_QUANTITY","QUANTITY","TOTAL_SALES_QUANTITY");
                 Number sales = getNum(r, "TOTALSALES","TOTAL_SALES_AMOUNT","VALUE");
 
                 StringBuilder sb = new StringBuilder();
@@ -288,7 +393,7 @@ public class ChatOrchestratorService {
         }
 
         // 라벨 정규화 + 타임시리즈 패딩
-        final String sig = safe.toUpperCase(Locale.ROOT).replaceAll("\\s+","");
+        final String sig = safe.toUpperCase(Locale.ROOT).replaceAll("\\s+", "");
         normalizeLabelsBySql(sig, labels);
 
         if (thisWeek) {
@@ -397,27 +502,100 @@ public class ChatOrchestratorService {
         return new ChartSpec(sql, title, "매출(원)", 12, "line", "currency");
     }
 
-    /* -------------------- 조인 오류 자동 교정 (강화) -------------------- */
+    /* -------------------- 조인 오류 자동 교정 (완전 강화) -------------------- */
     private static String fixCommonJoinMistakes(String sql) {
         if (sql == null) return null;
         String s = sql;
-        
-        // 1. 기존 조인 오류 교정
+
+        // 1. ORDERS ↔ ORDERDETAIL 조인 교정
         s = s.replaceAll("JOIN\\s+ORDERDETAIL\\s+od\\s+ON\\s+o\\.ID\\s*=\\s*od\\.ORDERID",
-                         "JOIN ORDERDETAIL od ON o.ORDERID = od.ORDERID");
+                "JOIN ORDERDETAIL od ON o.ORDERID = od.ORDERID");
         s = s.replaceAll("JOIN\\s+ORDERDETAIL\\s+od\\s+ON\\s+od\\.ID\\s*=\\s*o\\.ORDERID",
-                         "JOIN ORDERDETAIL od ON o.ORDERID = od.ORDERID");
-        
-        // 2. 핵심 수정: PRODUCT 조인 시 잘못된 컬럼명 교정
-        // ORDERDETAIL의 상품 FK는 ID이지 PRODUCTID가 아님
+                "JOIN ORDERDETAIL od ON o.ORDERID = od.ORDERID");
+        s = s.replaceAll("(?i)JOIN\\s+ORDERDETAIL\\s+od\\s+ON\\s+o\\.ORDERNO\\s*=\\s*od\\.ORDERNO",
+                "JOIN ORDERDETAIL od ON o.ORDERID = od.ORDERID");
+
+        // 2. ORDERDETAIL ↔ PRODUCT 조인 교정
         s = s.replaceAll("(?i)JOIN\\s+PRODUCT\\s+p\\s+ON\\s+od\\.PRODUCTID\\s*=\\s*p\\.ID",
-                         "JOIN PRODUCT p ON od.ID = p.ID");
-        s = s.replaceAll("(?i)JOIN\\s+PRODUCT\\s+p\\s+ON\\s+p\\.ID\\s*=\\s*od\\.PRODUCTID", 
-                         "JOIN PRODUCT p ON p.ID = od.ID");
-                         
-        // 3. WHERE절에서도 동일한 실수 교정
-        s = s.replaceAll("(?i)\\bod\\.PRODUCTID\\b", "od.ID");
+                "JOIN PRODUCT p ON od.ID = p.ID");
+        s = s.replaceAll("(?i)JOIN\\s+PRODUCT\\s+p\\s+ON\\s+p\\.ID\\s*=\\s*od\\.PRODUCTID",
+                "JOIN PRODUCT p ON p.ID = od.ID");
         
+        // 3. PRODUCT ↔ BRAND 조인 교정 (핵심 추가!)
+        s = s.replaceAll("(?i)JOIN\\s+BRAND\\s+b\\s+ON\\s+p\\.BRANDID\\s*=\\s*b\\.ID",
+                "JOIN BRAND b ON p.BRAND_BRANDNO = b.BRANDNO");
+        s = s.replaceAll("(?i)JOIN\\s+BRAND\\s+b\\s+ON\\s+b\\.ID\\s*=\\s*p\\.BRANDID",
+                "JOIN BRAND b ON b.BRANDNO = p.BRAND_BRANDNO");
+
+        // 4. WHERE절에서도 잘못된 컬럼명 교정
+        s = s.replaceAll("(?i)\\bod\\.PRODUCTID\\b", "od.ID");
+        s = s.replaceAll("(?i)\\bp\\.BRANDID\\b", "p.BRAND_BRANDNO");
+        s = s.replaceAll("(?i)\\bb\\.ID\\b", "b.BRANDNO");
+
+        return s;
+    }
+
+    /* -------------------- 상품 통계 쿼리 교정(리뷰/환불률/이름 매칭) -------------------- */
+    private static String fixProductStatsQuery(String sql, String userMsg) {
+        if (sql == null) return null;
+        String s = sql;
+
+        // 1) SELECT 절의 리뷰 집계는 서브쿼리로 대체
+        s = s.replaceAll(
+                "(?i)COUNT\\s*\\(\\s*DISTINCT\\s*r\\.REVIEWID\\s*\\)\\s*AS\\s*TOTAL_REVIEWS",
+                "(SELECT COUNT(*) FROM REVIEW r2 WHERE r2.PRODUCT_ID = p.ID) AS TOTAL_REVIEWS"
+        );
+        s = s.replaceAll(
+                "(?i)COUNT\\s*\\(\\s*r\\.REVIEWID\\s*\\)\\s*AS\\s*TOTAL_REVIEWS",
+                "(SELECT COUNT(*) FROM REVIEW r2 WHERE r2.PRODUCT_ID = p.ID) AS TOTAL_REVIEWS"
+        );
+        s = s.replaceAll(
+                "(?i)ROUND\\s*\\(\\s*AVG\\s*\\(\\s*r\\.RATING\\s*\\)\\s*,\\s*1\\s*\\)\\s*AS\\s*AVG_RATING",
+                "(SELECT ROUND(AVG(r2.RATING),1) FROM REVIEW r2 WHERE r2.PRODUCT_ID = p.ID) AS AVG_RATING"
+        );
+        s = s.replaceAll(
+                "(?i)AVG\\s*\\(\\s*r\\.RATING\\s*\\)\\s*AS\\s*AVG_RATING",
+                "(SELECT ROUND(AVG(r2.RATING),1) FROM REVIEW r2 WHERE r2.PRODUCT_ID = p.ID) AS AVG_RATING"
+        );
+
+        // 2) REVIEW 조인 제거(LEFT/INNER/RIGHT 모두)
+        s = s.replaceAll("(?is)\\s+(LEFT|INNER|RIGHT)\\s+JOIN\\s+REVIEW\\s+r\\s+ON\\s+[^\\n]*", " ");
+
+        // 3) GROUP BY에서 r.* 제거
+        s = s.replaceAll("(?i),\\s*r\\.[A-Z_]+", "");
+        s = s.replaceAll("(?i)GROUP BY\\s*r\\.[A-Z_]+\\s*(,)?", "GROUP BY ");
+
+        // 4) 환불률 정의 교정: (환불수량 / 확정수량) * 100
+        s = s.replaceAll(
+                "(?is)CASE\\s+WHEN\\s+SUM\\(\\s*od\\.QUANTITY\\s*\\)\\s*>\\s*0\\s*THEN\\s*ROUND\\s*\\(\\s*\\(\\s*SUM\\([^)]*?rd\\.REFUNDQTY[^)]*\\)\\s*/\\s*SUM\\(\\s*od\\.QUANTITY\\s*\\)\\s*\\)\\s*\\*\\s*100\\s*,\\s*2\\s*\\)",
+                "CASE WHEN SUM(od.CONFIRMQUANTITY) > 0 THEN ROUND( SUM(NVL(rd.REFUNDQTY,0)) / SUM(od.CONFIRMQUANTITY) * 100, 2)"
+        );
+
+        // 5) 제품명 LIKE 두 번 → 정확 일치로 교정 (NAME에 용량 포함 구조)
+        s = fixNameFilterExact(s, userMsg);
+
+        return s;
+    }
+
+    // LIKE 두 개(이름 + 용량) → 정확 일치, 또는 LIKE 한 개 안에 이미 NNNml 포함 시 정확 일치
+    private static final Pattern NAME_THEN_ML = Pattern.compile(
+            "(?is)UPPER\\(\\s*p\\.NAME\\s*\\)\\s*LIKE\\s*UPPER\\('%\\s*([^']*?)\\s*%'\\)\\s*" +
+            "AND\\s*UPPER\\(\\s*p\\.NAME\\s*\\)\\s*LIKE\\s*UPPER\\('%\\s*([0-9]+\\s*ml)\\s*%'\\)"
+    );
+    private static final Pattern ML_THEN_NAME = Pattern.compile(
+            "(?is)UPPER\\(\\s*p\\.NAME\\s*\\)\\s*LIKE\\s*UPPER\\('%\\s*([0-9]+\\s*ml)\\s*%'\\)\\s*" +
+            "AND\\s*UPPER\\(\\s*p\\.NAME\\s*\\)\\s*LIKE\\s*UPPER\\('%\\s*([^']*?)\\s*%'\\)"
+    );
+    private static final Pattern SINGLE_LIKE_WITH_ML = Pattern.compile(
+            "(?is)UPPER\\(\\s*p\\.NAME\\s*\\)\\s*LIKE\\s*UPPER\\('%\\s*([^']*?\\b[0-9]+\\s*ml\\b[^']*?)\\s*%'\\)"
+    );
+
+    private static String fixNameFilterExact(String sql, String userMsg) {
+        if (sql == null) return null;
+        String s = sql;
+        s = NAME_THEN_ML.matcher(s).replaceAll("UPPER(p.NAME) = UPPER('$1 $2')");
+        s = ML_THEN_NAME.matcher(s).replaceAll("UPPER(p.NAME) = UPPER('$2 $1')");
+        s = SINGLE_LIKE_WITH_ML.matcher(s).replaceAll("UPPER(p.NAME) = UPPER('$1')");
         return s;
     }
 
@@ -548,11 +726,17 @@ public class ChatOrchestratorService {
         for (String k : keys) if (sql.contains(k)) return true;
         return false;
     }
-    private static Long extractFirstNumber(String text) {
+
+    // ⚠️ 예전: FIRST_INT (연도/용량 숫자를 ID로 오인) → 맥락형 토큰으로 대체
+    private static final Pattern ID_TOKEN = Pattern.compile(
+            "(?i)(?:\\b(?:id|product\\s*id|상품(?:번호)?|제품(?:번호)?)\\s*[:#]??\\s*)(\\d+)\\b"
+    );
+    private static Long extractContextualId(String text) {
         if (text == null) return null;
-        Matcher m = FIRST_INT.matcher(text);
-        return m.find() ? Long.parseLong(m.group()) : null;
+        Matcher m = ID_TOKEN.matcher(text);
+        return m.find() ? Long.parseLong(m.group(1)) : null;
     }
+
     private static String getStr(Map<String,Object> m, String... keys){
         for (String k : keys){
             Object v = m.get(k);
