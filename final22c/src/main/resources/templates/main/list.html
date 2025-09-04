@@ -152,7 +152,7 @@
             <select id="sort-select" class="form-select form-select-sm sort-select minimalist-select">
               <option th:value="'id'"         th:selected="${sort == 'id'}">기본순</option>
               <option th:value="'popular'"    th:selected="${sort == 'popular'}">인기순</option>
-              <option th:value="'priceAsc'"   th:selected="${sort == 'priceAsc'}">가격</option>
+              <option th:value="'priceAsc'"   th:selected="${sort == 'priceAsc'}">가격 낮은 순</option>
               <option th:value="'priceDesc'"  th:selected="${sort == 'priceDesc'}">가격 높은 순</option>
               <option th:value="'reviewDesc'" th:selected="${sort == 'reviewDesc'}">리뷰 많은 순</option>
             </select>
@@ -162,8 +162,10 @@
         <div id="product-grid" class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3">
           <div class="col" th:each="p : ${products}">
             <div class="card product-card h-100">
-              <div class="card-media">
+              <!-- ⬇️ 품절 오버레이 적용 -->
+              <div class="card-media" th:classappend="${p['count'] == 0} ? ' soldout'">
                 <img th:src="${p['imgUrl']}" th:alt="${p['name']}">
+                <div class="overlay" aria-hidden="true"></div>
               </div>
 
               <div class="card-body p-2">

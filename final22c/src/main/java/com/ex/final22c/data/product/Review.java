@@ -46,7 +46,7 @@ public class Review {
     private LocalDateTime createDate;
 
     @Column(name = "status")
-    private String status;                          // ACTIVE - HIDE
+    private String status;                          // ACTIVE - HIDDEN
 
     // 1~5
     @Column(name = "rating", nullable = false)

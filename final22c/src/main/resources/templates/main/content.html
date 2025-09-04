@@ -104,6 +104,30 @@
       .like-wrap.is-liked .btn-like i {
         font-weight: 900;
       }
+
+      /* 재고 제한 안내 문구 */
+      .stock-hint {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #922;
+        /* 살짝 경고 톤 */
+      }
+
+      .stock-hint[data-pop="1"] {
+        animation: stock-pop .18s ease;
+      }
+
+      @keyframes stock-pop {
+        from {
+          opacity: 0;
+          transform: translateY(-2px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
     </style>
   </th:block>
 </head>
@@ -141,11 +165,11 @@
               <div>
                 <strong class="rate"
                   th:text="${#numbers.formatDecimal(T(java.lang.Math).floor(product.discount), 0, 0)} + '%'"></strong>
-                <span class="sale" th:text="${#numbers.formatInteger(product.sellPrice,3,'COMMA')} + '원'"></span>
+                <span class="sale" th:text="${#numbers.formatInteger(product.sellPrice, 3,'COMMA')} + '원'"></span>
               </div>
               <div>
                 <del class="list" th:if="${product.price > product.sellPrice}"
-                  th:text="${#numbers.formatInteger(product.price,3,'COMMA')} + '원'"></del>
+                  th:text="${#numbers.formatInteger(product.price, 3,'COMMA')} + '원'"></del>
               </div>
             </div>
           </div>
@@ -165,6 +189,7 @@
             <form id="buy-form" method="post">
               <input type="hidden" name="id" th:value="${product.id}">
 
+              <!-- 수량 / 합계 영역 -->
               <div class="d-flex align-items-center gap-2" id="buy-qty-wrap">
                 <button type="button" class="btn btn-outline-secondary btn-sm btn-minus">-</button>
 
@@ -179,6 +204,10 @@
                   <div class="text-muted small">적립 예정(5%): <span class="reward-amount">0</span> P</div>
                 </div>
               </div>
+              <!-- 수량 / 합계 끝 -->
+
+              <!-- 재고 제한 안내 -->
+              <p id="stockHint" class="stock-hint" aria-live="polite" aria-atomic="true" hidden></p>
 
               <div class="mt-3 d-flex gap-2">
                 <!-- 장바구니: 품절일 때도 클릭 가능(알림 유도용) -->
@@ -453,65 +482,76 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <div class="fw-semibold">전체 리뷰 <span th:text="${reviewCount}">0</span>개</div>
           <form method="get" th:action="@{|/main/content/${product.id}|}">
-            <select class="form-select form-select-sm w-auto d-inline-block" name="sort" onchange="this.form.submit()">
+            <select class="form-select form-select-sm w-auto d-inline-block" name="sort">
               <option value="best" th:selected="${sort=='best'}">추천순</option>
               <option value="recent" th:selected="${sort=='recent'}">최신순</option>
+              <option value="rating" th:selected="${sort=='rating'}">평점순</option>
             </select>
           </form>
         </div>
 
-        <!-- 리스트 -->
-        <div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">작성된 리뷰가 없습니다.</div>
+        <!-- 리스트 -> 정렬을 위해 묶음 -->
+        <div id="reviewList" th:fragment="reviewList(reviews, likedReviewIds, productId, sort)" th:with="productId=${productId} ?: ${product?.id}" class="mt-2">
 
-        <div th:each="rv : ${reviews}" class="py-4 border-top">
-          <div class="d-flex align-items-start justify-content-between">
-            <!-- 좌측: 메타 + 본문 -->
-            <div class="d-flex align-items-start gap-3 flex-grow-1">
-              <div class="review-meta">
-                <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
-                  th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
-                  kv**</div>
+          <div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">작성된 리뷰가 없습니다.</div>
 
-                <div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
-                  <div th:each="i : ${#numbers.sequence(1,5)}" th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
+          <div th:each="rv : ${reviews}" class="py-4 border-top">
+            <div class="d-flex align-items-start justify-content-between">
+              <!-- 좌측: 메타 + 본문 -->
+              <div class="d-flex align-items-start gap-3 flex-grow-1">
+                <div class="review-meta">
+                  <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
+                    th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
+                    kv**
+                  </div>
+
+                  <div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
+                    <div th:each="i : ${#numbers.sequence(1,5)}"
+                      th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 본문 영역 -->
+                <div class="flex-grow-1">
+                  <!-- 활성 리뷰 -->
+                  <div class="mb-2 text-break" th:if="${rv.status == 'ACTIVE'}" th:text="${rv.content}" style="white-space:pre-line;">내용</div>
+
+                  <!-- 좋아요 -->
+                  <div class="like-wrap" th:attr="data-id=${rv.reviewId}"
+                    th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
+                    <button type="button" class="btn-like" aria-label="공감" title="공감" sec:authorize="isAuthenticated()"
+                      th:if="${rv.status == 'ACTIVE'}">
+                      <i class="fa-regular fa-thumbs-up"></i>
+                    </button>
+                    <button type="button" class="btn-like need-login" aria-label="로그인 필요" sec:authorize="isAnonymous()"
+                      th:if="${rv.status == 'ACTIVE'}">
+                      <i class="fa-regular fa-thumbs-up"></i>
+                    </button>
+                    <span class="like-count" th:text="${#lists.size(rv.likers)}"
+                      th:if="${rv.status == 'ACTIVE'}">0</span>
                   </div>
                 </div>
               </div>
 
-              <!-- 본문 영역 -->
-              <div class="flex-grow-1">
-                <div class="mb-2 text-break" th:text="${rv.content}">내용</div>
+              <!-- 우측: 날짜 + 액션(날짜 바로 아래) — 날짜 위치는 그대로 유지 -->
+              <div class="review-right ms-3">
+                <div class="review-date text-muted small text-nowrap"
+                  th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
 
-                <!-- 좋아요 -->
-                <div class="like-wrap" th:attr="data-id=${rv.reviewId}"
-                  th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
-                  <button type="button" class="btn-like" aria-label="공감" title="공감" sec:authorize="isAuthenticated()">
-                    <i class="fa-regular fa-thumbs-up"></i>
-                  </button>
-                  <button type="button" class="btn-like need-login" aria-label="로그인 필요" sec:authorize="isAnonymous()">
-                    <i class="fa-regular fa-thumbs-up"></i>
-                  </button>
-                  <span class="like-count" th:text="${#lists.size(rv.likers)}">0</span>
-                </div>
-              </div>
-            </div>
+                <!-- 로그인 + (소유자 또는 관리자)만 노출 -->
+                <div class="review-actions mt-1" sec:authorize="isAuthenticated()"
+                  th:with="isOwner=${#authentication.name == rv.userName}">
+                  <div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
+                    <a class="ra-link"
+                      th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
 
-            <!-- 우측: 날짜 + 액션(날짜 바로 아래) — 날짜 위치는 그대로 유지 -->
-            <div class="review-right ms-3">
-              <div class="review-date text-muted small text-nowrap"
-                th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
-
-              <!-- 로그인 + (소유자 또는 관리자)만 노출 -->
-              <div class="review-actions mt-1" sec:authorize="isAuthenticated()"
-                th:with="isOwner=${#authentication.name == rv.userName}">
-                <div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
-                  <a class="ra-link" th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${product.id}|}">수정</a>
-
-                  <form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
-                    onsubmit="return confirm('후기를 삭제하시겠습니까?');">
-                    <input type="hidden" name="productId" th:value="${product.id}">
-                    <button type="submit" class="ra-link ra-danger">삭제</button>
-                  </form>
+                    <form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
+                      onsubmit="return confirm('후기를 삭제하시겠습니까?');">
+                      <input type="hidden" name="productId" th:value="${productId}">
+                      <button type="submit" class="ra-link ra-danger">삭제</button>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>
@@ -640,7 +680,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
-            body: JSON.stringify({ productId: PRODUCT_ID, qty })
+            body: JSON.stringify({ productId: PRODUCT_ID, qty })        // /cart/add 라는 URI 를 요청할 때, product 의 id 값과 선택한 수량(qty)을 POST 방식으로 전송
           });
 
           const data = await res.json().catch(() => ({}));
@@ -703,6 +743,25 @@
         const RATE = 0.05;
 
         const fmt = n => Number(n || 0).toLocaleString('ko-KR');
+
+        const hintEl = document.getElementById('stockHint');
+        let hintTimer = null;
+        let prevQty = NaN; // 이전 수량
+
+        // 최대 재고 알림 노출
+        function showMaxHint(max) {
+          if (!hintEl) return;
+          const n = Number(max || 0).toLocaleString('ko-KR');
+          hintEl.textContent = `현재 재고가 ${n}개 존재하기 때문에 수량이 ${n}개로 제한됩니다.`;
+          hintEl.hidden = false;
+          hintEl.dataset.pop = '1';
+          clearTimeout(hintTimer);
+          hintTimer = setTimeout(() => {
+            hintEl.hidden = true;
+            delete hintEl.dataset.pop;
+          }, 3000);
+        }
+
         function clamp(v) {
           if (isNaN(v)) v = MIN;
           v = Math.floor(v);
@@ -710,12 +769,14 @@
           if (v > MAX) v = MAX;
           return v;
         }
+
         function recalcAndRender(qty) {
           const total = SELLPRICE * qty;
           const point = Math.floor(total * RATE);
           totalEl.textContent = fmt(total);
           rewardEl.textContent = fmt(point);
         }
+
         function updateUI() {
           const v = parseInt(input.value, 10);
           if (MAX < 1) {
@@ -729,6 +790,7 @@
             document.getElementById('btn-add-cart')?.removeAttribute('disabled');
 
             recalcAndRender(0);
+            prevQty = 0;
             return;
           }
           input.value = clamp(v);
@@ -740,91 +802,36 @@
           // 재고 있을 때는 둘 다 활성
           document.getElementById('btn-buy-now')?.removeAttribute('disabled');
           document.getElementById('btn-add-cart')?.removeAttribute('disabled');
+
+          // ⬇️ 여기 추가: “MAX로 도달”했을 때만 1회 노출
+          const now = parseInt(input.value, 10) || 0;
+          if (MAX > 0 && now === MAX && prevQty !== MAX) {
+            showMaxHint(MAX);
+          }
+          prevQty = now;
         }
+
         updateUI();
         minusBtn.addEventListener('click', function () {
           if (this.disabled) return;
           input.value = clamp(parseInt(input.value, 10) - 1);
           updateUI();
         });
+
         plusBtn.addEventListener('click', function () {
           if (this.disabled) return;
           input.value = clamp(parseInt(input.value, 10) + 1);
           updateUI();
         });
+
         input.addEventListener('input', function () {
           this.value = this.value.replace(/[^0-9]/g, '');
           updateUI();
         });
+
         input.addEventListener('blur', function () {
           this.value = clamp(parseInt(this.value, 10));
           updateUI();
-        });
-      });
-
-      // ===== 좋아요(공감) 토글 =====
-      // 비로그인: 로그인 안내
-      document.querySelectorAll('.like-wrap .need-login')?.forEach(b => {
-        b.addEventListener('click', () => {
-          showLoginModal({
-            title: '리뷰 공감',
-            message: '로그인 후 공감할 수 있어요.'
-          });
-        });
-      });
-
-      // 로그인: Ajax 토글
-      document.querySelectorAll('.like-wrap .btn-like:not(.need-login)')?.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          const wrap = e.currentTarget.closest('.like-wrap');
-          if (!wrap) return;
-          const id = wrap.getAttribute('data-id');
-          const { header, token } = getCsrfPair();
-
-          try {
-            const res = await fetch(`/main/etc/review/${id}/like`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { [header]: token } : {})   // CSRF 헤더
-              },
-              credentials: 'same-origin'
-            });
-
-            // // 권한/세션 만료 처리
-            // if (res.status === 401 || res.status === 403) {
-            //   alert('로그인이 필요합니다.');
-            //   location.href = '/user/login';
-            //   return;
-            // }
-            // const ct = res.headers.get('content-type') || '';
-            // if (!ct.includes('application/json')) {
-            //   alert('세션이 만료되었습니다. 다시 로그인해 주세요.');
-            //   location.href = '/user/login';
-            //   return;
-            // }
-
-            // 401/403 또는 세션만료 응답 → 공용 로그인 모달
-            const ct = res.headers.get('content-type') || '';
-            if (res.status === 401 || res.status === 403 || !ct.includes('application/json')) {
-              showLoginModal({
-                title: '리뷰 공감',
-                message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.'
-              });
-              return;
-            }
-
-            const data = await res.json();
-            if (res.ok) {
-              wrap.classList.toggle('is-liked', !!data.liked);
-              const cnt = wrap.querySelector('.like-count');
-              if (cnt) cnt.textContent = String(data.count ?? 0);
-            } else {
-              alert(data?.message || `처리 중 오류가 발생했습니다. [${res.status}]`);
-            }
-          } catch (err) {
-            alert('네트워크 오류가 발생했습니다.');
-          }
         });
       });
     </script>
@@ -1167,6 +1174,107 @@
             setTimeout(() => b.disabled = false, 600);
           }
         });
+      })();
+    </script>
+
+    <script th:inline="javascript">
+      (function () {
+        const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+
+        // ✅ 좋아요 바인딩 함수 (disabled 제외)
+        function bindReviewLikeHandlers(root = document) {
+          // 비로그인 → 로그인 모달
+          root.querySelectorAll('.like-wrap .need-login:not([disabled])')?.forEach(b => {
+            b.addEventListener('click', () => {
+              showLoginModal({ title: '리뷰 공감', message: '로그인 후 공감할 수 있어요.' });
+            });
+          });
+
+          // 로그인 → Ajax 토글
+          root.querySelectorAll('.like-wrap .btn-like:not(.need-login):not([disabled])')?.forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const wrap = e.currentTarget.closest('.like-wrap');
+              if (!wrap) return;
+              const id = wrap.getAttribute('data-id');
+              const { header, token } = getCsrfPair();
+
+              // 더블클릭 잠금
+              if (btn.dataset.lock === '1') return;
+              btn.dataset.lock = '1';
+
+              try {
+                const res = await fetch(`/main/etc/review/${id}/like`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', ...(token ? { [header]: token } : {}) },
+                  credentials: 'same-origin'
+                });
+
+                const ct = res.headers.get('content-type') || '';
+                if (res.status === 401 || res.status === 403 || !ct.includes('application/json')) {
+                  showLoginModal({ title: '리뷰 공감', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
+                  return;
+                }
+
+                const data = await res.json();
+                wrap.classList.toggle('is-liked', !!data.liked);
+                const cnt = wrap.querySelector('.like-count');
+                if (cnt) cnt.textContent = String(data.count ?? 0);
+              } catch {
+                alert('네트워크 오류가 발생했습니다.');
+              } finally {
+                setTimeout(() => delete btn.dataset.lock, 300);
+              }
+            });
+          });
+        }
+
+        // 최초 SSR DOM에도 한 번 바인딩
+        bindReviewLikeHandlers(document);
+
+        // ✅ 정렬 Ajax
+        const form = document.querySelector('#review-section form');
+        const select = form?.querySelector('select[name="sort"]');
+        let listHost = document.getElementById('reviewList'); // replace 후 재할당 필요하므로 let
+
+        async function loadReviews(sort) {
+          if (select) select.disabled = true;
+          try {
+            const res = await fetch(`/main/content/${PRODUCT_ID}/reviews?sort=${encodeURIComponent(sort)}`, {
+              credentials: 'same-origin',
+              headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const html = await res.text();
+
+            const temp = document.createElement('div');
+            temp.innerHTML = html.trim();
+            const newFrag = temp.querySelector('#reviewList');
+            if (!newFrag) return;
+
+            // ▶ 리스트 교체
+            listHost.replaceWith(newFrag);
+            listHost = newFrag;
+
+            // ▶ 새 DOM에 좋아요 재바인딩
+            bindReviewLikeHandlers(newFrag);
+
+            // ▶ URL/셀렉트 동기화
+            const u = new URL(location.href);
+            u.searchParams.set('sort', sort);
+            history.replaceState(null, '', u.pathname + u.search);
+            if (select) select.value = sort;
+          } catch {
+            alert('리뷰를 불러오지 못했습니다.');
+          } finally {
+            if (select) select.disabled = false;
+          }
+        }
+
+        // 폼 submit 가로채기 + change 연동
+        form?.addEventListener('submit', (e) => {
+          e.preventDefault();
+          loadReviews(select?.value || 'best');
+        });
+        select?.addEventListener('change', () => form.requestSubmit());
       })();
     </script>
   </th:block>

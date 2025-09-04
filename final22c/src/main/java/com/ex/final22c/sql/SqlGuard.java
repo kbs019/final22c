@@ -10,16 +10,28 @@ public final class SqlGuard {
     // 허용 테이블 화이트리스트 (필요시 추가)
     private static final Set<String> ALLOWED_TABLES = Set.of(
         "USERS", "ORDERS", "ORDERDETAIL", "PAYMENT", "PRODUCT",
-        "BRAND", "GRADE", "MAINNOTE", "VOLUME"
+        "BRAND", "GRADE", "MAINNOTE", "VOLUME", "REFUND", "REFUNDDETAIL",
+        "CART", "CARTDETAIL", "REVIEW", "PURCHASE", "PURCHASEDETAIL"
     );
 
+    // FROM/JOIN 뒤의 테이블 토큰 추출
     private static final Pattern FROM_JOIN_TBL =
         Pattern.compile("(?i)\\b(?:FROM|JOIN)\\s+([\\w\\.\\\"]+)");
+
+    // 위치 파라미터 금지
     private static final Pattern POS_PARAM = Pattern.compile("\\?");
+
+    // 코드펜스 제거용
     private static final Pattern FENCE_SQL_START = Pattern.compile("(?is)^```sql\\s*");
     private static final Pattern FENCE_END = Pattern.compile("(?s)```\\s*$");
 
-    /** 기본 검사: SELECT만 + 금지어 + 테이블 화이트리스트 + ? 금지 + 다중문 금지 */
+    // 금지 패턴
+    private static final Pattern EXTRACT_ANY = Pattern.compile("(?i)\\bEXTRACT\\s*\\(");
+    // WHERE 블록 내부에서의 TRUNC 사용 감지 (SELECT/GROUP BY에서의 TRUNC는 허용)
+    private static final Pattern WHERE_BLOCK = Pattern.compile("(?is)\\bWHERE\\b([\\s\\S]*?)(?:\\bGROUP\\s+BY\\b|\\bORDER\\s+BY\\b|$)");
+    private static final Pattern TRUNC_ANY   = Pattern.compile("(?i)\\bTRUNC\\s*\\(");
+
+    /** 기본 검사: SELECT만 + 금지어 + 테이블 화이트리스트 + ? 금지 + 다중문 금지 + 날짜 규칙 */
     public static String ensureSelect(String sql){
         if (sql == null || sql.isBlank())
             throw new IllegalArgumentException("SQL이 비어 있습니다.");
@@ -46,7 +58,22 @@ public final class SqlGuard {
         if (POS_PARAM.matcher(s).find())
             throw new IllegalArgumentException("Positional parameter(?)는 허용되지 않습니다. :id 같은 named parameter를 사용하세요.");
 
-        // 4) 테이블 화이트리스트 검사 (스키마/따옴표/별칭 무시)
+        // 4) 날짜 규칙 강제
+        // 4-1) EXTRACT 사용 금지 (대시보드와 일관성/성능/가드오탐 방지)
+        if (EXTRACT_ANY.matcher(s).find()) {
+            throw new IllegalArgumentException("날짜 필터는 EXTRACT 대신 범위 비교(>=, <)와 TRUNC(SELECT/GROUP BY만) 규칙을 사용하세요.");
+        }
+        // 4-2) WHERE 절 내부의 TRUNC 금지 (인덱스/파티션 활용 위해)
+        Matcher where = WHERE_BLOCK.matcher(s);
+        if (where.find()) {
+            String whereBody = where.group(1);
+            if (TRUNC_ANY.matcher(whereBody).find()) {
+                throw new IllegalArgumentException("WHERE 절에서 TRUNC 사용은 금지입니다. 날짜는 >= :start AND < :end 같은 범위 비교를 사용하세요.");
+            }
+        }
+
+        // 5) 테이블 화이트리스트 검사
+        //    (이제 EXTRACT를 금지했으므로 FROM 오탐 위험이 사실상 사라졌지만, 기존 로직 유지)
         Matcher m = FROM_JOIN_TBL.matcher(s);
         while (m.find()) {
             String raw = m.group(1);                 // e.g. "SCOTT.\"PRODUCT\"" or PRODUCT
@@ -82,17 +109,20 @@ public final class SqlGuard {
     }
 
     /* ===== helpers ===== */
+
     private static String stripCodeFence(String s){
         String t = s.trim();
         t = FENCE_SQL_START.matcher(t).replaceFirst("");
         t = FENCE_END.matcher(t).replaceFirst("");
         return t;
     }
+
     private static String stripTrailingSemicolon(String s){
         String t = s.trim();
         while (t.endsWith(";")) t = t.substring(0, t.length()-1).trim();
         return t;
     }
+
     private static String normalizeTableName(String token) {
         // 따옴표 제거, 스키마 분리, 첫 토큰만 취득
         String x = token.replace("\"", "");

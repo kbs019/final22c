@@ -2,7 +2,9 @@ package com.ex.final22c.repository.cartDetail;
 
 import org.springframework.stereotype.Repository;
 
+import com.ex.final22c.data.cart.Cart;
 import com.ex.final22c.data.cart.CartDetail;
+import com.ex.final22c.data.product.Product;
 
 import java.util.*;
 
@@ -66,7 +68,7 @@ public interface CartDetailRepository extends JpaRepository<CartDetail, Long> {
     	""")
     int deleteByUserNoAndIds(@Param("userNo") Long userNo, @Param("ids") List<Long> ids);
     		
-
+    Optional<CartDetail> findByCartAndProduct(Cart cart, Product product);
     
     
     

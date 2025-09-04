@@ -112,12 +112,14 @@
       b.BRANDNAME                            AS "brandName",
       p.PRICE                                AS "price",
       p.SELLPRICE                            AS "sellPrice",
-      p.DISCOUNT                             AS "discount"
+      p.DISCOUNT                             AS "discount",
+      p.COUNT                                AS "count"
     FROM PRODUCT p
     LEFT JOIN BRAND b ON b.BRANDNO = p.BRAND_BRANDNO
     <include refid="WhereProductFilters"/>
     ORDER BY p.ID DESC
   </select>
+
 
   <!-- =========================================================
        리스트 전용: 정렬 + 페이징 (Oracle)
@@ -151,6 +153,7 @@
         p.PRICE                                AS "price",
         p.SELLPRICE                            AS "sellPrice",
         p.DISCOUNT                             AS "discount",
+        p.COUNT                                AS "count",
         NVL(s.qty, 0)                          AS "sales",
         NVL(r.cnt, 0)                          AS "reviewCnt"
       FROM PRODUCT p
@@ -184,7 +187,7 @@
       FROM base b
     )
     SELECT
-      "id","name","imgUrl","brandName","price","sellPrice","discount"
+      "id","name","imgUrl","brandName","price","sellPrice","discount","count"
     FROM ranked
     WHERE rn BETWEEN #{startRow} AND #{endRow}
     ORDER BY rn

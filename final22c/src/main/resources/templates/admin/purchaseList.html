@@ -7,6 +7,21 @@
 		<i class="fas fa-table me-1"></i>
 			발주리스트
 		</div>
+		  <!-- 🔎 기간 검색 -->
+		<form id="searchForm" class="d-flex align-items-center gap-2">
+		  <input type="date" id="startDate" name="startDate"
+		         class="form-control form-control-sm"
+		         style="width:150px;"
+		         th:value="${param.startDate}">
+		  <span>~</span>
+		  <input type="date" id="endDate" name="endDate"
+		         class="form-control form-control-sm"
+		         style="width:150px;"
+		         th:value="${param.endDate}">
+		
+		  <button type="submit" class="btn btn-sm btn-primary">검색</button>
+		  <button type="button" id="resetBtn" class="btn btn-sm btn-outline-secondary">초기화</button>
+		</form>
 		<div class="card-body">
 			<table id="datatablesSimple">
 				<thead>
@@ -77,6 +92,28 @@
 	</div>
 </div>
 <script layout:fragment="script" type="text/javascript">
+// 발주 기간 선택
+  // 기간 검색
+  document.getElementById("searchForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const start = document.getElementById("startDate").value;
+    const end   = document.getElementById("endDate").value;
+
+    if (!start || !end) {
+      alert("기간을 선택하세요.");
+      return;
+    }
+    location.href = `/admin/purchaseList?startDate=${start}&endDate=${end}`;
+  });
+
+  // ✅ 초기화: 입력값 비우고 전체목록으로 이동
+  document.getElementById("resetBtn").addEventListener("click", function() {
+    document.getElementById("startDate").value = "";
+    document.getElementById("endDate").value = "";
+    // 쿼리스트링 제거하여 전체 목록 조회
+    location.href = `/admin/purchaseList`;
+  });
+
 document.addEventListener('click', e => {
     if (e.target.classList.contains('open-order')) {
         const purchaseId = e.target.dataset.purid;
