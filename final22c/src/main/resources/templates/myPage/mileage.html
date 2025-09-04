@@ -28,7 +28,7 @@
             font-size: 12px
         }
 
-        /* ========== 사이드박스 그리드 (배송지와 동일) ========== */
+        /* 사이드박스 */
         .mp-grid {
             display: grid;
             grid-template-columns: 260px minmax(0, 1fr);
@@ -80,6 +80,7 @@
 
         /* 테이블 */
         .m-table {
+            table-layout: fixed;
             width: 100%;
             border-collapse: separate;
             border-spacing: 0
@@ -103,6 +104,8 @@
 
         .m-table th:last-child,
         .m-table td:last-child {
+            white-space: nowrap;
+            text-align: center;
             padding-right: 16px
         }
 
@@ -120,13 +123,13 @@
             font-weight: 800
         }
 
-        /* -P */
+        /* 사용 */
         .pt-earn {
             color: #16a34a;
             font-weight: 800
         }
 
-        /* +P */
+        /* 적립 */
 
         .m-empty {
             padding: 48px 0;
@@ -134,7 +137,7 @@
             color: #9ca3af
         }
 
-        /* ===== 페이징 ===== */
+        /* 페이징 */
         .pager {
             display: flex;
             gap: 6px;
@@ -170,7 +173,7 @@
             cursor: not-allowed
         }
 
-        /* === 사이드박스 (공통) === */
+        /* 사이드박스 (공통) */
         .mp-sidebox__title {
             font-size: 20px;
             font-weight: 800;
@@ -204,17 +207,15 @@
         }
     </style>
 
-    </style>
-
     <section class="m-wrap">
         <div class="mp-grid">
-            <!-- 사이드박스 (배송지와 동일 구조) -->
+            <!-- 사이드박스 -->
             <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox('mileage')}"></div>
 
             <div class="mp-col-right">
                 <header class="m-header" role="region" aria-labelledby="pageTitle">
                     <h1 id="pageTitle" class="m-title">마일리지 내역</h1>
-                    <div class="m-chip" aria-label="보유 마일리지">
+                    <div class="m-chip" aria-label="보유 마일리지" th:attr="data-now-balance=${me?.mileage?:0}">
                         <span class="muted" style="color:#e5e7ff">보유 마일리지</span>
                         <b th:text="${#numbers.formatInteger(me?.mileage?:0,1,'COMMA')} + 'P'">0P</b>
                     </div>
@@ -228,11 +229,12 @@
                 <!-- 목록 -->
                 <table th:if="${!rows.content.empty}" class="m-table" aria-describedby="pageTitle">
                     <colgroup>
-                        <col style="width:160px">
-                        <col style="width:220px">
-                        <col style="width:220px">
-                        <col style="width:220px">
-                        <col style="width:160px">
+                        <col style="width:160px"> <!-- 주문번호 -->
+                        <col style="width:200px"> <!-- 처리일시 -->
+                        <col style="width:200px"> <!-- 사용포인트 -->
+                        <col style="width:200px"> <!-- 적립포인트 -->
+                        <col style="width:160px"> <!-- 마일리지 -->
+                        <col style="width:110px"> <!-- 주문상태 -->
                     </colgroup>
                     <thead>
                         <tr>
@@ -240,6 +242,7 @@
                             <th scope="col">처리일시</th>
                             <th scope="col">사용포인트</th>
                             <th scope="col">적립포인트</th>
+                            <th scope="col">마일리지</th>
                             <th scope="col">주문상태</th>
                         </tr>
                     </thead>
@@ -256,12 +259,16 @@
                                 <span th:if="${(r.usedPoint?:0) == 0}" class="muted">-</span>
                             </td>
                             <td>
-                                <span th:if="${(r.earnedPoint?:0) > 0}" class="pt-earn"
-                                    th:text="${'+' + #numbers.formatInteger(r.earnedPoint,1,'COMMA')} + 'P'">+0P</span>
-                                <span th:if="${(r.earnedPoint?:0) == 0}" class="muted">-</span>
+                                <!-- 최종 적립포인트만 표시 -->
+                                <span th:if="${(r.finalEarnPoint?:0) > 0}" class="pt-earn"
+                                    th:text="${'+' + #numbers.formatInteger(r.finalEarnPoint,1,'COMMA')} + 'P'">+0P</span>
+                                <span th:if="${(r.finalEarnPoint?:0) == 0}" class="muted">-</span>
                             </td>
+                            <td class="pt-balance"
+                                th:attr="data-used=${r.usedPoint?:0}, data-earned=${r.earnedPoint?:0}">-</td>
                             <td th:switch="${#strings.toUpperCase(r.status)}">
                                 <span th:case="'CONFIRMED'">구매확정</span>
+                                <span th:case="'PAID'">결제완료</span>
                                 <span th:case="'REFUNDED'">환불완료</span>
                                 <span th:case="*" th:text="${r.status}">-</span>
                             </td>
@@ -269,29 +276,20 @@
                     </tbody>
                 </table>
 
-                <!-- ===== 버튼형 페이저 ===== -->
+                <!-- 페이저 -->
                 <nav class="pager" aria-label="페이지네이션" th:if="${rows.totalPages > 1}">
-                    <!-- 첫 페이지 -->
                     <a class="page-btn" th:classappend="${rows.first} ? ' disabled'"
                         th:attr="aria-disabled=${rows.first}"
                         th:href="@{|/mypage/mileage?page=1&size=${rows.size}|}">«</a>
-
-                    <!-- 이전 -->
                     <a class="page-btn" th:classappend="${!rows.hasPrevious} ? ' disabled'"
                         th:attr="aria-disabled=${!rows.hasPrevious}"
                         th:href="@{|/mypage/mileage?page=${rows.number}&size=${rows.size}|}">‹</a>
-
-                    <!-- 페이지 번호들 (1-base) -->
                     <a class="page-btn" th:each="i : ${#numbers.sequence(1, rows.totalPages)}" th:text="${i}"
                         th:href="@{|/mypage/mileage?page=${i}&size=${rows.size}|}"
                         th:attr="aria-current=${i == rows.number + 1} ? 'page' : null"></a>
-
-                    <!-- 다음 -->
                     <a class="page-btn" th:classappend="${!rows.hasNext} ? ' disabled'"
                         th:attr="aria-disabled=${!rows.hasNext}"
                         th:href="@{|/mypage/mileage?page=${rows.number + 2}&size=${rows.size}|}">›</a>
-
-                    <!-- 마지막 -->
                     <a class="page-btn" th:classappend="${rows.last} ? ' disabled'" th:attr="aria-disabled=${rows.last}"
                         th:href="@{|/mypage/mileage?page=${rows.totalPages}&size=${rows.size}|}">»</a>
                 </nav>
@@ -301,20 +299,35 @@
 
     <script>
         (function () {
-            const input = document.getElementById('jumpInput');
-            if (!input) return;
-            input.addEventListener('change', () => {
-                const pager = document.querySelector('.pager');
-                const total = parseInt(pager?.dataset.total || '1', 10);
-                const size = parseInt(pager?.dataset.size || '10', 10);
-                let p = parseInt(input.value || '1', 10);
-                if (!Number.isFinite(p)) return;
-                p = Math.max(1, Math.min(total, p));
-                const params = new URLSearchParams(location.search);
-                params.set('page', String(p));
-                params.set('size', String(size));
-                const ctx = document.querySelector('meta[name="context-path"]')?.content || '';
-                location.href = ctx + '/mypage/mileage?' + params.toString();
+            // "12,345P" / "+66,788P" / "-230,000P" / "-" → 정수로
+            function parseP(text) {
+                if (!text) return 0;
+                const m = String(text).replace(/\s+/g, '').match(/([+-]?\d[\d,]*)/);
+                return m ? parseInt(m[1].replace(/,/g, ''), 10) || 0 : 0;
+            }
+            function fmt(n) { return (Number(n) || 0).toLocaleString() + 'P'; }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const chip = document.querySelector('.m-chip');
+                let current = 0;
+                if (chip && chip.dataset.currentMileage != null) {
+                    current = parseInt(chip.dataset.currentMileage, 10) || 0;
+                } else {
+                    current = parseP(chip?.querySelector('b')?.textContent || '0');
+                }
+
+                const rows = document.querySelectorAll('.m-table tbody tr');
+                rows.forEach((tr) => {
+                    const usedTxt = tr.querySelector('td:nth-child(3)')?.textContent || '';
+                    const earnTxt = tr.querySelector('td:nth-child(4)')?.textContent || '';
+                    const balCell = tr.querySelector('td:nth-child(5)');
+
+                    const used = parseP(usedTxt);   // 사용은 음수
+                    const earn = parseP(earnTxt);   // 최종 적립포인트 (양수)
+
+                    if (balCell) balCell.textContent = fmt(current);
+                    current -= (earn + used);
+                });
             });
         })();
     </script>

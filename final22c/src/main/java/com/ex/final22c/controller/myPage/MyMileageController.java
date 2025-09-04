@@ -29,10 +29,12 @@ public class MyMileageController {
             @RequestParam(name = "size", defaultValue = "10") int size,
             Principal principal,
             Model model) {
+
         Users me = usersRepository.findByUserName(principal.getName())
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 
-        Page<OrderRepository.MileageRow> rows = myMileageService.getMileageHistory(me.getUserNo(), page, size);
+        Page<OrderRepository.MileageRowWithBalance> rows = myMileageService.getMileageHistory(me.getUserNo(), page,
+                size);
 
         model.addAttribute("section", "mileage");
         model.addAttribute("me", me);
@@ -40,4 +42,5 @@ public class MyMileageController {
 
         return "mypage/mileage";
     }
+
 }

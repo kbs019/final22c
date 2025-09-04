@@ -3,7 +3,6 @@ package com.ex.final22c.repository.order;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Collection;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,23 +15,25 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.order.Order;
-import com.ex.final22c.repository.order.OrderRepository.MileageRow;
+import com.ex.final22c.repository.order.OrderRepository.MileageRowWithBalance;
 
 import jakarta.persistence.LockModeType;
+
+import java.util.Collection;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
   // 관리자 대시보드용
   @Query("""
-          select count(o)
-            from Order o
-          where o.regDate >= :from and o.regDate <= :to
-            and o.status in :statuses
-        """)
+        select count(o)
+          from Order o
+        where o.regDate >= :from and o.regDate <= :to
+          and o.status in :statuses
+      """)
   long countByRegDateBetweenAndStatusIn(@Param("from") LocalDateTime from,
-                                        @Param("to")   LocalDateTime to,
-                                        @Param("statuses") Collection<String> statuses);
+      @Param("to") LocalDateTime to,
+      @Param("statuses") Collection<String> statuses);
 
   /**
    * 마이페이지 목록: 사용자 + 상태(예: PAID) 페이징 조회
@@ -148,15 +149,89 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
   List<Order> findByUser_UserNameOrderByRegDateDesc(String userName);
 
-  interface MileageRow {
-
+  public interface MileageRowWithBalance {
     Long getOrderId();
 
     java.time.LocalDateTime getProcessedAt();
 
     Long getUsedPoint();
 
+    // 내부 계산용 (양수: 적립, 음수: 환불차감)
     Long getEarnedPoint();
+
+    // 최종 적립 포인트 (UI에 표시할 값)
+    Long getFinalEarnPoint();
+
+    String getStatus();
+
+    Long getBalanceBefore();
+
+    Long getBalanceAfter();
+  }
+
+  @Query(value = """
+      select
+          o.orderId as orderId,
+          o.regDate as processedAt,
+          coalesce(o.usedPoint, 0) as usedPoint,
+          case
+              when o.status = 'CONFIRMED'
+                  then cast(function('trunc', coalesce(o.totalAmount,0) * 0.05) as long)
+              when o.status = 'REFUNDED'
+                  then - coalesce((
+                      select cast(sum(function('trunc',
+                                   (rd.unitRefundAmount * rd.refundQty) * 0.05)) as long)
+                        from RefundDetail rd
+                       where rd.refund.order.orderId = o.orderId
+                  ), 0)
+              else 0
+          end as earnedPoint,
+          case
+              when o.status = 'CONFIRMED'
+                  then cast(function('trunc', coalesce(o.totalAmount,0) * 0.05) as long)
+              when o.status = 'REFUNDED'
+                  then greatest(
+                          cast(function('trunc', coalesce(o.totalAmount,0) * 0.05) as long)
+                          -
+                          coalesce((
+                              select cast(sum(function('trunc',
+                                           (rd.unitRefundAmount * rd.refundQty) * 0.05)) as long)
+                                from RefundDetail rd
+                               where rd.refund.order.orderId = o.orderId
+                          ), 0),
+                          0
+                       )
+              else 0
+          end as finalEarnPoint,
+
+          o.status as status
+      from Order o
+      where o.user.userNo = :userNo
+        and o.status in :statuses
+      order by o.regDate desc
+      """, countQuery = """
+      select count(o)
+        from Order o
+       where o.user.userNo = :userNo
+         and o.status in :statuses
+      """)
+  Page<MileageRowWithBalance> findMileageWithBalanceByUserAndStatuses(
+      @Param("userNo") Long userNo,
+      @Param("statuses") Collection<String> statuses,
+      Pageable pageable);
+
+  public interface MileageRow {
+    Long getOrderId();
+
+    java.time.LocalDateTime getProcessedAt();
+
+    Long getUsedPoint();
+
+    // 계산용: 확정 +, 환불 − (기존)
+    Long getEarnedPoint();
+
+    // 표시용: 확정/환불 모두 양수(원래 적립될 금액)
+    Long getVisibleEarnPoint();
 
     String getStatus();
   }
