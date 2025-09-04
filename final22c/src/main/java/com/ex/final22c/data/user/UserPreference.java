@@ -13,7 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -37,14 +37,18 @@ public class UserPreference {
     @Column(name = "preferenceId")
     private Long preferenceId;
     
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "userNo", nullable = false)
     private Users user;
-    
+
+    @Column(name = "userName")
+    private String userName;
+
     // 설문조사 답변 (JSON 형태로 저장)
     @Lob
     @Column(name = "surveyAnswers")
     private String surveyAnswers;
+    
     
     // AI 분석 결과 (JSON 형태로 저장)
     @Lob

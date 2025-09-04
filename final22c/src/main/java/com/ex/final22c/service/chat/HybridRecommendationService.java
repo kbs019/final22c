@@ -4,28 +4,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.recommendation.RecommendedProduct;
 import com.ex.final22c.data.recommendation.SituationalRecommendation;
-import com.ex.final22c.data.recommendation.UserActivityData;
 import com.ex.final22c.data.user.UserPreference;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.productMapper.ProductMapper;
 import com.ex.final22c.repository.user.UserPreferenceRepository;
 import com.ex.final22c.repository.user.UserRepository;
-import com.ex.final22c.service.order.OrderService;
 import com.ex.final22c.service.product.ProductService;
-import com.ex.final22c.service.product.ReviewService;
-import com.ex.final22c.service.product.ZzimService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -35,200 +30,431 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class HybridRecommendationService {
-    
+
     private final ChatService chatService;
-    private final UserPreferenceRepository userPreferenceRepository;
-    private final UserRepository userRepository;
     private final ProductMapper productMapper;
     private final ProductService productService;
-    private final ZzimService zzimService;
-    private final ReviewService reviewService;
-    private final OrderService orderService;
     private final ObjectMapper objectMapper;
+    private final UserPreferenceRepository userPreferenceRepository;
+    private final UserRepository userRepository;
+
+    /** 사용자명으로 선호도 1건 조회 */
+    public UserPreference getUserPreference(String userName) {
+        return userPreferenceRepository.findByUser_UserName(userName).orElse(null);
+    }
+
+    // ===================== 내부 유틸 =====================
+ // ===================== 내부 유틸 =====================
+    /** 설문 기반 후보 선별 (성별/강도/메인노트/가격은 DB에서 필터) + 후보 상한 */
+    private List<Map<String, Object>> getFilteredCandidates(Map<String, String> survey) {
+        final String gender     = survey.get("gender");       // male/female/null
+        final String priceRange = survey.get("priceRange");   // low/medium/high
+
+        final Integer mainNoteId    = convertNoteToId(survey.get("notes"));
+        final List<Integer> mainNoteIds = (mainNoteId != null) ? List.of(mainNoteId) : null;
+
+        final List<Integer> gradeIds = getGradeIdsByIntensity(survey.get("intensity"));
+
+        List<Map<String, Object>> candidates =
+            productMapper.selectProductsForRecommendation(
+                null,          // brandIds
+                gradeIds,
+                mainNoteIds,
+                null,          // volumeIds
+                null,          // keyword
+                gender,        // 정렬 가중치용 (gs 서브쿼리)
+                priceRange     // 가격대 필터
+            )
+            .stream()
+            // SQL에서 NVL(p.COUNT,0) > 0로 걸렀지만 혹시 모를 null 방어
+            .filter(p -> {
+                Object v = p.get("count");
+                if (v instanceof Number) return ((Number) v).intValue() > 0;
+                if (v != null) try { return Integer.parseInt(String.valueOf(v)) > 0; } catch (Exception ignore) {}
+                return true;
+            })
+            .limit(200)  // 프롬프트 안정화
+            .collect(Collectors.toList());
+
+        log.debug("filteredCandidates gender={}, priceRange={}, gradeIds={}, mainNoteIds={}, size={}",
+            gender, priceRange, gradeIds, mainNoteIds, candidates.size());
+
+        return candidates;
+    }
     
+    /** 비회원(게스트) 분석: DB 저장 없이 ai JSON만 반환 */
+    @Transactional(readOnly = true)
+    public String analyzeForGuest(Map<String, String> surveyAnswers) {
+        final Map<String, String> safe =
+            (surveyAnswers == null) ? Collections.emptyMap() : surveyAnswers;
+
+        List<Map<String, Object>> candidates = getFilteredCandidates(safe);
+
+        String aiJson;
+        boolean usedFallback = false; // ★ 진단
+        try {
+            aiJson = callAiAnalysis(safe, candidates);
+        } catch (Exception e) {
+            log.warn("게스트 AI 호출 실패. fallback JSON으로 대체합니다.", e);
+            aiJson = null;
+        }
+        if (aiJson == null || aiJson.isBlank()) {
+            usedFallback = true;
+            aiJson = buildFallbackJson(safe, candidates);
+        } else {
+            aiJson = normalizeJson(aiJson);
+            if (!isValidJson(aiJson)) {
+                log.warn("게스트 AI JSON invalid. fallback JSON 사용");
+                usedFallback = true;
+                aiJson = buildFallbackJson(safe, candidates);
+            }
+        }
+
+        log.info("analyzeForGuest usedFallback={}, candidates={}", usedFallback, candidates.size());
+        return aiJson;
+    }
+
+    /** 회원 분석: 유저 1명당 1행 upsert(있으면 update, 없으면 insert) */
     @Transactional
     public UserPreference analyzeUserWithAI(String userName, Map<String, String> surveyAnswers) {
-        
+        final Map<String, String> answersSafe =
+            (surveyAnswers == null) ? Collections.emptyMap() : surveyAnswers;
+
+        // 1) 후보 선별
+        List<Map<String, Object>> candidates = getFilteredCandidates(answersSafe);
+
+        // 2) AI 호출 (실패/빈값이면 fallback JSON)
+        String aiResult;
+        boolean usedFallback = false; // ★ 진단
+        try {
+            aiResult = callAiAnalysis(answersSafe, candidates);
+        } catch (Exception e) {
+            log.warn("AI 호출 실패. fallback JSON으로 대체합니다.", e);
+            aiResult = null;
+        }
+        if (aiResult == null || aiResult.isBlank()) {
+            usedFallback = true;
+            aiResult = buildFallbackJson(answersSafe, candidates);
+        } else {
+            aiResult = normalizeJson(aiResult);
+            if (!isValidJson(aiResult)) {
+                log.warn("AI JSON invalid. fallback JSON으로 대체");
+                usedFallback = true;
+                aiResult = buildFallbackJson(answersSafe, candidates);
+            }
+        }
+
+        // 3) 회원 조회 (필수)
         Users user = userRepository.findByUserName(userName)
-            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
-        
+            .orElseThrow(() -> new RuntimeException("회원 정보가 없습니다: " + userName));
+
+        // 4) Upsert (유저 1명당 1행)
+        UserPreference pref = userPreferenceRepository.findByUser_UserNo(user.getUserNo())
+            .orElseGet(() -> UserPreference.builder()
+                .user(user)          // ★ userNo NOT NULL/UNIQUE 대응
+                .userName(userName)  // 부가정보
+                .build());
+
+        // 5) 필드 갱신
         try {
-            // 1. 설문 답변으로 후보군 필터링
-            List<Map<String, Object>> candidates = getFilteredCandidates(surveyAnswers);
-            
-            // 2. 사용자 활동 데이터 수집
-            UserActivityData activity = collectUserActivity(userName);
-            
-            // 3. AI 분석 실행
-            String aiResult = callAiAnalysis(surveyAnswers, activity, candidates);
-            
-            // 4. 결과 저장
-            return saveOrUpdatePreference(user, surveyAnswers, aiResult);
-            
+            pref.setSurveyAnswers(objectMapper.writeValueAsString(answersSafe));
         } catch (Exception e) {
-            log.error("AI 분석 실패: {}", userName, e);
-            return createFallbackRecommendation(user, surveyAnswers);
+            log.warn("설문 JSON 직렬화 실패, 빈 객체로 저장합니다.", e);
+            pref.setSurveyAnswers("{}");
         }
+        pref.setAiAnalysis(aiResult);
+        pref.setRecommendedProducts(extractProductIds(aiResult)); // "1,2,3"
+
+        // 6) 저장
+        UserPreference saved = userPreferenceRepository.save(pref);
+
+        log.info("AI 분석 저장: user={}, usedFallback={}, candidateSize={}, ids={}",
+            userName, usedFallback, candidates.size(), saved.getRecommendedProducts());
+
+        return saved;
     }
-    
-    private List<Map<String, Object>> getFilteredCandidates(Map<String, String> survey) {
-        Long mainNoteId = convertNoteToId(survey.get("notes"));
-        List<Long> gradeIds = getGradeIdsByIntensity(survey.get("intensity"));
-        
-        return productMapper.selectProducts(null, gradeIds, List.of(mainNoteId), null, null)
-            .stream()
-            .filter(p -> {
-                Integer count = (Integer) p.get("count");
-                return count != null && count > 0;
-            })
-            .limit(15)
-            .collect(Collectors.toList());
-    }
-    
-    private UserActivityData collectUserActivity(String userName) {
-        return UserActivityData.builder()
-            .zzimProducts(zzimService.listMyZzim(userName))
-            .reviews(reviewService.getReviewsByUser(userName))
-            .purchases(orderService.getUserPurchaseHistory(userName))
-            .build();
-    }
-    
-    private String callAiAnalysis(Map<String, String> survey, UserActivityData activity, 
-                                 List<Map<String, Object>> candidates) {
-        String prompt = buildAnalysisPrompt(survey, activity, candidates);
-        return chatService.ask(prompt);
-    }
-    
-    private String buildAnalysisPrompt(Map<String, String> survey, UserActivityData activity, 
-                                     List<Map<String, Object>> candidates) {
-        StringBuilder prompt = new StringBuilder();
-        
-        prompt.append("사용자 향수 추천을 위한 AI 분석을 요청합니다.\n\n");
-        
-        prompt.append("=== 사용자 설문조사 결과 ===\n");
-        survey.forEach((key, value) -> {
-            prompt.append(key).append(": ").append(value).append("\n");
-        });
-        
-        prompt.append("\n=== 사용자 활동 데이터 ===\n");
-        prompt.append("찜한 상품 수: ").append(activity.getZzimProducts().size()).append("\n");
-        prompt.append("작성한 리뷰 수: ").append(activity.getReviews().size()).append("\n");
-        prompt.append("구매 이력 수: ").append(activity.getPurchases().size()).append("\n");
-        
-        // 찜한 상품 상세 정보
-        if (!activity.getZzimProducts().isEmpty()) {
-            prompt.append("\n찜한 상품들:\n");
-            activity.getZzimProducts().forEach(product -> {
-                prompt.append("- ").append(product.getName())
-                      .append(" (").append(product.getBrand().getBrandName()).append(")")
-                      .append("\n");
-            });
-        }
-        
-        // 리뷰 작성 상품들
-        if (!activity.getReviews().isEmpty()) {
-            prompt.append("\n리뷰를 작성한 상품들:\n");
-            activity.getReviews().forEach(review -> {
-                prompt.append("- ").append(review.getProduct().getName())
-                      .append(" (평점: ").append(review.getRating()).append("/5)")
-                      .append("\n");
-            });
-        }
-        
-        prompt.append("\n=== 추천 후보 상품들 ===\n");
-        candidates.forEach(product -> {
-            prompt.append("상품ID: ").append(product.get("id")).append(" - ").append(product.get("name")).append(" (")
-            	  .append(product.get("brandName")).append(")\n")
-                  .append(", 이름: ").append(product.get("name"))
-                  .append(", 브랜드: ").append(product.get("brandName"))
-                  .append(", 용량: ").append(product.get("volume"))
-                  .append(", 가격: ").append(product.get("sellPrice"))
-                  .append("\n");
-        });
-        
-        prompt.append("\n=== 요청사항 ===\n");
-        prompt.append("위 정보를 바탕으로 사용자에게 맞는 향수를 상황별로 추천해주세요.\n");
-        prompt.append("다음 세 가지 상황에 대해 각각 2-3개의 상품을 추천하고 이유를 설명해주세요:\n");
-        prompt.append("1. daily: 일상적으로 사용할 향수\n");
-        prompt.append("2. special: 특별한 날이나 데이트용 향수\n");
-        prompt.append("3. gift: 선물용으로 적합한 향수\n\n");
-        
-        prompt.append("응답은 반드시 다음 JSON 형식으로만 작성해주세요 (중요: productId는 반드시 숫자로!):\n");
-        prompt.append("{\n");
-        prompt.append("  \"situationalRecommendations\": {\n");
-        prompt.append("    \"daily\": {\n");
-        prompt.append("      \"products\": [\n");
-        prompt.append("        {\"productId\": 1, \"volume\": \"50ml\", \"reason\": \"가벼운 시트러스 향으로 일상에 적합\"},\n");
-        prompt.append("        {\"productId\": 2, \"volume\": \"30ml\", \"reason\": \"은은한 플로럴 향으로 오피스용으로 좋음\"}\n");
-        prompt.append("      ],\n");
-        prompt.append("      \"reason\": \"일상용 향수 추천 전체 이유\"\n");
-        prompt.append("    },\n");
-        prompt.append("    \"special\": {\n");
-        prompt.append("      \"products\": [\n");
-        prompt.append("        {\"productId\": 3, \"volume\": \"100ml\", \"reason\": \"강렬한 우디 향으로 특별한 날에 적합\"}\n");
-        prompt.append("      ],\n");
-        prompt.append("      \"reason\": \"특별한 날 향수 추천 전체 이유\"\n");
-        prompt.append("    },\n");
-        prompt.append("    \"gift\": {\n");
-        prompt.append("      \"products\": [\n");
-        prompt.append("        {\"productId\": 4, \"volume\": \"75ml\", \"reason\": \"누구나 좋아할 만한 클래식한 향\"}\n");
-        prompt.append("      ],\n");
-        prompt.append("      \"reason\": \"선물용 향수 추천 전체 이유\"\n");
-        prompt.append("    }\n");
-        prompt.append("  }\n");
-        prompt.append("}\n");
-        prompt.append("\n**중요: 위에 나열된 상품ID만 사용해서 추천해주세요. 다른 ID는 절대 사용하지 마세요.**\n");
-        
-        return prompt.toString();
-    }
-    
-    private UserPreference saveOrUpdatePreference(Users user, Map<String, String> survey, String aiResult) {
-        
-        UserPreference preference = userPreferenceRepository.findByUser_UserName(user.getUserName())
-            .orElse(UserPreference.builder().user(user).build());
-            
+
+    /** 회원 결과 리셋(행 삭제) */
+    @Transactional
+    public void resetByUserName(String userName) {
         try {
-            preference.setSurveyAnswers(objectMapper.writeValueAsString(survey));
-            preference.setAiAnalysis(aiResult);
-            preference.setRecommendedProducts(extractProductIds(aiResult));
+            userPreferenceRepository.deleteByUser_UserName(userName);
         } catch (Exception e) {
-            log.error("결과 저장 실패", e);
+            log.warn("resetByUserName 실패 userName={}", userName, e);
         }
-        
-        return userPreferenceRepository.save(preference);
     }
-    
+
     /**
-     * 상황별 추천 조회 (저장된 결과에서)
+     * 개선된 AI 프롬프트 구성 및 호출 (응답은 JSON 문자열, situationalRecommendations 고정)
      */
-    public SituationalRecommendation getSituationalRecommendation(String userName, String situation) {
-        UserPreference preference = userPreferenceRepository.findByUser_UserName(userName)
-            .orElse(null);
+    private String callAiAnalysis(Map<String, String> survey, List<Map<String, Object>> candidates) {
+        String usage = survey.getOrDefault("usage", "daily");
 
-        if (preference == null) {
-            return getEmptyRecommendation(situation);
-        }
+        // 용도별 가이드라인
+        String usageGuide = switch (usage) {
+            case "office" -> """
+                - 사무실/밀폐 공간에 무리 없는 확산력과 잔향(EDT~EDP 중도).
+                - 너무 달거나 과자향(gourmand) 계열은 피하고, 깔끔/프로페셔널 인상 우선.
+                - 향 지속력은 4~7시간 선호, 가격은 과시적이지 않은 중간대 선호.
+                """;
+            case "special" -> """
+                - 존재감 있는 시그니처, 관능적/개성 강조(EDP~Parfum 우선).
+                - 스파이시/우디/플로럴의 인상적인 조합 선호. 프로젝트성 향도 고려.
+                - 가격 제약보다 향의 임팩트/스토리 우선.
+                """;
+            case "gift" -> """
+                - 선물 호불호 적고 브랜드 인지도/패키지 완성도 중요.
+                - 안전한 플로랄/시트러스/머스크 계열 우선. 성별 보편/유니섹스도 가점.
+                - 가격대는 사용자가 고른 범위를 반드시 존중.
+                """;
+            default /* daily */ -> """
+                - 데일리로 부담 없는 잔향과 세탁감/클린한 계열 선호(EDT~EDP).
+                - 과한 스파이시/스모키는 지양. 가격/용량 대비 가성비 고려.
+                """;
+        };
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("당신은 전자상거래 향수 추천 시스템입니다.\n")
+              .append("반드시 완전한 JSON으로만 응답하세요. 설명/코드펜스 금지.\n")
+              .append("아래 후보들(productId)에서만 고르고, 숫자 타입으로 기입하세요.\n\n")
+
+              .append("=== 사용자 설문 ===\n");
+        survey.forEach((k, v) -> prompt.append(k).append(": ").append(v).append("\n"));
+
+        prompt.append("\n=== 용도별 선택 규칙(강제) ===\n")
+              .append(usageGuide).append("\n")
+              .append("- 동점이면 최근 판매량/인지도 높은 제품을 우선.\n")
+              .append("- 같은 브랜드 중복은 피하고, 서로 다른 캐릭터로 2개 이상 제시.\n")
+              .append("- 각 제품의 선택 이유에 용도와 설문 요소(노트/강도/가격대)를 반드시 연결해 서술.\n")
+
+              .append("\n=== 후보 상품(이 중에서만 선택) ===\n");
+        candidates.forEach(p -> prompt.append("id=").append(p.get("id"))
+            .append(", name=").append(p.get("name"))
+            .append(", brand=").append(p.get("brandName"))
+            .append(", price=").append(p.get("sellPrice"))
+            .append("\n"));
+
+        prompt.append("\n=== 필수 출력 형식(예시 스키마, 이 구조만 허용) ===\n")
+              .append("{\"situationalRecommendations\":{\"").append(usage).append("\":{")
+              .append("\"reason\":\"요약 및 선택 기준\",")
+              .append("\"products\":[")
+              .append("{\"productId\":숫자,\"reason\":\"왜 이 용도/설문에 맞는지\"},")
+              .append("{\"productId\":숫자,\"reason\":\"왜 이 용도/설문에 맞는지\"}")
+              .append("]}}}\n")
+              .append("추가 텍스트 금지. JSON만 반환.\n");
 
         try {
-            // 1. JSON 전처리
-            String rawJson = preference.getAiAnalysis();
-            String cleanedJson = rawJson.trim().replaceAll("^[^\\{]+", ""); // '{' 이전 쓰레기 문자 제거
+            String raw = chatService.ask(prompt.toString());
+            String normalized = normalizeJson(raw);
+            if (!isValidJson(normalized)) {
+                normalized = extractSituationalRecommendationsFromText(raw, usage);
+            }
+            return normalized;
+        } catch (Exception e) {
+            log.error("AI 호출 또는 후처리 실패", e);
+            throw e;
+        }
+    }
 
-            // 2. 디버깅용 로그
-            log.debug("📦 JSON 파싱 대상: {}", cleanedJson);
 
-            // 3. JSON 파싱
-            Map<String, Object> analysis = objectMapper.readValue(cleanedJson, Map.class);
-            Map<String, Object> situationalRecs = (Map<String, Object>) analysis.get("situationalRecommendations");
+    /** JSON 정규화 (과도한 절단 방지) */
+    private String normalizeJson(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return "{}";
+        String s = raw.trim();
+        log.debug("정규화 전: {}", s);
 
-            if (situationalRecs == null || !situationalRecs.containsKey(situation)) {
-                return getEmptyRecommendation(situation);
+        // 코드펜스 제거
+        if (s.startsWith("```")) {
+            s = s.replaceFirst("^```(?:json)?\\s*", "")
+                 .replaceFirst("\\s*```\\s*$", "").trim();
+        }
+
+        // 이미 완전한 JSON처럼 보이면 최소 정리만
+        if (s.startsWith("{") && s.endsWith("}")) {
+            return s.replaceAll(",\\s*([}\\]])", "$1");
+        }
+
+        // JSON 시작 전 잡음 제거
+        int firstBrace = s.indexOf('{');
+        if (firstBrace == -1) {
+            log.warn("JSON에서 시작 중괄호를 찾을 수 없음");
+            return "{}";
+        }
+        s = s.substring(firstBrace);
+
+        // 중괄호 균형 맞추기
+        int depth = 0;
+        int endIndex = s.length() - 1;
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (ch == '{') depth++;
+            else if (ch == '}') {
+                depth--;
+                if (depth == 0) { endIndex = i; break; }
+            }
+        }
+
+        if (endIndex < s.length() - 1) {
+            s = s.substring(0, endIndex + 1);
+        }
+
+        // 트레일링 콤마 제거
+        s = s.replaceAll(",\\s*([}\\]])", "$1");
+        log.debug("정규화 후: {}", s);
+        return s;
+    }
+
+    /** JSON 유효성 검사 (situationalRecommendations 우선 확인) */
+    private boolean isValidJson(String s) {
+        if (s == null || s.trim().isEmpty()) return false;
+        try {
+            Map<String, Object> parsed = objectMapper.readValue(s, Map.class);
+            if (parsed.containsKey("situationalRecommendations")) {
+                Object recs = parsed.get("situationalRecommendations");
+                if (recs instanceof Map) {
+                    return !((Map<?, ?>) recs).isEmpty();
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            log.debug("JSON 유효성 검사 실패: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /** situationalRecommendations가 없으면 텍스트에서 추출 */
+    private String extractSituationalRecommendationsFromText(String rawText, String targetUsage) {
+        try {
+            int startIndex = rawText.indexOf("\"situationalRecommendations\"");
+            if (startIndex == -1) {
+                return createSimpleRecommendationJson(rawText, targetUsage);
+            }
+            int braceStart = rawText.indexOf('{', startIndex);
+            if (braceStart == -1) return createSimpleRecommendationJson(rawText, targetUsage);
+
+            int depth = 0;
+            int endIndex = braceStart;
+            for (int i = braceStart; i < rawText.length(); i++) {
+                char ch = rawText.charAt(i);
+                if (ch == '{') depth++;
+                else if (ch == '}') {
+                    depth--;
+                    if (depth == 0) { endIndex = i; break; }
+                }
+            }
+            String extracted = "{\"situationalRecommendations\":" +
+                               rawText.substring(braceStart, endIndex + 1) + "}";
+            extracted = extracted.replaceAll(",\\s*([}\\]])", "$1");
+            log.debug("추출된 JSON: {}", extracted);
+            return extracted;
+
+        } catch (Exception e) {
+            log.warn("텍스트에서 JSON 추출 실패: {}", e.getMessage());
+            return createSimpleRecommendationJson(rawText, targetUsage);
+        }
+    }
+
+    /** 간단한 추천 JSON 생성 (최후 폴백) */
+    private String createSimpleRecommendationJson(String rawText, String usage) {
+        try {
+            var pattern = java.util.regex.Pattern.compile("\"productId\"\\s*:\\s*(\\d+)");
+            var matcher = pattern.matcher(rawText);
+
+            List<Map<String, Object>> products = new java.util.ArrayList<>();
+            while (matcher.find() && products.size() < 3) {
+                long productId = Long.parseLong(matcher.group(1));
+                products.add(Map.of("productId", productId, "reason", "AI 분석 결과에서 추출된 추천"));
+            }
+            if (products.isEmpty()) {
+                products = List.of(
+                    Map.of("productId", 1, "reason", "기본 추천 상품"),
+                    Map.of("productId", 2, "reason", "기본 추천 상품")
+                );
             }
 
-            Map<String, Object> situationData = (Map<String, Object>) situationalRecs.get(situation);
-            List<Map<String, Object>> productData = (List<Map<String, Object>>) situationData.get("products");
+            Map<String, Object> situationData = new HashMap<>();
+            situationData.put("reason", "AI 분석 결과를 기반한 추천");
+            situationData.put("products", products);
+            situationData.put("source", "fallback"); // ★ 진단
 
-            List<RecommendedProduct> products = productData.stream()
+            Map<String, Object> situationalRecs = new HashMap<>();
+            situationalRecs.put(usage != null ? usage : "daily", situationData);
+
+            Map<String, Object> root = new HashMap<>();
+            root.put("situationalRecommendations", situationalRecs);
+
+            return objectMapper.writeValueAsString(root);
+
+        } catch (Exception e) {
+            log.error("간단한 추천 JSON 생성 실패", e);
+            return "{\"situationalRecommendations\":{\"daily\":{\"reason\":\"추천 결과를 불러올 수 없습니다\",\"products\":[],\"source\":\"fallback\"}}}";
+        }
+    }
+
+    /** 개선된 AI JSON에서 productId 목록을 "1,2,3" 형태로 추출 */
+    private String extractProductIds(String aiResult) {
+        if (aiResult == null || aiResult.trim().isEmpty()) return "";
+        try {
+            String normalized = normalizeJson(aiResult);
+            Map<String, Object> analysis = objectMapper.readValue(normalized, Map.class);
+            Map<String, Object> situationalRecs =
+                (Map<String, Object>) analysis.get("situationalRecommendations");
+            if (situationalRecs == null) {
+                log.warn("situationalRecommendations이 null입니다");
+                return "";
+            }
+            Set<Long> ids = new HashSet<>();
+            for (Object val : situationalRecs.values()) {
+                if (!(val instanceof Map)) continue;
+                Map<String, Object> sit = (Map<String, Object>) val;
+                List<Map<String, Object>> prods =
+                    (List<Map<String, Object>>) sit.get("products");
+                if (prods != null) {
+                    prods.forEach(p -> {
+                        Object obj = p.get("productId");
+                        if (obj instanceof Number) {
+                            ids.add(((Number) obj).longValue());
+                        } else if (obj != null) {
+                            try { ids.add(Long.parseLong(obj.toString())); }
+                            catch (NumberFormatException e) { log.warn("productId 파싱 실패: {}", obj); }
+                        }
+                    });
+                }
+            }
+            return ids.stream().map(String::valueOf).collect(Collectors.joining(","));
+        } catch (Exception e) {
+            log.error("상품 ID 추출 실패", e);
+            return extractProductIdsFromText(aiResult);
+        }
+    }
+
+    /** 텍스트에서 직접 productId 추출 (폴백) */
+    private String extractProductIdsFromText(String text) {
+        try {
+            var pattern = java.util.regex.Pattern.compile("\"productId\"\\s*:\\s*(\\d+)");
+            var matcher = pattern.matcher(text);
+            Set<String> ids = new java.util.LinkedHashSet<>();
+            while (matcher.find()) ids.add(matcher.group(1));
+            return String.join(",", ids);
+        } catch (Exception e) {
+            log.error("텍스트에서 productId 추출 실패", e);
+            return "";
+        }
+    }
+
+    /** 프론트 표시에 사용할 파싱(상황별) — 필요 시 사용 */
+    public SituationalRecommendation getParsedRecommendation(String aiJson, String situation) {
+        try {
+            String cleaned = normalizeJson(aiJson);
+            Map<String, Object> analysis = objectMapper.readValue(cleaned, Map.class);
+            Map<String, Object> recs =
+                (Map<String, Object>) analysis.get("situationalRecommendations");
+            if (recs == null || !recs.containsKey(situation)) return getEmptyRecommendation(situation);
+
+            Map<String, Object> sitData = (Map<String, Object>) recs.get(situation);
+            List<Map<String, Object>> prodData =
+                (List<Map<String, Object>>) sitData.get("products");
+            var products = prodData.stream()
                 .map(this::mapToRecommendedProduct)
                 .filter(p -> p != null)
                 .collect(Collectors.toList());
@@ -236,7 +462,7 @@ public class HybridRecommendationService {
             return SituationalRecommendation.builder()
                 .situation(situation)
                 .products(products)
-                .analysis((String) situationData.get("reason"))
+                .analysis((String) sitData.get("reason"))
                 .build();
 
         } catch (Exception e) {
@@ -245,226 +471,39 @@ public class HybridRecommendationService {
         }
     }
 
-    /**
-     * 상품 매핑 메서드 - 수정된 버전 (문자열 productId 처리)
-     */
-    private RecommendedProduct mapToRecommendedProduct(Map<String, Object> productData) {
+    private RecommendedProduct mapToRecommendedProduct(Map<String, Object> pd) {
         try {
-            Object productIdObj = productData.get("productId");
-            Long productId = null;
-            
-            // 1. productId가 숫자인지 문자열인지 확인
-            if (productIdObj instanceof Number) {
-                productId = ((Number) productIdObj).longValue();
-            } else if (productIdObj instanceof String) {
-                String productIdStr = (String) productIdObj;
-                
-                // 2-1. 숫자 문자열인 경우 파싱 시도
-                try {
-                    productId = Long.parseLong(productIdStr);
-                } catch (NumberFormatException e) {
-                    // 2-2. 문자열 상품명인 경우 DB에서 검색
-                    productId = findProductIdByName(productIdStr);
-                    if (productId == null) {
-                        log.warn("상품명으로 상품을 찾을 수 없습니다: {}", productIdStr);
-                        return null;
-                    }
-                }
-            } else {
-                log.warn("productId 형식이 올바르지 않습니다: {}", productIdObj);
-                return null;
-            }
-            
-            // DB에서 실제 상품 정보 조회
-            Product product = productService.getProduct(productId);
-            
-            if (product == null) {
-                log.warn("상품을 찾을 수 없습니다: {}", productId);
-                return null;
-            }
-            
-            // 이미지 URL 생성
-            String imageUrl = "/img/noimg.png";
-            if (product.getImgPath() != null && product.getImgName() != null) {
-                String path = product.getImgPath();
+            Object obj = pd.get("productId");
+            long id = (obj instanceof Number)
+                ? ((Number) obj).longValue()
+                : Long.parseLong(obj.toString());
+
+            Product p = productService.getProduct(id);
+            if (p == null) return null;
+
+            String img = "/img/noimg.png";
+            if (p.getImgPath() != null && p.getImgName() != null) {
+                String path = p.getImgPath();
                 if (!path.endsWith("/")) path += "/";
-                imageUrl = path + product.getImgName();
+                img = path + p.getImgName();
             }
-            
+
             return RecommendedProduct.builder()
-                .productId(productId)
-                .name(product.getName())
-                .brandName(product.getBrand() != null ? product.getBrand().getBrandName() : "")
-                .volume((String) productData.get("volume"))
-                .price(product.getSellPrice())
-                .reason((String) productData.get("reason"))
-                .imageUrl(imageUrl)
+                .productId(id)
+                .name(p.getName())
+                .brandName(p.getBrand() != null ? p.getBrand().getBrandName() : "")
+                .volume((String) pd.get("volume"))
+                .price(p.getSellPrice())
+                .reason((String) pd.get("reason"))
+                .imageUrl(img)
                 .build();
-                
+
         } catch (Exception e) {
-            log.error("상품 매핑 실패: {}", productData, e);
+            log.error("상품 매핑 실패", e);
             return null;
         }
     }
 
-    /**
-     * 상품명으로 productId 찾기 (새로 추가된 메서드)
-     */
-    private Long findProductIdByName(String productName) {
-        try {
-            // 1. 언더스코어로 분리된 경우 처리 (예: "diptyque_tam_dao")
-            if (productName.contains("_")) {
-                String[] parts = productName.split("_");
-                if (parts.length >= 2) {
-                    String brandName = parts[0];
-                    String name = String.join(" ", java.util.Arrays.copyOfRange(parts, 1, parts.length));
-                    
-                    // ProductMapper를 통해 브랜드명과 상품명으로 검색
-                    List<Map<String, Object>> products = productMapper.findByBrandAndName(brandName, name);
-                    
-                    if (!products.isEmpty()) {
-                        Object idObj = products.get(0).get("productId"); // findByBrandAndName은 "productId" 반환
-                        if (idObj instanceof Number) {
-                            return ((Number) idObj).longValue();
-                        }
-                    }
-                }
-            }
-            
-            // 2. 일반 상품명으로 검색
-            List<Map<String, Object>> products = productMapper.findByProductName(productName);
-            
-            if (!products.isEmpty()) {
-                Object idObj = products.get(0).get("productId"); // findByProductName은 "productId" 반환
-                if (idObj instanceof Number) {
-                    return ((Number) idObj).longValue();
-                }
-            }
-            
-            return null;
-        } catch (Exception e) {
-            log.error("상품명으로 ID 찾기 실패: {}", productName, e);
-            return null;
-        }
-    }
-    
-    // 유틸리티 메서드들
-    private Long convertNoteToId(String noteName) {
-        if (noteName == null) return 6L; // 기본값: floral
-        
-        Map<String, Long> mapping = Map.of(
-            "floral", 6L, "citrus", 7L, "woody", 2L, "spicy", 1L,
-            "vanilla", 8L, "fruity", 4L, "herbal", 3L, "gourmand", 5L
-        );
-        return mapping.getOrDefault(noteName.toLowerCase(), 6L);
-    }
-    
-    private List<Long> getGradeIdsByIntensity(String intensity) {
-        if (intensity == null) return List.of(3L, 4L); // 기본값: medium
-        
-        Map<String, List<Long>> mapping = Map.of(
-            "light", List.of(2L, 4L),    // 오드코롱, 오드뚜왈렛
-            "medium", List.of(3L, 4L),   // 오드퍼퓸, 오드뚜왈렛  
-            "strong", List.of(1L, 3L)    // 퍼퓸, 오드퍼퓸
-        );
-        return mapping.getOrDefault(intensity.toLowerCase(), List.of(3L, 4L));
-    }
-    
-    private String extractProductIds(String aiResult) {
-        try {
-            Map<String, Object> analysis = objectMapper.readValue(aiResult, Map.class);
-            Map<String, Object> situationalRecs = (Map<String, Object>) analysis.get("situationalRecommendations");
-            
-            if (situationalRecs == null) {
-                return "";
-            }
-            
-            Set<Long> allProductIds = new HashSet<>();
-            
-            for (Map.Entry<String, Object> entry : situationalRecs.entrySet()) {
-                Map<String, Object> situation = (Map<String, Object>) entry.getValue();
-                List<Map<String, Object>> products = (List<Map<String, Object>>) situation.get("products");
-                
-                if (products != null) {
-                    for (Map<String, Object> product : products) {
-                        Object productIdObj = product.get("productId");
-                        if (productIdObj != null) {
-                            try {
-                                // 수정: 안전한 Long 변환
-                                if (productIdObj instanceof Number) {
-                                    allProductIds.add(((Number) productIdObj).longValue());
-                                } else if (productIdObj instanceof String) {
-                                    Long id = Long.parseLong((String) productIdObj);
-                                    allProductIds.add(id);
-                                }
-                            } catch (NumberFormatException e) {
-                                log.warn("productId 파싱 실패, 건너뜀: {}", productIdObj);
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return allProductIds.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
-                
-        } catch (Exception e) {
-            log.error("상품 ID 추출 실패", e);
-            return "";
-        }
-    }
-    
-    private UserPreference createFallbackRecommendation(Users user, Map<String, String> survey) {
-        try {
-            // Fallback JSON 생성 - 기본 추천 상품들로 구성
-            Map<String, Object> fallbackJson = new HashMap<>();
-            Map<String, Object> situationalRecs = new HashMap<>();
-            
-            // 기본 일상용 추천
-            Map<String, Object> daily = new HashMap<>();
-            daily.put("products", List.of(
-                Map.of("productId", 1, "volume", "50ml", "reason", "가벼운 향으로 일상에 적합"),
-                Map.of("productId", 2, "volume", "30ml", "reason", "은은한 향으로 사무실에서 사용하기 좋음")
-            ));
-            daily.put("reason", "AI 분석이 불가하여 기본 추천을 제공합니다");
-            
-            // 기본 특별한 날 추천
-            Map<String, Object> special = new HashMap<>();
-            special.put("products", List.of(
-                Map.of("productId", 3, "volume", "100ml", "reason", "특별한 날에 어울리는 매력적인 향")
-            ));
-            special.put("reason", "기본 특별한 날 추천");
-            
-            // 기본 선물 추천
-            Map<String, Object> gift = new HashMap<>();
-            gift.put("products", List.of(
-                Map.of("productId", 4, "volume", "75ml", "reason", "누구나 좋아할 만한 무난한 향")
-            ));
-            gift.put("reason", "기본 선물 추천");
-            
-            situationalRecs.put("daily", daily);
-            situationalRecs.put("special", special);
-            situationalRecs.put("gift", gift);
-            fallbackJson.put("situationalRecommendations", situationalRecs);
-            
-            return UserPreference.builder()
-                .user(user)
-                .surveyAnswers(objectMapper.writeValueAsString(survey))
-                .aiAnalysis(objectMapper.writeValueAsString(fallbackJson))
-                .recommendedProducts("1,2,3,4")
-                .build();
-        } catch (Exception e) {
-            log.error("Fallback 추천 생성 실패", e);
-            return UserPreference.builder()
-                .user(user)
-                .surveyAnswers(survey.toString())
-                .aiAnalysis("{\"fallback\": true}")
-                .recommendedProducts("")
-                .build();
-        }
-    }
-    
     private SituationalRecommendation getEmptyRecommendation(String situation) {
         return SituationalRecommendation.builder()
             .situation(situation)
@@ -472,65 +511,62 @@ public class HybridRecommendationService {
             .analysis("설문조사를 먼저 완료해주세요")
             .build();
     }
+    private Integer convertNoteToId(String note) {
+        if (note == null) return 6;
+        Map<String, Integer> m = new HashMap<>();
+        m.put("floral", 6);   m.put("플로럴", 6);
+        m.put("citrus", 7);   m.put("시트러스", 7);
+        m.put("woody",  2);   m.put("우디", 2);
+        m.put("spicy",  1);   m.put("스파이시", 1);
+        m.put("fruity", 4);   m.put("프루티", 4);
+        m.put("herbal", 3);   m.put("허벌", 3);
+        return m.getOrDefault(note.toLowerCase(), 6);
+    }
 
-    /**
-     * 사용자 설문 완료 여부 확인
-     */
-    public boolean hasUserCompletedSurvey(String username) {
-        Optional<Users> user = userRepository.findByUserName(username);
-        if (user.isPresent()) {
-            return userPreferenceRepository.existsByUser(user.get());
+
+    private List<Integer> getGradeIdsByIntensity(String intensity) {
+        if (intensity == null || intensity.isBlank()) return List.of(3, 4);
+        String k = intensity.trim().toLowerCase();
+
+        switch (k) {
+            case "오드 코롱": case "eau de cologne": case "light":
+                return List.of(2);
+            case "오드 뚜왈렛": case "eau de toilette": case "medium":
+                return List.of(4);
+            case "오드 퍼퓸": case "eau de parfum": case "strong":
+                return List.of(3);
+            case "퍼퓸": case "parfum":
+                return List.of(1);
+            default:
+                return List.of(3, 4);
         }
-        return false;
     }
 
-    /**
-     * 사용자 선호도 정보 조회
-     */
-    public UserPreference getUserPreference(String userName) {
-        return userPreferenceRepository.findByUser_UserName(userName).orElse(null);
-    }
-
-    /**
-     * 모든 상황별 추천 한번에 조회
-     */
-    public Map<String, SituationalRecommendation> getAllSituationalRecommendations(String userName) {
-        Map<String, SituationalRecommendation> result = new HashMap<>();
-        result.put("daily", getSituationalRecommendation(userName, "daily"));
-        result.put("special", getSituationalRecommendation(userName, "special"));
-        result.put("gift", getSituationalRecommendation(userName, "gift"));
-        return result;
-    }
-
-    /**
-     * 추천 상품 ID 리스트 조회
-     */
-    public List<Long> getRecommendedProductIds(String userName) {
-        UserPreference preference = userPreferenceRepository.findByUser_UserName(userName).orElse(null);
-        if (preference == null || preference.getRecommendedProducts() == null) {
-            return Collections.emptyList();
-        }
-
+    // ===== Fallback(JSON 문자열, situationalRecommendations 포맷) =====
+    private String buildFallbackJson(Map<String, String> survey, List<Map<String, Object>> candidates) {
         try {
-            return java.util.Arrays.stream(preference.getRecommendedProducts().split(","))
-                .filter(s -> !s.trim().isEmpty())
-                .map(s -> Long.parseLong(s.trim()))
-                .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.error("추천 상품 ID 파싱 실패: {}", userName, e);
-            return Collections.emptyList();
-        }
-    }
+            if (candidates == null || candidates.isEmpty()) {
+                return "{\"situationalRecommendations\":{}}";
+            }
+            Collections.shuffle(candidates);
+            List<Map<String, Object>> picks = candidates.stream().limit(3).collect(Collectors.toList());
 
-    /**
-     * 설문 초기화 (재설문을 위한)
-     */
-    @Transactional
-    public void resetUserSurvey(String userName) {
-        Optional<Users> user = userRepository.findByUserName(userName);
-        if (user.isPresent()) {
-            userPreferenceRepository.deleteByUserName(userName);
-            log.info("사용자 설문 데이터 초기화: {}", userName);
+            String usage = survey.getOrDefault("usage", "daily");
+            List<Map<String, Object>> prods = picks.stream().map(p -> Map.of(
+                "productId", p.get("id"),
+                "reason", "설문 조건과 유사한 후보에서 임시 추천"
+            )).collect(Collectors.toList());
+
+            Map<String, Object> usageRec = new HashMap<>();
+            usageRec.put("reason", "AI 분석 실패 시 임시 추천 결과");
+            usageRec.put("products", prods);
+            usageRec.put("source", "fallback"); // ★ 진단
+
+            Map<String, Object> root = Map.of("situationalRecommendations", Map.of(usage, usageRec));
+            return objectMapper.writeValueAsString(root);
+        } catch (Exception e) {
+            log.error("Fallback JSON 생성 실패", e);
+            return "{\"situationalRecommendations\":{}}";
         }
     }
 }

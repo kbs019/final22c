@@ -56,7 +56,7 @@ public class UsersController {
         String role = authentication.getAuthorities().iterator().next().getAuthority();
 
         if ("ROLE_ADMIN".equals(role)) {
-            return "redirect:/admin/userList";
+            return "redirect:/admin/dashboard";
         }
         return "redirect:/main";
 

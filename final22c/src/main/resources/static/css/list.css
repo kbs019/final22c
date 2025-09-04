@@ -1,9 +1,17 @@
 :root{
-  --card-radius: 1rem;
-  --panel-radius: .75rem;
-  --media-ratio: 1 / 1.05;     /* 이미지 영역 비율(텍스트 영역을 더 넓게) */
+  --media-ratio: 1 / 1.05;   /* 이미지 영역 비율(텍스트 영역을 넓게) */
+  --fg-strong:#111;
+  --fg:#222;
+  --fg-soft:#6c757d;
+  --line:#e9ecef;            /* 구분선(최소한) */
   scrollbar-gutter: stable;
 }
+
+/* ===== 전체 ===== */
+html, body{ background:#fff; }
+#content{ background:#fff; } /* layout.html의 래퍼가 회색이면 덮어쓰기 */
+
+*{ box-sizing: border-box; }
 
 /* ===== 검색바 ===== */
 .search-wrap{
@@ -14,174 +22,365 @@
 }
 .search-box input{
   width:100%;
-  border:1px solid var(--bs-border-color);
-  border-radius:999px;
-  padding:.75rem 3rem .75rem 1rem;
-  outline:none; background:var(--bs-body-bg);
+  border:none;
+  border-bottom:1px solid var(--line);
+  border-radius:0;
+  padding:.8rem 3rem .8rem 0;
+  outline:none; background:transparent;
   font-size:.95rem;
 }
 .search-box input:focus{
-  box-shadow:0 0 0 .2rem rgba(0,0,0,.06);
+  border-bottom-color:#bbb;
 }
 .search-box button{
   position:absolute; top:50%; transform:translateY(-50%);
   border:none; background:transparent; padding:.25rem .5rem; line-height:1;
 }
-#btn-search{ right:.5rem; }
-#btn-clear { right:2.1rem; font-size:1.25rem; }
+#btn-search{ right:.25rem; }
+#btn-clear { right:1.9rem; font-size:1.25rem; }
 
-/* ---------- 필터 패널(기존 유지) ---------- */
+/* ===== 필터(사이드바) ===== */
 .filter-panel{
-  background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--panel-radius);
-  padding: .75rem;
+  background:transparent;
+  padding:.25rem;
+}
+.filter-title{ color:var(--fg); }
+
+.accordion.minimalist .accordion-item{
+  border:none;
+  background:transparent;
+}
+.accordion.minimalist .accordion-item + .accordion-item{ margin-top:.35rem; }
+.accordion.minimalist .accordion-button{
+  padding:.4rem 0;
+  background:transparent;
+  border:none;
+  border-bottom:1px solid var(--line);
+  box-shadow:none;
+  font-weight:600;
+  color:var(--fg);
+  border-radius:0;
+}
+.accordion.minimalist .accordion-button:not(.collapsed){
+  background:transparent;
+  color:var(--fg-strong);
+  box-shadow:none;
+}
+.accordion.minimalist .accordion-body{
+  padding:.35rem 0 .2rem;
 }
 .filter-list{
-  max-height: 280px; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  max-height: 280px; overflow:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
 }
 .filter-list::-webkit-scrollbar{ width: 8px; height: 8px; }
 .filter-list::-webkit-scrollbar-thumb{ background-color: rgba(0,0,0,.15); border-radius: 8px; }
 .filter-list::-webkit-scrollbar-track{ background: transparent; }
-
-.accordion .accordion-item{
-  border: 1px solid var(--bs-border-color);
-  border-radius: .5rem;
-  overflow: hidden;
-  background: var(--bs-body-bg);
+.form-check{ margin:.25rem 0; }
+.form-check-input{ cursor:pointer; }
+.form-check-label{
+  cursor:pointer; display:inline-flex; gap:.3rem; align-items:baseline;
 }
-.accordion .accordion-item + .accordion-item{ margin-top: .5rem; }
-.accordion-button{ padding: .6rem 1rem; font-weight: 600; background: var(--bs-body-bg); }
-.accordion-button:not(.collapsed){ color: inherit; background: var(--bs-body-bg); box-shadow: none; }
-.accordion-body{ padding: .5rem .5rem; }
-.form-check{ margin-bottom: .35rem; }
-.form-check-input{ cursor: pointer; }
-.form-check-label{ cursor: pointer; display: inline-flex; gap: .25rem; align-items: baseline; }
-.form-check-label .text-secondary{ font-size: .85em; }
+.form-check-label .text-secondary{ font-size:.85em; color:var(--fg-soft)!important; }
 
-/* 모바일에서 패널 여백 */
+/* 모바일 사이드 여백 */
 @media (max-width: 767.98px){
-  .filter-panel{ padding: .5rem; }
-  .accordion-button{ padding: .55rem .85rem; }
+  .accordion.minimalist .accordion-button{ padding:.5rem 0; }
 }
 
-/* ---------- 카드 그리드 ---------- */
+/* ===== 카드 그리드 ===== */
 #product-grid .card{
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--card-radius);
-  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-  background: var(--bs-body-bg);
+  border:none;
+  background:transparent;
+  transition: transform .12s ease;
 }
 #product-grid .card:hover{
   transform: translateY(-2px);
-  box-shadow: 0 .25rem .85rem rgba(0,0,0,.10);
-  border-color: rgba(0,0,0,.075);
 }
 
-/* 이미지 영역: 더 작게 + 화이트 여백 */
 .product-card{
   display:flex; flex-direction:column;
 }
+
+/* 이미지 영역: 완전 화이트 캔버스 유지(제품 사진 대비용) */
 .product-card .card-media{
   aspect-ratio: var(--media-ratio);
-  background:#fff;                 /* 템플릿처럼 화이트 캔버스 */
-  border-top-left-radius: var(--card-radius);
-  border-top-right-radius: var(--card-radius);
+  background:#fff;
   display:grid; place-items:center;
-  /* padding: 5%; */
-  border-bottom: 1px solid rgba(0,0,0,.05);
 }
 .product-card .card-media img{
-  width:100%;
-  height:100%;
-  object-fit:contain;               /* 잘림 방지 */
-  display:block;
+  width:100%; height:100%; object-fit:contain; display:block;
 }
 
 #product-grid .card-body{
-  padding:.6rem .65rem .75rem;
+  padding:.55rem 0 .7rem;   /* 바깥 여백만으로 분리감 */
 }
 
-/* 결과 카운트 */
-#result-count{ font-weight: 700; }
-
-/* ===== 정렬 드롭다운 ===== */
-.sort-wrap{ display:flex; align-items:center; }
-.sort-select{
-  min-width: 172px;
-  border-radius: 999px;
-  padding-left: .9rem;
-  padding-right: .9rem;
-  background-color: var(--bs-body-bg);
-  border:1px solid var(--bs-border-color);
-  box-shadow: 0 .1rem .35rem rgba(0,0,0,.04);
+/* 브랜드/이름 */
+.brand-compact{ font-size:.82rem; color:var(--fg-soft)!important; }
+.name-compact{
+  font-size:.92rem; line-height:1.25; color:var(--fg);
 }
-.sort-select:focus{
-  border-color: rgba(0,0,0,.35);
-  box-shadow: 0 0 0 .15rem rgba(0,0,0,.06);
-}
+.linkish{ text-decoration:none; }
+.product-card:hover .name-compact{ text-decoration:underline; }
 
-/* ===== 가격 표시 (톤다운 레드 텍스트 + 인접 취소선 정가) ===== */
+/* ===== 가격 표시 ===== */
 .price-row{
-  display:flex;
-  align-items:baseline;
-  gap:.4rem;
-  flex-wrap:nowrap;
-  white-space:nowrap;
+  display:flex; align-items:baseline; gap:.45rem; white-space:nowrap;
 }
 .price-row .disc{
-  color:#c85a5a;
-  font-weight:500;
-  font-size:.88rem;                 /* 더 작게 */
+  color:#c85a5a; font-weight:500; font-size:.88rem;
 }
 .price-row .sale{
-  font-weight:800;
-  font-size:.98rem;                 /* 더 작게 */
-  color:#111;
+  font-weight:800; font-size:.98rem; color:var(--fg-strong);
 }
 .price-row .list{
-  color:#aeb4bb;
-  text-decoration:line-through;
-  font-size:.88rem;                 /* 더 작게 */
-  margin-left:.25rem;
+  color:#aeb4bb; text-decoration:line-through; font-size:.88rem; margin-left:.1rem;
 }
 .card .price-row .sale,
 .card .price-row .disc,
-.card .price-row .list{
-  line-height:1.08;
-}
+.card .price-row .list{ line-height:1.08; }
 
-/* ===== 상품/브랜드 텍스트 더 컴팩트 ===== */
-.brand-compact{ font-size:.82rem; }
-.name-compact{
+/* ===== 정렬 드롭다운: 미니멀 언더라인 ===== */
+.sort-wrap{ display:flex; align-items:center; }
+.sort-select.minimalist-select{
+  min-width: 172px;
+  border:none;
+  border-bottom:1px solid var(--line);
+  border-radius:0;
+  padding:.35rem 0 .35rem .05rem;
+  background:transparent;
+  box-shadow:none;
   font-size:.9rem;
-  line-height:1.25;
+}
+.sort-select.minimalist-select:focus{
+  border-bottom-color:#bbb;
+  box-shadow:none;
+  outline:none;
 }
 
-/* ===== 페이지네이션(알약형) ===== */
-.pager-rounded .page-link{
-  border-radius: 999px !important;
-  margin: 0 .15rem;
-  padding: .3rem .6rem;
-  border:1px solid var(--bs-border-color);
-  background: var(--bs-body-bg);
-  box-shadow: 0 .1rem .25rem rgba(0,0,0,.03);
+/* ===== 페이지네이션: 텍스트형 ===== */
+.pager-minimal .page-link{
+  border:none !important;
+  background:transparent !important;
+  color:var(--fg);
+  padding:.25rem .45rem;
+  border-radius:0 !important;
 }
-.pager-rounded .page-item.active .page-link{
-  background:#111;
-  color:#fff;
-  border-color:#111;
+.pager-minimal .page-item.active .page-link{
+  color:var(--fg-strong);
+  border-bottom:2px solid var(--fg-strong) !important;
 }
-.pager-rounded .page-item.disabled .page-link{
-  opacity:.45;
-  background: var(--bs-body-bg);
+.pager-minimal .page-item.disabled .page-link{
+  color:#b9b9b9;
 }
 
-/* 다크 모드 대비 */
+/* ===== 결과 카운트 ===== */
+#result-count{ font-weight:700; }
+
+/* ===== 버튼(필터 초기화) ===== */
+.btn-reset{
+  border:none;
+  background:transparent;
+  color:#333;
+  text-align:left;
+  padding:.25rem 0;
+  border-bottom:1px solid var(--line);
+  border-radius:0;
+}
+.btn-reset:hover{ color:#000; }
+
+/* ===== 다크 모드 대비(화이트 고정 콘셉트지만 대비만 약간) ===== */
 @media (prefers-color-scheme: dark){
-  .filter-panel{ border-color: rgba(255,255,255,.12); }
-  #product-grid .card{ border-color: rgba(255,255,255,.12); }
-  #product-grid .card:hover{ border-color: rgba(255,255,255,.22); }
-  .filter-list::-webkit-scrollbar-thumb{ background-color: rgba(255,255,255,.25); }
-  .product-card .card-media{ border-bottom-color: rgba(255,255,255,.12); }
+  html, body, #content { background:#fff; color:#111; }
+  .filter-list::-webkit-scrollbar-thumb{ background-color: rgba(0,0,0,.25); }
 }
+
+/* ===== 사이드바를 '보더리스 + sticky'로 ===== */
+:root{
+  /* 헤더가 sticky-top(부트스트랩)인 높이 보정 값 */
+  --sticky-top: 72px; /* 필요시 64~88px 사이로 미세조정 */
+}
+
+/* 사이드바 자체는 투명, 박스/그림자/테두리 없음 */
+.filter-panel{
+  background: transparent;
+  padding: .25rem 0;
+}
+
+/* 화면을 스크롤해도 사이드바는 고정(따라오기) */
+.filter-sticky{
+  position: sticky;
+  top: var(--sticky-top);
+}
+
+/* 사이드바 내부 콘텐츠만 세로 스크롤(뷰포트 기준 높이 제한) */
+.filter-scroll{
+  max-height: calc(100dvh - var(--sticky-top) - 84px); 
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 모바일에서는 sticky 비활성(공간 협소 방지) */
+@media (max-width: 767.98px){
+  .filter-sticky{ position: static; top: auto; }
+  .filter-scroll{ max-height: none; overflow: visible; }
+}
+
+/* 좌우 컬럼 구분감만 '아주 은은한' 세로 헤어라인으로(박스 없이) */
+@media (min-width: 768px){
+  aside.col-12.col-md-3.col-lg-2{ position: relative; }
+  aside.col-12.col-md-3.col-lg-2::after{
+    content:"";
+    position: absolute; 
+    top: 0; bottom: 0; right: -4px;
+    width: 1px;
+    background: var(--line);
+    opacity: .5;                 /* 너무 세면 .3 이하로 */
+    pointer-events: none;
+  }
+}
+
+/* 아코디언은 기존의 보더리스 미니멀 스타일 유지 */
+.accordion.minimalist .accordion-item{ border:none; background:transparent; }
+.accordion.minimalist .accordion-button{
+  padding:.4rem 0;
+  background:transparent;
+  border:none;
+  border-bottom:1px solid var(--line);
+  box-shadow:none;
+  font-weight:600;
+  color:var(--fg);
+  border-radius:0;
+}
+.accordion.minimalist .accordion-body{ padding:.35rem 0 .2rem; }
+
+/* 필터 초기화 버튼도 텍스트형 */
+.btn-reset{
+  border:none;
+  background:transparent;
+  color:#333;
+  text-align:left;
+  padding:.25rem 0;
+  border-bottom:1px solid var(--line);
+  border-radius:0;
+}
+.btn-reset:hover{ color:#000; }
+
+/* ===============================
+   상호작용 톤 일원화 패치
+   =============================== */
+
+/* 공통 전환감 */
+:root{
+  --fx-fast: .14s ease;
+  --ink:#111; --ink-2:#222; --ink-3:#6c757d; --line:#e9ecef;
+}
+
+/* 1) 정렬 셀렉트 (열기/호버/포커스) */
+.sort-select.minimalist-select{
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  background:transparent;
+  border:none; border-bottom:1px solid var(--line);
+  border-radius:0;
+  padding:.35rem 1.2rem .35rem .05rem; /* 오른쪽 약간 여유 */
+  font-size:.9rem; color:var(--ink-2);
+  transition:border-color var(--fx-fast);
+  background-image: none; /* BS 기본 화살표 제거 */
+  position:relative;
+}
+.sort-select.minimalist-select:hover{
+  border-bottom-color:#cfcfcf; /* 살짝만 강조 */
+}
+.sort-select.minimalist-select:focus{
+  outline:none;
+  border-bottom-color:var(--ink);
+  box-shadow: inset 0 -2px 0 0 var(--ink); /* 언더라인 강조 */
+  color:var(--ink);
+}
+.sort-select.minimalist-select:active{
+  border-bottom-color:var(--ink);
+}
+
+/* 화살표 대체(오른쪽 작은 ▾) */
+.sort-wrap{ position:relative; }
+.sort-wrap::after{
+  content:"▾";
+  position:absolute; right:.15rem; top:50%; transform:translateY(-50%);
+  font-size:.9rem; line-height:1; color:var(--ink-3);
+  pointer-events:none;
+}
+
+/* Windows 등 일부 환경에서 option 팝업은 OS 네이티브 UI로
+   완전한 테마가 불가합니다. 본 컨트롤(닫힌 상태)의 톤만 일원화합니다. */
+
+/* 2) 아코디언(사이드바) - 호버/포커스/활성 */
+.accordion.minimalist .accordion-button{
+  background:transparent;
+  border:none; border-bottom:1px solid var(--line);
+  color:var(--ink-2);
+  transition:color var(--fx-fast), border-color var(--fx-fast);
+  box-shadow:none;
+}
+.accordion.minimalist .accordion-button:hover{
+  color:var(--ink);
+  border-bottom-color:#dcdcdc;
+}
+.accordion.minimalist .accordion-button:focus{
+  box-shadow:none;
+  border-bottom-color:var(--ink);
+}
+.accordion.minimalist .accordion-button::after{
+  /* BS 기본 chevron 제거 후 텍스트 화살표로 교체 */
+  background-image:none !important;
+  content:"▾";
+  transform: rotate(0deg);
+  transition: transform var(--fx-fast);
+  font-size:.9rem; color:var(--ink-3);
+}
+.accordion.minimalist .accordion-button:not(.collapsed)::after{
+  transform: rotate(180deg);
+  color:var(--ink-3);
+}
+.accordion.minimalist .accordion-button:not(.collapsed){
+  color:var(--ink);
+  border-bottom-color:#dcdcdc;
+}
+
+/* 3) 체크박스(항목 호버/선택 톤) */
+.form-check-input{
+  width:1rem; height:1rem;
+  margin-top:.2rem;
+  accent-color: var(--ink);             /* 체크 색상 통일 */
+  box-shadow:none !important;
+}
+.form-check-input:focus{ outline:none; box-shadow:none; }
+.form-check-label{
+  color:var(--ink-2);
+  transition: color var(--fx-fast), text-decoration-color var(--fx-fast);
+}
+.form-check:hover .form-check-label{
+  color:var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: .06em;
+  text-underline-offset: .12em;
+}
+
+/* 4) 사이드바-리스트 사이 간격(살짝 띄우기) */
+@media (min-width: 768px){
+  aside.col-12.col-md-3.col-lg-2{ padding-right: 12px; } /* 필요 시 8~16px로 조절 */
+  aside.col-12.col-md-3.col-lg-2::after{ right:-6px; }   /* 세로 헤어라인도 약간 왼쪽으로 */
+}
+
+/* 5) 페이지네이션/링크류도 같은 톤 */
+.pager-minimal .page-link{
+  color:var(--ink-2);
+  transition: color var(--fx-fast), border-color var(--fx-fast);
+}
+.pager-minimal .page-link:hover{ color:var(--ink); }
+.pager-minimal .page-item.active .page-link{
+  color:var(--ink);
+  border-bottom:2px solid var(--ink) !important;
+}
+
+
