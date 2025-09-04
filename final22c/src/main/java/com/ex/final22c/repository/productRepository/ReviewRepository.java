@@ -16,8 +16,23 @@ import com.ex.final22c.data.user.Users;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-    List<Review> findByProductOrderByCreateDateDesc(Product product);      // 최신순
-    List<Review> findByProductOrderByRatingDescCreateDateDesc(Product product); // 평점순(=평점 우선)
+    @Query("""
+      select r
+      from Review r
+      where r.product = :product
+      and (r.status is null or r.status = 'ACTIVE')
+      order by r.createDate desc, r.reviewId desc
+    """)
+    List<Review> findByProductOrderByCreateDateDesc(@Param("product") Product product);      // 최신순
+
+    @Query("""
+      select r
+      from Review r
+      where r.product = :product
+      and (r.status is null or r.status = 'ACTIVE')
+      order by r.rating desc, r.createDate desc, r.reviewId desc
+    """)
+    List<Review> findByProductOrderByRatingDescCreateDateDesc(@Param("product") Product product); // 평점순(=평점 우선)
 
     // ✅ 좋아요순 (동점 시 최신, 그다음 id 내림차순으로 안정화)
     @Query("""
@@ -25,15 +40,27 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
       from Review r
       left join r.likers lk
       where r.product = :product
+      and (r.status is null or r.status = 'ACTIVE')
       group by r
       order by count(lk) desc, r.createDate desc, r.reviewId desc
     """)
     List<Review> findBestByProduct(@Param("product") Product product);
 
-    long countByProduct(Product product);
+    @Query("""
+      select count(*)
+      from Review r
+      where r.product = :product
+      and (r.status is null or r.status = 'ACTIVE' )
+    """)
+    long countByProduct(@Param("product") Product product);
 
-    @Query("select coalesce(avg(r.rating),0) from Review r where r.product = ?1")
-    double avgRatingByProduct(Product product);
+    @Query("""
+      select coalesce(avg(r.rating),0) 
+      from Review r 
+      where r.product = :product
+      and (r.status is null or r.status = 'ACTIVE')
+    """)
+    double avgRatingByProduct(@Param("product") Product product);
 
     // 내가 쓴 리뷰
      @EntityGraph(attributePaths = {"product", "product.brand"})
