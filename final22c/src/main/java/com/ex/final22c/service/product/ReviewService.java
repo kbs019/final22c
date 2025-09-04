@@ -32,11 +32,12 @@ public class ReviewService {
     public List<ReviewDto> getReviews(Product product, String sort) {
         List<Review> reviews;
 
-
         if ("recent".equalsIgnoreCase(sort)) {
             reviews = reviewRepository.findByProductOrderByCreateDateDesc(product);
-        } else {
+        } else if ( "rating".equalsIgnoreCase(sort) ) {
             reviews = reviewRepository.findByProductOrderByRatingDescCreateDateDesc(product);
+        } else {
+            reviews = reviewRepository.findBestByProduct(product);
         }
 
         // DTO로 변환 + 필터 적용
@@ -44,6 +45,7 @@ public class ReviewService {
                 .<ReviewDto>map(rv -> toDto(rv, profanityFilter))
                 .collect(Collectors.toList());
     }
+
     private ReviewDto toDto(Review review, ProfanityFilter filter) {
         return new ReviewDto(
                 review.getReviewId(),
@@ -53,7 +55,8 @@ public class ReviewService {
                 review.getCreateDate(), // 필요하면 포맷 적용
                 review.getLikers().stream()
                         .map(u -> u.getUserName())
-                        .collect(Collectors.toSet()) // 공감 사용자 이름 집합
+                        .collect(Collectors.toSet()), // 공감 사용자 이름 집합
+                review.getStatus()
         );
     }
 

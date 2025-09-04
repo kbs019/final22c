@@ -192,13 +192,17 @@ body.dlg-open{
 /* label을 그리드 자식처럼 쪼개기 */
 .list-panel .actions label.head-label{ display: contents; }
 
-/* 1열=체크박스, 3열=텍스트 */
+/* 1열=체크박스, 2열=텍스트 */
 .list-panel .actions label.head-label > input{
     grid-column:1; justify-self:center;
 }
-.list-panel .actions label.head-label > span{
+.list-panel .actions label.head-label > .checkAllText{
     grid-column:2; align-self:center; color:#888; 
 }
+.list-panel .actions label.head-label > .cartDetailCount{
+    grid-column:3; align-self:center; color:#888; 
+}
+
 
 .list-panel .actions #btnRemove{ grid-column:4; justify-self:end; align-self:center; width:auto; }
 

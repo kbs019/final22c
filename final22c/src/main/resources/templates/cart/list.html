@@ -11,14 +11,15 @@
             <div class="actions" id="actionsBar">
                 <label class="head-label">
                     <input type="checkbox" id="checkAll">
-                    <span>전체선택</span>
+                    <span class="checkAllText">전체선택</span>
+                    <span class="cartDetailCount" th:text="|${cartCount} / ${cartLimit}|">0 / 20</span>
                 </label>
                 <button type="button" id="btnRemove" class="btn btn-outline-secondary btn-sm">선택 삭제</button>
             </div>
 
             <div id="cartList">
                 <!-- 비어있을 때 문구 -->
-                <div id="emptyMsg" class="empty" th:if="${#lists.isEmpty(products)}">
+                <div id="emptyMsg" class="empty" th:style="${#lists.isEmpty(products)} ? '' : 'display:none'">
                     장바구니가 비어 있습니다.
                 </div>
 
@@ -188,6 +189,7 @@
                 if ($actions) $actions.style.display = '';
                 if ($empty) $empty.style.display = 'none';
             }
+            updateCartCountFromDom();
         }
 
         function showDialog(options = {}) {
@@ -256,6 +258,15 @@
         //     token: document.querySelector('meta[name="_csrf"]').content,
         //     header: document.querySelector('meta[name="_csrf_header"]').content
         // });
+
+        // limit 값을 서버와 동기화(없으면 20)
+        const CART_LIMIT = /*[[${cartLimit}]]*/ 20;
+
+        const cntEl = document.querySelector('.cartDetailCount');
+        const updateCartCountFromDom = () => {
+            const n = document.querySelectorAll('#cartList .cart-row').length;
+            if (cntEl) cntEl.textContent = `${n} / ${CART_LIMIT}`;
+        };
 
         const $list = document.getElementById('cartList');              // 장바구니 전체
         const $checkAll = document.getElementById('checkAll');          // 체크박스
@@ -446,6 +457,7 @@
                                             row.remove();
                                             refreshSummary();
                                             updateEmptyState();
+                                            updateCartCountFromDom();
 
                                             // 전체선택 체크박스 상태 동기화
                                             const rows = Array.from($list.querySelectorAll('.cart-row')).filter(isSellable);
@@ -553,10 +565,12 @@
 
                             refreshSummary();   // 합계/버튼 상태 갱신
                             updateEmptyState(); // ✅ 전체선택/empty 메시지 표시 갱신
+                            updateCartCountFromDom();
                         } else {
                             showDialog({ title: '장바구니', message: '삭제 중 문제가 발생했습니다.' });
                         }
                     });
+                updateCartCount(document.querySelectorAll('.cart-row').length);
             });
         }
 
@@ -613,6 +627,7 @@
         // 초기 합계 & 초기 상태 update
         refreshSummary();
         updateEmptyState();
+        updateCartCountFromDom();
 
         window.addEventListener('beforeunload', () => {
             // 페이지 떠날 때 현재 장바구니 DOM을 localStorage에 저장
@@ -623,6 +638,7 @@
         window.addEventListener('pageshow', () => {
             refreshSummary();
             updateEmptyState();
+            updateCartCountFromDom();
         });
     </script>
 </th:block>

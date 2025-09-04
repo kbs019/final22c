@@ -58,8 +58,8 @@ public class ProductController {
         model.addAttribute("allBest", productService.getAllBest(10));
 
         // 여성/남성 베스트 TOP10 (Users.gender: 1=남, 2=여)
-        model.addAttribute("womanBest", productService.getGenderBest("F", 10));  // ✅ 여성 = F
-        model.addAttribute("manBest",   productService.getGenderBest("M", 10));  // ✅ 남성 = M
+        model.addAttribute("womanBest", productService.getGenderBest("F", 10)); // ✅ 여성 = F
+        model.addAttribute("manBest", productService.getGenderBest("M", 10)); // ✅ 남성 = M
 
         return "main/main";
     }
@@ -117,7 +117,7 @@ public class ProductController {
     @PreAuthorize("isAuthenticated()")
     @ResponseBody
     public Map<String, Object> toggleLike(@PathVariable("reviewId") Long reviewId,
-                                        @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal UserDetails principal) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
         boolean liked = reviewService.toggleLike(reviewId, actor);
@@ -129,7 +129,7 @@ public class ProductController {
     @GetMapping("/etc/review/new")
     @PreAuthorize("isAuthenticated()")
     public String reviewNew(@RequestParam("productId") long productId,
-                            Model model) {
+            Model model) {
         Product product = productService.getProduct(productId);
         model.addAttribute("product", product);
         return "main/etc/review-form";
@@ -166,9 +166,9 @@ public class ProductController {
     @GetMapping("/etc/review/{reviewId}/edit")
     @PreAuthorize("isAuthenticated()")
     public String reviewEditForm(@PathVariable("reviewId") Long reviewId,
-                                 @RequestParam("productId") long productId,
-                                 @AuthenticationPrincipal UserDetails principal,
-                                 Model model) {
+            @RequestParam("productId") long productId,
+            @AuthenticationPrincipal UserDetails principal,
+            Model model) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
         Review review = reviewService.get(reviewId); // 권한은 폼에서만 표시되지만 서버에서도 체크
@@ -183,11 +183,11 @@ public class ProductController {
     @PostMapping("/etc/review/{reviewId}/edit")
     @PreAuthorize("isAuthenticated()")
     public String reviewEdit(@PathVariable("reviewId") Long reviewId,
-                             @RequestParam("productId") long productId,
-                             @RequestParam("rating") int rating,
-                             @RequestParam("content") String content,
-                             @AuthenticationPrincipal UserDetails principal,
-                             RedirectAttributes ra) {
+            @RequestParam("productId") long productId,
+            @RequestParam("rating") int rating,
+            @RequestParam("content") String content,
+            @AuthenticationPrincipal UserDetails principal,
+            RedirectAttributes ra) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
         reviewService.update(reviewId, actor, rating, content);
@@ -199,14 +199,48 @@ public class ProductController {
     @PostMapping("/etc/review/{reviewId}/delete")
     @PreAuthorize("isAuthenticated()")
     public String reviewDelete(@PathVariable("reviewId") Long reviewId,
-                               @RequestParam("productId") long productId,
-                               @AuthenticationPrincipal UserDetails principal,
-                               RedirectAttributes ra) {
+            @RequestParam("productId") long productId,
+            @AuthenticationPrincipal UserDetails principal,
+            RedirectAttributes ra) {
         Users actor = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
         reviewService.delete(reviewId, actor);
         ra.addFlashAttribute("msg", "후기가 삭제되었습니다.");
         return "redirect:/main/content/" + productId;
+    }
+
+    // ✅ 리뷰 조각만 반환 (추천순/최신순 Ajax)
+    @GetMapping("/content/{productId}/reviews")
+    public String getReviewsFragment(
+            @PathVariable("productId") long productId,
+            @RequestParam(value = "sort", defaultValue = "best") String sort,
+            @AuthenticationPrincipal UserDetails principal,
+            Model model) {
+
+        Product product = productService.getProduct(productId);
+
+        // 기존과 동일한 소팅 로직 사용
+        List<ReviewDto> reviews = reviewService.getReviews(product, sort);
+
+        // 로그인 사용자가 누른 리뷰 id 세트
+        Set<Long> likedReviewIds = new HashSet<>();
+        if (principal != null) {
+            String me = principal.getUsername();
+            for (ReviewDto rv : reviews) {
+                // ReviewDto.likers = List<String> (userName)
+                if (rv.getLikers() != null && rv.getLikers().contains(me)) {
+                    likedReviewIds.add(rv.getReviewId());
+                }
+            }
+        }
+
+        model.addAttribute("reviews", reviews);
+        model.addAttribute("likedReviewIds", likedReviewIds);
+        model.addAttribute("productId", productId);
+        model.addAttribute("sort", sort);
+
+        // content.html 안의 reviewList fragment 반환
+        return "main/content :: reviewList";
     }
 
     // ========================= 리스트(정렬 + 페이징) =========================
@@ -225,7 +259,7 @@ public class ProductController {
         model.addAttribute("brands", productService.getBrandOptions());
         model.addAttribute("grades", productService.getGradeOptions());
         model.addAttribute("mainNotes", productService.getMainNoteOptions());
-        model.addAttribute("volumes",   productService.getVolumeOptions());
+        model.addAttribute("volumes", productService.getVolumeOptions());
 
         // 리스트 + 전체 카운트
         Map<String, Object> res = productService.getProductsPaged(
@@ -284,22 +318,21 @@ public class ProductController {
         Map<String, Object> res = productService.getProducts(
                 Collections.singletonList(brandNo),
                 null, null, null,
-                null
-        );
+                null);
 
         model.addAttribute("brand", brand);
-        model.addAttribute("total",  (Long) res.get("total"));
+        model.addAttribute("total", (Long) res.get("total"));
         model.addAttribute("products", (List<Map<String, Object>>) res.get("items"));
 
         return "main/brandDetail";
     }
-    
+
     // ==== MY TYPE ====
     @GetMapping("/myType")
     public String myType() {
         return "main/myType";
     }
-    
+
     /**
      * 설문 기반 향수 추천 API (간단 버전)
      */
@@ -308,7 +341,7 @@ public class ProductController {
     public ResponseEntity<Map<String, Object>> getRecommendations(
             @RequestParam("mainNoteIds") List<Long> mainNoteIds,
             @RequestParam(name = "size", defaultValue = "6") int size) {
-        
+
         try {
             if (mainNoteIds == null || mainNoteIds.isEmpty()) {
                 Map<String, Object> errorResponse = new HashMap<>();
@@ -317,41 +350,42 @@ public class ProductController {
                 errorResponse.put("items", List.of());
                 return ResponseEntity.badRequest().body(errorResponse);
             }
-            
+
             // 기존 ProductService 메서드 활용
             List<Map<String, Object>> recommendations = productService.getRecommendationsByMainNotes(mainNoteIds, size);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("total", recommendations.size());
             response.put("items", recommendations);
             response.put("mainNoteIds", mainNoteIds);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             System.err.println("추천 API 오류: " + e.getMessage());
             e.printStackTrace();
-            
+
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "추천 상품 조회 중 오류가 발생했습니다.");
             errorResponse.put("items", List.of());
-            
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
     /**
      * 설문 페이지용 - 메인노트별 상품 개수 조회 API
+     * 
      * @param mainNoteIds 메인노트 ID들
      * @return 각 메인노트별 상품 개수 정보
      */
     @GetMapping("/api/products/count-by-mainnotes")
-    @ResponseBody  
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> getProductCountByMainNotes(
             @RequestParam("mainNoteIds") List<Long> mainNoteIds) {
-        
+
         try {
             if (mainNoteIds == null || mainNoteIds.isEmpty()) {
                 Map<String, Object> errorResponse = new HashMap<>();
@@ -360,30 +394,30 @@ public class ProductController {
                 errorResponse.put("message", "메인노트 ID가 필요합니다.");
                 return ResponseEntity.badRequest().body(errorResponse);
             }
-            
+
             long totalCount = productService.countProductsByMainNotes(mainNoteIds);
             boolean hasProducts = productService.hasRecommendableProducts(mainNoteIds);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("total", totalCount);
             response.put("mainNoteIds", mainNoteIds);
             response.put("hasRecommendableProducts", hasProducts);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             System.err.println("상품 개수 조회 API 오류: " + e.getMessage());
-            
+
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("total", 0);
             errorResponse.put("error", e.getMessage());
-            
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-    
+
     // ===================== 추가: 구매자 통계 API (명수) =====================
     @GetMapping("/api/product/{id}/buyer-stats")
     @ResponseBody
@@ -393,6 +427,7 @@ public class ProductController {
 
     /**
      * 설문 결과 상세 분석 API (선택사항)
+     * 
      * @param answers 설문 답변들 (JSON 형태)
      * @return 상세한 분석 결과 및 추천 이유
      */
@@ -400,55 +435,56 @@ public class ProductController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> analyzeSurveyResults(
             @RequestBody Map<String, String> answers) {
-        
+
         try {
             // 설문 답변 분석 로직
             Map<String, Object> analysis = analyzeSurveyAnswers(answers);
-            
+
             // 추천 메인노트 추출
             @SuppressWarnings("unchecked")
             List<Long> recommendedMainNotes = (List<Long>) analysis.get("recommendedMainNotes");
-            
+
             // 해당 메인노트의 상품들 조회
             List<Map<String, Object>> products = productService.getRecommendationsByMainNotes(recommendedMainNotes, 6);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("analysis", analysis);
             response.put("recommendations", products);
             response.put("totalProducts", products.size());
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             System.err.println("설문 분석 API 오류: " + e.getMessage());
-            
+
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "설문 분석 중 오류가 발생했습니다.");
-            
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
     /**
      * 설문 답변 분석 헬퍼 메서드
+     * 
      * @param answers 설문 답변 Map
      * @return 분석 결과
      */
     private Map<String, Object> analyzeSurveyAnswers(Map<String, String> answers) {
         // 메인노트 매핑 (프론트엔드와 동일)
         Map<String, Long> mainNoteMapping = Map.of(
-            "floral", 6L,    // 플로랄
-            "citrus", 7L,    // 시트러스  
-            "woody", 2L,     // 우디
-            "spicy", 1L,     // 스파이시
-            "vanilla", 8L,   // 바닐라
-            "fruity", 4L,    // 푸루티
-            "herbal", 3L,    // 허벌
-            "gourmand", 5L   // 구르망
+                "floral", 6L, // 플로랄
+                "citrus", 7L, // 시트러스
+                "woody", 2L, // 우디
+                "spicy", 1L, // 스파이시
+                "vanilla", 8L, // 바닐라
+                "fruity", 4L, // 푸루티
+                "herbal", 3L, // 허벌
+                "gourmand", 5L // 구르망
         );
-        
+
         String demographics = answers.get("demographics");
         String mood = answers.get("mood");
         String season = answers.get("season");
@@ -457,11 +493,11 @@ public class ProductController {
         String usage = answers.get("usage");
         String personality = answers.get("personality");
         String budget = answers.get("budget");
-        
+
         // 메인 노트 결정
         Long primaryMainNote = mainNoteMapping.getOrDefault(notes, 6L); // 기본값: 플로랄
         Set<Long> secondaryMainNotes = new HashSet<>();
-        
+
         // 답변 조합에 따른 추가 노트 추천
         if ("romantic".equals(mood)) {
             secondaryMainNotes.addAll(List.of(6L, 8L)); // 플로랄, 바닐라
@@ -472,7 +508,7 @@ public class ProductController {
         } else if ("luxurious".equals(mood)) {
             secondaryMainNotes.addAll(List.of(1L, 5L)); // 스파이시, 구르망
         }
-        
+
         if ("spring".equals(season)) {
             secondaryMainNotes.addAll(List.of(6L, 7L)); // 플로랄, 시트러스
         } else if ("summer".equals(season)) {
@@ -482,7 +518,7 @@ public class ProductController {
         } else if ("winter".equals(season)) {
             secondaryMainNotes.addAll(List.of(8L, 5L)); // 바닐라, 구르망
         }
-        
+
         if ("gentle".equals(personality)) {
             secondaryMainNotes.addAll(List.of(6L, 8L)); // 플로랄, 바닐라
         } else if ("confident".equals(personality)) {
@@ -492,30 +528,29 @@ public class ProductController {
         } else if ("mysterious".equals(personality)) {
             secondaryMainNotes.addAll(List.of(2L, 5L)); // 우디, 구르망
         }
-        
+
         // 메인노트 추가 및 중복 제거, 최대 3개 선택
         secondaryMainNotes.add(primaryMainNote);
         List<Long> recommendedMainNotes = secondaryMainNotes.stream()
-            .limit(3)
-            .collect(Collectors.toList());
-        
+                .limit(3)
+                .collect(Collectors.toList());
+
         // 분석 결과 구성
         Map<String, Object> analysis = new HashMap<>();
         analysis.put("primaryMainNote", primaryMainNote);
         analysis.put("recommendedMainNotes", recommendedMainNotes);
         analysis.put("userProfile", Map.of(
-            "demographics", demographics,
-            "mood", mood,
-            "season", season,
-            "intensity", intensity,
-            "personality", personality,
-            "budget", budget
-        ));
-        
+                "demographics", demographics,
+                "mood", mood,
+                "season", season,
+                "intensity", intensity,
+                "personality", personality,
+                "budget", budget));
+
         // 추천 이유 생성
         String reason = generateRecommendationReason(answers, recommendedMainNotes);
         analysis.put("recommendationReason", reason);
-        
+
         return analysis;
     }
 
@@ -524,17 +559,16 @@ public class ProductController {
      */
     private String generateRecommendationReason(Map<String, String> answers, List<Long> mainNoteIds) {
         Map<Long, String> mainNoteNames = Map.of(
-            1L, "스파이시", 2L, "우디", 3L, "허벌", 4L, "푸루티",
-            5L, "구르망", 6L, "플로랄", 7L, "시트러스", 8L, "바닐라"
-        );
-        
+                1L, "스파이시", 2L, "우디", 3L, "허벌", 4L, "푸루티",
+                5L, "구르망", 6L, "플로랄", 7L, "시트러스", 8L, "바닐라");
+
         String mood = answers.get("mood");
         String personality = answers.get("personality");
         String season = answers.get("season");
-        
+
         StringBuilder reason = new StringBuilder();
         reason.append("당신의 ");
-        
+
         if ("romantic".equals(mood)) {
             reason.append("로맨틱한 감성");
         } else if ("professional".equals(mood)) {
@@ -544,9 +578,9 @@ public class ProductController {
         } else if ("luxurious".equals(mood)) {
             reason.append("럭셔리한 취향");
         }
-        
+
         reason.append("과 ");
-        
+
         if ("confident".equals(personality)) {
             reason.append("자신감 넘치는 개성");
         } else if ("gentle".equals(personality)) {
@@ -556,16 +590,16 @@ public class ProductController {
         } else if ("mysterious".equals(personality)) {
             reason.append("신비로운 분위기");
         }
-        
+
         reason.append("을 고려하여 ");
-        
+
         List<String> noteNames = mainNoteIds.stream()
-            .map(id -> mainNoteNames.getOrDefault(id, "특별한"))
-            .collect(Collectors.toList());
-        
+                .map(id -> mainNoteNames.getOrDefault(id, "특별한"))
+                .collect(Collectors.toList());
+
         reason.append(String.join(", ", noteNames));
         reason.append(" 계열 향수를 추천드립니다.");
-        
+
         return reason.toString();
     }
     // ==================================== 관심등록 ===================================
