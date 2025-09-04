@@ -124,7 +124,19 @@ public class ChatOrchestratorService {
     private static final Pattern EXPLICIT_PERIOD_KEYWORDS = Pattern.compile(
             "(?i)(오늘|어제|이번|지난|작년|올해|전년|전월|월별|주별|일별|분기|상반기|하반기|최근\\s*\\d+\\s*(일|주|개월|달|년)|\\bQ[1-4]\\b|\\d{4}\\s*년|\\d{1,2}\\s*월|this|last|previous)"
     );
+    // "샤넬 브랜드", "브랜드 샤넬" 모두 허용
+    private static String extractBrandName(String msg){
+        if (msg == null) return null;
+        // 앞에 브랜드가 오는 형태
+        Matcher m1 = Pattern.compile("([\\p{L}\\p{N}][\\p{L}\\p{N}\\s]{0,40}?)\\s*브랜드").matcher(msg);
+        if (m1.find()) return m1.group(1).trim();
 
+        // 뒤에 브랜드가 오는 형태
+        Matcher m2 = Pattern.compile("브랜드\\s*([\\p{L}\\p{N}][\\p{L}\\p{N}\\s]{0,40})").matcher(msg);
+        if (m2.find()) return m2.group(1).trim();
+
+        return null;
+    }
     
     // ✅ 전체기간 키워드 매칭
     private static boolean isAllTimeQuery(String userMsg) {
@@ -318,19 +330,18 @@ private static boolean hasExplicitPeriodWords(String msg){
 
     private AiResult handleChartGeneric(String userMsg, Principal principal, PeriodResolver.ResolvedPeriod period) {
         ChartSpec spec = null;
-        try {
-            spec = chat.generateChartSpec(userMsg, SCHEMA_DOC);
-        } catch (Exception ignore) {}
+        try { spec = chat.generateChartSpec(userMsg, SCHEMA_DOC); } catch (Exception ignore) {}
 
-        // 폴백: 월/주/일 키워드면 고정 SQL 생성
+        // 폴백 생성 (여기서 이미 브랜드 반영됨)
         if (spec == null || spec.sql() == null ||
-                !spec.sql().toUpperCase(Locale.ROOT).contains("LABEL") ||
-                !spec.sql().toUpperCase(Locale.ROOT).contains("VALUE")) {
+            !spec.sql().toUpperCase(Locale.ROOT).contains("LABEL") ||
+            !spec.sql().toUpperCase(Locale.ROOT).contains("VALUE")) {
             spec = buildFallbackSpec(userMsg);
         }
         if (spec == null) {
             return new AiResult("차트 스펙 생성에 실패했어요. 요청을 더 구체적으로 적어주세요.", null, List.of(), null);
         }
+
 
         // "이번주/금주"는 이번 주(월~일) 범위 + 일별 버킷으로 강제
         boolean thisWeek = containsAny(userMsg, "이번주","금주","this week");
@@ -373,8 +384,14 @@ private static boolean hasExplicitPeriodWords(String msg){
         int limit = (spec.topN()!=null && spec.topN()>0 && spec.topN()<=50) ? spec.topN() : 12;
         Map<String,Object> params = new HashMap<>();
         params.put("limit", limit);
-        params.put("start", overrideStart != null ? overrideStart : Timestamp.valueOf(period.start()));
+        params.put("start", overrideStart != null ? overrideStart : Timestamp.valueOf(period.start()));  
         params.put("end",   overrideEnd   != null ? overrideEnd   : Timestamp.valueOf(period.end()));
+
+        // 🆕 브랜드 파라미터 채우기 (폴백 SQL에 :brandName가 있으면 자동 바인드)
+        String brand = extractBrandName(userMsg);
+        if (brand != null && !brand.isBlank() && safe.contains(":brandName")) {
+            params.put("brandName", brand.trim());
+        }
         if (safe.contains(":userNo")) {
             Long userNo = (principal == null) ? null : 0L; // TODO 실제 조회
             if (userNo == null) return new AiResult("로그인이 필요한 요청이에요.", null, List.of(), null);
@@ -440,62 +457,72 @@ private static boolean hasExplicitPeriodWords(String msg){
 
     /* -------------------- 폴백 차트 스펙 -------------------- */
     private ChartSpec buildFallbackSpec(String userMsg) {
+        String brand = extractBrandName(userMsg);              // 🆕 브랜드 추출
+        boolean byBrand = brand != null && !brand.isBlank();
+
         String msg = userMsg == null ? "" : userMsg;
-        String sql = null;
-        String title = null;
+        String sql = null, title = null;
+
+        // 공통 조인/필터(브랜드가 있으면 PRODUCT/BRAND까지 조인)
+        String fromJoins = byBrand
+                ? """
+                   FROM ORDERS o
+                     JOIN ORDERDETAIL od ON od.ORDERID = o.ORDERID
+                     JOIN PRODUCT p      ON p.ID       = od.ID
+                     JOIN BRAND   b      ON b.BRANDNO  = p.BRAND_BRANDNO
+                  """
+                : """
+                   FROM ORDERS o
+                     JOIN ORDERDETAIL od ON od.ORDERID = o.ORDERID
+                  """;
+
+        String whereCore = """
+                WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+                  AND o.REGDATE >= :start AND o.REGDATE < :end
+            """;
+
+        String brandFilter = byBrand ? " AND UPPER(b.BRANDNAME) = UPPER(:brandName)\n" : "";
 
         if (containsAny(msg, "이번주","금주","this week")) {
             sql = """
                   SELECT
                     TO_CHAR(TRUNC(o.REGDATE,'DD'),'YYYY-MM-DD') AS label,
                     SUM(od.CONFIRMQUANTITY * od.SELLPRICE)     AS value
-                  FROM ORDERS o
-                    JOIN ORDERDETAIL od ON od.ORDERID = o.ORDERID
-                  WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
-                    AND o.REGDATE >= :start AND o.REGDATE < :end
+                  """ + fromJoins + "\n" + whereCore + brandFilter + """
                   GROUP BY TRUNC(o.REGDATE,'DD')
                   ORDER BY TRUNC(o.REGDATE,'DD')
                   """;
-            title = "이번주 일별 매출";
+            title = (byBrand ? (brand + " ") : "") + "이번주 일별 매출";
         } else if (containsAny(msg, "주별","주간","주 단위")) {
             sql = """
                   SELECT
                     TO_CHAR(TRUNC(o.REGDATE,'IW'),'IYYY-IW') AS label,
-                    SUM(od.CONFIRMQUANTITY * od.SELLPRICE)    AS value
-                  FROM ORDERS o
-                    JOIN ORDERDETAIL od ON od.ORDERID = o.ORDERID
-                  WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
-                    AND o.REGDATE >= :start AND o.REGDATE < :end
+                    SUM(od.CONFIRMQUANTITY * od.SELLPRICE)   AS value
+                  """ + fromJoins + "\n" + whereCore + brandFilter + """
                   GROUP BY TRUNC(o.REGDATE,'IW')
                   ORDER BY TRUNC(o.REGDATE,'IW')
                   """;
-            title = "주별 매출";
+            title = (byBrand ? (brand + " ") : "") + "주별 매출";
         } else if (containsAny(msg, "월별")) {
             sql = """
                   SELECT
                     TO_CHAR(TRUNC(o.REGDATE,'MM'),'YYYY-MM') AS label,
                     SUM(od.CONFIRMQUANTITY * od.SELLPRICE)   AS value
-                  FROM ORDERS o
-                    JOIN ORDERDETAIL od ON od.ORDERID = o.ORDERID
-                  WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
-                    AND o.REGDATE >= :start AND o.REGDATE < :end
+                  """ + fromJoins + "\n" + whereCore + brandFilter + """
                   GROUP BY TRUNC(o.REGDATE,'MM')
                   ORDER BY TRUNC(o.REGDATE,'MM')
                   """;
-            title = "월별 매출";
+            title = (byBrand ? (brand + " ") : "") + "월별 매출";
         } else if (containsAny(msg, "일별","일자별","일 단위")) {
             sql = """
                   SELECT
                     TO_CHAR(TRUNC(o.REGDATE,'DD'),'YYYY-MM-DD') AS label,
                     SUM(od.CONFIRMQUANTITY * od.SELLPRICE)     AS value
-                  FROM ORDERS o
-                    JOIN ORDERDETAIL od ON od.ORDERID = o.ORDERID
-                  WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
-                    AND o.REGDATE >= :start AND o.REGDATE < :end
+                  """ + fromJoins + "\n" + whereCore + brandFilter + """
                   GROUP BY TRUNC(o.REGDATE,'DD')
                   ORDER BY TRUNC(o.REGDATE,'DD')
                   """;
-            title = "일별 매출";
+            title = (byBrand ? (brand + " ") : "") + "일별 매출";
         }
 
         if (sql == null) return null;
