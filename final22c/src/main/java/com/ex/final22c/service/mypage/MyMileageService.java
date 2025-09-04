@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.repository.order.OrderRepository;
-import com.ex.final22c.repository.order.OrderRepository.MileageRow;
 
 import lombok.RequiredArgsConstructor;
 

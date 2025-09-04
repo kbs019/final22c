@@ -248,24 +248,26 @@
                     </thead>
                     <tbody>
                         <tr th:each="r : ${rows.content}">
-                            <td>
-                                <a class="m-link" th:href="@{|/mypage/order/${r.orderId}|}"
-                                    th:text="'#' + ${r.orderId}">#0</a>
-                            </td>
+                            <td><a class="m-link" th:href="@{|/mypage/order/${r.orderId}|}"
+                                    th:text="'#' + ${r.orderId}">#0</a></td>
                             <td th:text="${#temporals.format(r.processedAt,'yyyy-MM-dd HH:mm')}">2025-01-01 12:00</td>
+
+                            <!-- 사용 포인트 (양수면 -nP로 보임) -->
                             <td>
                                 <span th:if="${(r.usedPoint?:0) > 0}" class="pt-use"
                                     th:text="${'-' + #numbers.formatInteger(r.usedPoint,1,'COMMA')} + 'P'">-0P</span>
                                 <span th:if="${(r.usedPoint?:0) == 0}" class="muted">-</span>
                             </td>
+
+                            <!-- 적립 포인트 (항상 양수 표기) -->
                             <td>
-                                <!-- 최종 적립포인트만 표시 -->
                                 <span th:if="${(r.finalEarnPoint?:0) > 0}" class="pt-earn"
                                     th:text="${'+' + #numbers.formatInteger(r.finalEarnPoint,1,'COMMA')} + 'P'">+0P</span>
                                 <span th:if="${(r.finalEarnPoint?:0) == 0}" class="muted">-</span>
                             </td>
-                            <td class="pt-balance"
-                                th:attr="data-used=${r.usedPoint?:0}, data-earned=${r.earnedPoint?:0}">-</td>
+                            <td th:text="${#numbers.formatInteger(r.balanceAt?:0,1,'COMMA')} + 'P'">0P</td>
+
+
                             <td th:switch="${#strings.toUpperCase(r.status)}">
                                 <span th:case="'CONFIRMED'">구매확정</span>
                                 <span th:case="'PAID'">결제완료</span>
@@ -298,38 +300,7 @@
     </section>
 
     <script>
-        (function () {
-            // "12,345P" / "+66,788P" / "-230,000P" / "-" → 정수로
-            function parseP(text) {
-                if (!text) return 0;
-                const m = String(text).replace(/\s+/g, '').match(/([+-]?\d[\d,]*)/);
-                return m ? parseInt(m[1].replace(/,/g, ''), 10) || 0 : 0;
-            }
-            function fmt(n) { return (Number(n) || 0).toLocaleString() + 'P'; }
 
-            document.addEventListener('DOMContentLoaded', () => {
-                const chip = document.querySelector('.m-chip');
-                let current = 0;
-                if (chip && chip.dataset.currentMileage != null) {
-                    current = parseInt(chip.dataset.currentMileage, 10) || 0;
-                } else {
-                    current = parseP(chip?.querySelector('b')?.textContent || '0');
-                }
-
-                const rows = document.querySelectorAll('.m-table tbody tr');
-                rows.forEach((tr) => {
-                    const usedTxt = tr.querySelector('td:nth-child(3)')?.textContent || '';
-                    const earnTxt = tr.querySelector('td:nth-child(4)')?.textContent || '';
-                    const balCell = tr.querySelector('td:nth-child(5)');
-
-                    const used = parseP(usedTxt);   // 사용은 음수
-                    const earn = parseP(earnTxt);   // 최종 적립포인트 (양수)
-
-                    if (balCell) balCell.textContent = fmt(current);
-                    current -= (earn + used);
-                });
-            });
-        })();
     </script>
 </div>
 
