@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,17 +30,22 @@ import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.user.UserRepository;
+import com.ex.final22c.service.product.ProductDescriptionService;
 import com.ex.final22c.service.product.ProductService;
 import com.ex.final22c.service.product.ReviewService;
 import com.ex.final22c.service.product.ZzimService;
-
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Controller
 @RequestMapping("/main")
 @RequiredArgsConstructor
 public class ProductController {
 
+	@Autowired
+	private ProductDescriptionService productDescriptionService;
+	
     private final ProductService productService;
     private final ZzimService zzimService;
     private final ReviewService reviewService;
@@ -108,6 +114,15 @@ public class ProductController {
 
         model.addAttribute("loggedIn", loggedIn);
         model.addAttribute("zzimedByMe", zzimedByMe);
+        
+        // AI 설명문 생성 추가
+        try {
+            String aiDescription = productDescriptionService.generateEnhancedDescription(product);
+            model.addAttribute("aiDescription", aiDescription);
+        } catch (Exception e) {
+            log.warn("AI 설명문 생성 실패: {}", e.getMessage());
+            model.addAttribute("aiDescription", null);
+        }
 
         return "main/content";
     }

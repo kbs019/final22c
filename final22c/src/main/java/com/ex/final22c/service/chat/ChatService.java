@@ -15,7 +15,6 @@ import jakarta.persistence.Query;
 
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -268,4 +267,35 @@ public class ChatService {
             String checkedSql,    // 가드+리밋 최종 실행 SQL
             List<Object[]> rows   // 결과
     ) {}
+    
+    /* ----- 컨텐츠에서 쓸 향수 전문가 ----- */
+    public String generateProductDescription(String prompt) {
+        var body = Map.of(
+                "model", model,
+                "messages", List.of(
+                        Map.of("role", "system", "content", 
+                               "당신은 향수 전문가입니다. 매력적이고 전문적인 상품 설명문을 작성해주세요. " +
+                               "HTML 태그는 사용하지 말고 순수 텍스트로만 작성하세요. " +
+                               "150-200자 내외로 간결하게 작성하세요."),
+                        Map.of("role", "user", "content", prompt)
+                ),
+                "temperature", 0.5,  // 창의성과 일관성의 균형
+                "max_tokens", 300    // 응답 길이 제한
+        );
+        
+        try {
+            var resp = call(body);
+            String result = extract(resp);
+            
+            // 결과가 너무 길면 자르기
+            if (result != null && result.length() > 500) {
+                result = result.substring(0, 480) + "...";
+            }
+            
+            return result;
+        } catch (Exception e) {
+            log.error("상품 설명문 생성 실패: {}", e.getMessage());
+            return null; // ProductDescriptionService에서 fallback 처리됨
+        }
+    }
 }
