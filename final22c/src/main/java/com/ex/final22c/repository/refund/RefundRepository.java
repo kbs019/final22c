@@ -81,5 +81,8 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
                                          @Param("status") String status);
 
     // 주문 ID와 상태로 환불 조회
-    List<Refund> findByOrder_OrderIdAndStatus(Long orderId, String status);                                     
+    List<Refund> findByOrder_OrderIdAndStatus(Long orderId, String status);
+
+    // REQUESTED, REFUNDED 등 상태별 카운트
+    long countByStatus(String status);
 }
