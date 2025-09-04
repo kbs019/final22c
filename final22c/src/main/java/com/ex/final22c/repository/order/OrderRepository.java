@@ -24,222 +24,251 @@ import java.util.Collection;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    // 관리자 대시보드용
-    @Query("""
-              select count(o)
-                from Order o
-              where o.regDate >= :from and o.regDate <= :to
-                and o.status in :statuses
-            """)
-    long countByRegDateBetweenAndStatusIn(@Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to,
-            @Param("statuses") Collection<String> statuses);
+  // 관리자 대시보드용
+  @Query("""
+        select count(o)
+          from Order o
+        where o.regDate >= :from and o.regDate <= :to
+          and o.status in :statuses
+      """)
+  long countByRegDateBetweenAndStatusIn(@Param("from") LocalDateTime from,
+      @Param("to") LocalDateTime to,
+      @Param("statuses") Collection<String> statuses);
 
-    /**
-     * 마이페이지 목록: 사용자 + 상태(예: PAID) 페이징 조회
-     * EntityGraph로 details/product를 미리 로딩해서 Lazy 예외 방지
-     */
+  /**
+   * 마이페이지 목록: 사용자 + 상태(예: PAID) 페이징 조회
+   * EntityGraph로 details/product를 미리 로딩해서 Lazy 예외 방지
+   */
 
-    // PENDING 제외하고 전체 리스트
-    @EntityGraph(attributePaths = { "details", "details.product" })
-    List<Order> findAllByUser_UserNoAndStatusNotOrderByRegDateDesc(
-            Long userNo, String status);
+  // PENDING 제외하고 전체 리스트
+  @EntityGraph(attributePaths = { "details", "details.product" })
+  List<Order> findAllByUser_UserNoAndStatusNotOrderByRegDateDesc(
+      Long userNo, String status);
 
-    // 특정 상태들만(IN 조건)
-    @EntityGraph(attributePaths = { "details", "details.product" })
-    List<Order> findByUser_UserNoAndStatusInOrderByRegDateDesc(
-            Long userNo, Collection<String> statuses);
+  // 특정 상태들만(IN 조건)
+  @EntityGraph(attributePaths = { "details", "details.product" })
+  List<Order> findByUser_UserNoAndStatusInOrderByRegDateDesc(
+      Long userNo, Collection<String> statuses);
 
-    // 특정 상태를 제외하고 싶을때
-    @EntityGraph(attributePaths = { "details", "details.product" })
-    Page<Order> findByUser_UserNoAndStatusNotOrderByRegDateDesc(
-            Long userNo, String status, Pageable pageable);
+  // 특정 상태를 제외하고 싶을때
+  @EntityGraph(attributePaths = { "details", "details.product" })
+  Page<Order> findByUser_UserNoAndStatusNotOrderByRegDateDesc(
+      Long userNo, String status, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "details", "details.product" })
-    Page<Order> findByUser_UserNoOrderByRegDateDesc(Long userNo, Pageable pageable);
+  @EntityGraph(attributePaths = { "details", "details.product" })
+  Page<Order> findByUser_UserNoOrderByRegDateDesc(Long userNo, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "details", "details.product" })
-    Page<Order> findByUser_UserNoAndStatusNotInOrderByRegDateDesc(
-            Long userNo, Collection<String> statuses, Pageable pageable);
+  @EntityGraph(attributePaths = { "details", "details.product" })
+  Page<Order> findByUser_UserNoAndStatusNotInOrderByRegDateDesc(
+      Long userNo, Collection<String> statuses, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "details", "details.product" })
-    Page<Order> findByUser_UserNoAndStatusInOrderByRegDateDesc(
-            Long userNo,
-            Collection<String> statuses,
-            Pageable pageable);
+  @EntityGraph(attributePaths = { "details", "details.product" })
+  Page<Order> findByUser_UserNoAndStatusInOrderByRegDateDesc(
+      Long userNo,
+      Collection<String> statuses,
+      Pageable pageable);
 
-    /** 단건 조회: 주문 + 상세 + 상품까지 fetch-join (결제승인/취소 등 트랜잭션 로직에서 사용) */
-    @Query("""
-                select o
-                  from Order o
-                  left join fetch o.details d
-                  left join fetch d.product p
-                 where o.orderId = :orderId
-            """)
-    Optional<Order> findOneWithDetails(@Param("orderId") Long orderId);
-
-    /** 스케줄러 배송중, 배송완료 변경 */
-    @Modifying
-    @Query("""
-                UPDATE Order o
-                   SET o.deliveryStatus = 'DELIVERED'
-                 WHERE o.status = 'PAID'
-                   AND o.deliveryStatus IN ('ORDERED','SHIPPING')
-                   AND o.regDate <= :threshold3
-            """)
-    int updateToDelivered(@Param("threshold3") LocalDateTime threshold3);
-
-    @Modifying
-    @Query("""
-                UPDATE Order o
-                   SET o.deliveryStatus = 'SHIPPING'
-                 WHERE o.status = 'PAID'
-                   AND o.deliveryStatus = 'ORDERED'
-                   AND o.regDate <= :threshold1
-                   AND o.regDate > :threshold3
-            """)
-    int updateToShipping(@Param("threshold1") LocalDateTime threshold1,
-            @Param("threshold3") LocalDateTime threshold3);
-
-    // 주문확정 클릭시 order status를 confirmed로 변경
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-               UPDATE Order o
-                  set o.status = 'CONFIRMED'
-                where o.orderId = :orderId
-                  and o.user.userNo = :userNo
-                  and o.status = 'PAID'
-                  and o.deliveryStatus = 'DELIVERED'
-            """)
-    int updateToConfirmed(@Param("orderId") Long orderId,
-            @Param("userNo") Long userNo);
-
-    /* ===== 사용자별 단건 조회 (details + product fetch) ===== */
-    @Query("""
-                select o
-                from Order o
-                left join fetch o.details d
-                left join fetch d.product p
-                where o.orderId = :orderId
-                  and o.user.userName = :username
-            """)
-    Optional<Order> findOneWithDetailsAndProductByUser(@Param("username") String username,
-            @Param("orderId") Long orderId);
-
-    /* == 결제 대기중인 상태가 지속됐을때 failed로 변경 == */
-    @Modifying
-    @Query("""
-              update Order o
-                 set o.status = 'FAILED'
-               where o.status = 'PENDING'
-                 and o.regDate <= :threshold
-            """)
-    int failOldPendings(@Param("threshold") LocalDateTime threshold);
-
-    // OrderRepository
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select o from Order o where o.orderId = :id")
-    Optional<Order> findByIdForUpdate(@Param("id") Long id);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update Order o set o.status = :status where o.orderId = :id")
-    int updateStatus(@Param("id") Long id, @Param("status") String status);
-
-    Optional<Order> findByOrderIdAndUser_UserName(long orderId, String userName);
-
-    List<Order> findByUser_UserNameOrderByRegDateDesc(String userName);
-
-    public interface MileageRowWithBalance {
-        Long getOrderId();
-
-        java.time.LocalDateTime getProcessedAt();
-
-        Long getUsedPoint(); // 부분환불 반영된 "사용" (양수)
-
-        Long getEarnedPoint(); // 내부계산용(양수)
-
-        Long getFinalEarnPoint(); // 화면표시용(양수)
-
-        String getStatus();
-
-        Long getBalanceAt(); // ★ 그 주문 당시 잔액 스냅샷
-    }
-
-@Query(value = """
-  select
-    o.orderId  as orderId,
-    o.regDate  as processedAt,
-    coalesce(o.usedPoint,0)                         as usedPoint,
-    coalesce(o.confirmMileage,0)                    as earnedPoint,
-    coalesce(o.confirmMileage,0)                    as finalEarnPoint,
-    (
-      (select coalesce(u.mileage,0) from Users u where u.userNo = :userNo)
-      -
-      coalesce((
-        select sum(
-          coalesce(oo.confirmMileage,0)
-          - coalesce(oo.usedPoint,0)
-          + coalesce(rr.refundMileage,0)
-        )
-        from Order oo
-        left join oo.refund rr
-        where oo.user.userNo = :userNo
-          and oo.status in :statuses
-          and oo.regDate > o.regDate
-      ), 0)
-    )                                             as balanceAt,
-
-    o.status as status
-  from Order o
-  left join o.refund r
-  where o.user.userNo = :userNo
-    and o.status in :statuses
-  order by o.regDate desc
-  """, countQuery = """
-    select count(o)
-    from Order o
-    where o.user.userNo = :userNo
-      and o.status in :statuses
-  """)
-Page<OrderRepository.MileageRowWithBalance> findMileageWithBalanceByUserAndStatuses(
-    @Param("userNo") Long userNo,
-    @Param("statuses") Collection<String> statuses,
-    Pageable pageable);
-
-
-    public interface MileageRow {
-        Long getOrderId();
-
-        java.time.LocalDateTime getProcessedAt();
-
-        Long getUsedPoint();
-
-        // 계산용: 확정 +, 환불 − (기존)
-        Long getEarnedPoint();
-
-        // 표시용: 확정/환불 모두 양수(원래 적립될 금액)
-        Long getVisibleEarnPoint();
-
-        String getStatus();
-    }
-
-    @Query("""
-            select
-                o.orderId                            as orderId,
-                o.regDate                            as processedAt,
-                coalesce(o.usedPoint, 0)             as usedPoint,
-                case
-                    when o.status = 'REFUNDED' then 0
-                    else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
-                end                                   as earnedPoint,
-                o.status                             as status
+  /** 단건 조회: 주문 + 상세 + 상품까지 fetch-join (결제승인/취소 등 트랜잭션 로직에서 사용) */
+  @Query("""
+          select o
             from Order o
-            where o.user.userNo = :userNo
-              and o.status in :statuses
-            order by o.regDate desc
-            """)
-    Page<MileageRow> findMileageByUserAndStatuses(
-            @Param("userNo") Long userNo,
-            @Param("statuses") Collection<String> statuses,
-            Pageable pageable);
+            left join fetch o.details d
+            left join fetch d.product p
+           where o.orderId = :orderId
+      """)
+  Optional<Order> findOneWithDetails(@Param("orderId") Long orderId);
+
+  /** 스케줄러 배송중, 배송완료 변경 */
+  @Modifying
+  @Query("""
+          UPDATE Order o
+             SET o.deliveryStatus = 'DELIVERED'
+           WHERE o.status = 'PAID'
+             AND o.deliveryStatus IN ('ORDERED','SHIPPING')
+             AND o.regDate <= :threshold3
+      """)
+  int updateToDelivered(@Param("threshold3") LocalDateTime threshold3);
+
+  @Modifying
+  @Query("""
+          UPDATE Order o
+             SET o.deliveryStatus = 'SHIPPING'
+           WHERE o.status = 'PAID'
+             AND o.deliveryStatus = 'ORDERED'
+             AND o.regDate <= :threshold1
+             AND o.regDate > :threshold3
+      """)
+  int updateToShipping(@Param("threshold1") LocalDateTime threshold1,
+      @Param("threshold3") LocalDateTime threshold3);
+
+  // 주문확정 클릭시 order status를 confirmed로 변경
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("""
+         UPDATE Order o
+            set o.status = 'CONFIRMED'
+          where o.orderId = :orderId
+            and o.user.userNo = :userNo
+            and o.status = 'PAID'
+            and o.deliveryStatus = 'DELIVERED'
+      """)
+  int updateToConfirmed(@Param("orderId") Long orderId,
+      @Param("userNo") Long userNo);
+
+  /* ===== 사용자별 단건 조회 (details + product fetch) ===== */
+  @Query("""
+          select o
+          from Order o
+          left join fetch o.details d
+          left join fetch d.product p
+          where o.orderId = :orderId
+            and o.user.userName = :username
+      """)
+  Optional<Order> findOneWithDetailsAndProductByUser(@Param("username") String username,
+      @Param("orderId") Long orderId);
+
+  /* == 결제 대기중인 상태가 지속됐을때 failed로 변경 == */
+  @Modifying
+  @Query("""
+        update Order o
+           set o.status = 'FAILED'
+         where o.status = 'PENDING'
+           and o.regDate <= :threshold
+      """)
+  int failOldPendings(@Param("threshold") LocalDateTime threshold);
+
+  // OrderRepository
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select o from Order o where o.orderId = :id")
+  Optional<Order> findByIdForUpdate(@Param("id") Long id);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("update Order o set o.status = :status where o.orderId = :id")
+  int updateStatus(@Param("id") Long id, @Param("status") String status);
+
+  Optional<Order> findByOrderIdAndUser_UserName(long orderId, String userName);
+
+  List<Order> findByUser_UserNameOrderByRegDateDesc(String userName);
+
+  public interface MileageRowWithBalance {
+    Long getOrderId();
+
+    java.time.LocalDateTime getProcessedAt();
+
+    Long getUsedPoint(); // 부분환불 반영된 "사용" (양수)
+
+    Long getEarnedPoint(); // 내부계산용(양수)
+
+    Long getFinalEarnPoint(); // 화면표시용(양수)
+
+    String getStatus();
+
+    Long getBalanceAt(); // ★ 그 주문 당시 잔액 스냅샷
+  }
+
+  @Query(value = """
+      select
+        o.orderId  as orderId,
+        o.regDate  as processedAt,
+
+        case
+          when o.status = 'REFUNDED'
+            then greatest(coalesce(o.usedPoint,0) - coalesce(r.refundMileage,0), 0)
+          else coalesce(o.usedPoint,0)
+        end       as usedPoint,
+
+        case
+          when o.status = 'CONFIRMED'
+            then coalesce(o.confirmMileage, 0)
+          when o.status = 'REFUNDED'
+            then greatest(coalesce(o.confirmMileage,0) - coalesce(r.refundMileage,0), 0)
+          else 0
+        end       as earnedPoint,
+
+        case
+          when o.status = 'CONFIRMED'
+            then coalesce(o.confirmMileage, 0)
+          when o.status = 'REFUNDED'
+            then greatest(coalesce(o.confirmMileage,0) - coalesce(r.refundMileage,0), 0)
+          else 0
+        end       as finalEarnPoint,
+
+        (
+          (select coalesce(u.mileage,0) from Users u where u.userNo = :userNo)
+          -
+          coalesce((
+            select sum(
+              (case
+                 when oo.status = 'REFUNDED'
+                   then greatest(coalesce(oo.confirmMileage,0) - coalesce(rr.refundMileage,0), 0)
+                 when oo.status = 'CONFIRMED'
+                   then coalesce(oo.confirmMileage,0)
+                 else 0
+               end)
+              -
+              (case
+                 when oo.status = 'REFUNDED'
+                   then greatest(coalesce(oo.usedPoint,0) - coalesce(rr.refundMileage,0), 0)
+                 else coalesce(oo.usedPoint,0)
+               end)
+            )
+            from Order oo
+            left join oo.refund rr
+            where oo.user.userNo = :userNo
+              and oo.status in :statuses
+              and oo.regDate > o.regDate
+          ), 0)
+        )         as balanceAt,
+
+        o.status  as status
+      from Order o
+      left join o.refund r
+      where o.user.userNo = :userNo
+        and o.status in :statuses
+      order by o.regDate desc
+      """, countQuery = """
+        select count(o)
+        from Order o
+        where o.user.userNo = :userNo
+          and o.status in :statuses
+      """)
+  Page<OrderRepository.MileageRowWithBalance> findMileageWithBalanceByUserAndStatuses(
+      @Param("userNo") Long userNo,
+      @Param("statuses") Collection<String> statuses,
+      Pageable pageable);
+
+  public interface MileageRow {
+    Long getOrderId();
+
+    java.time.LocalDateTime getProcessedAt();
+
+    Long getUsedPoint();
+
+    // 계산용: 확정 +, 환불 − (기존)
+    Long getEarnedPoint();
+
+    // 표시용: 확정/환불 모두 양수(원래 적립될 금액)
+    Long getVisibleEarnPoint();
+
+    String getStatus();
+  }
+
+  @Query("""
+      select
+          o.orderId                            as orderId,
+          o.regDate                            as processedAt,
+          coalesce(o.usedPoint, 0)             as usedPoint,
+          case
+              when o.status = 'REFUNDED' then 0
+              else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
+          end                                   as earnedPoint,
+          o.status                             as status
+      from Order o
+      where o.user.userNo = :userNo
+        and o.status in :statuses
+      order by o.regDate desc
+      """)
+  Page<MileageRow> findMileageByUserAndStatuses(
+      @Param("userNo") Long userNo,
+      @Param("statuses") Collection<String> statuses,
+      Pageable pageable);
 }
