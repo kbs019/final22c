@@ -162,8 +162,10 @@
         <div id="product-grid" class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3">
           <div class="col" th:each="p : ${products}">
             <div class="card product-card h-100">
-              <div class="card-media">
+              <!-- ⬇️ 품절 오버레이 적용 -->
+              <div class="card-media" th:classappend="${p['count'] == 0} ? ' soldout'">
                 <img th:src="${p['imgUrl']}" th:alt="${p['name']}">
+                <div class="overlay" aria-hidden="true"></div>
               </div>
 
               <div class="card-body p-2">

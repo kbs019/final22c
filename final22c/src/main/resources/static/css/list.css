@@ -383,4 +383,29 @@ html, body{ background:#fff; }
   border-bottom:2px solid var(--ink) !important;
 }
 
+/* ===== 품절 오버레이 ===== */
+.card-media.soldout { position: relative; }
+
+.card-media.soldout::before {
+  content:"";
+  position:absolute; inset:0;
+  background: rgba(0,0,0,.28);
+  z-index:1;
+}
+
+.card-media.soldout .overlay {
+  position:absolute; inset:0;
+  display:flex; justify-content:center; align-items:center;
+  z-index:2; pointer-events:none;
+}
+
+.card-media.soldout .overlay::after {
+  content:"SOLD OUT";
+  font-weight:500;
+  font-size: clamp(18px, 3vw, 32px);
+  letter-spacing:.08em;
+  color:#fff;
+  padding:.5em 1em;
+}
+
 

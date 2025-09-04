@@ -10,7 +10,7 @@
       .dash-wrap { padding-top:.5rem; }
       .kpi-card { cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
       .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 .35rem 1rem rgba(0,0,0,.06); }
-      .kpi-sub { font-size:.8rem; color:#6c757d; } /* 회색 작은 글씨 */
+      .kpi-sub { font-size:.6rem; color:#6c757d; } /* 회색 작은 글씨 */
       .kpi-value { font-weight:700; font-size:1.5rem; }
       .chart-card { height: 460px; } /* 그래프 카드 높이: 위 Fold를 꽉 채우도록 */
       .chart-body { height: calc(100% - 56px); } /* header 제외 */
@@ -41,7 +41,7 @@
         <a th:href="@{/admin/salesStats}" class="text-decoration-none text-reset">
           <div class="card kpi-card">
             <div class="card-body">
-              <div class="kpi-sub">이동: 매출통계</div>
+              <div class="kpi-sub">매출통계></div>
               <div class="mt-1 mb-1">오늘 매출</div>
               <div id="kpi-todayRevenue" class="kpi-value">-</div>
             </div>
@@ -54,7 +54,7 @@
         <a th:href="@{/admin/orderList}" class="text-decoration-none text-reset">
           <div class="card kpi-card">
             <div class="card-body">
-              <div class="kpi-sub">이동: 주문관리</div>
+              <div class="kpi-sub">주문관리></div>
               <div class="mt-1 mb-1">오늘 주문</div>
               <div id="kpi-ordersToday" class="kpi-value">-</div>
             </div>
@@ -67,7 +67,7 @@
         <a th:href="@{/admin/usersStats}" class="text-decoration-none text-reset">
           <div class="card kpi-card">
             <div class="card-body">
-              <div class="kpi-sub">이동: 전체회원통계</div>
+              <div class="kpi-sub">전체회원통계></div>
               <div class="mt-1 mb-1">전체 회원수</div>
               <div id="kpi-totalUsers" class="kpi-value">-</div>
             </div>
@@ -80,7 +80,7 @@
         <a th:href="@{/admin/usersStats}" class="text-decoration-none text-reset">
           <div class="card kpi-card">
             <div class="card-body">
-              <div class="kpi-sub">이동: 전체회원통계(신규)</div>
+              <div class="kpi-sub">전체회원통계></div>
               <div class="mt-1 mb-1">최근 7일 신규</div>
               <div id="kpi-newUsers7d" class="kpi-value">-</div>
             </div>
@@ -124,8 +124,7 @@
         <div class="card">
           <div class="card-header sticky-note d-flex justify-content-between align-items-center">
             <div>
-                <span class="fw-semibold">품절 임박 상품 Top 5</span>
-                <span class="text-secondary ms-2">(품절 제외, 재고 오름차순)</span>
+                <span class="fw-semibold">품절 임박 상품</span>
             </div>
             <!-- 이동 버튼: 발주 신청으로 -->
             <a th:href="@{/admin/purchaseOrder}" class="goto" aria-label="상품 관리로 이동"> &gt; </a>
@@ -164,8 +163,7 @@
         <div class="card">
         <div class="card-header sticky-note d-flex justify-content-between align-items-center">
             <div>
-                <span class="fw-semibold">품절 상품 Top 5</span>
-                <span class="text-secondary ms-2">(재고 0, 최근 등록순)</span>
+                <span class="fw-semibold">품절 상품</span>
             </div>
             <!-- 이동 버튼: 발주 신청으로 -->
             <a th:href="@{/admin/purchaseOrder}" class="goto" aria-label="상품 관리로 이동"> &gt; </a>
