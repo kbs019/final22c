@@ -2,16 +2,12 @@ package com.ex.final22c.data.product;
 
 import java.util.*;
 
-import com.ex.final22c.data.user.Users;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -98,6 +94,10 @@ public class Product {
 
     @Column(name = "costPrice")
     private int costPrice;                                      // 원가 (발주 시)
+
+    @Lob
+    @Column(name = "aiGuide", columnDefinition = "CLOB")
+    private String aiGuide;
     
     // 기본값 및 파생값 계산
     // insert 시 매번 실행되는 메서드 실행 ( count 가 0 이라면, count 에 10 대입 (default) / isPicked 가 null 이라면, 기본값 "N" 을 대입 / 이후, 가격 계산해주기 )
