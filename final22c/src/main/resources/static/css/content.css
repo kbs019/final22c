@@ -129,7 +129,7 @@ body.modal-open { padding-right: 0 !important; }
 }
 .slideWrap.soldout .overlay::after{
   content:"SOLD OUT";
-  font-weight:800;
+  font-weight:500;
   font-size: clamp(90px, 4.0vw, 70px);      /* 크기 증가 */
   letter-spacing:.08em;
   color:rgb(255, 255, 255);

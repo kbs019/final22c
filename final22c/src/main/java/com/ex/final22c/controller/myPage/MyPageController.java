@@ -25,6 +25,7 @@ import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersAddressForm;
 import com.ex.final22c.repository.mypage.UserAddressRepository;
+import com.ex.final22c.service.cart.CartService;
 import com.ex.final22c.service.mypage.UserAddressService;
 import com.ex.final22c.service.product.ZzimService;
 import com.ex.final22c.service.user.UsersService;
@@ -41,6 +42,7 @@ public class MyPageController {
     private final UserAddressRepository userAddressRepository;
     private final UserAddressService userAddressService;
     private final ZzimService zzimService;
+    private final CartService cartService;
 
     // ====== DTO ======
     public record AddressDto(
@@ -207,5 +209,15 @@ public class MyPageController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/addBatch")
+    @ResponseBody
+    public ResponseEntity<?> addBatchToCart(@RequestBody List<Map<String, Object>> items, Principal principal) {
+        if (items == null || items.isEmpty()) {
+            return ResponseEntity.badRequest().body("선택한 상품이 없습니다.");
+        }
+        // Map에서 productId와 quantity 추출
+        cartService.addItemsToCart(principal.getName(), items);
 
+        return ResponseEntity.ok("선택한 상품이 장바구니에 담겼습니다.");
+    }
 }

@@ -121,11 +121,15 @@ public class AdminService {
                 .filter(u -> u.getReg()!=null && ( !u.getReg().isBefore(since) )) // since 이상
                 .count();
 
+        // 처리 대기 환불
+        long pendingRefunds = refundRepository.countByStatus("REQUESTED");
+
         return Map.of(
                 "todayRevenue", todayRevenue,
                 "ordersToday", ordersToday,
                 "totalUsers", totalUsers,
-                "newUsers7d", newUsers7d
+                "newUsers7d", newUsers7d,
+                "pendingRefunds", pendingRefunds
         );
     }
 
@@ -792,6 +796,17 @@ public class AdminService {
     	 return this.purchaseRepository.findAll(Sort.by(Sort.Direction.DESC, "reg"));
     }
 
+    // 기간별 발주 조회
+    public List<Purchase> getPurchasesByPeriod(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            return getPurchase();
+        }
+        return purchaseRepository.findByRegBetweenOrderByRegDesc(
+                startDate.atStartOfDay(),
+                endDate.plusDays(1).atStartOfDay()
+        );
+    }
+    
     // 발주 상세 내역
     public Map<String, Object> getPurchaseDetail(Long purchaseId) {
         Purchase purchase = purchaseRepository.findById(purchaseId)
