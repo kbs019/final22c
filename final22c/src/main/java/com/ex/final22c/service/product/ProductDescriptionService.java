@@ -17,22 +17,24 @@ public class ProductDescriptionService {
     
     private final ChatService chatService;
     
-    // 메모리 캐시 - productId를 키로 사용
-    private final Map<Long, CachedDescription> descriptionCache = new ConcurrentHashMap<>();
+    // 메모리 캐시 - 향수 고유 정보를 키로 사용 (용량별 동일 설명문 공유)
+    private final Map<String, CachedDescription> descriptionCache = new ConcurrentHashMap<>();
     
     // 캐시 유효 시간 (24시간)
     private static final long CACHE_DURATION_HOURS = 24;
     
     public String generateEnhancedDescription(Product product) {
-        // 1. 캐시 확인
-        CachedDescription cached = descriptionCache.get(product.getId());
+        // 1. 향수 고유 정보로 캐시 키 생성 (용량 무관)
+        String cacheKey = generateCacheKey(product);
+        CachedDescription cached = descriptionCache.get(cacheKey);
+        
         if (cached != null && !cached.isExpired()) {
-            log.debug("캐시된 설명문 사용: productId={}", product.getId());
+            log.debug("캐시된 설명문 사용: cacheKey={}", cacheKey);
             return cached.getDescription();
         }
         
         // 2. 캐시가 없거나 만료된 경우 새로 생성
-        log.debug("새로운 설명문 생성 시작: productId={}", product.getId());
+        log.debug("새로운 설명문 생성 시작: cacheKey={}", cacheKey);
         
         // 향 구조 분석
         boolean hasSingleNote = !isEmpty(product.getSingleNote());
@@ -46,7 +48,7 @@ public class ProductDescriptionService {
         try {
             String aiResult = chatService.generateProductDescription(prompt);
             description = formatAiDescription(aiResult, hasSingleNote, hasComplexNotes);
-            log.debug("AI 설명문 생성 완료: productId={}", product.getId());
+            log.debug("AI 설명문 생성 완료: cacheKey={}", cacheKey);
         } catch (Exception e) {
             log.error("AI 설명문 생성 실패: {}", e.getMessage(), e);
             description = generateFallbackDescription(product, hasSingleNote, hasComplexNotes);
@@ -54,20 +56,45 @@ public class ProductDescriptionService {
         
         // 3. 생성된 설명문을 캐시에 저장
         if (description != null) {
-            descriptionCache.put(product.getId(), new CachedDescription(description));
-            log.debug("설명문 캐시 저장 완료: productId={}", product.getId());
+            descriptionCache.put(cacheKey, new CachedDescription(description));
+            log.debug("설명문 캐시 저장 완료: cacheKey={}", cacheKey);
         }
         
         return description;
+    }
+    
+    // 향수 고유 정보로 캐시 키 생성 (용량 정보 제외)
+    private String generateCacheKey(Product product) {
+        String cleanProductName = cleanProductName(product.getName());
+        return String.format("%s_%s_%s_%s", 
+            product.getBrand().getBrandName().replaceAll("[^a-zA-Z0-9가-힣]", ""),
+            cleanProductName.replaceAll("[^a-zA-Z0-9가-힣]", ""),
+            product.getGrade().getGradeName().replaceAll("[^a-zA-Z0-9가-힣]", ""),
+            product.getMainNote().getMainNoteName().replaceAll("[^a-zA-Z0-9가-힣]", "")
+        );
+    }
+    
+    // 제품명에서 용량 정보 제거
+    private String cleanProductName(String productName) {
+        if (productName == null) return "";
+        
+        // 용량 표기 패턴들 제거 (50ml, 100ml, 30ML 등)
+        return productName
+                .replaceAll("\\s*\\d+\\s*[mM][lL]\\s*", " ")  // 숫자ml 제거
+                .replaceAll("\\s*\\d+ml\\s*", " ")           // 숫자ml 제거  
+                .replaceAll("\\s*\\d+ML\\s*", " ")           // 숫자ML 제거
+                .replaceAll("\\s+", " ")                     // 연속 공백 정리
+                .trim();
     }
     
     private String buildPromptBasedOnNoteStructure(Product product, boolean hasSingle, boolean hasComplex) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("다음 향수 정보를 바탕으로 매력적인 상품 가이드를 작성해주세요:\n\n");
         
-        // 기본 정보
+        // 기본 정보 (용량 정보 제거한 깔끔한 이름 사용)
+        String cleanName = cleanProductName(product.getName());
         prompt.append("브랜드: ").append(product.getBrand().getBrandName()).append("\n");
-        prompt.append("제품명: ").append(product.getName()).append("\n");
+        prompt.append("제품명: ").append(cleanName).append("\n");
         prompt.append("부향률: ").append(product.getGrade().getGradeName()).append("\n");
         prompt.append("메인어코드: ").append(product.getMainNote().getMainNoteName()).append("\n");
         
@@ -110,6 +137,7 @@ public class ProductDescriptionService {
         prompt.append("- 감성적이고 전문적인 톤앤매너\n");
         prompt.append("- 구매 욕구를 자극하는 표현 사용\n");
         prompt.append("- HTML 태그 사용 금지, 순수 텍스트만\n");
+        prompt.append("- 용량이나 사이즈는 언급하지 말고 향 자체에만 집중\n");
         
         return prompt.toString();
     }
@@ -153,6 +181,7 @@ public class ProductDescriptionService {
     
     private String generateFallbackDescription(Product product, boolean hasSingle, boolean hasComplex) {
         StringBuilder fallback = new StringBuilder();
+        String cleanName = cleanProductName(product.getName());
         
         fallback.append("<p>");
         fallback.append(product.getBrand().getBrandName()).append("의 ");
