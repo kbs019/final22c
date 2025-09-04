@@ -121,11 +121,15 @@ public class AdminService {
                 .filter(u -> u.getReg()!=null && ( !u.getReg().isBefore(since) )) // since 이상
                 .count();
 
+        // 처리 대기 환불
+        long pendingRefunds = refundRepository.countByStatus("REQUESTED");
+
         return Map.of(
                 "todayRevenue", todayRevenue,
                 "ordersToday", ordersToday,
                 "totalUsers", totalUsers,
-                "newUsers7d", newUsers7d
+                "newUsers7d", newUsers7d,
+                "pendingRefunds", pendingRefunds
         );
     }
 
