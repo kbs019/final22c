@@ -20,6 +20,9 @@ public class ReviewDto {
     private LocalDateTime createDate;
     private Set<String> likers; // 좋아요 누른 사용자 이름
 
+    private String status; // "ACTIVE" / "HIDDEN"
+    public boolean isActive() { return "ACTIVE".equals(status); }
+
     // Review -> ReviewDto 변환
     public static ReviewDto toDto(Review review, ProfanityFilter filter) {
         return new ReviewDto(
@@ -30,7 +33,8 @@ public class ReviewDto {
                 review.getCreateDate(), // 필요하면 포맷 적용
                 review.getLikers().stream()
                         .map(u -> u.getUserName())
-                        .collect(Collectors.toSet()) // 공감 사용자 이름 집합
+                        .collect(Collectors.toSet()), // 공감 사용자 이름 집합
+                review.getStatus()
         );
     }
 }

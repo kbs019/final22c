@@ -17,7 +17,18 @@ import com.ex.final22c.data.user.Users;
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByProductOrderByCreateDateDesc(Product product);      // 최신순
-    List<Review> findByProductOrderByRatingDescCreateDateDesc(Product product); // 추천순(=평점 우선)
+    List<Review> findByProductOrderByRatingDescCreateDateDesc(Product product); // 평점순(=평점 우선)
+
+    // ✅ 좋아요순 (동점 시 최신, 그다음 id 내림차순으로 안정화)
+    @Query("""
+      select r
+      from Review r
+      left join r.likers lk
+      where r.product = :product
+      group by r
+      order by count(lk) desc, r.createDate desc, r.reviewId desc
+    """)
+    List<Review> findBestByProduct(@Param("product") Product product);
 
     long countByProduct(Product product);
 
