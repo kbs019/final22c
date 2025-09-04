@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -218,5 +219,37 @@ public class CartService {
 
         // CartView.of()가 subtotal + (비어있지 않으면 3,000) 계산
         return CartView.of(lines);
+    }
+    
+    // 카트 담기
+    @Transactional
+    public void addItemsToCart(String username, List<Map<String, Object>> items) {
+        Users user = usersRepository.findByUserName(username)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        Cart cart = cartRepository.findByUser(user)
+                .orElseGet(() -> {
+                    Cart newCart = new Cart();
+                    newCart.setUser(user);
+                    return cartRepository.save(newCart);
+                });
+
+        for (Map<String, Object> item : items) {
+            Long productId = Long.parseLong(item.get("productId").toString());
+            int quantity = Integer.parseInt(item.get("quantity").toString());
+
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다. id=" + productId));
+
+            CartDetail cartDetail = cartDetailRepository.findByCartAndProduct(cart, product)
+                    .orElse(new CartDetail());
+
+            cartDetail.setCart(cart);
+            cartDetail.setProduct(product);
+            int newQuantity = (cartDetail.getQuantity() > 0 ? cartDetail.getQuantity() : 0) + quantity;
+            cartDetail.setQuantity(newQuantity);
+
+            cartDetailRepository.save(cartDetail);
+        }
     }
 }
