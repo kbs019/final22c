@@ -68,6 +68,7 @@ public class MyOrderService {
         Users me = usersService.getUser(username);
         return orderRepository.findAllByUser_UserNoAndStatusNotOrderByRegDateDesc(
                 me.getUserNo(), "PENDING");
+
     }
 
     /**
@@ -79,6 +80,7 @@ public class MyOrderService {
         Users me = usersService.getUser(username);
         return orderRepository.findByUser_UserNoAndStatusInOrderByRegDateDesc(
                 me.getUserNo(), statuses);
+
     }
 
     // 주문 확정
@@ -157,6 +159,7 @@ public class MyOrderService {
             // 화면엔 최소한 요청/완료/거절은 보여주자(원하면 목록에만 쓰고, 상단 배지는 REQUESTED일 때만 노출)
             refunds = refundRepository.findByOrder_OrderIdAndStatusInOrderByCreateDateDesc(
                     orderId, List.of("REQUESTED", "REFUNDED", "REJECTED", "CANCELED"));
+
         }
 
         // 3) JSON 변환: ‘요청 수량(quantity)’ 기준으로 금액 계산
@@ -189,6 +192,7 @@ public class MyOrderService {
             result.add(item);
         }
         return result;
+
     }
 
     private static String nvl(String s, String def) {

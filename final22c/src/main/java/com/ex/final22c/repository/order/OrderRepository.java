@@ -1,6 +1,7 @@
 package com.ex.final22c.repository.order;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,11 +16,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.order.Order;
-import com.ex.final22c.repository.order.OrderRepository.MileageRowWithBalance;
 
 import jakarta.persistence.LockModeType;
-
-import java.util.Collection;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -174,7 +172,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
           when o.status = 'REFUNDED'
             then greatest(coalesce(o.usedPoint,0) - coalesce(r.refundMileage,0), 0)
           else coalesce(o.usedPoint,0)
-        end       as usedPoint,
+        end as usedPoint,
 
         case
           when o.status = 'CONFIRMED'
@@ -182,15 +180,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
           when o.status = 'REFUNDED'
             then greatest(coalesce(o.confirmMileage,0) - coalesce(r.refundMileage,0), 0)
           else 0
-        end       as earnedPoint,
-
+        end as earnedPoint,
         case
           when o.status = 'CONFIRMED'
             then coalesce(o.confirmMileage, 0)
           when o.status = 'REFUNDED'
             then greatest(coalesce(o.confirmMileage,0) - coalesce(r.refundMileage,0), 0)
           else 0
-        end       as finalEarnPoint,
+        end as finalEarnPoint,
 
         (
           (select coalesce(u.mileage,0) from Users u where u.userNo = :userNo)
@@ -217,9 +214,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
               and oo.status in :statuses
               and oo.regDate > o.regDate
           ), 0)
-        )         as balanceAt,
+        ) as balanceAt,
 
-        o.status  as status
+        o.status as status
       from Order o
       left join o.refund r
       where o.user.userNo = :userNo
