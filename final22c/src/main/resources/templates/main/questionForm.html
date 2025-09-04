@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+  <meta charset="UTF-8">
+  <title>22°C | Chat</title>
+  <th:block layout:fragment="css">
+    <!-- 필요시 전용 css -->
+  </th:block>
+</head>
+<body>
+<th:block layout:fragment="content">
+<div class="container mt-5">
+    <h2>1:1 문의 작성</h2>
+    <form th:action="@{/qna/save}" method="post">
+        <div class="mb-3">
+            <label for="title" class="form-label">제목</label>
+            <input type="text" class="form-control" id="title" name="title" required maxlength="200">
+        </div>
+
+        <div class="mb-3">
+            <label for="qc" class="form-label">문의 유형</label>
+            <select class="form-select" id="qc" name="qcId" required>
+                <option th:each="qc : ${questionCategories}" 
+                        th:value="${qc.qcId}" 
+                        th:text="${qc.type}">문의유형</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="content" class="form-label">내용</label>
+            <textarea id="summernote" name="content"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">문의 등록</button>
+    </form>
+</div>
+</th:block>
+
+<script layout:fragment="script">
+    $(document).ready(function() {
+        $('#summernote').summernote({
+            placeholder: '문의 내용을 입력하세요',
+            tabsize: 2,
+            height: 500,
+            toolbar: [
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['fontsize', 'color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['picture', 'link', 'video']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ],
+        });
+
+    });
+</script>
+</body>

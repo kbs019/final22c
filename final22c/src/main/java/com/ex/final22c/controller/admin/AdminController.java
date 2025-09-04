@@ -34,6 +34,7 @@ import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.product.ReviewDto;
+import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseRequest;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
@@ -340,9 +341,10 @@ public class AdminController {
 
 	// 발주 목록
 	@GetMapping("purchaseList")
-	public String purchaseList(Model model) {
-
-		model.addAttribute("purList", this.adminService.getPurchase());
+	public String purchaseList(Model model, @RequestParam(name = "startDate",required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+            @RequestParam(name = "endDate",required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
+		List<Purchase> purList = adminService.getPurchasesByPeriod(startDate, endDate);
+		model.addAttribute("purList", purList);
 		return "admin/purchaseList";
 	}
 
