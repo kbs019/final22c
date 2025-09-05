@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.ex.final22c.form.UsersForm;
+import com.ex.final22c.service.user.EmailVerifier;
 import com.ex.final22c.service.user.UsersService;
 
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class UsersController {
 
     private final UsersService usersService;
+    private final EmailVerifier emailVerifier;
 
     @GetMapping("/create")
     public String signupForm(UsersForm usersForm) {
@@ -47,8 +49,11 @@ public class UsersController {
             bindingResult.rejectValue("userName", "duplicate", "이미 사용 중인 아이디입니다.");
             return "user/signupForm";
         }
-        if (!usersService.isEmailAvailable(usersForm.getEmail())) {
-            bindingResult.rejectValue("email", "duplicate", "이미 사용 중인 이메일입니다.");
+        // ===== 서버단 이메일 검증(최종 가드) =====
+        String emailNorm = emailVerifier.normalize(usersForm.getEmail());
+        if (!emailVerifier.isAcceptableForSignup(emailNorm)) {
+            bindingResult.rejectValue("email", "invalidEmail",
+                    "사용할 수 없는 이메일입니다. 올바른 형식/도메인인지 확인해 주세요.");
             return "user/signupForm";
         }
         if (!usersService.isPhoneAvailable(usersForm.getPhone())) { // "01012345678" 형식 기대
@@ -74,7 +79,7 @@ public class UsersController {
             bindingResult.rejectValue("birth", "birth.minAge", "만 8세 이상만 가입할 수 있습니다.");
             return "user/signupForm";
         }
-
+        usersForm.setEmail(emailNorm);
         usersService.create(usersForm);
         return "redirect:/user/login";
     }
@@ -111,11 +116,35 @@ public class UsersController {
         return Map.of("ok", true, "available", available);
     }
 
+    // ===== 강화된 이메일 체크 API =====
     @GetMapping(value = "/check/email", produces = "application/json")
     @ResponseBody
     public Map<String, Object> checkEmail(@RequestParam("email") String email) {
-        boolean available = usersService.isEmailAvailable(email);
-        return Map.of("ok", true, "available", available);
+        String norm = emailVerifier.normalize(email);
+        boolean syntax = emailVerifier.isSyntaxValid(norm);
+
+        boolean mx = false;
+        boolean disposable = false;
+        boolean acceptable = false;
+
+        if (syntax) {
+            String domain = norm.substring(norm.lastIndexOf('@') + 1);
+            disposable = emailVerifier.isDisposable(domain);
+            mx = emailVerifier.hasMxOrA(domain);
+            acceptable = syntax && !disposable && mx;
+        }
+
+        boolean available = acceptable && usersService.isEmailAvailable(norm);
+
+        return Map.of(
+                "ok", true,
+                "normalized", norm,
+                "syntax", syntax,
+                "mx", mx,
+                "disposable", disposable,
+                "acceptable", acceptable, // 정책 통과 여부(중복 제외)
+                "available", available // 최종 가입 가능한지(중복 포함)
+        );
     }
 
     @GetMapping(value = "/check/phone", produces = "application/json")
