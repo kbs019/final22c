@@ -307,7 +307,7 @@ public class AdminService {
     public List<Product> getItemList(String kw) {
 
         Specification<Product> spec = proSearch(kw);
-        return this.productRepository.findAll(spec);
+        return this.productRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "id"));
     }
 
     // 상품 추출
@@ -570,7 +570,7 @@ public class AdminService {
 
         Specification<Product> spec = proFilter(kw, brandIds, isPickedList, statusList);
 
-        return productRepository.findAll(spec);
+        return this.productRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "id"));
     }
 
     // 동적 필터
@@ -610,7 +610,21 @@ public class AdminService {
 
         return productRepository.findAll(spec, Sort.by(sorts));
     }
+    
+    public List<Product> getItemList2(
+            String kw,
+            List<Long> brandIds) {
+        List<Sort.Order> sorts = new ArrayList<>();
 
+        // ✅ 재고 낮은 순 정렬 (count ASC)
+        sorts.add(Sort.Order.asc("count"));
+
+        // 동적 필터
+        Specification<Product> spec = proFilter(kw, brandIds);
+
+        return productRepository.findAll(spec, Sort.by(sorts));
+    }
+    
     // 발주 신청 목록 추가
     public Map<String, Object> addToPurchaseRequest(Map<String, Object> payload) {
         Map<String, Object> response = new HashMap<>();

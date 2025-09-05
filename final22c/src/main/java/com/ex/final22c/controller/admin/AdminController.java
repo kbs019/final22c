@@ -225,7 +225,7 @@ public class AdminController {
 	public String purchaseOrde(Model model,
 			@RequestParam(value = "kw", defaultValue = "") String kw,
 			@RequestParam(value = "brand", required = false) List<Long> brandIds) {
-		List<Product> list = adminService.getItemList(kw, brandIds);
+		List<Product> list = adminService.getItemList2(kw, brandIds);
 		List<Brand> brands = adminService.getBrand();
 		List<PurchaseRequest> pr = this.adminService.getPr();
 
