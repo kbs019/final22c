@@ -298,4 +298,35 @@ public class ChatService {
             return null; // ProductDescriptionService에서 fallback 처리됨
         }
     }
+    
+    
+    /* ----- 개인화 향수 분석 ----- */
+    public String generatePersonaRecommendation(String prompt) {
+        var body = Map.of(
+                "model", model,
+                "messages", List.of(
+                        Map.of("role", "system", "content", 
+                               "당신은 향수 전문가입니다. 특정 성별과 나이대의 사람이 해당 향수를 착용했을 때의 " +
+                               "구체적이고 현실적인 시나리오를 분석해주세요. " +
+                               "추천이 아닌 예상/분석 관점으로 접근하고, 150-200자 내외로 작성하세요."),
+                        Map.of("role", "user", "content", prompt)
+                ),
+                "temperature", 0.6,  // 창의적이지만 일관성 있게
+                "max_tokens", 300
+        );
+        
+        try {
+            var resp = call(body);
+            String result = extract(resp);
+            
+            if (result != null && result.length() > 500) {
+                result = result.substring(0, 480) + "...";
+            }
+            
+            return result;
+        } catch (Exception e) {
+            log.error("개인화 향수 분석 실패: {}", e.getMessage());
+            return null;
+        }
+    }
 }
