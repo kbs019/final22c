@@ -1,6 +1,6 @@
 /* ===== 레이아웃 폭 제한 ===== */
 .page-wrap{
-  max-width: 1140px;     /* ✅ 폭 좁히기 */
+  max-width: 1140px;
   margin-inline: auto;
 }
 
@@ -19,56 +19,89 @@
 }
 
 /* ===== 상품 카드 (공용) ===== */
-.product-card{
-  border: 1px solid #eee;
+.card.product-card {
+  border: 1px solid transparent !important; /* Bootstrap 기본 border 완전 무효화 */
   border-radius: 1rem;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
-  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  transition: transform .15s ease; /* box-shadow 트랜지션도 제거 */
   background: #fff;
+  box-shadow: none !important;     /* 기본 그림자 제거 */
 }
-.product-card:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 .6rem 1.2rem rgba(0,0,0,.08);
-  border-color: #e6e6e6;
-}
-.product-thumb img{ display:block; }
-.product-name{ font-weight: 600; }
-.product-price .sell{ font-weight: 700; }
 
-/* ===== 랭크 배지 (베스트 영역 공용) ===== */
+.card.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: none !important;     /* 호버 시에도 그림자 없음 */
+  border-color: transparent !important;
+}
+
+/* 썸네일 */
+.product-thumb img{ display:block; }
+
+/* ===== 상품 텍스트(이름/가격) – 굵기/크기 낮춤 & 말줄임 제거 ===== */
+.product-name{
+  font-weight: 600;                     /* 600 → 500 */
+  font-size: .8rem;                    /* 살짝 작게 */
+  line-height: 1.35;
+  white-space: normal;                  /* 말줄임(...) 방지 */
+  overflow: visible;
+  text-overflow: clip;
+  word-break: keep-all;                 /* 한글 가독성 */
+}
+
+.product-price .sell{
+  font-weight: 500;                     /* 700 → 600 */
+  font-size: .75rem;
+}
+
+.product-price .origin,
+.product-price .text-muted{
+  font-weight: 400;
+  font-size: .7rem;                    /* 정가 더 작게 */
+  color: #6c757d;
+}
+
+/* ===== 랭크 "텍스트" 배지 ===== */
 .rank-badge{
   position: absolute;
   z-index: 2;
-  top: .6rem;
-  left: .6rem;
-  width: 2rem; height: 2rem;
-  border-radius: 50%;
-  background: #111; color:#fff;
-  font-size: .9rem; font-weight: 800;
-  display:flex; align-items:center; justify-content:center;
-  box-shadow: 0 .25rem .5rem rgba(0,0,0,.15);
+  top: .58rem;
+  left: .7rem;
+  background: transparent;
+  color: #111;
+  display: flex;
+  align-items: flex-start;
+  gap: .06rem;
+  line-height: 1;
+  font-size: .95rem;
+  font-weight: 700;
+  text-shadow: 0 0 1px rgba(255,255,255,.35);
+}
+.rank-badge .rank-num{ line-height: 1; }
+.rank-badge .rank-suffix{
+  font-size: .7em;
+  margin-top: .08em;
+}
+.rank-badge.top{
+  font-size: 1.15rem;
+  font-weight: 800;
 }
 
 /* ===== PICK 전용 – 카드가 납작해지지 않도록 보장 ===== */
-
-/* 4:5 비율 유틸 */
 .ratio-4x5 { --bs-aspect-ratio: calc(5 / 4 * 100%); }
-
-/* ratio 내부 이미지를 절대배치 → 실제 높이 확보 */
 .ratio > img{
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover; display: block;
 }
 
-/* 필요시 카드 폭을 아주 살짝만 줄여 좌/우 바깥 화살표 여백 확보 (원치 않으면 제거 가능) */
+/* 외부 화살표 여백 확보(선택) */
 @media (min-width: 992px){
-  .pick-narrow{ flex: 0 0 auto; width: 23.5%; } /* 25% → 23.5% 정도로만 */
+  .pick-narrow{ flex: 0 0 auto; width: 23.5%; }
 }
 
-/* 캐러셀 컨테이너: 배경/그림자 없음, 화살표는 외부에 있으므로 오버레이 불필요 */
+/* 캐러셀 컨테이너 */
 .pick-carousel{ background: transparent; }
 
 /* 인디케이터: 흰색 동그라미(활성) / 투명 동그라미(비활성) */
@@ -83,32 +116,42 @@
   opacity: 1;
   margin: 0 .25rem;
 }
-.pick-carousel .carousel-indicators .active{
-  background-color: #fff;
-}
+.pick-carousel .carousel-indicators .active{ background-color: #fff; }
 
-/* ===== 바깥 화살표 – 배경 없이 '아이콘만' ===== */
-.btn-arrow-minimal{
+/* ===== 바깥 화살표 – 배경 없이 텍스트 아이콘 ===== */
+.btn-arrow-plain{
   appearance: none;
   background: transparent;
   border: 0;
-  padding: 0;
-  width: 2.25rem; height: 2.25rem;
+  padding: 0 .25rem;
   display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.btn-arrow-plain .arrow-text{
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: #111;
+  line-height: 1;
+  user-select: none;
+}
+.btn-arrow-plain:focus-visible .arrow-text{
+  outline: 2px solid #111;
+  outline-offset: 2px;
 }
 
-/* Bootstrap의 내장 아이콘 SVG를 '마스크'로 사용 → 배경 없이 화살표 모양만 표시 */
-.btn-arrow-minimal .arrow{
-  width: 1.85rem; height: 1.85rem;
-  background-color: #ffffff;
-  mask-size: 100% 100%;
-  -webkit-mask-size: 100% 100%;
+/* (구) 마스크 아이콘 스타일 제거용 – 남겨두되 미사용 */
+.btn-arrow-minimal .arrow{ display:none; }
+
+/* 브랜드 라인 */
+.product-brand{
+  font-weight: 500;
+  font-size: .7rem;
+  color: #6c757d;         /* 차분한 회색톤 */
+  line-height: 1.2;
+  margin-bottom: .15rem;  /* 제품명과 간격 */
+  letter-spacing: .2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.btn-arrow-minimal .arrow.left{
-  mask-image: var(--bs-carousel-control-prev-icon);
-  -webkit-mask-image: var(--bs-carousel-control-prev-icon);
-}
-.btn-arrow-minimal .arrow.right{
-  mask-image: var(--bs-carousel-control-next-icon);
-  -webkit-mask-image: var(--bs-carousel-control-next-icon);
-}
+
