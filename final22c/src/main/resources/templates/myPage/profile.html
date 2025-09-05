@@ -832,7 +832,7 @@
       yesBtn.addEventListener('click', async () => {
         msgEl.textContent = "";
         const local = (localInput.value || "").trim();
-        const domain = (domainCombo.value || "").trim().toLowerCase(); // ✅ 같은 인풋에서 읽음
+        const domain = (domainCombo.value || "").trim().toLowerCase(); // 같은 인풋에서 읽음
         const email = `${local}@${domain}`;
 
         if (!isValidEmail(email)) {

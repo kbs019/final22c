@@ -18,7 +18,6 @@ import com.ex.final22c.data.user.Users;
 @Repository
 public interface UserRepository extends JpaRepository<Users, Long> {
 
-	
   Optional<Users> findByUserName(String userName);
 
   Optional<Users> findByEmail(String email);
@@ -26,6 +25,12 @@ public interface UserRepository extends JpaRepository<Users, Long> {
   Optional<Users> findByPhone(String phone);
 
   Optional<Users> findById(Long userNo);
+
+  boolean existsByUserName(String userName);
+
+  boolean existsByEmail(String email);
+
+  boolean existsByPhone(String phone); // DB엔 숫자만 11자리
 
   // 유저목록 (페이징,검색)
   Page<Users> findAll(Specification<Users> spec, Pageable pageable);
@@ -68,7 +73,7 @@ public interface UserRepository extends JpaRepository<Users, Long> {
   int refreshAgesForNewYear();
 
   // 내 관심목록
-    // userName으로 PK만 뽑아오기(경량)
-    @Query("select u.userNo from Users u where u.userName = :userName")
-    Optional<Long> findUserNoByUserName(@Param("userName") String userName);
+  // userName으로 PK만 뽑아오기(경량)
+  @Query("select u.userNo from Users u where u.userName = :userName")
+  Optional<Long> findUserNoByUserName(@Param("userName") String userName);
 }
