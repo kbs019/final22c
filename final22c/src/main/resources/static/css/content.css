@@ -100,7 +100,9 @@ body.modal-open { padding-right: 0 !important; }
 
 /* 좌측 이미지 영역: 가변(넓게), 최소 폭 보장 */
 .productInfoWrap .slideWrap{
-    position: relative;
+    position: sticky;
+    top: 80px;              /* 고정 시작 오프셋(헤더 높이에 맞춰 조절) */
+    align-self: flex-start; /* 컬럼 자체 높이만큼만 차지 */
     flex: 1 1 0%;                   /* 가능한 한 넓게 차지 */
     min-width: 320px;               /* 너무 좁아지지 않도록 */
     padding-right: 0;               /* gap로 간격 관리하므로 padding 제거 */
@@ -151,7 +153,7 @@ body.modal-open { padding-right: 0 !important; }
     max-height: calc(100vh - 180px);/* 화면 높이 넘치지 않도록 */
     object-fit: contain;            /* 잘림 방지 */
     margin: 0 auto;
-    position: sticky;
+    position: static;
 }
 
 /* 우측 정보 영역: 고정 폭 상한 + 유연 폭 하한 */
@@ -161,7 +163,7 @@ body.modal-open { padding-right: 0 !important; }
     box-sizing: border-box;
     border-left: 1px solid #ebebeb;
     padding-left: 32px;
-    position: sticky; 
+    position: static; 
     top: 80px;
     flex-shrink: 1;
     flex-basis: 50%;
@@ -220,24 +222,27 @@ input[type=number]::-webkit-outer-spin-button{
 
 /* 태블릿 이하: 세로 스택(이미지 위, 정보 아래) */
 @media (max-width: 992px){
-    .productInfoWrap{
-        flex-direction: column;
-        gap: 24px;
-    }
-    .productInfoWrap .slideWrap,
-    .productInfoWrap .productInfo{
-        width: 100%;
-        min-width: 0;
-    }
-    .productInfoWrap .productInfo{
-        border-left: 0;
-        border-top: 1px solid #ebebeb;  /* 경계선 방향 변경 */
-        padding-left: 0;
-        padding-top: 24px;
-    }
-    .productInfoWrap .slideWrap img{
-        max-height: 520px;               /* 세로 스택 시 너무 길어지지 않게 */
-    }
+  .productInfoWrap{
+    flex-direction: column;
+    gap: 24px;
+  }
+  .productInfoWrap .slideWrap{
+    position: static;     /* 모바일에선 고정 해제 */
+    top: auto;
+    width: 100%;
+    min-width: 0;
+  }
+  .productInfoWrap .productInfo{
+    width: 100%;
+    min-width: 0;
+    border-left: 0;
+    border-top: 1px solid #ebebeb;
+    padding-left: 0;
+    padding-top: 24px;
+  }
+  .productInfoWrap .slideWrap img{
+    max-height: 520px;
+  }
 }
 
 /* 모바일: 폰트/간격 조금 더 촘촘하게 */
@@ -368,3 +373,51 @@ input[type=number]::-webkit-outer-spin-button{
 .bm-btn[aria-pressed="true"]{ color:#111; }
 .bm-btn[aria-pressed="true"] .bm-shape{ fill:currentColor; stroke:currentColor; }
 .bm-btn:active{ transform:scale(0.96); }
+
+
+/* 상품 하단 설명 sticky 네비게이션 */
+.productTabWrap {
+  position: sticky;
+  top: 72px;              /* 헤더 높이에 맞게 조정 */
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid #aaa;
+}
+
+.productTab {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.productTab button {
+  background: none;
+  border: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #444;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.productTab button.active {
+  color: #111;
+  border-bottom: 2px solid #111;
+}
+
+/* 고정 헤더 + sticky 탭 높이만큼 여유를 줘서 앵커/scrollIntoView가 가려지지 않게 */
+html{
+  scroll-padding-top: var(--sticky-offset, 120px);
+}
+
+/* 섹션에 직접 점프해도 동일하게 보정 */
+section[id]{
+  scroll-margin-top: var(--sticky-offset, 120px);
+}
+
+/* h2 위 margin이 섹션 밖으로 붕 뜨며 겹치지 않게(여백 겹침 방지용 옵션) */
+section[id] > :first-child{
+  margin-top: clamp(0px, 1.2vh, 16px);
+}

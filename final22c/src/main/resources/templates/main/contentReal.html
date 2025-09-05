@@ -184,41 +184,12 @@
               <div>
                 <strong class="rate"
                   th:text="${#numbers.formatDecimal(T(java.lang.Math).floor(product.discount), 0, 0)} + '%'"></strong>
-                <span class="sale" th:text="${#numbers.formatInteger(product.sellPrice, 1,'COMMA')} + '원'"></span>
+                <span class="sale" th:text="${#numbers.formatInteger(product.sellPrice, 3,'COMMA')} + '원'"></span>
               </div>
               <div>
                 <del class="list" th:if="${product.price > product.sellPrice}"
-                  th:text="${#numbers.formatInteger(product.price, 1,'COMMA')} + '원'"></del>
+                  th:text="${#numbers.formatInteger(product.price, 3,'COMMA')} + '원'"></del>
               </div>
-            </div>
-          </div>
-
-          <div class="mb-3 py-3 price-area border-bottom">
-            <div>
-              <span>[부향률]</span>
-              <div>- <span th:text="${product.grade.gradeName}"></span></div>
-            </div>
-            <br>
-            <div>
-              <span>[메인 어코드]</span>
-              <div>- <span th:text="${product.mainNote.mainNoteName}"></span></div>
-            </div>
-            <br>
-            <div>
-              <span>[메인 노트]</span>
-              <div th:if="${product.singleNote != null}">
-                - <span>싱글 노트 : </span><span th:text="${product.singleNote}"></span>
-              </div>
-              <div th:if="${product.singleNote == null}">
-                <div>- <span>탑 노트 : </span><span th:text="${product.topNote}"></span></div>
-                <div>- <span>미들 노트 : </span><span th:text="${product.middleNote}"></span></div>
-                <div>- <span>베이스 노트 : </span><span th:text="${product.baseNote}"></span></div>
-              </div>
-            </div>
-            <br>
-            <div>
-              <span>[향 설명]</span>
-              <div>- <span th:text="${product.description}"></span></div>
             </div>
           </div>
 
@@ -232,7 +203,7 @@
             </div>
           </div>
 
-          <div class="my-3 py-3">
+          <div class="my-3 py-3 border-bottom">
             <div>구매 확정 시, 결제금액의 5% 적립</div>
             <form id="buy-form" method="post">
               <input type="hidden" name="id" th:value="${product.id}">
@@ -257,7 +228,7 @@
               <!-- 재고 제한 안내 -->
               <p id="stockHint" class="stock-hint" aria-live="polite" aria-atomic="true" hidden></p>
 
-              <div class="my-3 d-flex gap-2">
+              <div class="mt-3 d-flex gap-2">
                 <!-- 장바구니: 품절일 때도 클릭 가능(알림 유도용) -->
                 <button type="button" class="btn btn-outline-secondary" id="btn-add-cart"
                   th:attr="data-oos=${product.count == 0} ? 'true' : 'false'">
@@ -450,229 +421,182 @@
       </div>
     </div>
 
-    <!-- 여기에 탭 네비게이션을 추가 -->
-    <nav class="productTabWrap">
-      <div class="productTab">
-        <button data-target="#product-desc">상품 상세정보</button>
-        <button data-target="#buyer-stats">구매자 통계</button>
-        <button data-target="#review-section">리뷰</button>
-        <button data-target="#similar-products">관련 상품</button>
-      </div>
-    </nav>
-
     <!-- 하단의 향 소개 -->
-    <div class="productContentsWrap">
-      <section id="product-desc">
-        <div class="my-5">
-          <div class="my-5">
-            <h2>향 소개</h2>
-            <!-- AI 생성 컨텐츠 컬럼에 저장 후, 출력 -->
-            <div th:text="${product.aiGuide}" 
-                style="white-space:pre-line; line-height: 1.8; margin-bottom: 1rem;">
-            </div>
-    
+    <div class="productDescription">
+      <h2>향 소개</h2>
+      <br>
+      <div>
+        <span>[부향률]</span>
+        <div>- <span th:text="${product.grade.gradeName}"></span></div>
+      </div>
+      <br>
+      <div>
+        <span>[메인 어코드]</span>
+        <div>- <span th:text="${product.mainNote.mainNoteName}"></span></div>
+      </div>
+      <br>
+      <div>
+        <span>[메인 노트]</span>
+        <div th:if="${product.singleNote != null}">
+          - <span>싱글 노트 : </span><span th:text="${product.singleNote}"></span>
+        </div>
+        <div th:if="${product.singleNote == null}">
+          <div>- <span>탑 노트 : </span><span th:text="${product.topNote}"></span></div>
+          <div>- <span>미들 노트 : </span><span th:text="${product.middleNote}"></span></div>
+          <div>- <span>베이스 노트 : </span><span th:text="${product.baseNote}"></span></div>
+        </div>
+      </div>
+      <br>
+      <div>
+        <span>[향 설명]</span>
+        <div>- <span th:text="${product.description}"></span></div>
+      </div>
+
+      <br>
+      <!-- AI 생성 컨텐츠 컬럼에 저장 후, 출력 -->
+      <div>
+        <span th:text="${product.aiGuide}" style="white-space:pre-line;"></span>
+      </div>
+
+      <!-- AI 생성 컨텐츠 추가 -->
+      <div th:if="${aiDescription != null}" class="ai-enhanced-description mt-4">
+        <h3 class="mb-3">AI 향수 가이드</h3>
+        <div class="card">
+          <div class="card-body">
+            <div th:utext="${aiDescription}" class="ai-content"></div>
           </div>
-          <!-- AI 개인화 추천 섹션 -->
-          <div class="ai-persona-recommendation mt-4">
-            <div class="card">
-              <div class="card-header bg-light">
-                <h3 class="mb-0">AI 개인 맞춤 향수 가이드</h3>
-                <small class="text-muted">당신의 정보를 입력하면 더 구체적인 추천을 받을 수 있습니다</small>
+        </div>
+      </div>
+
+      <!-- 구매자 통계 (명수, 인구피라미드) -->
+      <div id="buyer-stats" class="mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="mb-0">구매자 통계</h2>
+          <div class="text-muted small">구매자 수(명) · 확정 수량 존재 기준</div>
+        </div>
+
+        <div class="card p-3">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>WOMAN</span>
+            <span>MAN</span>
+          </div>
+          <div style="height:300px;">
+            <canvas id="buyerStatChart" aria-label="나이/성별별 구매자 수 피라미드 차트"></canvas>
+          </div>
+          <div id="buyerStatEmpty" class="text-muted small mt-2" style="display:none;">데이터가 없습니다.</div>
+        </div>
+      </div>
+
+      <!-- 리뷰 섹션 -->
+      <div id="review-section" class="mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="mb-0">Review</h2>
+          <div>
+            <a class="btn btn-outline-dark" th:href="@{|/main/etc/review/new?productId=${product.id}|}"
+              sec:authorize="isAuthenticated()">리뷰 작성</a>
+
+            <button class="btn btn-outline-dark" id="btn-review-need-login" sec:authorize="isAnonymous()">리뷰 작성</button>
+          </div>
+        </div>
+
+        <!-- 평균 평점 -->
+        <div class="mb-4">
+          <div class="mb-2 fw-semibold">평균 평점</div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="rating-bars" th:with="filled=${T(java.lang.Math).round(reviewAvg)}">
+              <div th:each="i : ${#numbers.sequence(1,5)}" th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
               </div>
-              <div class="card-body">
-                <form id="personaRecommendationForm">
-                  <div class="row g-3">
-                    <!-- 성별 선택 -->
-                    <div class="col-md-6">
-                      <label for="gender" class="form-label">성별</label>
-                      <select id="gender" name="gender" class="form-select" required>
-                        <option value="">선택해주세요</option>
-                        <option value="M">남성</option>
-                        <option value="F">여성</option>
-                      </select>
-                    </div>
-  
-                    <!-- 나이대 선택 -->
-                    <div class="col-md-6">
-                      <label for="ageGroup" class="form-label">나이대</label>
-                      <select id="ageGroup" name="ageGroup" class="form-select" required>
-                        <option value="">선택해주세요</option>
-                        <option value="10s">10대</option>
-                        <option value="20s">20대</option>
-                        <option value="30s">30대</option>
-                        <option value="40s">40대</option>
-                        <option value="50plus">50대 이상</option>
-                      </select>
+            </div>
+            <span th:text="${#numbers.formatDecimal(reviewAvg,1,1)}">0.0</span>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- 전체 개수 + 정렬 -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="fw-semibold">전체 리뷰 <span th:text="${reviewCount}">0</span>개</div>
+          <form method="get" th:action="@{|/main/content/${product.id}|}">
+            <select class="form-select form-select-sm w-auto d-inline-block" name="sort">
+              <option value="best" th:selected="${sort=='best'}">추천순</option>
+              <option value="recent" th:selected="${sort=='recent'}">최신순</option>
+              <option value="rating" th:selected="${sort=='rating'}">평점순</option>
+            </select>
+          </form>
+        </div>
+
+        <!-- 리스트 -> 정렬을 위해 묶음 -->
+        <div id="reviewList" th:fragment="reviewList(reviews, likedReviewIds, productId, sort)"
+          th:with="productId=${productId} ?: ${product?.id}" class="mt-2">
+
+          <div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">작성된 리뷰가 없습니다.</div>
+
+          <div th:each="rv : ${reviews}" class="py-4 border-top">
+            <div class="d-flex align-items-start justify-content-between">
+              <!-- 좌측: 메타 + 본문 -->
+              <div class="d-flex align-items-start gap-3 flex-grow-1">
+                <div class="review-meta">
+                  <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
+                    th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
+                    kv**
+                  </div>
+
+                  <div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
+                    <div th:each="i : ${#numbers.sequence(1,5)}"
+                      th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
                     </div>
                   </div>
-  
-                  <div class="mt-3 text-center">
-                    <button type="submit" class="btn btn-primary" id="getRecommendationBtn">
-                      <span class="btn-text">AI 추천받기</span>
-                      <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
+                </div>
+
+                <!-- 본문 영역 -->
+                <div class="flex-grow-1">
+                  <!-- 활성 리뷰 -->
+                  <div class="mb-2 text-break" th:if="${rv.status == 'ACTIVE'}" th:text="${rv.content}"
+                    style="white-space:pre-line;">내용</div>
+
+                  <!-- 좋아요 -->
+                  <div class="like-wrap" th:attr="data-id=${rv.reviewId}"
+                    th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
+                    <button type="button" class="btn-like" aria-label="공감" title="공감" sec:authorize="isAuthenticated()"
+                      th:if="${rv.status == 'ACTIVE'}">
+                      <i class="fa-regular fa-thumbs-up"></i>
                     </button>
-                  </div>
-                </form>
-  
-                <!-- AI 추천 결과 표시 영역 -->
-                <div id="aiRecommendationResult" class="mt-4 d-none">
-                  <hr>
-                  <h5 class="text-primary">당신을 위한 AI 분석</h5>
-                  <div id="recommendationContent" class="alert alert-light border">
-                    <!-- AI 생성 내용이 여기에 표시됩니다 -->
-                  </div>
-  
-                  <!-- 다시 분석하기 버튼을 여기로 이동 -->
-                  <div class="text-center mt-3">
-                    <button type="button" class="btn btn-outline-primary" id="resetAnalysisBtn" style="display: none;">
-                      다른 조건으로 다시 분석하기
+                    <button type="button" class="btn-like need-login" aria-label="로그인 필요" sec:authorize="isAnonymous()"
+                      th:if="${rv.status == 'ACTIVE'}">
+                      <i class="fa-regular fa-thumbs-up"></i>
                     </button>
+                    <span class="like-count" th:text="${#lists.size(rv.likers)}"
+                      th:if="${rv.status == 'ACTIVE'}">0</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 우측: 날짜 + 액션(날짜 바로 아래) — 날짜 위치는 그대로 유지 -->
+              <div class="review-right ms-3">
+                <div class="review-date text-muted small text-nowrap"
+                  th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
+
+                <!-- 로그인 + (소유자 또는 관리자)만 노출 -->
+                <div class="review-actions mt-1" sec:authorize="isAuthenticated()"
+                  th:with="isOwner=${#authentication.name == rv.userName}">
+                  <div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
+                    <a class="ra-link" th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
+
+                    <form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
+                      onsubmit="return confirm('후기를 삭제하시겠습니까?');">
+                      <input type="hidden" name="productId" th:value="${productId}">
+                      <button type="submit" class="ra-link ra-danger">삭제</button>
+                    </form>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </section>
 
-      <section id="buyer-stats">
-        <!-- 구매자 통계 (명수, 인구피라미드) -->
-        <div class="mt-5">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="mb-0">구매자 통계</h2>
-            <div class="text-muted small">구매자 수(명) · 확정 수량 존재 기준</div>
-          </div>
-
-          <div class="card p-3">
-            <div class="d-flex justify-content-between small text-muted mb-1">
-              <span>WOMAN</span>
-              <span>MAN</span>
-            </div>
-            <div style="height:300px;">
-              <canvas id="buyerStatChart" aria-label="나이/성별별 구매자 수 피라미드 차트"></canvas>
-            </div>
-            <div id="buyerStatEmpty" class="text-muted small mt-2" style="display:none;">데이터가 없습니다.</div>
-          </div>
-        </div>
-      </section>
-
-      <section id="review-section">
-        <!-- 리뷰 섹션 -->
-        <div class="mt-5">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="mb-0">Review</h2>
-            <div>
-              <a class="btn btn-outline-dark" th:href="@{|/main/etc/review/new?productId=${product.id}|}"
-                sec:authorize="isAuthenticated()">리뷰 작성</a>
-
-              <button class="btn btn-outline-dark" id="btn-review-need-login" sec:authorize="isAnonymous()">리뷰
-                작성</button>
-            </div>
-          </div>
-
-          <!-- 평균 평점 -->
-          <div class="mb-4">
-            <div class="mb-2 fw-semibold">평균 평점</div>
-            <div class="d-flex align-items-center gap-3">
-              <div class="rating-bars" th:with="filled=${T(java.lang.Math).round(reviewAvg)}">
-                <div th:each="i : ${#numbers.sequence(1,5)}" th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
-                </div>
-              </div>
-              <span th:text="${#numbers.formatDecimal(reviewAvg,1,1)}">0.0</span>
-            </div>
-          </div>
-
-          <hr class="my-4">
-
-          <!-- 전체 개수 + 정렬 -->
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="fw-semibold">전체 리뷰 <span th:text="${reviewCount}">0</span>개</div>
-            <form method="get" th:action="@{|/main/content/${product.id}|}">
-              <select class="form-select form-select-sm w-auto d-inline-block" name="sort">
-                <option value="best" th:selected="${sort=='best'}">추천순</option>
-                <option value="recent" th:selected="${sort=='recent'}">최신순</option>
-                <option value="rating" th:selected="${sort=='rating'}">평점순</option>
-              </select>
-            </form>
-          </div>
-
-          <!-- 리스트 -> 정렬을 위해 묶음 -->
-          <div id="reviewList" th:fragment="reviewList(reviews, likedReviewIds, productId, sort)"
-            th:with="productId=${productId} ?: ${product?.id}" class="mt-2">
-
-            <div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">작성된 리뷰가 없습니다.</div>
-
-            <div th:each="rv : ${reviews}" class="py-4 border-top">
-              <div class="d-flex align-items-start justify-content-between">
-                <!-- 좌측: 메타 + 본문 -->
-                <div class="d-flex align-items-start gap-3 flex-grow-1">
-                  <div class="review-meta">
-                    <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
-                      th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
-                      kv**
-                    </div>
-
-                    <div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
-                      <div th:each="i : ${#numbers.sequence(1,5)}"
-                        th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 본문 영역 -->
-                  <div class="flex-grow-1">
-                    <!-- 리뷰 -->
-                    <div class="mb-2 text-break" th:if="${rv.status == 'ACTIVE'}" th:text="${rv.content}"
-                      style="white-space:pre-line;">내용</div>
-
-                    <!-- 좋아요 -->
-                    <div class="like-wrap" th:attr="data-id=${rv.reviewId}"
-                      th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
-                      <button type="button" class="btn-like" aria-label="공감" title="공감"
-                        sec:authorize="isAuthenticated()" th:if="${rv.status == 'ACTIVE'}">
-                        <i class="fa-regular fa-thumbs-up"></i>
-                      </button>
-                      <button type="button" class="btn-like need-login" aria-label="로그인 필요"
-                        sec:authorize="isAnonymous()" th:if="${rv.status == 'ACTIVE'}">
-                        <i class="fa-regular fa-thumbs-up"></i>
-                      </button>
-                      <span class="like-count" th:text="${#lists.size(rv.likers)}"
-                        th:if="${rv.status == 'ACTIVE'}">0</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 우측: 날짜 + 액션(날짜 바로 아래) — 날짜 위치는 그대로 유지 -->
-                <div class="review-right ms-3">
-                  <div class="review-date text-muted small text-nowrap"
-                    th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
-
-                  <!-- 로그인 + (소유자 또는 관리자)만 노출 -->
-                  <div class="review-actions mt-1" sec:authorize="isAuthenticated()"
-                    th:with="isOwner=${#authentication.name == rv.userName}">
-                    <div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
-                      <a class="ra-link"
-                        th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
-
-                      <form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
-                        onsubmit="return confirm('후기를 삭제하시겠습니까?');">
-                        <input type="hidden" name="productId" th:value="${productId}">
-                        <button type="submit" class="ra-link ra-danger">삭제</button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- 리뷰 끝 -->
-        </div>
-      </section>
-
-      <section id="similar-products">
-        <div>관련 상품 추천</div>
-      </section>
-    </div> <!-- productContentsWrap 끝 -->
+        <!-- 리뷰 끝 -->
+      </div>
+    </div>
   </div>
 
   <!-- 스크립트 -->
@@ -1388,163 +1312,6 @@
         });
         select?.addEventListener('change', () => form.requestSubmit());
       })();
-
-      document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('personaRecommendationForm');
-        const resultDiv = document.getElementById('aiRecommendationResult');
-        const contentDiv = document.getElementById('recommendationContent');
-        const submitBtn = document.getElementById('getRecommendationBtn');
-        const resetBtn = document.getElementById('resetAnalysisBtn');
-        const btnText = submitBtn.querySelector('.btn-text');
-        const spinner = submitBtn.querySelector('.spinner-border');
-
-        // 폼 영역과 제목 요소들
-        const formContainer = document.querySelector('.row.g-3');
-        const titleSmall = document.querySelector('.card-header small');
-
-        form.addEventListener('submit', async function (e) {
-          e.preventDefault();
-
-          const gender = document.getElementById('gender').value;
-          const ageGroup = document.getElementById('ageGroup').value;
-
-          // 둘 다 선택했는지 확인
-          if (!gender || !ageGroup) {
-            alert('성별과 나이대를 모두 선택해주세요.');
-            return;
-          }
-
-          // 선택된 값 텍스트 변환
-          const genderText = gender === 'M' ? '남성' : '여성';
-          const ageText = ageGroup === '10s' ? '10대' :
-            ageGroup === '20s' ? '20대' :
-              ageGroup === '30s' ? '30대' :
-                ageGroup === '40s' ? '40대' : '50대 이상';
-
-          // 로딩 상태
-          submitBtn.disabled = true;
-          btnText.textContent = '분석 중...';
-          spinner.classList.remove('d-none');
-
-          // 폼 영역 숨기고 제목 변경
-          formContainer.style.display = 'none';
-          titleSmall.textContent = `${ageText} ${genderText}을 위한 분석 중입니다...`;
-
-          try {
-            const productId = /*[[${product.id}]]*/ 0;
-
-            const response = await fetch('/main/ai/persona-recommendation', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                productId: productId,
-                gender: gender,
-                ageGroup: ageGroup
-              })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-              // 제목 변경 (분석 완료)
-              titleSmall.textContent = `${ageText} ${genderText}을 위한 분석 결과`;
-
-              // 결과 표시
-              contentDiv.innerHTML = `<p>${result.recommendation}</p>`;
-              resultDiv.classList.remove('d-none');
-
-              // 기존 버튼 숨기고 새 버튼 표시
-              submitBtn.style.display = 'none';
-              resetBtn.style.display = 'inline-block';
-
-              // 결과 영역으로 스크롤
-              resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-              alert('분석을 생성하는 중 오류가 발생했습니다: ' + result.message);
-              resetToInitialState();
-            }
-
-          } catch (error) {
-            console.error('Error:', error);
-            alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
-            resetToInitialState();
-          } finally {
-            submitBtn.disabled = false;
-            spinner.classList.add('d-none');
-          }
-        });
-
-        // 리셋 버튼 이벤트
-        resetBtn.addEventListener('click', function () {
-          resetToInitialState();
-        });
-
-        // 초기 상태로 되돌리는 함수
-        function resetToInitialState() {
-          // 폼 다시 보이기
-          formContainer.style.display = '';
-
-          // 제목 원래대로
-          titleSmall.textContent = '당신의 정보를 입력하면 더 구체적인 추천을 받을 수 있습니다';
-
-          // 결과 영역 숨기기
-          resultDiv.classList.add('d-none');
-
-          // 드롭다운 초기화
-          document.getElementById('gender').value = '';
-          document.getElementById('ageGroup').value = '';
-
-          // 버튼 상태 복구
-          submitBtn.style.display = 'inline-block';
-          resetBtn.style.display = 'none';
-          btnText.textContent = 'AI 추천받기';
-        }
-      });
-    </script>
-
-    <!-- 상세 페이지 중간에 있는 네비게이션 바 -->
-    <script>
-      // 고정된 헤더/탭의 실제 높이 합계를 계산
-      function getStickyOffset() {
-        const header = document.querySelector('header');           // 사이트 공통 헤더
-        const tab = document.querySelector('.productTabWrap');  // sticky 탭
-        return (header?.offsetHeight || 0) + (tab?.offsetHeight || 0);
-      }
-
-      // CSS 변수로도 내려서 CSS scroll-padding/scroll-margin에 재사용
-      function setStickyCSSVar() {
-        const v = getStickyOffset();
-        document.documentElement.style.setProperty('--sticky-offset', `${v}px`);
-      }
-      setStickyCSSVar();
-      window.addEventListener('resize', setStickyCSSVar);
-
-      // 탭 클릭 → 해당 섹션으로 부드럽게 스크롤(정확한 보정)
-      document.querySelectorAll('.productTab button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const target = document.querySelector(btn.dataset.target);
-          if (!target) return;
-          const y = target.getBoundingClientRect().top + window.pageYOffset - getStickyOffset() - 8; // 살짝 여유
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        });
-      });
-
-      // 🔧 버그 픽스: 실제 DOM은 section이므로 선택자를 바꿔야 active 갱신이 됨
-      const sections = document.querySelectorAll('section[id]');
-      const navBtns = document.querySelectorAll('.productTab button');
-
-      // 스크롤 위치에 따라 active 탭 토글
-      window.addEventListener('scroll', () => {
-        const offset = getStickyOffset() + 20;
-        let current = '';
-        sections.forEach(sec => {
-          const rect = sec.getBoundingClientRect();
-          if (rect.top <= offset && rect.bottom > offset) current = `#${sec.id}`;
-        });
-        navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === current));
-      });
     </script>
   </th:block>
 </body>

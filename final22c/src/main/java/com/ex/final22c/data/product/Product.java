@@ -142,7 +142,7 @@ public class Product {
             double d = this.discount.doubleValue();
             // 0.0 ~ 1.0 또는 1.0 초과의 값은 % 로 간주하여 모두 지원한다.
 
-            if( d > 1.0 ){      // d 가 1.0 초과라면, % 로 간주
+            if( d >= 1.0 ){      // d 가 1.0 초과라면, % 로 간주
                 d = d / 100.0;      // 100.0 으로 나눈다.
             }
 
