@@ -15,16 +15,12 @@ import java.util.Map;
 @Slf4j
 public class ProductDescriptionService {
     
-    private final ChatService chatService;
-    
-    // 메모리 캐시 - 향수 고유 정보를 키로 사용 (용량별 동일 설명문 공유)
+	private final ChatService chatService;
     private final Map<String, CachedDescription> descriptionCache = new ConcurrentHashMap<>();
-    
-    // 캐시 유효 시간 (24시간)
     private static final long CACHE_DURATION_HOURS = 24;
     
+    // 기존 메서드: DB 저장용 (순수 텍스트)
     public String generateEnhancedDescription(Product product) {
-        // 1. 향수 고유 정보로 캐시 키 생성 (용량 무관)
         String cacheKey = generateCacheKey(product);
         CachedDescription cached = descriptionCache.get(cacheKey);
         
@@ -33,10 +29,8 @@ public class ProductDescriptionService {
             return cached.getDescription();
         }
         
-        // 2. 캐시가 없거나 만료된 경우 새로 생성
         log.debug("새로운 설명문 생성 시작: cacheKey={}", cacheKey);
         
-        // 향 구조 분석
         boolean hasSingleNote = !isEmpty(product.getSingleNote());
         boolean hasComplexNotes = !isEmpty(product.getTopNote()) || 
                                  !isEmpty(product.getMiddleNote()) || 
@@ -47,20 +41,112 @@ public class ProductDescriptionService {
         String description;
         try {
             String aiResult = chatService.generateProductDescription(prompt);
-            description = formatAiDescription(aiResult, hasSingleNote, hasComplexNotes);
+            // DB 저장용: 순수 텍스트만 저장
+            description = cleanTextForStorage(aiResult);
             log.debug("AI 설명문 생성 완료: cacheKey={}", cacheKey);
         } catch (Exception e) {
             log.error("AI 설명문 생성 실패: {}", e.getMessage(), e);
             description = generateFallbackDescription(product, hasSingleNote, hasComplexNotes);
         }
         
-        // 3. 생성된 설명문을 캐시에 저장
         if (description != null) {
             descriptionCache.put(cacheKey, new CachedDescription(description));
             log.debug("설명문 캐시 저장 완료: cacheKey={}", cacheKey);
         }
         
         return description;
+    }
+    
+    // 새로운 메서드: 화면 출력용 HTML 포맷팅
+    public String formatForDisplay(String rawText, Product product) {
+        if (isEmpty(rawText)) {
+            return null;
+        }
+        
+        boolean hasSingleNote = !isEmpty(product.getSingleNote());
+        boolean hasComplexNotes = !isEmpty(product.getTopNote()) || 
+                                 !isEmpty(product.getMiddleNote()) || 
+                                 !isEmpty(product.getBaseNote());
+        
+        StringBuilder formatted = new StringBuilder();
+        
+        // 문단 나누기 (더블 줄바꿈을 기준으로)
+        String[] paragraphs = rawText.split("\n\n");
+        for (int i = 0; i < paragraphs.length; i++) {
+            String paragraph = paragraphs[i].trim();
+            if (!isEmpty(paragraph)) {
+                formatted.append("<p>").append(paragraph).append("</p>");
+                if (i < paragraphs.length - 1) {
+                    formatted.append("\n");
+                }
+            }
+        }
+        
+        // 추가 가이드 섹션
+        formatted.append("\n<div class='mt-3'>");
+        
+        if (hasSingleNote) {
+            formatted.append("<small class='text-muted'>")
+                    .append("<strong>싱글노트 tip:</strong> 다른 향수와 레이어링하기 좋은 베이스로 활용 가능")
+                    .append("</small>");
+        } else if (hasComplexNotes) {
+            formatted.append("<small class='text-muted'>")
+                    .append("<strong>향의 변화:</strong> 시간이 지날수록 다른 매력을 발견할 수 있는 복합적인 향")
+                    .append("</small>");
+        }
+        
+        formatted.append("</div>");
+        
+        return formatted.toString();
+    }
+    
+    // DB 저장용: 순수 텍스트 정리
+    private String cleanTextForStorage(String aiResult) {
+        if (isEmpty(aiResult)) {
+            return null;
+        }
+        
+        // HTML 태그 제거 (혹시 AI가 포함했을 경우)
+        String cleanText = aiResult.replaceAll("<[^>]+>", "").trim();
+        
+        // 연속된 공백 정리 (줄바꿈은 보존)
+        cleanText = cleanText.replaceAll("[ \t]+", " ");
+        cleanText = cleanText.replaceAll("\n\n\n+", "\n\n");
+        
+        // 길이 제한
+        if (cleanText.length() > 500) {
+            cleanText = cleanText.substring(0, 480) + "...";
+        }
+        
+        return cleanText;
+    }
+    
+    // Fallback도 순수 텍스트로 생성
+    private String generateFallbackDescription(Product product, boolean hasSingle, boolean hasComplex) {
+        StringBuilder fallback = new StringBuilder();
+        String cleanName = cleanProductName(product.getName());
+        
+        fallback.append(product.getBrand().getBrandName()).append("의 ");
+        
+        if (hasSingle) {
+            fallback.append("싱글노트 향수로, ").append(product.getSingleNote())
+                    .append("의 순수하고 깔끔한 매력을 온전히 담았습니다.\n\n");
+            fallback.append("복잡하지 않은 단일 향으로 일상에서 부담 없이 즐길 수 있으며, ");
+            fallback.append("레이어링의 베이스로도 완벽합니다.");
+        } else if (hasComplex) {
+            fallback.append("복합적인 향 구조로 시간에 따라 다양한 매력을 선사합니다.\n\n");
+            if (!isEmpty(product.getTopNote())) {
+                fallback.append("첫인상은 ").append(product.getTopNote()).append("로 시작하여 ");
+            }
+            if (!isEmpty(product.getBaseNote())) {
+                fallback.append(product.getBaseNote()).append("로 깊이 있게 마무리됩니다.");
+            }
+        } else {
+            fallback.append("독특하고 매력적인 향으로 당신만의 개성을 표현할 수 있습니다.\n\n");
+            fallback.append("특별한 순간을 더욱 기억에 남도록 만들어줄 향수입니다.");
+        }
+        
+        return fallback.toString();
     }
     
     // 향수 고유 정보로 캐시 키 생성 (용량 정보 제외)
@@ -177,40 +263,6 @@ public class ProductDescriptionService {
         formatted.append("</div>");
         
         return formatted.toString();
-    }
-    
-    private String generateFallbackDescription(Product product, boolean hasSingle, boolean hasComplex) {
-        StringBuilder fallback = new StringBuilder();
-        String cleanName = cleanProductName(product.getName());
-        
-        fallback.append("<p>");
-        fallback.append(product.getBrand().getBrandName()).append("의 ");
-        
-        if (hasSingle) {
-            fallback.append("싱글노트 향수로, ").append(product.getSingleNote())
-                    .append("의 순수하고 깔끔한 매력을 온전히 담았습니다. ");
-            fallback.append("복잡하지 않은 단일 향으로 일상에서 부담 없이 즐길 수 있으며, ");
-            fallback.append("레이어링의 베이스로도 완벽합니다.");
-        } else if (hasComplex) {
-            fallback.append("복합적인 향 구조로 시간에 따라 다양한 매력을 선사합니다. ");
-            if (!isEmpty(product.getTopNote())) {
-                fallback.append("첫인상은 ").append(product.getTopNote()).append("로 시작하여 ");
-            }
-            if (!isEmpty(product.getBaseNote())) {
-                fallback.append(product.getBaseNote()).append("로 깊이 있게 마무리됩니다.");
-            }
-        }
-        
-        fallback.append("</p>");
-        
-        // 부향률 정보 추가
-        fallback.append("<p>");
-        fallback.append(product.getGrade().getGradeName()).append(" 농도로 제조되어 ");
-        fallback.append("적절한 지속력과 확산력을 자랑하며, ");
-        fallback.append(product.getMainNote().getMainNoteName()).append(" 계열의 특성을 잘 살렸습니다.");
-        fallback.append("</p>");
-        
-        return fallback.toString();
     }
     
     private boolean isEmpty(String str) {

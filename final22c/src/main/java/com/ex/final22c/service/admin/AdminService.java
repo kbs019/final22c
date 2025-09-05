@@ -384,7 +384,7 @@ public class AdminService {
     }
 
     // 상품 등록
-    public void register(ProductForm dto, MultipartFile imgName) {
+    public Product register(ProductForm dto, MultipartFile imgName) {
         Product product;
 
         if (dto.getId() != null) {
@@ -494,7 +494,7 @@ public class AdminService {
         }
         // 수정 모드에서 파일 안 올리면 기존 이미지 그대로 유지
 
-        productRepository.save(product);
+        return productRepository.save(product);
     }
 
     // 관리자 픽
@@ -1142,5 +1142,13 @@ public class AdminService {
     public Answer getAnswersByQuestion(Question question) {
         return answerRepository.findByQuestion(question);
 
+    }
+    // 상품 등록 후 DB(product.aiGuide)에 넣을 메서드
+    @Transactional
+    public void updateAiGuide(Long productId, String aiGuide) {
+        Product product = productRepository.findById(productId)
+            .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다."));
+        product.setAiGuide(aiGuide);
+        // JPA dirty checking으로 자동 업데이트
     }
 }

@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.ex.final22c.controller.product.ProductController;
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
@@ -42,13 +43,16 @@ import com.ex.final22c.data.user.SanctionRequest;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
 import com.ex.final22c.service.admin.AdminService;
+import com.ex.final22c.service.product.ProductDescriptionService;
 import com.ex.final22c.service.refund.RefundService;
 import com.ex.final22c.service.stats.SalesStatService;
 import com.ex.final22c.service.stats.StatsService;
 import com.ex.final22c.service.user.UsersService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/admin/")
@@ -58,6 +62,8 @@ public class AdminController {
 	private final StatsService statsService;
 	private final SalesStatService salesStatService;
 	private final UsersService userService;
+	
+	private final ProductDescriptionService productDescriptionService;
 	
 	// ====== 대시보드 진입 ======
 	@GetMapping("dashboard")
@@ -190,9 +196,24 @@ public class AdminController {
 
 	// 상품 등록/수정
 	@PostMapping("productForm")
-	public String newProduct(@ModelAttribute ProductForm product) {
-		this.adminService.register(product, product.getImgName());
-		return "redirect:/admin/productList";
+	public String newProduct(@ModelAttribute ProductForm productForm) {
+	    // 1. 먼저 상품 등록
+	    Product savedProduct = this.adminService.register(productForm, productForm.getImgName());
+	    
+	    // 2. AI 설명문 생성 및 업데이트
+	    try {
+	        String aiDescription = productDescriptionService.generateEnhancedDescription(savedProduct);
+	        if (aiDescription != null) {
+	            // 3. aiGuide 컬럼 업데이트
+	            this.adminService.updateAiGuide(savedProduct.getId(), aiDescription);
+	            log.info("AI 설명문 생성 완료: productId={}", savedProduct.getId());
+	        }
+	    } catch (Exception e) {
+	        log.warn("AI 설명문 생성 실패: productId={}, error={}", savedProduct.getId(), e.getMessage());
+	        // 실패해도 상품 등록은 완료된 상태
+	    }
+	    
+	    return "redirect:/admin/productList";
 	}
 
 	// 관리자 픽
