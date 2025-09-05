@@ -124,7 +124,7 @@ public class ProductController {
             model.addAttribute("aiDescription", null);
         }
 
-        return "main/content";
+        return "main/content2";
     }
 
     // 좋아요 토글
@@ -255,7 +255,7 @@ public class ProductController {
         model.addAttribute("sort", sort);
 
         // content.html 안의 reviewList fragment 반환
-        return "main/content :: reviewList";
+        return "main/content2 :: reviewList";
     }
 
     // ========================= 리스트(정렬 + 페이징) =========================
