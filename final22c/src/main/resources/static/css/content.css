@@ -105,6 +105,8 @@ body.modal-open { padding-right: 0 !important; }
     min-width: 320px;               /* 너무 좁아지지 않도록 */
     padding-right: 0;               /* gap로 간격 관리하므로 padding 제거 */
     display: inline-block;
+    flex-shrink: 0;
+    flex-basis: 50%;
 }
 
 /* 기본 오버레이 숨김 */
@@ -149,6 +151,7 @@ body.modal-open { padding-right: 0 !important; }
     max-height: calc(100vh - 180px);/* 화면 높이 넘치지 않도록 */
     object-fit: contain;            /* 잘림 방지 */
     margin: 0 auto;
+    position: sticky;
 }
 
 /* 우측 정보 영역: 고정 폭 상한 + 유연 폭 하한 */
@@ -160,6 +163,8 @@ body.modal-open { padding-right: 0 !important; }
     padding-left: 32px;
     position: sticky; 
     top: 80px;
+    flex-shrink: 1;
+    flex-basis: 50%;
 }
 
 /* 버튼/입력 등 폼 요소가 줄바꿈 없이 자연스럽게 보이도록 */

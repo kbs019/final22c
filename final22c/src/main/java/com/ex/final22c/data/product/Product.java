@@ -95,8 +95,7 @@ public class Product {
     @Column(name = "costPrice")
     private int costPrice;                                      // 원가 (발주 시)
 
-    @Lob
-    @Column(name = "aiGuide", columnDefinition = "CLOB")
+    @Column(name = "aiGuide", length = 4000, nullable = true)
     private String aiGuide;
     
     // 기본값 및 파생값 계산

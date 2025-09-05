@@ -193,6 +193,35 @@
             </div>
           </div>
 
+          <div>
+            <div>
+              <span>[부향률]</span>
+              <div>- <span th:text="${product.grade.gradeName}"></span></div>
+            </div>
+            <br>
+            <div>
+              <span>[메인 어코드]</span>
+              <div>- <span th:text="${product.mainNote.mainNoteName}"></span></div>
+            </div>
+            <br>
+            <div>
+              <span>[메인 노트]</span>
+              <div th:if="${product.singleNote != null}">
+                - <span>싱글 노트 : </span><span th:text="${product.singleNote}"></span>
+              </div>
+              <div th:if="${product.singleNote == null}">
+                <div>- <span>탑 노트 : </span><span th:text="${product.topNote}"></span></div>
+                <div>- <span>미들 노트 : </span><span th:text="${product.middleNote}"></span></div>
+                <div>- <span>베이스 노트 : </span><span th:text="${product.baseNote}"></span></div>
+              </div>
+            </div>
+            <br>
+            <div>
+              <span>[향 설명]</span>
+              <div>- <span th:text="${product.description}"></span></div>
+            </div>
+          </div>
+
           <div class="mb-3 pb-3 border-bottom">
             <div>배송 정보</div><br>
             <div>
@@ -424,35 +453,6 @@
     <!-- 하단의 향 소개 -->
     <div class="productDescription">
       <h2>향 소개</h2>
-      <br>
-      <div>
-        <span>[부향률]</span>
-        <div>- <span th:text="${product.grade.gradeName}"></span></div>
-      </div>
-      <br>
-      <div>
-        <span>[메인 어코드]</span>
-        <div>- <span th:text="${product.mainNote.mainNoteName}"></span></div>
-      </div>
-      <br>
-      <div>
-        <span>[메인 노트]</span>
-        <div th:if="${product.singleNote != null}">
-          - <span>싱글 노트 : </span><span th:text="${product.singleNote}"></span>
-        </div>
-        <div th:if="${product.singleNote == null}">
-          <div>- <span>탑 노트 : </span><span th:text="${product.topNote}"></span></div>
-          <div>- <span>미들 노트 : </span><span th:text="${product.middleNote}"></span></div>
-          <div>- <span>베이스 노트 : </span><span th:text="${product.baseNote}"></span></div>
-        </div>
-      </div>
-      <br>
-      <div>
-        <span>[향 설명]</span>
-        <div>- <span th:text="${product.description}"></span></div>
-      </div>
-
-      <br>
       <!-- AI 생성 컨텐츠 컬럼에 저장 후, 출력 -->
       <div>
         <span th:text="${product.aiGuide}" style="white-space:pre-line;"></span>
