@@ -1,6 +1,7 @@
 package com.ex.final22c.controller.admin;
 
 import java.io.IOException;
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -8,15 +9,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,9 +31,10 @@ import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
-import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseRequest;
+import com.ex.final22c.data.qna.Answer;
+import com.ex.final22c.data.qna.Question;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.refund.RefundDetailResponse;
@@ -46,6 +45,7 @@ import com.ex.final22c.service.admin.AdminService;
 import com.ex.final22c.service.refund.RefundService;
 import com.ex.final22c.service.stats.SalesStatService;
 import com.ex.final22c.service.stats.StatsService;
+import com.ex.final22c.service.user.UsersService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -57,7 +57,8 @@ public class AdminController {
 	private final RefundService refundService;
 	private final StatsService statsService;
 	private final SalesStatService salesStatService;
-
+	private final UsersService userService;
+	
 	// ====== 대시보드 진입 ======
 	@GetMapping("dashboard")
 	public String dashboardPage() {
@@ -169,7 +170,7 @@ public class AdminController {
 		redirectAttributes.addAttribute("brandId", brand.getId());
 
 		// 상품 등록 페이지로 이동
-		return "redirect:/admin/newProduct";
+		return "redirect:/admin/productForm";
 	}
 
 	// 상품 등록/수정
@@ -551,4 +552,25 @@ public class AdminController {
         adminService.changeStatus(review.getReviewId(), review.getStatus());
         return ResponseEntity.ok().build();
     }
+    
+    // 문의 내역 출력
+    @GetMapping("questionList")
+    public String questionList(Model model) {
+        List<Question> questions = adminService.getAllQuestions();
+        model.addAttribute("questions", questions);
+        
+        return "admin/questionList"; // qna/list.html
+    }
+    
+    // 답변
+    @PostMapping("answerSave")
+    public String saveAnswer(@RequestParam("qId") Long qId, @RequestParam("content") String content,Principal principal) {
+        // 로그인한 사용자 정보 가져오기
+        Users admin = this.userService.getUser(principal.getName());
+        adminService.saveAnswer(qId, content, admin);
+        
+        return "redirect:/admin/questionList";
+    }
+    
+
 }

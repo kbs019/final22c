@@ -1,4 +1,4 @@
-package com.ex.final22c.qna;
+package com.ex.final22c.data.qna;
 
 import java.util.ArrayList;
 import java.util.List;
