@@ -62,6 +62,7 @@ import com.ex.final22c.repository.productRepository.VolumeRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseDetailRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
+import com.ex.final22c.repository.qna.QuestionRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.RestockNotifyService;
@@ -94,14 +95,14 @@ public class AdminService {
     private final OrderDetailRepository orderDetailRepository;
     private final ReviewFilterService reviewFilterService;
     private final RestockNotifyService restockNotifyService;
+    private final QuestionRepository questionRepository;
 
-    // ===== 대시보드 KPI =====
     public Map<String, Object> buildDashboardKpis() {
         LocalDate today = LocalDate.now();
         LocalDateTime from = today.atStartOfDay();
         LocalDateTime to   = today.atTime(LocalTime.MAX);
 
-        // 오늘 매출(원): revenueSeriesByDay 사용
+        // 오늘 매출
         long todayRevenue = 0L;
         var rows = orderDetailRepository.revenueSeriesByDay(from, to);
         for (Object[] r : rows) {
@@ -115,20 +116,24 @@ public class AdminService {
 
         // 전체 회원수, 최근 7일 신규
         long totalUsers = userRepository.count();
-        LocalDate since = today.minusDays(7); // 기존 buildAllUserStats와 동일 규칙(이상 포함)
+        LocalDate since = today.minusDays(7);
         long newUsers7d = userRepository.findAll().stream()
-                .filter(u -> u.getReg()!=null && ( !u.getReg().isBefore(since) )) // since 이상
+                .filter(u -> u.getReg()!=null && (!u.getReg().isBefore(since)))
                 .count();
 
         // 처리 대기 환불
         long pendingRefunds = refundRepository.countByStatus("REQUESTED");
+
+        // 처리 대기 문의
+        long pendingQna = questionRepository.countByStatus("wait");
 
         return Map.of(
                 "todayRevenue", todayRevenue,
                 "ordersToday", ordersToday,
                 "totalUsers", totalUsers,
                 "newUsers7d", newUsers7d,
-                "pendingRefunds", pendingRefunds
+                "pendingRefunds", pendingRefunds,
+                "pendingQna", pendingQna
         );
     }
 
