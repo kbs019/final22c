@@ -273,14 +273,23 @@ public class ChatService {
         var body = Map.of(
                 "model", model,
                 "messages", List.of(
-                        Map.of("role", "system", "content", 
-                               "당신은 향수 전문가입니다. 매력적이고 전문적인 상품 설명문을 작성해주세요. " +
-                               "HTML 태그는 사용하지 말고 순수 텍스트로만 작성하세요. " +
-                               "150-200자 내외로 간결하게 작성하세요."),
+                		Map.of("role", "system", "content", 
+                			       "당신은 향수 전문가입니다. 매력적이고 전문적인 상품 설명문을 작성해주세요.\n\n" +
+                			       "**작성 형식:**\n" +
+                			       "첫 번째 문단: 향수의 주요 특징과 노트 구성 설명\n\n" +
+                			       "두 번째 문단: 어떤 상황이나 사람에게 어울리는지 설명\n\n" +
+                			       "**작성 규칙:**\n" +
+                			       "- 순수 한국어만 사용 (영어 단어 절대 금지)\n" +
+                			       "- 한자나 특수문자 사용 금지\n" +
+                			       "- HTML 태그 사용 금지, 순수 텍스트만\n" +
+                			       "- 각 문단 사이에 빈 줄로 구분\n" +
+                			       "- 150-200자 내외로 간결하게 작성\n" +
+                			       "- 완전한 문장으로만 구성\n" +
+                			       "- 어색한 표현이나 깨진 단어 사용 금지"),
                         Map.of("role", "user", "content", prompt)
                 ),
-                "temperature", 0.5,  // 창의성과 일관성의 균형
-                "max_tokens", 300    // 응답 길이 제한
+                "temperature", 0.4,  // 안정성을 위해 약간 낮춤
+                "max_tokens", 300
         );
         
         try {
@@ -292,10 +301,18 @@ public class ChatService {
                 result = result.substring(0, 480) + "...";
             }
             
+            // 이상한 문자 필터링 추가
+            if (result != null) {
+                result = result.replaceAll("[^가-힣a-zA-Z0-9\\s\\.,!?()\\-]", "")
+                              .replaceAll("[ \t]+", " ")  // 공백/탭만 정리
+                              .replaceAll("\n{3,}", "\n\n")  // 3개 이상 줄바꿈을 2개로
+                              .trim();
+            }
+            
             return result;
         } catch (Exception e) {
             log.error("상품 설명문 생성 실패: {}", e.getMessage());
-            return null; // ProductDescriptionService에서 fallback 처리됨
+            return null;
         }
     }
     
@@ -305,12 +322,20 @@ public class ChatService {
         var body = Map.of(
                 "model", model,
                 "messages", List.of(
-                        Map.of("role", "system", "content", 
-                               "당신은 향수 전문가입니다. 특정 성별과 나이대의 사람이 해당 향수를 착용했을 때의 " +
-                               "구체적이고 현실적인 시나리오를 분석해주세요. " +
-                               "부드러운 말투로 작성해주세요. " + 
-                               "추천이 아닌 예상/분석 관점으로 접근하고, 200~300자 내외로 2~3개의 문단으로 작성하세요."),
-                        Map.of("role", "user", "content", prompt)
+                		Map.of("role", "system", "content", 
+                                "당신은 친근한 향수 전문가입니다. 특정 성별과 나이대의 사람이 주어진 향수를 사용했을 때 " +
+                                "어떤 매력을 발산할지 따뜻하게 설명해주세요.\n\n" +
+                                "다음 내용을 3개 문단으로 나누어 자연스럽고 부드러운 말투로 작성하세요:\n" +
+                                "- 이 향수가 해당 연령대/성별과 얼마나 잘 어울리는지\n" +
+                                "- 주변 사람들이 느낄 수 있는 좋은 인상들\n" +
+                                "- 사용자에게 선사할 특별한 분위기\n\n" +
+                                "**작성 가이드:**\n" +
+                                "- 한국어만 사용하고 자연스러운 표현 사용\n" +
+                                "- 친근하고 따뜻한 말투로 작성\n" +
+                                "- 각 문단 사이에 빈 줄을 넣어 구분\n" +
+                                "- '착용자' 대신 '사용자'라는 표현 사용\n" +
+                                "- 150-200자 내외로 작성"),
+                         Map.of("role", "user", "content", prompt)
                 ),
                 "temperature", 0.7,         // 창의적이지만 일관성 있게 (답변의 수준 : 0~2 -> 2로 갈 수록 창의적)
                 "max_tokens", 300           // 토큰 (글자수 지정 -> 500 으로 설정하면, 500~600 정도로 출력됨)

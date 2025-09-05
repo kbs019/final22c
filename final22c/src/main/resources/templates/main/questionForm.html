@@ -14,7 +14,7 @@
 <th:block layout:fragment="content">
 <div class="container mt-5">
     <h2>1:1 문의 작성</h2>
-    <form th:action="@{/qna/save}" method="post">
+    <form th:action="@{/qna/questionSave}" method="post">
         <div class="mb-3">
             <label for="title" class="form-label">제목</label>
             <input type="text" class="form-control" id="title" name="title" required maxlength="200">

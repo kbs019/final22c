@@ -21,6 +21,7 @@ public class UsersService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerifier emailVerifier;
 
     /** 사용자명으로 조회(없으면 DataNotFoundException) */
     public Users getUser(String userName) {
@@ -43,19 +44,54 @@ public class UsersService {
 
     /** 회원가입 */
     public Users create(UsersForm usersForm) {
+        // 1) 이메일 정규화
+        String emailNorm = emailVerifier.normalize(usersForm.getEmail());
+
+        // 2) Users 엔티티 생성
         Users user = Users.builder()
                 .userName(usersForm.getUserName())
                 .password(passwordEncoder.encode(usersForm.getPassword1()))
-                .email(safeLowerTrim(usersForm.getEmail()))
+                .email(emailNorm)
                 .name(usersForm.getName())
                 .birth(usersForm.getBirth())
                 .telecom(usersForm.getTelecom())
-                .phone(safeTrim(usersForm.getPhone()))
+                .phone(digitsOnly(usersForm.getPhone()))
                 .gender(usersForm.getGender())
                 .loginType("local")
                 .mileage(0)
                 .build();
+
+        // 3) 저장
         return userRepository.save(user);
+    }
+
+    /**
+     * 휴대폰 입력 정규화: null-safe trim + 숫자만 남김
+     * 예) "010-1234-5678" → "01012345678"
+     */
+    private static String digitsOnly(String s) {
+        if (s == null)
+            return null;
+        String trimmed = s.trim();
+        return trimmed.replaceAll("\\D", ""); // 숫자 아닌 문자 제거
+    }
+
+    public boolean isUserNameAvailable(String userName) {
+        return !userRepository.existsByUserName(userName);
+    }
+
+    /** 이메일 사용 가능 여부 (정규화 + 중복) */
+    public boolean isEmailAvailable(String emailRaw) {
+        if (emailRaw == null)
+            return false;
+        String emailNorm = emailVerifier.normalize(emailRaw);
+        return !emailNorm.isEmpty() && !userRepository.existsByEmail(emailNorm);
+    }
+
+    public boolean isPhoneAvailable(String phoneRaw) {
+        String phone = digitsOnly(phoneRaw); // 하이픈/공백 제거
+        return phone != null && phone.matches("^01[016789]\\d{8}$")
+                && !userRepository.existsByPhone(phone);
     }
 
     /** 이메일/휴대폰/비밀번호만 업데이트 (null/blank는 미변경) + 본인 제외 중복 검사 */

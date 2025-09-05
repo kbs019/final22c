@@ -7,20 +7,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -42,11 +42,12 @@ import com.ex.final22c.data.product.Grade;
 import com.ex.final22c.data.product.MainNote;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
-import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.product.Volume;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseDetail;
 import com.ex.final22c.data.purchase.PurchaseRequest;
+import com.ex.final22c.data.qna.Answer;
+import com.ex.final22c.data.qna.Question;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.ProductForm;
@@ -62,6 +63,9 @@ import com.ex.final22c.repository.productRepository.VolumeRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseDetailRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
+
+import com.ex.final22c.repository.qna.AnswerRepository;
+
 import com.ex.final22c.repository.qna.QuestionRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.user.UserRepository;
@@ -96,6 +100,7 @@ public class AdminService {
     private final ReviewFilterService reviewFilterService;
     private final RestockNotifyService restockNotifyService;
     private final QuestionRepository questionRepository;
+    private final AnswerRepository answerRepository;
 
     public Map<String, Object> buildDashboardKpis() {
         LocalDate today = LocalDate.now();
@@ -302,7 +307,7 @@ public class AdminService {
     public List<Product> getItemList(String kw) {
 
         Specification<Product> spec = proSearch(kw);
-        return this.productRepository.findAll(spec);
+        return this.productRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "id"));
     }
 
     // 상품 추출
@@ -331,9 +336,8 @@ public class AdminService {
         }
     }
 
-    // 새 브랜드 등록
+ // 새 브랜드 등록
     public Brand saveBrand(String brandName, MultipartFile imgName) throws IOException {
-
         Brand brand = new Brand();
         brand.setBrandName(brandName);
 
@@ -360,6 +364,7 @@ public class AdminService {
             brand.setImgName("default.png");
             brand.setImgPath("/img/");
         }
+
         return this.brandRepository.save(brand);
     }
 
@@ -379,7 +384,7 @@ public class AdminService {
     }
 
     // 상품 등록
-    public void register(ProductForm dto, MultipartFile imgName) {
+    public Product register(ProductForm dto, MultipartFile imgName) {
         Product product;
 
         if (dto.getId() != null) {
@@ -440,11 +445,25 @@ public class AdminService {
         }
 
         // 이미지 처리
+     // 이미지 처리
         String uploadDir2 = "src/main/resources/static/img/" + brandName + "/";
+        Path uploadPath = Paths.get(uploadDir2);
+
+        // 폴더가 없으면 생성
+        if (!Files.exists(uploadPath)) {
+            try {
+                Files.createDirectories(uploadPath); // 상위 폴더까지 포함해서 생성
+                System.out.println("폴더 생성됨: " + uploadPath.toAbsolutePath());
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("폴더 생성 실패: " + uploadPath.toAbsolutePath());
+            }
+        }
+
         if (imgName != null && !imgName.isEmpty()) {
             // 기존 이미지 삭제
             if (product.getImgName() != null && !"default.png".equals(product.getImgName())) {
-                Path oldFilePath = Paths.get(uploadDir2, product.getImgName());
+                Path oldFilePath = uploadPath.resolve(product.getImgName());
                 try {
                     Files.deleteIfExists(oldFilePath);
                 } catch (IOException e) {
@@ -460,7 +479,7 @@ public class AdminService {
                     ? originalFilename.substring(originalFilename.lastIndexOf("."))
                     : "";
             String savedFileName = productName + extension;
-            Path savePath = Paths.get(uploadDir2, savedFileName);
+            Path savePath = uploadPath.resolve(savedFileName);
             try {
                 imgName.transferTo(savePath);
             } catch (Exception e) {
@@ -475,7 +494,7 @@ public class AdminService {
         }
         // 수정 모드에서 파일 안 올리면 기존 이미지 그대로 유지
 
-        productRepository.save(product); // JPA save: id 있으면 update, 없으면 insert
+        return productRepository.save(product);
     }
 
     // 관리자 픽
@@ -551,7 +570,7 @@ public class AdminService {
 
         Specification<Product> spec = proFilter(kw, brandIds, isPickedList, statusList);
 
-        return productRepository.findAll(spec);
+        return this.productRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "id"));
     }
 
     // 동적 필터
@@ -591,7 +610,21 @@ public class AdminService {
 
         return productRepository.findAll(spec, Sort.by(sorts));
     }
+    
+    public List<Product> getItemList2(
+            String kw,
+            List<Long> brandIds) {
+        List<Sort.Order> sorts = new ArrayList<>();
 
+        // ✅ 재고 낮은 순 정렬 (count ASC)
+        sorts.add(Sort.Order.asc("count"));
+
+        // 동적 필터
+        Specification<Product> spec = proFilter(kw, brandIds);
+
+        return productRepository.findAll(spec, Sort.by(sorts));
+    }
+    
     // 발주 신청 목록 추가
     public Map<String, Object> addToPurchaseRequest(Map<String, Object> payload) {
         Map<String, Object> response = new HashMap<>();
@@ -1053,6 +1086,7 @@ public class AdminService {
                 "newUserCount7d", newUsers7d);
     }
 
+
     public Map<String, Object> findLowStockPaged(int page, int size) {
         var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "count").and(Sort.by(Sort.Direction.ASC, "id")));
         var slice = productRepository.findByCountBetween(1, 20, pageable);
@@ -1083,5 +1117,52 @@ public class AdminService {
                 "sellPrice", p.getSellPrice()
         )).toList();
         return Map.of("total", total, "items", items);
+    }
+    
+    // 문의 내역 출력
+    public List<Question> getAllQuestions(){
+    	return questionRepository.findAllByOrderByCreateDateDesc();
+    }
+    
+    // 답변 작성
+ // 답변 작성
+    @Transactional
+    public void saveAnswer(Long qId, String content, Users admin) {
+        Question question = questionRepository.findById(qId)
+                .orElseThrow(() -> new IllegalArgumentException("문의 없음"));
+
+        // 1. Answer 저장
+        Answer answer = new Answer();
+        answer.setQuestion(question);
+        answer.setWriter(admin);
+        answer.setContent(content);
+        answerRepository.save(answer);
+
+        // 2. Question에 answer 연결
+        question.setAnswer(answer);
+
+        // 3. Question 상태 변경
+        question.setStatus("done");
+        questionRepository.save(question);
+    }
+    
+    // 질문 ID로 질문 가져오기
+    public Question getQuestion(Long qId) {
+        return questionRepository.findById(qId)
+                .orElseThrow(() -> new IllegalArgumentException("질문이 없습니다. qId=" + qId));
+    }
+
+    // 질문 객체로 답변 가져오기
+    public Answer getAnswersByQuestion(Question question) {
+        return answerRepository.findByQuestion(question);
+
+    }
+    // 상품 등록 후 DB(product.aiGuide)에 넣을 메서드
+    @Transactional
+    public void updateAiGuide(Long productId, String aiGuide) {
+        Product product = productRepository.findById(productId)
+            .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다."));
+        product.setAiGuide(aiGuide);
+        // JPA dirty checking으로 자동 업데이트
     }
 }

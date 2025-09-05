@@ -184,11 +184,11 @@
               <div>
                 <strong class="rate"
                   th:text="${#numbers.formatDecimal(T(java.lang.Math).floor(product.discount), 0, 0)} + '%'"></strong>
-                <span class="sale" th:text="${#numbers.formatInteger(product.sellPrice, 3,'COMMA')} + '원'"></span>
+                <span class="sale" th:text="${#numbers.formatInteger(product.sellPrice, 1,'COMMA')} + '원'"></span>
               </div>
               <div>
                 <del class="list" th:if="${product.price > product.sellPrice}"
-                  th:text="${#numbers.formatInteger(product.price, 3,'COMMA')} + '원'"></del>
+                  th:text="${#numbers.formatInteger(product.price, 1,'COMMA')} + '원'"></del>
               </div>
             </div>
           </div>
@@ -467,8 +467,8 @@
           <div class="my-5">
             <h2>향 소개</h2>
             <!-- AI 생성 컨텐츠 컬럼에 저장 후, 출력 -->
-            <div>
-              <span th:text="${product.aiGuide}" style="white-space:pre-line;"></span>
+            <div th:text="${product.aiGuide}" 
+                style="white-space:pre-line; line-height: 1.8; margin-bottom: 1rem;">
             </div>
     
           </div>
