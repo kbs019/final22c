@@ -21,6 +21,7 @@ public class UsersService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerifier emailVerifier;
 
     /** 사용자명으로 조회(없으면 DataNotFoundException) */
     public Users getUser(String userName) {
@@ -43,10 +44,14 @@ public class UsersService {
 
     /** 회원가입 */
     public Users create(UsersForm usersForm) {
+        // 1) 이메일 정규화
+        String emailNorm = emailVerifier.normalize(usersForm.getEmail());
+
+        // 2) Users 엔티티 생성
         Users user = Users.builder()
                 .userName(usersForm.getUserName())
                 .password(passwordEncoder.encode(usersForm.getPassword1()))
-                .email(safeLowerTrim(usersForm.getEmail()))
+                .email(emailNorm)
                 .name(usersForm.getName())
                 .birth(usersForm.getBirth())
                 .telecom(usersForm.getTelecom())
@@ -55,6 +60,8 @@ public class UsersService {
                 .loginType("local")
                 .mileage(0)
                 .build();
+
+        // 3) 저장
         return userRepository.save(user);
     }
 
@@ -73,11 +80,12 @@ public class UsersService {
         return !userRepository.existsByUserName(userName);
     }
 
+    /** 이메일 사용 가능 여부 (정규화 + 중복) */
     public boolean isEmailAvailable(String emailRaw) {
         if (emailRaw == null)
             return false;
-        String email = emailRaw.trim().toLowerCase();
-        return !email.isEmpty() && !userRepository.existsByEmail(email);
+        String emailNorm = emailVerifier.normalize(emailRaw);
+        return !emailNorm.isEmpty() && !userRepository.existsByEmail(emailNorm);
     }
 
     public boolean isPhoneAvailable(String phoneRaw) {
