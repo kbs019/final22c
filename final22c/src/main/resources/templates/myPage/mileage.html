@@ -1,307 +1,379 @@
 <!DOCTYPE html>
 <html layout:decorate="~{layout/layout}">
-<link rel="icon" href="data:," />
-<meta name="context-path" th:content="${#httpServletRequest.getContextPath()}" />
-<meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}" />
-<meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
+  <link rel="icon" href="data:," />
+  <meta
+    name="context-path"
+    th:content="${#httpServletRequest.getContextPath()}"
+  />
+  <meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}" />
+  <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
 
-<div layout:fragment="content">
+  <div layout:fragment="content">
     <style>
-        :root {
-            --font-sans: system-ui, -apple-system, "Noto Sans KR", "Malgun Gothic", "Segoe UI", Roboto, "Helvetica Neue", Arial
-        }
+      :root {
+        --font-sans: system-ui, -apple-system, "Noto Sans KR", "Malgun Gothic",
+          "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      }
 
-        html {
-            overflow-y: scroll
-        }
+      html {
+        overflow-y: scroll;
+      }
 
-        /* 공통 래퍼 */
-        .m-wrap {
-            font-family: var(--font-sans);
-            font-size: 14px;
-            line-height: 1.6;
-            color: #111827
-        }
+      /* 공통 래퍼 */
+      .m-wrap {
+        font-family: var(--font-sans);
+        font-size: 14px;
+        line-height: 1.6;
+        color: #111827;
+      }
 
-        .muted {
-            color: #6b7280;
-            font-size: 12px
-        }
+      .muted {
+        color: #6b7280;
+        font-size: 12px;
+      }
 
-        /* 사이드박스 */
-        .mp-grid {
-            display: grid;
-            grid-template-columns: 260px minmax(0, 1fr);
-            gap: 24px;
-            align-items: start
-        }
+      /* 사이드박스 */
+      .mp-grid {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+      }
 
-        .mp-col-left {
-            position: sticky;
-            top: 24px;
-            align-self: start;
-            z-index: 1
-        }
+      .mp-col-left {
+        position: sticky;
+        top: 24px;
+        align-self: start;
+        z-index: 1;
+      }
 
-        /* 헤더 */
-        .m-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px
-        }
+      /* 헤더 */
+      .m-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
 
-        .m-title {
-            font-size: 22px;
-            font-weight: 800;
-            margin: 0
-        }
+      .m-title {
+        font-size: 22px;
+        font-weight: 800;
+        margin: 0;
+      }
 
-        /* 보유 포인트 칩 */
-        .m-chip {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-width: 160px;
-            height: 64px;
-            padding: 8px 14px;
-            border-radius: 14px;
-            color: #fff;
-            background: linear-gradient(135deg, #5b67ff, #8a48d9);
-            box-shadow: 0 6px 14px rgba(0, 0, 0, .08);
-        }
+      /* 보유 포인트 칩 */
+      .m-chip {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-width: 160px;
+        height: 64px;
+        padding: 8px 14px;
+        border-radius: 14px;
+        color: #fff;
+        background: linear-gradient(135deg, #5b67ff, #8a48d9);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+      }
 
-        .m-chip b {
-            font-size: 22px;
-            line-height: 1;
-            letter-spacing: .5px
-        }
+      .m-chip b {
+        font-size: 22px;
+        line-height: 1;
+        letter-spacing: 0.5px;
+      }
 
-        /* 테이블 */
-        .m-table {
-            table-layout: fixed;
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0
-        }
+      /* 테이블 */
+      .m-table {
+        table-layout: fixed;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
 
-        .m-table th,
-        .m-table td {
-            padding: 14px 12px;
-            border-bottom: 1px solid #e5e7eb
-        }
+      .m-table th,
+      .m-table td {
+        padding: 14px 12px;
+        border-bottom: 1px solid #e5e7eb;
+      }
 
-        .m-table thead th {
-            background: #f8fafc;
-            font-weight: 800
-        }
+      .m-table thead th {
+        background: #f8fafc;
+        font-weight: 800;
+      }
 
-        .m-table th:first-child,
-        .m-table td:first-child {
-            padding-left: 16px
-        }
+      .m-table th:first-child,
+      .m-table td:first-child {
+        padding-left: 16px;
+      }
 
-        .m-table th:last-child,
-        .m-table td:last-child {
-            white-space: nowrap;
-            text-align: center;
-            padding-right: 16px
-        }
+      .m-table th:last-child,
+      .m-table td:last-child {
+        white-space: nowrap;
+        text-align: center;
+        padding-right: 16px;
+      }
 
-        .m-link {
-            color: #2563eb;
-            text-decoration: none
-        }
+      .m-link {
+        color: #2563eb;
+        text-decoration: none;
+      }
 
-        .m-link:hover {
-            text-decoration: underline
-        }
+      .m-link:hover {
+        text-decoration: underline;
+      }
 
-        .pt-use {
-            color: #ef4444;
-            font-weight: 800
-        }
+      .pt-use {
+        color: #ef4444;
+        font-weight: 800;
+      }
 
-        /* 사용 */
-        .pt-earn {
-            color: #16a34a;
-            font-weight: 800
-        }
+      /* 사용 */
+      .pt-earn {
+        color: #16a34a;
+        font-weight: 800;
+      }
 
-        /* 적립 */
+      /* 적립 */
 
-        .m-empty {
-            padding: 48px 0;
-            text-align: center;
-            color: #9ca3af
-        }
+      .m-empty {
+        padding: 48px 0;
+        text-align: center;
+        color: #9ca3af;
+      }
 
-        /* 페이징 */
-        .pager {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            justify-content: center;
-            margin: 16px 0
-        }
+      /* 페이징 */
+      .pager {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        margin: 16px 0;
+      }
 
-        .pager .page-btn {
-            border: 1px solid #e5e7eb;
-            background: #fff;
-            padding: 6px 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            text-decoration: none;
-            color: #111827;
-        }
+      .pager .page-btn {
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        color: #111827;
+      }
 
-        .pager .page-btn:hover {
-            background: #f3f7ff
-        }
+      .pager .page-btn:hover {
+        background: #f3f7ff;
+      }
 
-        .pager .page-btn[aria-current="page"] {
-            background: #2563eb;
-            color: #fff;
-            border-color: #2563eb
-        }
+      .pager .page-btn[aria-current="page"] {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+      }
 
-        .pager .page-btn[aria-disabled="true"],
-        .pager .page-btn.disabled {
-            opacity: .5;
-            pointer-events: none;
-            cursor: not-allowed
-        }
+      .pager .page-btn[aria-disabled="true"],
+      .pager .page-btn.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: not-allowed;
+      }
 
-        /* 사이드박스 (공통) */
-        .mp-sidebox__title {
-            font-size: 20px;
-            font-weight: 800;
-            margin: 0 0 12px;
-        }
+      /* 사이드박스 (공통) */
+      .mp-sidebox__title {
+        font-size: 20px;
+        font-weight: 800;
+        margin: 0 0 12px;
+      }
 
-        .mp-sidebox__nav {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
+      .mp-sidebox__nav {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
 
-        .mp-sidebox__link {
-            display: block;
-            padding: 8px 10px;
-            border-radius: 10px;
-            text-decoration: none;
-            color: #111827;
-            border: 1px solid #e5e7eb;
-            background: #fff;
-        }
+      .mp-sidebox__link {
+        display: block;
+        padding: 8px 10px;
+        border-radius: 10px;
+        text-decoration: none;
+        color: #111827;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+      }
 
-        .mp-sidebox__link:hover {
-            background: #f3f7ff;
-        }
+      .mp-sidebox__link:hover {
+        background: #f3f7ff;
+      }
 
-        .mp-sidebox__link.is-active {
-            background: #111827;
-            color: #fff;
-            border-color: #111827;
-        }
+      .mp-sidebox__link.is-active {
+        background: #111827;
+        color: #fff;
+        border-color: #111827;
+      }
     </style>
 
     <section class="m-wrap">
-        <div class="mp-grid">
-            <!-- 사이드박스 -->
-            <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox('mileage')}"></div>
+      <div class="mp-grid">
+        <!-- 사이드박스 -->
+        <div
+          class="mp-col-left"
+          th:replace="~{fragments/mypageSidebox :: mypageSidebox('mileage')}"
+        ></div>
 
-            <div class="mp-col-right">
-                <header class="m-header" role="region" aria-labelledby="pageTitle">
-                    <h1 id="pageTitle" class="m-title">마일리지 내역</h1>
-                    <div class="m-chip" aria-label="보유 마일리지" th:attr="data-now-balance=${me?.mileage?:0}">
-                        <span class="muted" style="color:#e5e7ff">보유 마일리지</span>
-                        <b th:text="${#numbers.formatInteger(me?.mileage?:0,1,'COMMA')} + 'P'">0P</b>
-                    </div>
-                </header>
-
-                <hr style="border:0;border-top:1px solid #e5e7eb;margin:12px 0 16px" />
-
-                <!-- 비어있을 때 -->
-                <div th:if="${rows.content.empty}" class="m-empty">마일리지 사용/적립 내역이 없습니다.</div>
-
-                <!-- 목록 -->
-                <table th:if="${!rows.content.empty}" class="m-table" aria-describedby="pageTitle">
-                    <colgroup>
-                        <col style="width:160px"> <!-- 주문번호 -->
-                        <col style="width:200px"> <!-- 처리일시 -->
-                        <col style="width:200px"> <!-- 사용포인트 -->
-                        <col style="width:200px"> <!-- 적립포인트 -->
-                        <col style="width:160px"> <!-- 마일리지 -->
-                        <col style="width:110px"> <!-- 주문상태 -->
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th scope="col">주문번호</th>
-                            <th scope="col">처리일시</th>
-                            <th scope="col">사용포인트</th>
-                            <th scope="col">적립포인트</th>
-                            <th scope="col">마일리지</th>
-                            <th scope="col">주문상태</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="r : ${rows.content}">
-                            <td><a class="m-link" th:href="@{|/mypage/order/${r.orderId}|}"
-                                    th:text="'#' + ${r.orderId}">#0</a></td>
-                            <td th:text="${#temporals.format(r.processedAt,'yyyy-MM-dd HH:mm')}">2025-01-01 12:00</td>
-
-                            <!-- 사용 포인트 (양수면 -nP로 보임) -->
-                            <td>
-                                <span th:if="${(r.usedPoint?:0) > 0}" class="pt-use"
-                                    th:text="${'-' + #numbers.formatInteger(r.usedPoint,1,'COMMA')} + 'P'">-0P</span>
-                                <span th:if="${(r.usedPoint?:0) == 0}" class="muted">-</span>
-                            </td>
-
-                            <!-- 적립 포인트 (항상 양수 표기) -->
-                            <td>
-                                <span th:if="${(r.finalEarnPoint?:0) > 0}" class="pt-earn"
-                                    th:text="${'+' + #numbers.formatInteger(r.finalEarnPoint,1,'COMMA')} + 'P'">+0P</span>
-                                <span th:if="${(r.finalEarnPoint?:0) == 0}" class="muted">-</span>
-                            </td>
-                            <td th:text="${#numbers.formatInteger(r.balanceAt?:0,1,'COMMA')} + 'P'">0P</td>
-
-
-                            <td th:switch="${#strings.toUpperCase(r.status)}">
-                                <span th:case="'CONFIRMED'">구매확정</span>
-                                <span th:case="'PAID'">결제완료</span>
-                                <span th:case="'REFUNDED'">환불완료</span>
-                                <span th:case="*" th:text="${r.status}">-</span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- 페이저 -->
-                <nav class="pager" aria-label="페이지네이션" th:if="${rows.totalPages > 1}">
-                    <a class="page-btn" th:classappend="${rows.first} ? ' disabled'"
-                        th:attr="aria-disabled=${rows.first}"
-                        th:href="@{|/mypage/mileage?page=1&size=${rows.size}|}">«</a>
-                    <a class="page-btn" th:classappend="${!rows.hasPrevious} ? ' disabled'"
-                        th:attr="aria-disabled=${!rows.hasPrevious}"
-                        th:href="@{|/mypage/mileage?page=${rows.number}&size=${rows.size}|}">‹</a>
-                    <a class="page-btn" th:each="i : ${#numbers.sequence(1, rows.totalPages)}" th:text="${i}"
-                        th:href="@{|/mypage/mileage?page=${i}&size=${rows.size}|}"
-                        th:attr="aria-current=${i == rows.number + 1} ? 'page' : null"></a>
-                    <a class="page-btn" th:classappend="${!rows.hasNext} ? ' disabled'"
-                        th:attr="aria-disabled=${!rows.hasNext}"
-                        th:href="@{|/mypage/mileage?page=${rows.number + 2}&size=${rows.size}|}">›</a>
-                    <a class="page-btn" th:classappend="${rows.last} ? ' disabled'" th:attr="aria-disabled=${rows.last}"
-                        th:href="@{|/mypage/mileage?page=${rows.totalPages}&size=${rows.size}|}">»</a>
-                </nav>
+        <div class="mp-col-right">
+          <header class="m-header" role="region" aria-labelledby="pageTitle">
+            <h1 id="pageTitle" class="m-title">마일리지 내역</h1>
+            <div
+              class="m-chip"
+              aria-label="보유 마일리지"
+              th:attr="data-now-balance=${me?.mileage?:0}"
+            >
+              <span class="muted" style="color: #e5e7ff">보유 마일리지</span>
+              <b
+                th:text="${#numbers.formatInteger(me?.mileage?:0,1,'COMMA')} + 'P'"
+                >0P</b
+              >
             </div>
+          </header>
+
+          <hr
+            style="
+              border: 0;
+              border-top: 1px solid #e5e7eb;
+              margin: 12px 0 16px;
+            "
+          />
+
+          <!-- 비어있을 때 -->
+          <div th:if="${rows.content.empty}" class="m-empty">
+            마일리지 사용/적립 내역이 없습니다.
+          </div>
+
+          <!-- 목록 -->
+          <table
+            th:if="${!rows.content.empty}"
+            class="m-table"
+            aria-describedby="pageTitle"
+          >
+            <colgroup>
+              <col style="width: 160px" />
+              <!-- 주문번호 -->
+              <col style="width: 200px" />
+              <!-- 처리일시 -->
+              <col style="width: 200px" />
+              <!-- 사용포인트 -->
+              <col style="width: 200px" />
+              <!-- 적립포인트 -->
+              <col style="width: 160px" />
+              <!-- 마일리지 -->
+              <col style="width: 110px" />
+              <!-- 주문상태 -->
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col">주문번호</th>
+                <th scope="col">처리일시</th>
+                <th scope="col">사용포인트</th>
+                <th scope="col">적립포인트</th>
+                <th scope="col">마일리지</th>
+                <th scope="col">주문상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="r : ${rows.content}">
+                <td>
+                  <a
+                    class="m-link"
+                    th:href="@{|/mypage/order/${r.orderId}|}"
+                    th:text="'#' + ${r.orderId}">#0</a>
+                </td>
+                <td
+                  th:text="${#temporals.format(r.processedAt,'yyyy-MM-dd HH:mm')}"
+                >
+                  2025-01-01 12:00
+                </td>
+
+                <!-- 사용 포인트 (raw) -->
+                <td>
+                  <span
+                    th:if="${(r.usedPointRaw?:0) > 0}"
+                    class="pt-use"
+                    th:text="${'-' + #numbers.formatInteger(r.usedPointRaw,1,'COMMA')} + 'P'"
+                    >-0P</span
+                  >
+                  <span th:if="${(r.usedPointRaw?:0) == 0}" class="muted"
+                    >-</span
+                  >
+                </td>
+
+                <!-- 적립 포인트 (환불완료에서도 +로 표시) -->
+                <td>
+                  <span
+                    th:if="${(r.earnPointVisible?:0) > 0}"
+                    class="pt-earn"
+                    th:text="${'+' + #numbers.formatInteger(r.earnPointVisible,1,'COMMA')} + 'P'">+0P</span>
+                  <span th:if="${(r.earnPointVisible?:0) == 0}" class="muted">-</span>
+                </td>
+
+                <!-- 잔액 스냅샷은 그대로 -->
+                <td th:text="${#numbers.formatInteger(r.balanceAt?:0,1,'COMMA')} + 'P'">0P</td>
+
+                <!-- 상태도 그대로 -->
+                <td th:switch="${#strings.toUpperCase(r.status)}">
+                  <span th:case="'CONFIRMED'">구매확정</span>
+                  <span th:case="'PAID'">결제완료</span>
+                  <span th:case="'REFUNDED'">환불완료</span>
+                  <span th:case="*" th:text="${r.status}">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 페이저 -->
+          <nav
+            class="pager"
+            aria-label="페이지네이션"
+            th:if="${rows.totalPages > 1}"
+          >
+            <a
+              class="page-btn"
+              th:classappend="${rows.first} ? ' disabled'"
+              th:attr="aria-disabled=${rows.first}"
+              th:href="@{|/mypage/mileage?page=1&size=${rows.size}|}"
+              >«</a
+            >
+            <a
+              class="page-btn"
+              th:classappend="${!rows.hasPrevious} ? ' disabled'"
+              th:attr="aria-disabled=${!rows.hasPrevious}"
+              th:href="@{|/mypage/mileage?page=${rows.number}&size=${rows.size}|}"
+              >‹</a
+            >
+            <a
+              class="page-btn"
+              th:each="i : ${#numbers.sequence(1, rows.totalPages)}"
+              th:text="${i}"
+              th:href="@{|/mypage/mileage?page=${i}&size=${rows.size}|}"
+              th:attr="aria-current=${i == rows.number + 1} ? 'page' : null"
+            ></a>
+            <a
+              class="page-btn"
+              th:classappend="${!rows.hasNext} ? ' disabled'"
+              th:attr="aria-disabled=${!rows.hasNext}"
+              th:href="@{|/mypage/mileage?page=${rows.number + 2}&size=${rows.size}|}"
+              >›</a
+            >
+            <a
+              class="page-btn"
+              th:classappend="${rows.last} ? ' disabled'"
+              th:attr="aria-disabled=${rows.last}"
+              th:href="@{|/mypage/mileage?page=${rows.totalPages}&size=${rows.size}|}"
+              >»</a
+            >
+          </nav>
         </div>
+      </div>
     </section>
 
-    <script>
-
-    </script>
-</div>
-
+    <script></script>
+  </div>
 </html>
