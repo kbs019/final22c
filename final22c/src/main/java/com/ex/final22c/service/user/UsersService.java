@@ -50,12 +50,40 @@ public class UsersService {
                 .name(usersForm.getName())
                 .birth(usersForm.getBirth())
                 .telecom(usersForm.getTelecom())
-                .phone(safeTrim(usersForm.getPhone()))
+                .phone(digitsOnly(usersForm.getPhone()))
                 .gender(usersForm.getGender())
                 .loginType("local")
                 .mileage(0)
                 .build();
         return userRepository.save(user);
+    }
+
+    /**
+     * 휴대폰 입력 정규화: null-safe trim + 숫자만 남김
+     * 예) "010-1234-5678" → "01012345678"
+     */
+    private static String digitsOnly(String s) {
+        if (s == null)
+            return null;
+        String trimmed = s.trim();
+        return trimmed.replaceAll("\\D", ""); // 숫자 아닌 문자 제거
+    }
+
+    public boolean isUserNameAvailable(String userName) {
+        return !userRepository.existsByUserName(userName);
+    }
+
+    public boolean isEmailAvailable(String emailRaw) {
+        if (emailRaw == null)
+            return false;
+        String email = emailRaw.trim().toLowerCase();
+        return !email.isEmpty() && !userRepository.existsByEmail(email);
+    }
+
+    public boolean isPhoneAvailable(String phoneRaw) {
+        String phone = digitsOnly(phoneRaw); // 하이픈/공백 제거
+        return phone != null && phone.matches("^01[016789]\\d{8}$")
+                && !userRepository.existsByPhone(phone);
     }
 
     /** 이메일/휴대폰/비밀번호만 업데이트 (null/blank는 미변경) + 본인 제외 중복 검사 */
