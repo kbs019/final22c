@@ -1,109 +1,141 @@
 <html layout:decorate="~{/layout/adminLayout}">
 <th:block layout:fragment="css">
-	<style>
-		#datatablesSimple td:nth-child(3),
-		#datatablesSimple th:nth-child(3) {
-		    width: 45% !important;   /* 제목 열 */
-		    white-space: nowrap;
-		    overflow: hidden;
-		    text-overflow: ellipsis;
-		}
-	</style>
+<style>
+    #datatablesSimple td:nth-child(3),
+    #datatablesSimple th:nth-child(3) {
+        width: 45% !important;   /* 제목 열 */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
 </th:block>
+
 <div layout:fragment="content" class="container">
-	<h2>문의내역</h2>
-	<div class="card mb-4">
-		<div class="card-header">
-			<i class="fas fa-table me-1"></i>
-				문의리스트
-			</div>
-			<div class="card-body">
-				<table id="datatablesSimple">
-					<thead>
-						<tr>
-			                <th scope="col">번호</th>
-			                <th scope="col">문의유형</th>
-			                <th scope="col">제목</th>
-			                <th scope="col">작성자</th>
-			                <th scope="col">상태</th>
-			                <th scope="col">작성일</th>
-						</tr>
-					</thead>
-					<tbody >
-						<tr th:each="q : ${questions}">
-			               <td th:text="${q.qId}"></td>
-			               <td th:text="${q.qc.type}"></td>
-			               <td>
-								<a href="javascript:void(0);"
-								   class="open-question"
-								   th:data-id="${q.qId}"
-								   th:data-title="${q.title}"
-								   th:data-writer="${q.writer.userName}"
-								   th:data-content="${q.content}"
-								   th:text="${q.title}">
-								</a>
-			               </td>
-			               <td th:text="${q.writer.userName}"></td>
-			               <td th:text="${q.status}"></td>
-			               <td th:text="${#temporals.format(q.createDate, 'yyyy-MM-dd HH:mm')}"></td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-		</div>
-		
-		<!-- 문의 상세 모달 -->
-		<div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
-		  <div class="modal-dialog modal-lg">
-		    <div class="modal-content">
-		      
-		      <div class="modal-header">
-		        <h5 class="modal-title" id="questionModalLabel">문의 상세</h5>
-		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-		      </div>
-		      
-		      <div class="modal-body">
-		        <h5 id="modalTitle"></h5>
-		        <p class="text-muted">작성자: <span id="modalWriter"></span></p>
-		        <hr>
-		        <div id="modalContent"></div>
-		      </div>
-		      
-		      <div class="modal-footer">
-		        <!-- 답변 작성 폼 -->
-		        <form th:action="@{/qna/answer/save}" method="post" class="d-flex w-100">
-		          <input type="hidden" name="qId" id="modalQId">
-		          <input type="text" name="content" class="form-control me-2" placeholder="답변 내용을 입력하세요" required>
-		          <button type="submit" class="btn btn-primary">등록</button>
-		        </form>
-		      </div>
-		      
-		    </div>
-		  </div>
-		</div>
+    <h2>문의내역</h2>
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-table me-1"></i> 문의리스트
+        </div>
+        <div class="card-body">
+            <table id="datatablesSimple" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>번호</th>
+                        <th>문의유형</th>
+                        <th>제목</th>
+                        <th>작성자</th>
+                        <th>상태</th>
+                        <th>작성일</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="q : ${questions}">
+					    <td th:text="${q.qId}"></td>
+					    <td th:text="${q.qc.type}"></td>
+					    <td th:text="${q.title}"></td>
+					    <td th:text="${q.writer.userName}"></td>
+					    <td th:text="${q.status}"></td>
+					    <td th:text="${#temporals.format(q.createDate, 'yyyy-MM-dd HH:mm')}"></td>
+					    <td>
+					        <button type="button" 
+					                th:classappend="${q.status == 'done'} ? 'btn-success open-question-detail' : 'btn-primary open-question-btn'"
+					                th:data-qid="${q.qId}">
+					            <span th:text="${q.status == 'done'} ? '상세보기' : '답변하기'"></span>
+					        </button>
+					
+					       <!-- 질문 내용 hidden -->
+<div th:id="'hidden-question-' + ${q.qId}" th:utext="${q.content}" style="display:none;"></div>
+
+<!-- 답변 내용 hidden (항상 div 존재, 내용은 null이면 빈 문자열) -->
+<div th:id="'hidden-answer-' + ${q.qId}" th:utext="${q.answer != null ? q.answer.content : ''}" style="display:none;"></div>
+					    </td>
+					</tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 공용 모달 -->
+    <div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="questionModalLabel">문의 상세</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+
+                <div class="modal-body">
+                    <h5 id="modalTitle"></h5>
+                    <p class="text-muted">작성자: <span id="modalWriter"></span></p>
+                    <hr>
+                    <div id="modalContent"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <form th:action="@{/admin/answerSave}" method="post" class="w-100">
+                        <input type="hidden" name="qId" id="modalQId">
+                        <div class="mb-3">
+                            <textarea name="content" class="form-control" rows="4" placeholder="답변 내용을 입력하세요" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">등록</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script layout:fragment="script" type="text/javascript">
-	document.addEventListener("DOMContentLoaded", function() {
-	    document.querySelectorAll(".open-question").forEach(function(el) {
-	        el.addEventListener("click", function() {
-	            // 데이터 속성 읽기
-	            let qId = this.dataset.id;
-	            let title = this.dataset.title;
-	            let writer = this.dataset.writer;
-	            let content = this.dataset.content;
+document.addEventListener("DOMContentLoaded", function() {
+    const modalEl = document.getElementById("questionModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalWriter = document.getElementById("modalWriter");
+    const modalContent = document.getElementById("modalContent");
+    const modalQId = document.getElementById("modalQId");
 
-	            // 모달에 값 넣기
-	            document.getElementById("modalQId").value = qId;
-	            document.getElementById("modalTitle").innerText = title;
-	            document.getElementById("modalWriter").innerText = writer;
-	            document.getElementById("modalContent").innerHTML = content;
+    const table = document.getElementById("datatablesSimple");
 
-	            // 모달 열기
-	            let modal = new bootstrap.Modal(document.getElementById("questionModal"));
-	            modal.show();
-	        });
-	    });
-	});
+    table.addEventListener("click", function(e) {
+        const button = e.target.closest("button");
+        if (!button) return;
+
+        const qId = button.dataset.qid;
+        const tr = button.closest("tr");
+        const title = tr.querySelector("td:nth-child(3)").innerText;
+        const writer = tr.querySelector("td:nth-child(4)").innerText;
+        const status = tr.querySelector("td:nth-child(5)").innerText;
+
+        modalQId.value = qId;
+        modalTitle.innerText = title;
+        modalWriter.innerText = writer;
+
+        const question = document.getElementById('hidden-question-' + qId)?.innerHTML || '';
+        const answer = document.getElementById('hidden-answer-' + qId)?.innerHTML || '';
+
+        if(status === 'done') {
+            // 답변 완료: 질문 제목+내용 + 답변 내용
+            modalContent.innerHTML = `
+                <h6>질문 내용</h6>
+                <div class="p-2 border mb-2">${question}</div>
+                <h6>답변 내용</h6>
+                <div class="p-2 border">${answer}</div>
+            `;
+            modalEl.querySelector(".modal-footer form")?.classList.add("d-none"); // 답변폼 숨김
+        } else {
+            // 답변 대기: 질문 제목+내용 + 폼 보이기
+            modalContent.innerHTML = `
+                <h6>질문 내용</h6>
+                <div class="p-2 border mb-2">${question}</div>
+            `;
+            modalEl.querySelector(".modal-footer form")?.classList.remove("d-none"); // 폼 보이기
+        }
+
+        new bootstrap.Modal(modalEl).show();
+    });
+});
 </script>
 </html>

@@ -1,6 +1,7 @@
 package com.ex.final22c.controller.admin;
 
 import java.io.IOException;
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -32,6 +33,7 @@ import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseRequest;
+import com.ex.final22c.data.qna.Answer;
 import com.ex.final22c.data.qna.Question;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
@@ -43,6 +45,7 @@ import com.ex.final22c.service.admin.AdminService;
 import com.ex.final22c.service.refund.RefundService;
 import com.ex.final22c.service.stats.SalesStatService;
 import com.ex.final22c.service.stats.StatsService;
+import com.ex.final22c.service.user.UsersService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -54,7 +57,8 @@ public class AdminController {
 	private final RefundService refundService;
 	private final StatsService statsService;
 	private final SalesStatService salesStatService;
-
+	private final UsersService userService;
+	
 	// ====== 대시보드 진입 ======
 	@GetMapping("dashboard")
 	public String dashboardPage() {
@@ -163,7 +167,7 @@ public class AdminController {
 		redirectAttributes.addAttribute("brandId", brand.getId());
 
 		// 상품 등록 페이지로 이동
-		return "redirect:/admin/newProduct";
+		return "redirect:/admin/productForm";
 	}
 
 	// 상품 등록/수정
@@ -551,6 +555,19 @@ public class AdminController {
     public String questionList(Model model) {
         List<Question> questions = adminService.getAllQuestions();
         model.addAttribute("questions", questions);
+        
         return "admin/questionList"; // qna/list.html
     }
+    
+    // 답변
+    @PostMapping("answerSave")
+    public String saveAnswer(@RequestParam("qId") Long qId, @RequestParam("content") String content,Principal principal) {
+        // 로그인한 사용자 정보 가져오기
+        Users admin = this.userService.getUser(principal.getName());
+        adminService.saveAnswer(qId, content, admin);
+        
+        return "redirect:/admin/questionList";
+    }
+    
+
 }

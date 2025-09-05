@@ -14,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -39,7 +40,7 @@ public class Answer {
 	@Column(name="createDate")
 	private LocalDateTime createDate;
 
-	@ManyToOne(fetch = FetchType.LAZY) 
+	@OneToOne(fetch = FetchType.LAZY) 
 	private Question question;
 
 }

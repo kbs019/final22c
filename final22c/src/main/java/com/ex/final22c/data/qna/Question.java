@@ -16,7 +16,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -52,7 +52,7 @@ public class Question {
 	@ManyToOne(fetch = FetchType.LAZY) 
 	private QuestionCategory qc;
 
-	@OneToMany(mappedBy="question",cascade=CascadeType.REMOVE) 
-	private List<Answer> answerList;
+	@OneToOne(cascade=CascadeType.REMOVE, fetch = FetchType.EAGER) 
+	private Answer answer;
 
 }

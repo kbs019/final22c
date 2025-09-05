@@ -46,6 +46,7 @@ import com.ex.final22c.data.product.Volume;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseDetail;
 import com.ex.final22c.data.purchase.PurchaseRequest;
+import com.ex.final22c.data.qna.Answer;
 import com.ex.final22c.data.qna.Question;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.user.Users;
@@ -62,6 +63,7 @@ import com.ex.final22c.repository.productRepository.VolumeRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseDetailRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseRequestRepository;
+import com.ex.final22c.repository.qna.AnswerRepository;
 import com.ex.final22c.repository.qna.QuestionRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.user.UserRepository;
@@ -96,6 +98,7 @@ public class AdminService {
     private final ReviewFilterService reviewFilterService;
     private final RestockNotifyService restockNotifyService;
     private final QuestionRepository questionRepository;
+    private final AnswerRepository answerRepository;
 
 
     // ===== 대시보드 KPI =====
@@ -331,12 +334,21 @@ public class AdminService {
 
     // 새 브랜드 등록
     public Brand saveBrand(String brandName, MultipartFile imgName) throws IOException {
-
         Brand brand = new Brand();
         brand.setBrandName(brandName);
 
+        // ✅ static/img/브랜드이름 폴더 생성
+        String staticImgPath = new File("src/main/resources/static/img").getAbsolutePath();
+        Path brandFolder = Paths.get(staticImgPath, brandName);
+        if (!Files.exists(brandFolder)) {
+            Files.createDirectories(brandFolder); // 폴더 생성
+            System.out.println("폴더 생성됨: " + brandFolder);
+        }
+
+        // ✅ 기존대로 이미지 저장
         if (imgName != null && !imgName.isEmpty()) {
             File dir = new File(uploadDir);
+            if (!dir.exists()) dir.mkdirs();
 
             String originalFilename = imgName.getOriginalFilename();
             String extension = "";
@@ -345,19 +357,17 @@ public class AdminService {
                 extension = originalFilename.substring(originalFilename.lastIndexOf("."));
             }
 
-            // 브랜드명 파일명
             String savedFileName = brandName + extension;
-
             Path savePath = Paths.get(uploadDir, savedFileName);
-            imgName.transferTo(savePath); // 실제 저장
+            imgName.transferTo(savePath.toFile());
 
-            // db
             brand.setImgName(savedFileName);
-            brand.setImgPath("/img/brand/");
+            brand.setImgPath("/img/brand/"); // 기존 경로
         } else {
             brand.setImgName("default.png");
             brand.setImgPath("/img/");
         }
+
         return this.brandRepository.save(brand);
     }
 
@@ -1054,5 +1064,38 @@ public class AdminService {
     // 문의 내역 출력
     public List<Question> getAllQuestions(){
     	return questionRepository.findAllByOrderByCreateDateDesc();
+    }
+    
+    // 답변 작성
+ // 답변 작성
+    @Transactional
+    public void saveAnswer(Long qId, String content, Users admin) {
+        Question question = questionRepository.findById(qId)
+                .orElseThrow(() -> new IllegalArgumentException("문의 없음"));
+
+        // 1. Answer 저장
+        Answer answer = new Answer();
+        answer.setQuestion(question);
+        answer.setWriter(admin);
+        answer.setContent(content);
+        answerRepository.save(answer);
+
+        // 2. Question에 answer 연결
+        question.setAnswer(answer);
+
+        // 3. Question 상태 변경
+        question.setStatus("done");
+        questionRepository.save(question);
+    }
+    
+    // 질문 ID로 질문 가져오기
+    public Question getQuestion(Long qId) {
+        return questionRepository.findById(qId)
+                .orElseThrow(() -> new IllegalArgumentException("질문이 없습니다. qId=" + qId));
+    }
+
+    // 질문 객체로 답변 가져오기
+    public Answer getAnswersByQuestion(Question question) {
+        return answerRepository.findByQuestion(question);
     }
 }
