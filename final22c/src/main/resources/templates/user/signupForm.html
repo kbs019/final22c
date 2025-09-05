@@ -520,8 +520,8 @@
                         // 정책 실패면 사유를 보여줌
                         if (!d.acceptable) {
                             let msg = (!d.syntax) ? '올바른 이메일 형식이 아닙니다.'
-                                : (d.disposable) ? '임시메일 도메인은 사용할 수 없습니다.'
-                                    : (!d.mx) ? '이 도메인에는 메일 서버(MX)가 없어 수신이 어려울 수 있습니다.' : '사용할 수 없는 이메일입니다.';
+                                : (d.disposable) ? '해당 이메일 주소는 사용할 수 없습니다.'
+                                    : (!d.mx) ? '이 도메인에는 메일 서버가 없어 수신이 불가능 합니다.' : '사용할 수 없는 이메일입니다.';
                             if (emailRuleMsg) { emailRuleMsg.textContent = msg; emailRuleMsg.style.display = 'block'; }
                         }
                     } catch { emOk = true; }
