@@ -1,6 +1,7 @@
 package com.ex.final22c.repository.order;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,11 +16,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.order.Order;
-import com.ex.final22c.repository.order.OrderRepository.MileageRowWithBalance;
 
 import jakarta.persistence.LockModeType;
-
-import java.util.Collection;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -154,105 +152,134 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     java.time.LocalDateTime getProcessedAt();
 
-    Long getUsedPoint();
+    Long getUsedPoint(); // 부분환불 반영된 사용(양수)
 
-    // 내부 계산용 (양수: 적립, 음수: 환불차감)
-    Long getEarnedPoint();
+    Long getEarnedPoint(); // 내부 계산용(양수)
 
-    // 최종 적립 포인트 (UI에 표시할 값)
-    Long getFinalEarnPoint();
+    Long getFinalEarnPoint(); // 화면 표시용(양수)
 
     String getStatus();
 
-    Long getBalanceBefore();
+    Long getBalanceAt(); // 그 주문 시점의 마일리지 스냅샷
 
-    Long getBalanceAfter();
-  }
-
-  @Query(value = """
-      select
-          o.orderId as orderId,
-          o.regDate as processedAt,
-          coalesce(o.usedPoint, 0) as usedPoint,
-          case
-              when o.status = 'CONFIRMED'
-                  then cast(function('trunc', coalesce(o.totalAmount,0) * 0.05) as long)
+    @Query(value = """
+          select
+            o.orderId  as orderId,
+            o.regDate  as processedAt,
+            case
               when o.status = 'REFUNDED'
-                  then - coalesce((
-                      select cast(sum(function('trunc',
-                                   (rd.unitRefundAmount * rd.refundQty) * 0.05)) as long)
-                        from RefundDetail rd
-                       where rd.refund.order.orderId = o.orderId
-                  ), 0)
-              else 0
-          end as earnedPoint,
-          case
-              when o.status = 'CONFIRMED'
-                  then cast(function('trunc', coalesce(o.totalAmount,0) * 0.05) as long)
+                then function('greatest', coalesce(o.usedPoint,0L) - coalesce(r.refundMileage,0L), 0L)
+              else coalesce(o.usedPoint,0L)
+            end                                                   as usedPoint,
+            case
+              when o.status = 'CONFIRMED' then coalesce(o.confirmMileage,0L)
               when o.status = 'REFUNDED'
-                  then greatest(
-                          cast(function('trunc', coalesce(o.totalAmount,0) * 0.05) as long)
-                          -
-                          coalesce((
-                              select cast(sum(function('trunc',
-                                           (rd.unitRefundAmount * rd.refundQty) * 0.05)) as long)
-                                from RefundDetail rd
-                               where rd.refund.order.orderId = o.orderId
-                          ), 0),
-                          0
-                       )
-              else 0
-          end as finalEarnPoint,
+                then function('greatest', coalesce(o.confirmMileage,0L) - coalesce(r.refundMileage,0L), 0L)
+              else 0L
+            end                                                   as earnedPoint,
+            case
+              when o.status = 'CONFIRMED' then coalesce(o.confirmMileage,0L)
+              when o.status = 'REFUNDED'
+                then function('greatest', coalesce(o.confirmMileage,0L) - coalesce(r.refundMileage,0L), 0L)
+              else 0L
+            end                                                   as finalEarnPoint,
+            (
+              (select coalesce(u.mileage,0L) from Users u where u.userNo = :userNo)
+              -
+              coalesce((
+                select sum(
+                  cast(
+                    case
+                      when oo.status = 'REFUNDED'
+                        then function('greatest', coalesce(oo.usedPoint,0L) - coalesce(rr.refundMileage,0L), 0L)
+                      else coalesce(oo.usedPoint,0L)
+                    end
+                  as long)
+                )
+                from Order oo
+                left join oo.refund rr
+                where oo.user.userNo = :userNo
+                  and oo.status in :statuses
+                  and (
+                    oo.regDate > o.regDate
+                    or (oo.regDate = o.regDate and oo.orderId > o.orderId)
+                  )
+              ), 0L)
+              +
+              coalesce((
+                select sum(
+                  cast(
+                    case
+                      when oo.status = 'REFUNDED'
+                        then function('greatest', coalesce(oo.confirmMileage,0L) - coalesce(rr.refundMileage,0L), 0L)
+                      when oo.status = 'CONFIRMED'
+                        then coalesce(oo.confirmMileage,0L)
+                      else 0L
+                    end
+                  as long)
+                )
+                from Order oo
+                left join oo.refund rr
+                where oo.user.userNo = :userNo
+                  and oo.status in :statuses
+                  and (
+                    oo.regDate > o.regDate
+                    or (oo.regDate = o.regDate and oo.orderId > o.orderId)
+                  )
+              ), 0L)
+            )                                                     as balanceAt,
 
-          o.status as status
-      from Order o
-      where o.user.userNo = :userNo
-        and o.status in :statuses
-      order by o.regDate desc
-      """, countQuery = """
-      select count(o)
+            o.status                                              as status
+          from Order o
+          left join o.refund r
+          where o.user.userNo = :userNo
+            and o.status in :statuses
+          order by o.regDate desc, o.orderId desc
+        """, countQuery = """
+          select count(o)
+          from Order o
+          where o.user.userNo = :userNo
+            and o.status in :statuses
+        """)
+    Page<OrderRepository.MileageRowWithBalance> findMileageWithBalanceByUserAndStatuses(
+        @Param("userNo") Long userNo,
+        @Param("statuses") Collection<String> statuses,
+        Pageable pageable);
+
+    public interface MileageRow {
+      Long getOrderId();
+
+      java.time.LocalDateTime getProcessedAt();
+
+      Long getUsedPoint();
+
+      // 계산용: 확정 +, 환불 − (기존)
+      Long getEarnedPoint();
+
+      // 표시용: 확정/환불 모두 양수(원래 적립될 금액)
+      Long getVisibleEarnPoint();
+
+      String getStatus();
+    }
+
+    @Query("""
+        select
+            o.orderId                            as orderId,
+            o.regDate                            as processedAt,
+            coalesce(o.usedPoint, 0)             as usedPoint,
+            case
+                when o.status = 'REFUNDED' then 0
+                else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
+            end                                   as earnedPoint,
+            o.status                             as status
         from Order o
-       where o.user.userNo = :userNo
-         and o.status in :statuses
-      """)
-  Page<MileageRowWithBalance> findMileageWithBalanceByUserAndStatuses(
-      @Param("userNo") Long userNo,
-      @Param("statuses") Collection<String> statuses,
-      Pageable pageable);
-
-  public interface MileageRow {
-    Long getOrderId();
-
-    java.time.LocalDateTime getProcessedAt();
-
-    Long getUsedPoint();
-
-    // 계산용: 확정 +, 환불 − (기존)
-    Long getEarnedPoint();
-
-    // 표시용: 확정/환불 모두 양수(원래 적립될 금액)
-    Long getVisibleEarnPoint();
-
-    String getStatus();
+        where o.user.userNo = :userNo
+          and o.status in :statuses
+        order by o.regDate desc
+        """)
+    Page<MileageRow> findMileageByUserAndStatuses(
+        @Param("userNo") Long userNo,
+        @Param("statuses") Collection<String> statuses,
+        Pageable pageable);
   }
-
-  @Query("""
-      select
-          o.orderId                            as orderId,
-          o.regDate                            as processedAt,
-          coalesce(o.usedPoint, 0)             as usedPoint,
-          case
-              when o.status = 'REFUNDED' then 0
-              else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
-          end                                   as earnedPoint,
-          o.status                             as status
-      from Order o
-      where o.user.userNo = :userNo
-        and o.status in :statuses
-      order by o.regDate desc
-      """)
-  Page<MileageRow> findMileageByUserAndStatuses(
-      @Param("userNo") Long userNo,
-      @Param("statuses") Collection<String> statuses,
-      Pageable pageable);
 }

@@ -1,11 +1,17 @@
 package com.ex.final22c.controller.user;
 
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.Map;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.ex.final22c.form.UsersForm;
 import com.ex.final22c.service.user.UsersService;
@@ -27,29 +33,66 @@ public class UsersController {
 
     @PostMapping("/create")
     public String signup(@Valid UsersForm usersForm, BindingResult bindingResult) {
-        // 유효성 검사 결과가 있다면 다시 폼으로 돌아감
-        if (bindingResult.hasErrors()) {
+        if (bindingResult.hasErrors())
             return "user/signupForm";
-        }
-        // 비밀번호 일치 여부 검사
+
+        // 비밀번호 일치
         if (!usersForm.getPassword1().equals(usersForm.getPassword2())) {
             bindingResult.rejectValue("password2", "passwordInCorrect", "2개의 비밀번호가 일치하지 않습니다.");
             return "user/signupForm";
         }
-        
 
-        // 사용자 생성 성공
+        // 아이디/이메일/휴대폰(11자리 숫자) 최종 중복·형식 검증
+        if (!usersService.isUserNameAvailable(usersForm.getUserName())) {
+            bindingResult.rejectValue("userName", "duplicate", "이미 사용 중인 아이디입니다.");
+            return "user/signupForm";
+        }
+        if (!usersService.isEmailAvailable(usersForm.getEmail())) {
+            bindingResult.rejectValue("email", "duplicate", "이미 사용 중인 이메일입니다.");
+            return "user/signupForm";
+        }
+        if (!usersService.isPhoneAvailable(usersForm.getPhone())) { // "01012345678" 형식 기대
+            bindingResult.rejectValue("phone", "invalid", "휴대폰 번호 형식을 확인해 주세요.");
+            return "user/signupForm";
+        }
+
+        // 생년월일 검증: 오늘/미래 금지 + 만 8세 이상
+        LocalDate birth = usersForm.getBirth();
+        LocalDate today = LocalDate.now();
+        if (birth == null) {
+            bindingResult.rejectValue("birth", "birth.required", "생년월일을 입력해 주세요.");
+            return "user/signupForm";
+        }
+        // 오늘/미래 금지 (질문: '크거나 같으면 막기' → today 포함 금지)
+        if (!birth.isBefore(today)) {
+            bindingResult.rejectValue("birth", "birth.futureOrToday", "생년월일은 오늘 이전이어야 합니다.");
+            return "user/signupForm";
+        }
+        // 만 8세 이상
+        int age = Period.between(birth, today).getYears();
+        if (age < 8) {
+            bindingResult.rejectValue("birth", "birth.minAge", "만 8세 이상만 가입할 수 있습니다.");
+            return "user/signupForm";
+        }
+
         usersService.create(usersForm);
-        
-        // 회원 가입 성공 시 홈으로 리다이렉트
         return "redirect:/user/login";
+    }
+
+    @GetMapping(value = "/check/password", produces = "application/json")
+    @ResponseBody
+    public Map<String, Object> checkPassword(@RequestParam("pw") String pw) {
+        // 영문/숫자만 사용, 영문+숫자 각 1개 이상 포함, 총 8자 이상
+        boolean valid = pw != null && pw.matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$");
+        String msg = valid ? "" : "영문+숫자 포함 8자 이상(영문/숫자만)";
+        return Map.of("ok", true, "valid", valid, "msg", msg);
     }
 
     @GetMapping("/login")
     public String login() {
         return "user/loginForm";
     }
-    
+
     @GetMapping("/redirectByRole")
     public String redirectByRole(Authentication authentication) {
         // 현재 로그인 사용자의 첫 번째(그리고 유일한) 권한 가져오기
@@ -59,6 +102,26 @@ public class UsersController {
             return "redirect:/admin/dashboard";
         }
         return "redirect:/main";
+    }
 
+    @GetMapping(value = "/check/username", produces = "application/json")
+    @ResponseBody
+    public Map<String, Object> checkUsername(@RequestParam("userName") String userName) {
+        boolean available = usersService.isUserNameAvailable(userName);
+        return Map.of("ok", true, "available", available);
+    }
+
+    @GetMapping(value = "/check/email", produces = "application/json")
+    @ResponseBody
+    public Map<String, Object> checkEmail(@RequestParam("email") String email) {
+        boolean available = usersService.isEmailAvailable(email);
+        return Map.of("ok", true, "available", available);
+    }
+
+    @GetMapping(value = "/check/phone", produces = "application/json")
+    @ResponseBody
+    public Map<String, Object> checkPhone(@RequestParam("phone") String phone) {
+        boolean available = usersService.isPhoneAvailable(phone); // 화면에서 010-****-**** 형태여도 OK
+        return Map.of("ok", true, "available", available);
     }
 }

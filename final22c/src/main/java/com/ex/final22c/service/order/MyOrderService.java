@@ -1,12 +1,10 @@
 package com.ex.final22c.service.order;
 
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,8 +13,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ex.final22c.data.order.Order;
@@ -42,7 +38,7 @@ public class MyOrderService {
     private final OrderRepository orderRepository;
     private final UserRepository usersRepository;
     private final PaymentRepository paymentRepository;
-    private final OrderDetailRepository orderDetailRepository; 
+    private final OrderDetailRepository orderDetailRepository;
     private final RefundRepository refundRepository;
 
     /**
@@ -67,8 +63,7 @@ public class MyOrderService {
     public List<Order> listMyOrdersWithDetails(String username) {
         Users me = usersService.getUser(username);
         return orderRepository.findAllByUser_UserNoAndStatusNotOrderByRegDateDesc(
-                me.getUserNo(), "PENDING"
-        );
+                me.getUserNo(), "PENDING");
     }
 
     /**
@@ -79,8 +74,7 @@ public class MyOrderService {
     public List<Order> listMyOrdersByStatuses(String username, Collection<String> statuses) {
         Users me = usersService.getUser(username);
         return orderRepository.findByUser_UserNoAndStatusInOrderByRegDateDesc(
-                me.getUserNo(), statuses
-        );
+                me.getUserNo(), statuses);
     }
 
     // 주문 확정
@@ -88,103 +82,116 @@ public class MyOrderService {
     public void confirmOrder(String username, Long orderId) {
         Users me = usersService.getUser(username);
 
-        int updated = orderRepository.updateToConfirmed(orderId, me.getUserNo() );
+        int updated = orderRepository.updateToConfirmed(orderId, me.getUserNo());
         if (updated == 0) {
             throw new IllegalStateException("확정 불가 상태이거나 주문이 없습니다.");
         }
     }
-    
+
     // 주문 확정시 마일리지 지급 + 확정된 건에 대하여 확정수량 넣기
     @Transactional
     public Order confirmOrderAndAwardMileage(String username, Long orderId) {
         Users me = usersService.getUser(username);
 
-        // 1) 주문을 CONFIRMED로 전환
+        // 1) 상태 전환
         int updated = orderRepository.updateToConfirmed(orderId, me.getUserNo());
-        if (updated == 0) throw new IllegalStateException("확정 불가 상태이거나 주문을 찾을 수 없습니다.");
+        if (updated == 0)
+            throw new IllegalStateException("확정 불가 상태이거나 주문을 찾을 수 없습니다.");
 
-        // 2) 프론트 계산용으로 주문 재조회
+        // 2) 확정된 주문 재조회(상세는 프런트 표시용)
         Order order = orderRepository.findOneWithDetails(orderId)
                 .orElseThrow(() -> new IllegalStateException("주문을 찾을 수 없습니다."));
 
-        // 3) 마일리지 적립
+        // 3) 적립 마일리지 계산 및 반영
         int earnBase = Math.max(0, order.getTotalAmount());
-        int mileage  = (int) Math.floor(earnBase * 0.05);
+        int mileage = (int) Math.floor(earnBase * 0.05);
+
         if (mileage > 0) {
+            // 사용자 잔액 증가
             usersRepository.addMileage(me.getUserNo(), mileage);
+
+            // 주문건에도 적립 스냅샷 저장(이게 빠지면 내역에서 '적립포인트'가 0으로 보임)
+            order.setConfirmMileage(mileage);
+            orderRepository.save(order);
         }
+
         return order;
     }
- 
+
     @Transactional(readOnly = true)
     public Order findMyOrderWithDetails(String username, Long orderId) {
         return orderRepository.findOneWithDetailsAndProductByUser(username, orderId)
-            .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
     }
 
     @Transactional(readOnly = true)
     public List<Payment> findPaymentsofOrder(Long orderId) {
         return paymentRepository.findByOrder_OrderId(orderId);
     }
-    
+
     /** 주문별 환불요청(REQUESTED) 목록을 Map 구조로 반환 */
 
     /** 주문별 환불요청 목록(JSON용 Map) */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getRefundRequestsOfOrder(long orderId, String principalName) {
 
-    // 소유자 검증(없으면 404) – Users.userName 기준
-    orderRepository.findByOrderIdAndUser_UserName(orderId, principalName)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        // 소유자 검증(없으면 404) – Users.userName 기준
+        orderRepository.findByOrderIdAndUser_UserName(orderId, principalName)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-    // 1) 우선 REQUESTED만
-    List<Refund> refunds = refundRepository
-        .findByOrder_OrderIdAndStatusOrderByCreateDateDesc(orderId, "REQUESTED");
+        // 1) 우선 REQUESTED만
+        List<Refund> refunds = refundRepository
+                .findByOrder_OrderIdAndStatusOrderByCreateDateDesc(orderId, "REQUESTED");
 
-    // 2) 비어 있으면 (상태가 다를 가능성) → 전부 가져와서 상태 로그
-    if (refunds.isEmpty()) {
-        List<Refund> all = refundRepository.findByOrder_OrderIdOrderByCreateDateDesc(orderId);
-        System.out.println("[refund-requests] orderId=" + orderId
-            + ", REQUESTED=0, allCount=" + all.size()
-            + ", statuses=" + all.stream().map(Refund::getStatus).toList());
+        // 2) 비어 있으면 (상태가 다를 가능성) → 전부 가져와서 상태 로그
+        if (refunds.isEmpty()) {
+            List<Refund> all = refundRepository.findByOrder_OrderIdOrderByCreateDateDesc(orderId);
+            System.out.println("[refund-requests] orderId=" + orderId
+                    + ", REQUESTED=0, allCount=" + all.size()
+                    + ", statuses=" + all.stream().map(Refund::getStatus).toList());
 
-        // 화면엔 최소한 요청/완료/거절은 보여주자(원하면 목록에만 쓰고, 상단 배지는 REQUESTED일 때만 노출)
-        refunds = refundRepository.findByOrder_OrderIdAndStatusInOrderByCreateDateDesc(
-            orderId, List.of("REQUESTED","REFUNDED","REJECTED","CANCELED")
-        );
-    }
-
-    // 3) JSON 변환: ‘요청 수량(quantity)’ 기준으로 금액 계산
-    List<Map<String, Object>> result = new ArrayList<>(refunds.size());
-    for (Refund r : refunds) {
-        Map<String, Object> item = new HashMap<>();
-        item.put("refundId",  r.getRefundId());
-        item.put("status",    nvl(r.getStatus(), "REQUESTED"));
-        item.put("reason",    nvl(r.getRequestedReason(), ""));
-        item.put("createdAt", r.getCreateDate());
-
-        List<Map<String, Object>> details = new ArrayList<>();
-        if (r.getDetails() != null) {
-        for (RefundDetail d : r.getDetails()) {
-            Map<String, Object> det = new HashMap<>();
-            String productName = (d.getOrderDetail()!=null && d.getOrderDetail().getProduct()!=null)
-                ? d.getOrderDetail().getProduct().getName() : "-";
-            int qty  = safeInt(d.getQuantity());          // 신청 수량
-            int unit = safeInt(d.getUnitRefundAmount());  // 단가 스냅샷
-
-            det.put("productName",      productName);
-            det.put("refundQty",        qty);
-            det.put("unitRefundAmount", unit);
-            det.put("subtotal",         qty * unit);
-            details.add(det);
+            // 화면엔 최소한 요청/완료/거절은 보여주자(원하면 목록에만 쓰고, 상단 배지는 REQUESTED일 때만 노출)
+            refunds = refundRepository.findByOrder_OrderIdAndStatusInOrderByCreateDateDesc(
+                    orderId, List.of("REQUESTED", "REFUNDED", "REJECTED", "CANCELED"));
         }
+
+        // 3) JSON 변환: ‘요청 수량(quantity)’ 기준으로 금액 계산
+        List<Map<String, Object>> result = new ArrayList<>(refunds.size());
+        for (Refund r : refunds) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("refundId", r.getRefundId());
+            item.put("status", nvl(r.getStatus(), "REQUESTED"));
+            item.put("reason", nvl(r.getRequestedReason(), ""));
+            item.put("createdAt", r.getCreateDate());
+
+            List<Map<String, Object>> details = new ArrayList<>();
+            if (r.getDetails() != null) {
+                for (RefundDetail d : r.getDetails()) {
+                    Map<String, Object> det = new HashMap<>();
+                    String productName = (d.getOrderDetail() != null && d.getOrderDetail().getProduct() != null)
+                            ? d.getOrderDetail().getProduct().getName()
+                            : "-";
+                    int qty = safeInt(d.getQuantity()); // 신청 수량
+                    int unit = safeInt(d.getUnitRefundAmount()); // 단가 스냅샷
+
+                    det.put("productName", productName);
+                    det.put("refundQty", qty);
+                    det.put("unitRefundAmount", unit);
+                    det.put("subtotal", qty * unit);
+                    details.add(det);
+                }
+            }
+            item.put("details", details);
+            result.add(item);
         }
-        item.put("details", details);
-        result.add(item);
-    }
-    return result;
+        return result;
     }
 
-    private static String nvl(String s, String def){ return s==null ? def : s; }
-    private static int safeInt(Integer n){ return n==null ? 0 : n; }
+    private static String nvl(String s, String def) {
+        return s == null ? def : s;
+    }
+
+    private static int safeInt(Integer n) {
+        return n == null ? 0 : n;
+    }
 }
