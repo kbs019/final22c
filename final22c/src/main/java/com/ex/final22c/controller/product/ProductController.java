@@ -44,8 +44,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProductController {
 
-	@Autowired
-	private ProductDescriptionService productDescriptionService;
 	
     private final ProductService productService;
     private final ZzimService zzimService;
@@ -116,14 +114,6 @@ public class ProductController {
 
         model.addAttribute("loggedIn", loggedIn);
         model.addAttribute("zzimedByMe", zzimedByMe);
-        
-		/*
-		 * // AI 설명문 생성 추가 try { String aiDescription =
-		 * productDescriptionService.generateEnhancedDescription(product);
-		 * model.addAttribute("aiDescription", aiDescription); } catch (Exception e) {
-		 * log.warn("AI 설명문 생성 실패: {}", e.getMessage());
-		 * model.addAttribute("aiDescription", null); }
-		 */
 
         return "main/content";
     }

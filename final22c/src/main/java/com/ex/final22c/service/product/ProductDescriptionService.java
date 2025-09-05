@@ -228,43 +228,6 @@ public class ProductDescriptionService {
         return prompt.toString();
     }
     
-    private String formatAiDescription(String aiResult, boolean hasSingle, boolean hasComplex) {
-        if (isEmpty(aiResult)) {
-            return null;
-        }
-        
-        StringBuilder formatted = new StringBuilder();
-        
-        // AI 생성 결과 포맷팅
-        String[] paragraphs = aiResult.split("\n\n");
-        for (int i = 0; i < paragraphs.length; i++) {
-            String paragraph = paragraphs[i].trim();
-            if (!isEmpty(paragraph)) {
-                formatted.append("<p>").append(paragraph).append("</p>");
-                if (i < paragraphs.length - 1) {
-                    formatted.append("\n");
-                }
-            }
-        }
-        
-        // 추가 가이드 섹션
-        formatted.append("\n<div class='mt-3'>");
-        
-        if (hasSingle) {
-            formatted.append("<small class='text-muted'>")
-                    .append("<strong>싱글노트 tip:</strong> 다른 향수와 레이어링하기 좋은 베이스로 활용 가능")
-                    .append("</small>");
-        } else if (hasComplex) {
-            formatted.append("<small class='text-muted'>")
-                    .append("<strong>향의 변화:</strong> 시간이 지날수록 다른 매력을 발견할 수 있는 복합적인 향")
-                    .append("</small>");
-        }
-        
-        formatted.append("</div>");
-        
-        return formatted.toString();
-    }
-    
     private boolean isEmpty(String str) {
         return str == null || str.trim().isEmpty();
     }
