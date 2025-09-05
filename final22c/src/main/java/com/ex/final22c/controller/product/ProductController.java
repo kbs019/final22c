@@ -125,7 +125,7 @@ public class ProductController {
 		 * model.addAttribute("aiDescription", null); }
 		 */
 
-        return "main/content";
+        return "main/content2";
     }
 
     // 좋아요 토글

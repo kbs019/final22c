@@ -308,11 +308,12 @@ public class ChatService {
                         Map.of("role", "system", "content", 
                                "당신은 향수 전문가입니다. 특정 성별과 나이대의 사람이 해당 향수를 착용했을 때의 " +
                                "구체적이고 현실적인 시나리오를 분석해주세요. " +
-                               "추천이 아닌 예상/분석 관점으로 접근하고, 150-200자 내외로 작성하세요."),
+                               "부드러운 말투로 작성해주세요. " + 
+                               "추천이 아닌 예상/분석 관점으로 접근하고, 200~300자 내외로 2~3개의 문단으로 작성하세요."),
                         Map.of("role", "user", "content", prompt)
                 ),
-                "temperature", 0.6,  // 창의적이지만 일관성 있게
-                "max_tokens", 300
+                "temperature", 0.7,         // 창의적이지만 일관성 있게 (답변의 수준 : 0~2 -> 2로 갈 수록 창의적)
+                "max_tokens", 300           // 토큰 (글자수 지정 -> 500 으로 설정하면, 500~600 정도로 출력됨)
         );
         
         try {
@@ -320,7 +321,7 @@ public class ChatService {
             String result = extract(resp);
             
             if (result != null && result.length() > 500) {
-                result = result.substring(0, 480) + "...";
+                result = result.substring(0, 400) + "...";
             }
             
             return result;

@@ -54,7 +54,7 @@
 
             <div class="carousel-inner">
               <div class="carousel-item" th:classappend="${iter.index == 0} ? ' active'"
-                   th:each="slide, iter : ${pickSlides}">
+                  th:each="slide, iter : ${pickSlides}">
                 <div class="row g-3 g-md-4 justify-content-center">
                   <!-- 한 슬라이드에 4장 -->
                   <div class="col-6 col-md-3 pick-narrow" th:each="p : ${slide}">
