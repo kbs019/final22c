@@ -56,6 +56,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
    List<Product> findByIsPickedOrderByIdDesc(String isPicked, Pageable pageable);
 
    // PICK 상품: isPicked == '1' 또는 'Y'
+   @EntityGraph(attributePaths = {"brand"})
    @Query("""
          select p
          from Product p
