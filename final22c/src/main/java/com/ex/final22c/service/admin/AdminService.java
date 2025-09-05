@@ -336,23 +336,13 @@ public class AdminService {
         }
     }
 
-    // 새 브랜드 등록
+ // 새 브랜드 등록
     public Brand saveBrand(String brandName, MultipartFile imgName) throws IOException {
         Brand brand = new Brand();
         brand.setBrandName(brandName);
 
-        // ✅ static/img/브랜드이름 폴더 생성
-        String staticImgPath = new File("src/main/resources/static/img").getAbsolutePath();
-        Path brandFolder = Paths.get(staticImgPath, brandName);
-        if (!Files.exists(brandFolder)) {
-            Files.createDirectories(brandFolder); // 폴더 생성
-            System.out.println("폴더 생성됨: " + brandFolder);
-        }
-
-        // ✅ 기존대로 이미지 저장
         if (imgName != null && !imgName.isEmpty()) {
             File dir = new File(uploadDir);
-            if (!dir.exists()) dir.mkdirs();
 
             String originalFilename = imgName.getOriginalFilename();
             String extension = "";
@@ -361,12 +351,15 @@ public class AdminService {
                 extension = originalFilename.substring(originalFilename.lastIndexOf("."));
             }
 
+            // 브랜드명 파일명
             String savedFileName = brandName + extension;
-            Path savePath = Paths.get(uploadDir, savedFileName);
-            imgName.transferTo(savePath.toFile());
 
+            Path savePath = Paths.get(uploadDir, savedFileName);
+            imgName.transferTo(savePath); // 실제 저장
+
+            // db
             brand.setImgName(savedFileName);
-            brand.setImgPath("/img/brand/"); // 기존 경로
+            brand.setImgPath("/img/brand/");
         } else {
             brand.setImgName("default.png");
             brand.setImgPath("/img/");
@@ -452,11 +445,25 @@ public class AdminService {
         }
 
         // 이미지 처리
+     // 이미지 처리
         String uploadDir2 = "src/main/resources/static/img/" + brandName + "/";
+        Path uploadPath = Paths.get(uploadDir2);
+
+        // 폴더가 없으면 생성
+        if (!Files.exists(uploadPath)) {
+            try {
+                Files.createDirectories(uploadPath); // 상위 폴더까지 포함해서 생성
+                System.out.println("폴더 생성됨: " + uploadPath.toAbsolutePath());
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("폴더 생성 실패: " + uploadPath.toAbsolutePath());
+            }
+        }
+
         if (imgName != null && !imgName.isEmpty()) {
             // 기존 이미지 삭제
             if (product.getImgName() != null && !"default.png".equals(product.getImgName())) {
-                Path oldFilePath = Paths.get(uploadDir2, product.getImgName());
+                Path oldFilePath = uploadPath.resolve(product.getImgName());
                 try {
                     Files.deleteIfExists(oldFilePath);
                 } catch (IOException e) {
@@ -472,7 +479,7 @@ public class AdminService {
                     ? originalFilename.substring(originalFilename.lastIndexOf("."))
                     : "";
             String savedFileName = productName + extension;
-            Path savePath = Paths.get(uploadDir2, savedFileName);
+            Path savePath = uploadPath.resolve(savedFileName);
             try {
                 imgName.transferTo(savePath);
             } catch (Exception e) {
@@ -487,7 +494,7 @@ public class AdminService {
         }
         // 수정 모드에서 파일 안 올리면 기존 이미지 그대로 유지
 
-        productRepository.save(product); // JPA save: id 있으면 update, 없으면 insert
+        productRepository.save(product);
     }
 
     // 관리자 픽
