@@ -44,7 +44,7 @@
     </div>
 
     <!-- 상단: KPI 5개 -->
-    <div class="row g-3 kpi-row row-cols-2 row-cols-lg-4 row-cols-xl-5">
+    <div class="row g-3 kpi-row row-cols-2 row-cols-lg-3 row-cols-xl-6">
       <!-- 오늘 매출 -->
       <div class="col">
         <a th:href="@{/admin/salesStats}" class="text-decoration-none text-reset">
@@ -93,6 +93,18 @@
             <div class="mt-1 mb-1">처리 대기 환불</div>
             <div id="kpi-pendingRefunds" class="kpi-value">-</div>
           </div></div>
+        </a>
+      </div>
+      <!-- 처리 대기 문의 -->
+      <div class="col">
+        <a href="" class="text-decoration-none text-reset">
+          <div class="card kpi-card">
+            <div class="card-body">
+              <div class="kpi-sub">문의내역&gt;</div>
+              <div class="mt-1 mb-1">처리 대기 문의</div>
+              <div id="kpi-pendingQna" class="kpi-value">-</div>
+            </div>
+          </div>
         </a>
       </div>
     </div>
@@ -222,6 +234,7 @@
       document.getElementById('kpi-totalUsers').textContent   = (json.totalUsers??0).toLocaleString('ko-KR') + '명';
       document.getElementById('kpi-newUsers7d').textContent   = (json.newUsers7d??0).toLocaleString('ko-KR') + '명';
       document.getElementById('kpi-pendingRefunds').textContent = (json.pendingRefunds??0).toLocaleString('ko-KR') + '건';
+      document.getElementById('kpi-pendingQna').textContent = (json.pendingQna ?? 0).toLocaleString('ko-KR') + '건';
     }
 
     // ===== 최근 7일 매출 =====
