@@ -82,8 +82,8 @@ public class AdminController {
 	@ResponseBody
 	@GetMapping("dashboard/low-stock")
 	public Map<String, Object> lowStockPaged(
-			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "5") int size) {
+			@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "5") int size) {
 		return adminService.findLowStockPaged(page, size);
 	}
 
@@ -91,8 +91,8 @@ public class AdminController {
 	@ResponseBody
 	@GetMapping("dashboard/sold-out")
 	public Map<String, Object> soldOutPaged(
-			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "5") int size) {
+			@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "5") int size) {
 		return adminService.findSoldOutPaged(page, size);
 	}
 
