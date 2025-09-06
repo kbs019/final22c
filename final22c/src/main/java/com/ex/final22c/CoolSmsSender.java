@@ -13,39 +13,48 @@ import net.nurigo.sdk.message.service.DefaultMessageService;
 @RequiredArgsConstructor
 public class CoolSmsSender {
 
-    private final DefaultMessageService messageService; // RefundSmsService와 동일하게 사용
+    private final DefaultMessageService messageService;
 
     @Value("${sms.from-number}")
     private String from;
 
-    // 숫자만 남기기 (하이픈 제거)
+    /** 숫자만 남기기 (하이픈 제거) */
     private static String digits(String s) {
         return (s == null) ? "" : s.replaceAll("\\D", "");
     }
 
-    public boolean sendPlainText(String to, String text) {
-        if (from == null || from.isBlank()) return false;
+    /** 전송 결과 DTO */
+    public record SmsSendResult(boolean ok, String code, String message, String messageId) {}
 
-        Message m = new Message();
-        m.setFrom(from);
-        m.setTo(digits(to));
-        m.setText(text);
-
+    /** 상세 응답 반환 */
+    public SmsSendResult sendPlainTextResult(String to, String text) {
         try {
-            // SDK 버전에 맞춰 sendOne + 응답 체크
+            Message m = new Message();
+            m.setFrom(digits(from));
+            m.setTo(digits(to));
+            m.setText(text);
+
             SingleMessageSentResponse resp =
                     messageService.sendOne(new SingleMessageSendingRequest(m));
 
-            // ★ 성공 코드 판정 (쿨SMS: 2000이 정상)
             String code = (resp == null) ? null : resp.getStatusCode();
-            boolean ok = "2000".equals(code);
+            String msg = (resp == null) ? "no response" : resp.getStatusMessage();
+            String id = (resp == null) ? null : resp.getMessageId();
+            boolean ok = "2000".equals(code); // Solapi 성공 코드
 
-            // 필요하면 원인 로깅: resp.getStatusCode(), resp.getStatusMessage()
-            return ok;
+            // 디버깅/운영 로그
+            System.out.printf("[SMS] to=%s code=%s msg=%s id=%s%n",
+                    to, code, msg, id);
+
+            return new SmsSendResult(ok, code, msg, id);
 
         } catch (Exception e) {
-            // 네트워크/인증/기타 런타임
-            return false;
+            return new SmsSendResult(false, "EXCEPTION", e.getMessage(), null);
         }
+    }
+
+    /** 기존 boolean 방식도 유지 */
+    public boolean sendPlainText(String to, String text) {
+        return sendPlainTextResult(to, text).ok();
     }
 }

@@ -3,10 +3,10 @@ package com.ex.final22c.service.user;
 import java.security.Principal;
 import java.util.Optional;
 
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.user.Users;
@@ -22,6 +22,7 @@ public class UsersService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerifier emailVerifier;
+    private final PhoneCodeService phoneCodeService;
 
     /** 사용자명으로 조회(없으면 DataNotFoundException) */
     public Users getUser(String userName) {
@@ -43,11 +44,30 @@ public class UsersService {
     }
 
     /** 회원가입 */
+    @Transactional
     public Users create(UsersForm usersForm) {
-        // 1) 이메일 정규화
-        String emailNorm = emailVerifier.normalize(usersForm.getEmail());
+        // 전화번호 정규화(숫자만)
+        final String phoneDigits = digitsOnly(usersForm.getPhone());
 
-        // 2) Users 엔티티 생성
+        // 서버에서 휴대폰 인증 완료 여부 최종 검증
+        if (!phoneCodeService.isVerified(phoneDigits)) {
+            throw new IllegalStateException("휴대폰 인증이 완료되지 않았습니다.");
+        }
+
+        // 이메일 정규화
+        final String emailNorm = emailVerifier.normalize(usersForm.getEmail());
+
+        // 중복 검사
+        if (userRepository.existsByUserName(usersForm.getUserName())) {
+            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+        }
+        if (userRepository.existsByEmail(emailNorm)) {
+            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+        }
+        if (userRepository.existsByPhone(phoneDigits)) {
+            throw new IllegalArgumentException("이미 사용 중인 휴대폰 번호입니다.");
+        }
+
         Users user = Users.builder()
                 .userName(usersForm.getUserName())
                 .password(passwordEncoder.encode(usersForm.getPassword1()))
@@ -55,25 +75,30 @@ public class UsersService {
                 .name(usersForm.getName())
                 .birth(usersForm.getBirth())
                 .telecom(usersForm.getTelecom())
-                .phone(digitsOnly(usersForm.getPhone()))
+                .phone(phoneDigits) // DB에는 숫자만 저장
                 .gender(usersForm.getGender())
                 .loginType("local")
                 .mileage(0)
                 .build();
 
-        // 3) 저장
-        return userRepository.save(user);
+        Users saved = userRepository.save(user);
+
+        // 사용한 인증표시는 정리(선택)
+        phoneCodeService.clearVerified(phoneDigits);
+
+        return saved;
     }
 
-    /**
-     * 휴대폰 입력 정규화: null-safe trim + 숫자만 남김
-     * 예) "010-1234-5678" → "01012345678"
-     */
+    @Transactional(readOnly = true)
+    public boolean existsPhone(String phone) {
+        return userRepository.existsByPhone(phone);
+    }
+
     private static String digitsOnly(String s) {
         if (s == null)
             return null;
         String trimmed = s.trim();
-        return trimmed.replaceAll("\\D", ""); // 숫자 아닌 문자 제거
+        return trimmed.replaceAll("\\D", "");
     }
 
     public boolean isUserNameAvailable(String userName) {
@@ -89,7 +114,7 @@ public class UsersService {
     }
 
     public boolean isPhoneAvailable(String phoneRaw) {
-        String phone = digitsOnly(phoneRaw); // 하이픈/공백 제거
+        String phone = digitsOnly(phoneRaw);
         return phone != null && phone.matches("^01[016789]\\d{8}$")
                 && !userRepository.existsByPhone(phone);
     }
@@ -100,11 +125,9 @@ public class UsersService {
         Users me = getUser(username);
 
         String emailNorm = isBlank(newEmail) ? null : safeLowerTrim(newEmail);
-
-        // phone: 하이푼 제거
         String phoneNorm = isBlank(newPhone) ? null : newPhone.replaceAll("-", "").trim();
 
-        // --- 중복 검사 ---
+        // 중복 검사 (본인 제외)
         if (emailNorm != null) {
             Optional<Users> existingEmail = userRepository.findByEmail(emailNorm);
             if (existingEmail.isPresent() && !existingEmail.get().getUserNo().equals(me.getUserNo())) {
@@ -118,51 +141,43 @@ public class UsersService {
             }
         }
 
-        // --- 저장 ---
         if (emailNorm != null)
             me.setEmail(emailNorm);
         if (phoneNorm != null)
-            me.setPhone(phoneNorm); // DB에는 01012345678 형식 저장
+            me.setPhone(phoneNorm);
         if (!isBlank(newPasswordNullable)) {
             me.setPassword(passwordEncoder.encode(newPasswordNullable));
         }
 
-        return me;
+        // 안전하게 저장
+        return userRepository.save(me);
     }
 
     /** 전체 Users 객체 업데이트(중복 검사 포함) */
     @Transactional
     public Users updateUser(Users user) {
-        // 이메일 중복 체크 (본인 제외)
         Optional<Users> existingEmail = userRepository.findByEmail(safeLowerTrim(user.getEmail()));
         if (existingEmail.isPresent() && !existingEmail.get().getUserNo().equals(user.getUserNo())) {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
-
-        // 휴대폰 중복 체크 (본인 제외)
         Optional<Users> existingPhone = userRepository.findByPhone(safeTrim(user.getPhone()));
         if (existingPhone.isPresent() && !existingPhone.get().getUserNo().equals(user.getUserNo())) {
             throw new IllegalArgumentException("이미 사용 중인 휴대폰 번호입니다.");
         }
 
-        // 정규화 후 저장
         user.setEmail(safeLowerTrim(user.getEmail()));
         user.setPhone(safeTrim(user.getPhone()));
         return userRepository.save(user);
     }
 
-    // ---- helpers ----
-    /** 빈 문자열 여부 확인 */
     private static boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
 
-    /** null-세이프 trim */
     private static String safeTrim(String s) {
         return s == null ? null : s.trim();
     }
 
-    /** null-세이프 trim + 소문자 변환(이메일 표준화용) */
     private static String safeLowerTrim(String s) {
         return s == null ? null : s.trim().toLowerCase();
     }
@@ -172,35 +187,29 @@ public class UsersService {
     public Users updatePhoneAndTelecom(String username, String newPhone, String newTelecom) {
         Users me = getUser(username);
 
-        // 1) 입력 정규화(뷰에서 하이푼 포함 전달)
         String phoneHyphen = (newPhone == null) ? "" : newPhone.trim();
         String telNorm = (newTelecom == null) ? "" : newTelecom.trim();
 
-        if (phoneHyphen.isEmpty() || telNorm.isEmpty()) {
+        if (phoneHyphen.isEmpty() || telNorm.isEmpty())
             throw new IllegalArgumentException("휴대번호/통신사를 확인해 주세요.");
-        }
-
-        // 2) 형식 검증 (입력은 하이푼 포함)
-        if (!phoneHyphen.matches("^010-\\d{4}-\\d{4}$")) {
+        if (!phoneHyphen.matches("^010-\\d{4}-\\d{4}$"))
             throw new IllegalArgumentException("휴대폰 번호 형식을 확인해 주세요. (예: 010-1234-5678)");
-        }
 
-        // 3) DB 저장/중복검사는 숫자만으로 통일
         String phoneDigits = phoneHyphen.replaceAll("-", ""); // "01012345678"
 
         userRepository.findByPhone(phoneDigits).ifPresent(other -> {
-            if (!other.getUserNo().equals(me.getUserNo())) {
+            if (!other.getUserNo().equals(me.getUserNo()))
                 throw new IllegalArgumentException("이미 사용 중인 휴대폰 번호입니다.");
-            }
         });
 
-        // 4) 저장
-        me.setPhone(phoneDigits); // DB에는 숫자만
+        me.setPhone(phoneDigits);
         me.setTelecom(telNorm);
-        return me;
+
+        // 👉 명시 저장해 커밋 시 확실히 반영
+        return userRepository.save(me);
     }
 
-    /** 이메일 사용 가능 여부 사전 체크(본인 이메일이면 사용 가능으로 간주) */
+    /** 이메일 사용 가능 여부 사전 체크(본인 이메일이면 사용 가능 처리) */
     public boolean isEmailAvailableFor(String usernameNullable, String newEmail) {
         String emailNorm = safeLowerTrim(newEmail);
         if (emailNorm == null)
@@ -213,12 +222,9 @@ public class UsersService {
             } catch (Exception ignored) {
             }
         }
-
-        // 본인 이메일이면 사용 가능으로 처리
         if (self != null && emailNorm.equals(safeLowerTrim(self.getEmail()))) {
             return true;
         }
-
         return userRepository.findByEmail(emailNorm).isEmpty();
     }
 }

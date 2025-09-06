@@ -44,43 +44,51 @@ public class UsersController {
             return "user/signupForm";
         }
 
-        // 아이디/이메일/휴대폰(11자리 숫자) 최종 중복·형식 검증
+        // 아이디 중복
         if (!usersService.isUserNameAvailable(usersForm.getUserName())) {
             bindingResult.rejectValue("userName", "duplicate", "이미 사용 중인 아이디입니다.");
             return "user/signupForm";
         }
-        // ===== 서버단 이메일 검증(최종 가드) =====
+
+        // 이메일 최종 정규화/검증
         String emailNorm = emailVerifier.normalize(usersForm.getEmail());
         if (!emailVerifier.isAcceptableForSignup(emailNorm)) {
-            bindingResult.rejectValue("email", "invalidEmail",
-                    "사용할 수 없는 이메일입니다. 올바른 형식/도메인인지 확인해 주세요.");
+            bindingResult.rejectValue("email", "invalidEmail", "사용할 수 없는 이메일입니다. 올바른 형식/도메인인지 확인해 주세요.");
             return "user/signupForm";
         }
-        if (!usersService.isPhoneAvailable(usersForm.getPhone())) { // "01012345678" 형식 기대
-            bindingResult.rejectValue("phone", "invalid", "휴대폰 번호 형식을 확인해 주세요.");
-            return "user/signupForm";
-        }
+        usersForm.setEmail(emailNorm);
 
-        // 생년월일 검증: 오늘/미래 금지 + 만 8세 이상
+        // === 휴대폰: 형식 → 중복 순으로 분리 체크 ===
+        String phoneDigits = usersForm.getPhone() == null ? "" : usersForm.getPhone().replaceAll("\\D+", "");
+        if (!phoneDigits.matches("^01[016789]\\d{8}$")) {
+            bindingResult.rejectValue("phone", "invalidFormat", "휴대폰 번호 형식을 확인해 주세요.");
+            return "user/signupForm";
+        }
+        // 중복
+        if (usersService.existsPhone(phoneDigits)) { // 아래처럼 UsersService에 얇은 메서드 하나 추가
+            bindingResult.rejectValue("phone", "duplicate", "이미 사용 중인 휴대폰 번호입니다.");
+            return "user/signupForm";
+        }
+        // 폼에도 숫자만 세팅해 두면 이후 create()가 일관적으로 처리
+        usersForm.setPhone(phoneDigits);
+
+        // 생년월일 검증
         LocalDate birth = usersForm.getBirth();
         LocalDate today = LocalDate.now();
         if (birth == null) {
             bindingResult.rejectValue("birth", "birth.required", "생년월일을 입력해 주세요.");
             return "user/signupForm";
         }
-        // 오늘/미래 금지 (질문: '크거나 같으면 막기' → today 포함 금지)
         if (!birth.isBefore(today)) {
             bindingResult.rejectValue("birth", "birth.futureOrToday", "생년월일은 오늘 이전이어야 합니다.");
             return "user/signupForm";
         }
-        // 만 8세 이상
-        int age = Period.between(birth, today).getYears();
-        if (age < 8) {
+        if (java.time.Period.between(birth, today).getYears() < 8) {
             bindingResult.rejectValue("birth", "birth.minAge", "만 8세 이상만 가입할 수 있습니다.");
             return "user/signupForm";
         }
-        usersForm.setEmail(emailNorm);
-        usersService.create(usersForm);
+
+        usersService.create(usersForm); // create() 내부에서 PhoneCodeService.isVerified(...)로 최종 인증 확인 + 중복 재검증
         return "redirect:/user/login";
     }
 
