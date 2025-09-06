@@ -7,13 +7,15 @@
   <meta charset="UTF-8">
   <title>22°C - Brand Detail</title>
   <th:block layout:fragment="css">
+    <!-- list.css 그대로 사용 가능하고, 아래 전용 CSS가 우선 적용됩니다 -->
     <link rel="stylesheet" th:href="@{/css/list.css}">
+    <link rel="stylesheet" th:href="@{/css/brandDetail.css}">
   </th:block>
 </head>
 <body>
 <th:block layout:fragment="content">
 
-  <div class="container-fluid">
+  <div class="brand-container container-fluid">
     <!-- 상단 브랜드 타이틀 -->
     <div class="d-flex align-items-center gap-3 mb-3">
       <img th:src="${brand['imgUrl']}" th:alt="${brand['name']}"
@@ -25,27 +27,28 @@
       검색결과 <span th:text="${total}">0</span>개
     </div>
 
-    <!-- 상품 카드 (리스트와 동일 포맷) -->
+    <!-- 한 줄 4개 유지 -->
     <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3">
       <div class="col" th:each="p : ${products}">
-        <div class="card h-100 shadow-sm" style="border-radius: 1rem;">
-          <img th:src="${p['imgUrl']}" th:alt="${p['name']}" class="w-100"
-               style="aspect-ratio:3/4;object-fit:cover;border-top-left-radius:1rem;border-top-right-radius:1rem;">
+        <div class="card product-card h-100">
+          <!-- 리스트와 같은 오버레이 처리 (overlay div 없이 가상요소로) -->
+          <div class="card-media media-3x4"
+               th:classappend="${p['count'] == 0} ? ' soldout'">
+            <img th:src="${p['imgUrl']}" th:alt="${p['name']}">
+          </div>
+
           <div class="card-body p-2">
             <div class="small text-secondary" th:text="${p['brandName']}">Brand</div>
             <div class="fw-semibold text-truncate" th:title="${p['name']}" th:text="${p['name']}">Name</div>
-            <!-- 가격영역: 얇은 레드 % + 굵은 판매가 + 바로 옆 정가(취소선) -->
+
             <div class="price-row mt-1">
-              <!-- 할인률(텍스트, 얇게) -->
               <span class="disc"
                     th:if="${p['discount'] != null and p['discount'] > 0}"
                     th:text="${#numbers.formatInteger(p['discount'],0)} + '%'">10%</span>
 
-              <!-- 판매가(굵게) -->
               <span class="sale"
                     th:text="${#numbers.formatInteger(p['sellPrice'],3,'COMMA')} + '원'">0원</span>
 
-              <!-- 정가(판매가 바로 옆, 취소선) -->
               <span class="list"
                     th:if="${p['price'] != null and p['price'] > p['sellPrice']}"
                     th:text="${#numbers.formatInteger(p['price'],3,'COMMA')} + '원'">0원</span>
