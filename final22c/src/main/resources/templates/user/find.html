@@ -1,0 +1,52 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<div class="container mt-5" style="max-width: 500px;">
+  <h2 class="text-center mb-4">아이디 / 비밀번호 찾기</h2>
+  
+  <!-- Nav 탭 -->
+  <ul class="nav nav-tabs mb-3" id="findTab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="id-tab" data-bs-toggle="tab" data-bs-target="#findId" type="button" role="tab">
+        아이디 찾기
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="pw-tab" data-bs-toggle="tab" data-bs-target="#findPw" type="button" role="tab">
+        비밀번호 찾기
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab 내용 -->
+  <div class="tab-content">
+    <!-- 아이디 찾기 -->
+    <div class="tab-pane fade show active" id="findId" role="tabpanel">
+      <form method="post" action="/user/findId">
+        <div class="mb-3">
+          <label for="findName" class="form-label">이름</label>
+          <input type="text" class="form-control" id="findName" name="name" placeholder="이름 입력" required>
+        </div>
+        <div class="mb-3">
+          <label for="findEmail" class="form-label">이메일</label>
+          <input type="email" class="form-control" id="findEmail" name="email" placeholder="이메일 입력" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">아이디 찾기</button>
+      </form>
+    </div>
+
+    <!-- 비밀번호 찾기 -->
+    <div class="tab-pane fade" id="findPw" role="tabpanel">
+      <form method="post" action="/member/findPw">
+        <div class="mb-3">
+          <label for="findIdField" class="form-label">아이디</label>
+          <input type="text" class="form-control" id="findIdField" name="userId" placeholder="아이디 입력" required>
+        </div>
+        <div class="mb-3">
+          <label for="findPwEmail" class="form-label">이메일</label>
+          <input type="email" class="form-control" id="findPwEmail" name="email" placeholder="이메일 입력" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">비밀번호 찾기</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
