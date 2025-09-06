@@ -22,6 +22,15 @@ import com.ex.final22c.data.product.Product;
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
    Page<Product> findAll(Pageable pageable);
 
+   // 재고 1~20 (품절 제외) – 수량 오름차순, id 추가 정렬은 Pageable에서 지정
+   Page<Product> findByCountBetween(int min, int max, Pageable pageable);
+
+    // 품절 0
+   Page<Product> findByCount(int count, Pageable pageable);
+
+   long countByCountBetween(int min, int max);
+   long countByCount(int count);
+
    // 재고 차감( 현재 재고가 충분할때만 )
    @Modifying(clearAutomatically = true, flushAutomatically = true)
    @Query("""
@@ -47,6 +56,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
    List<Product> findByIsPickedOrderByIdDesc(String isPicked, Pageable pageable);
 
    // PICK 상품: isPicked == '1' 또는 'Y'
+   @EntityGraph(attributePaths = {"brand"})
    @Query("""
          select p
          from Product p

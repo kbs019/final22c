@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,21 +30,26 @@ import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.user.UserRepository;
+import com.ex.final22c.service.chat.ChatService;
+import com.ex.final22c.service.product.ProductDescriptionService;
 import com.ex.final22c.service.product.ProductService;
 import com.ex.final22c.service.product.ReviewService;
 import com.ex.final22c.service.product.ZzimService;
-
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Controller
 @RequestMapping("/main")
 @RequiredArgsConstructor
 public class ProductController {
 
+	
     private final ProductService productService;
     private final ZzimService zzimService;
     private final ReviewService reviewService;
     private final UserRepository userRepository;
+    private final ChatService chatService;
 
     @GetMapping("")
     public String main(Model model) {
@@ -109,7 +115,7 @@ public class ProductController {
         model.addAttribute("loggedIn", loggedIn);
         model.addAttribute("zzimedByMe", zzimedByMe);
 
-        return "main/content";
+        return "main/content2";
     }
 
     // 좋아요 토글
@@ -240,7 +246,7 @@ public class ProductController {
         model.addAttribute("sort", sort);
 
         // content.html 안의 reviewList fragment 반환
-        return "main/content :: reviewList";
+        return "main/content2 :: reviewList";
     }
 
     // ========================= 리스트(정렬 + 페이징) =========================
@@ -601,6 +607,108 @@ public class ProductController {
         reason.append(" 계열 향수를 추천드립니다.");
 
         return reason.toString();
+    }
+    
+    /**
+     * AI 개인화 향수 분석 API
+     */
+    @PostMapping("/ai/persona-recommendation")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getPersonaRecommendation(
+            @RequestBody Map<String, Object> request) {
+        
+        try {
+            Long productId = Long.valueOf(request.get("productId").toString());
+            String gender = (String) request.get("gender");
+            String ageGroup = (String) request.get("ageGroup");
+            
+            // 상품 정보 조회
+            Product product = productService.getProduct(productId);
+            
+            // 프롬프트 생성
+            String prompt = buildPersonaPrompt(product, gender, ageGroup);
+            
+            // AI 호출
+            String recommendation = chatService.generatePersonaRecommendation(prompt);
+            
+            if (recommendation == null) {
+                throw new RuntimeException("AI 분석 생성 실패");
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("recommendation", recommendation);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("개인화 추천 API 오류: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "분석 중 오류가 발생했습니다.");
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // 프롬프트 생성 헬퍼 메서드(사용자가 선택했을 때)
+    private String buildPersonaPrompt(Product product, String gender, String ageGroup) {
+        String genderText = "M".equals(gender) ? "남성" : "여성";
+        String ageText = switch(ageGroup) {
+            case "10s" -> "10대";
+            case "20s" -> "20대"; 
+            case "30s" -> "30대";
+            case "40s" -> "40대";
+            case "50plus" -> "50대 이상";
+            default -> "성인";
+        };
+        
+        String cleanName = product.getName().replaceAll("\\s*\\d+\\s*[mM][lL]\\s*", "");
+        
+        return String.format("""
+            %s %s이 %s(%s) 향수를 착용했을 때의 예상 시나리오를 분석해주세요:
+            
+            향수 정보:
+            - 브랜드: %s
+            - 제품: %s
+            - 부향률: %s
+            - 메인어코드: %s
+            %s
+            
+            분석 관점:
+            - 이 연령대/성별의 라이프스타일에 어떻게 어울릴지
+            - 주변 사람들이 어떻게 인식할지
+            - 어떤 상황에서 가장 매력적으로 느껴질지
+            - 자신감이나 분위기에 어떤 영향을 줄지
+            
+            톤: 구체적이고 현실적인 예상, 긍정적이지만 과장되지 않게
+            """, 
+            ageText, genderText, cleanName, product.getBrand().getBrandName(),
+            product.getBrand().getBrandName(), cleanName,
+            product.getGrade().getGradeName(), product.getMainNote().getMainNoteName(),
+            buildNoteInfo(product)
+        );
+    }
+
+    private String buildNoteInfo(Product product) {
+        StringBuilder notes = new StringBuilder();
+        
+        if (product.getSingleNote() != null && !product.getSingleNote().trim().isEmpty()) {
+            notes.append("- 싱글노트: ").append(product.getSingleNote());
+        } else {
+            if (product.getTopNote() != null && !product.getTopNote().trim().isEmpty()) {
+                notes.append("- 탑노트: ").append(product.getTopNote()).append("\n");
+            }
+            if (product.getMiddleNote() != null && !product.getMiddleNote().trim().isEmpty()) {
+                notes.append("- 미들노트: ").append(product.getMiddleNote()).append("\n");
+            }
+            if (product.getBaseNote() != null && !product.getBaseNote().trim().isEmpty()) {
+                notes.append("- 베이스노트: ").append(product.getBaseNote());
+            }
+        }
+        
+        return notes.toString();
     }
     // ==================================== 관심등록 ===================================
 }
