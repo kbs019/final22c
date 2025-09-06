@@ -4,19 +4,9 @@ import java.time.LocalDate;
 import java.time.Year;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
-
-import com.ex.final22c.data.product.Product;
-import com.ex.final22c.data.product.Review;
-
-import com.ex.final22c.data.product.Product;
-import com.ex.final22c.data.product.Review;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -24,8 +14,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -37,14 +25,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-// @Table(
-// name = "USER",
-// uniqueConstraints = {
-// @UniqueConstraint(columnNames = "userName"),
-// @UniqueConstraint(columnNames = "email"),
-// @UniqueConstraint(columnNames = "phone")
-// }
-// )
 @Getter
 @Setter
 @NoArgsConstructor
@@ -120,23 +100,8 @@ public class Users {
     @Column(name = "mileage", nullable = false)
     private Integer mileage; // 또는 Integer
 
-    // 사용자가 찜한 상품들 - (조인 테이블 생성 - 컬럼: users_id, product_id)
-    // @ManyToMany(mappedBy = "zzimers")
-    // @Builder.Default
-    // private Set<Product> zzimedProducts = new HashSet<>();
-
     @Column(name = "age")
     private Integer age;
-
-    // 사용자가 공감한 리뷰들 - (조인 테이블 생성 - 컬럼: users_id, review_id)
-    // @ManyToMany(mappedBy = "likers")
-    // @Builder.Default
-    // private Set<Review> likedReviews = new HashSet<>();
-
-    // // 사용자가 작성한 리뷰들
-    // @OneToMany(mappedBy = "writer")
-    // @Builder.Default
-    // private List<Review> reviews = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAddress> addresses = new ArrayList<>();

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.repository.orderDetail.OrderDetailRepository;
+import com.ex.final22c.repository.productRepository.ProductRepository;
 import com.ex.final22c.repository.purchaseRepository.PurchaseDetailRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class SalesStatService {
     private final OrderDetailRepository orderDetailRepository;
     private final PurchaseDetailRepository purchaseDetailRepository;
+    private final ProductRepository productRepository;
 
     /** 최상단: 전체 매출 타임시리즈 (unit=DAY|WEEK|MONTH) */
     @Transactional(readOnly = true)
@@ -106,7 +108,7 @@ public class SalesStatService {
 
     @Transactional(readOnly = true)
     public List<String> productCapacitiesByBrand(Long brandNo) {
-        return orderDetailRepository.capacitiesByBrand(brandNo);
+        return orderDetailRepository.capacitiesByBrandSorted(brandNo);
     }
 
     @Transactional(readOnly = true)
