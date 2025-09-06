@@ -5,42 +5,771 @@
       layout:decorate="~{layout/adminLayout}">
 <head>
   <meta charset="UTF-8">
-  <title>22°C | Chat</title>
+  <title>22°C | AI Chat</title>
 
-  <!-- 페이지 전용 CSS -->
   <th:block layout:fragment="css">
-    <!-- 필요시 chat.css 추가 -->
-    <!-- <link rel="stylesheet" th:href="@{/css/chat.css}"> -->
+    <style>
+      /* Modern AI Chat Styling - Admin Layout Compatible */
+      .chat-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px 15px 0 0;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 0;
+      }
+
+      .chat-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .chat-subtitle {
+        opacity: 0.9;
+        margin-top: 10px;
+        font-size: 1rem;
+      }
+
+      .chat-main {
+        background: white;
+        border-radius: 0 0 15px 15px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+      }
+
+      #chat-log {
+        height: 450px;
+        padding: 25px;
+        overflow-y: auto;
+        background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 100%);
+        border: none;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 transparent;
+      }
+
+      #chat-log::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      #chat-log::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      #chat-log::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 3px;
+      }
+
+      .chat-message {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        animation: fadeInUp 0.3s ease-out;
+      }
+
+      .user-message {
+        justify-content: flex-end;
+      }
+
+      .assistant-message {
+        justify-content: flex-start;
+      }
+
+      .message-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 12px;
+        margin: 0 10px;
+        flex-shrink: 0;
+      }
+
+      .user-avatar {
+        background: linear-gradient(135deg, #ff6b6b, #ffa500);
+        color: white;
+        order: 2;
+      }
+
+      .assistant-avatar {
+        background: linear-gradient(135deg, #4c63d2, #667eea);
+        color: white;
+      }
+
+      .message-bubble {
+        max-width: 75%;
+        padding: 12px 16px;
+        border-radius: 14px;
+        word-wrap: break-word;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        position: relative;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .user-message .message-bubble {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        margin-right: 0;
+        border-bottom-right-radius: 4px;
+      }
+
+      .assistant-message .message-bubble {
+        background: white;
+        color: #2d3748;
+        border: 1px solid #e2e8f0;
+        border-bottom-left-radius: 4px;
+      }
+
+      .chat-input-container {
+        padding: 20px 25px;
+        background: #f7fafc;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .chat-input-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        max-width: 100%;
+      }
+
+      #chat-input {
+        flex: 1;
+        padding: 12px 18px;
+        border: 2px solid #e2e8f0;
+        border-radius: 20px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: white;
+      }
+
+      #chat-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+      }
+
+      #chat-send {
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 20px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+      }
+
+      #chat-send:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+      }
+
+      #chat-send:active {
+        transform: translateY(0);
+      }
+
+      .typing-indicator {
+        display: none;
+        align-items: center;
+        padding: 10px 16px;
+        background: white;
+        border-radius: 16px;
+        margin-left: 45px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 15px;
+      }
+
+      .typing-dots {
+        display: flex;
+        gap: 4px;
+      }
+
+      .typing-dot {
+        width: 6px;
+        height: 6px;
+        background: #cbd5e0;
+        border-radius: 50%;
+        animation: typingPulse 1.4s infinite ease-in-out;
+      }
+
+      .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 50px 20px;
+        color: #718096;
+      }
+
+      .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+      }
+
+      .suggestions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 12px;
+        margin-top: 25px;
+        padding: 0 5px;
+      }
+
+      .suggestion-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: left;
+      }
+
+      .suggestion-card:hover {
+        border-color: #667eea;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .suggestion-icon {
+        font-size: 1.3rem;
+        margin-bottom: 8px;
+        color: #667eea;
+      }
+
+      .suggestion-title {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 4px;
+        font-size: 14px;
+      }
+
+      .suggestion-desc {
+        color: #718096;
+        font-size: 12px;
+      }
+
+      .chart-container {
+        margin-top: 25px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .chart-header {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+        font-size: 1.1rem;
+      }
+
+      .chart-body {
+        padding: 25px;
+      }
+
+      .sql-details {
+        margin-top: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+      }
+
+      .sql-summary {
+        background: #f7fafc;
+        padding: 12px 16px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #4a5568;
+        border: none;
+        width: 100%;
+        text-align: left;
+        transition: background 0.3s ease;
+        font-size: 14px;
+      }
+
+      .sql-summary:hover {
+        background: #edf2f7;
+      }
+
+      .sql-content {
+        padding: 16px;
+        background: #1a202c;
+        color: #e2e8f0;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        overflow-x: auto;
+      }
+
+      /* Data Table Styling */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        font-size: 13px;
+      }
+
+      .data-table th {
+        background: #f8f9fa;
+        padding: 10px 12px;
+        border: 1px solid #dee2e6;
+        font-weight: 600;
+        color: #495057;
+        text-align: left;
+      }
+
+      .data-table td {
+        padding: 10px 12px;
+        border: 1px solid #dee2e6;
+        color: #495057;
+      }
+
+      .data-table tbody tr:nth-child(even) {
+        background: #f8f9fa;
+      }
+
+      .data-table tbody tr:hover {
+        background: #e9ecef;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(15px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes typingPulse {
+        0%, 60%, 100% {
+          transform: scale(1);
+          opacity: 0.5;
+        }
+        30% {
+          transform: scale(1.2);
+          opacity: 1;
+        }
+      }
+
+      /* 반응형 디자인 */
+      @media (max-width: 768px) {
+        .chat-header {
+          padding: 20px 15px;
+        }
+
+        .chat-header h1 {
+          font-size: 1.6rem;
+        }
+
+        #chat-log {
+          height: 350px;
+          padding: 20px 15px;
+        }
+
+        .message-bubble {
+          max-width: 85%;
+          font-size: 13px;
+        }
+
+        .suggestions {
+          grid-template-columns: 1fr;
+          padding: 0 10px;
+        }
+
+        .chart-body {
+          padding: 15px;
+        }
+      }
+    </style>
   </th:block>
 </head>
-
 <body>
-  <!-- 레이아웃의 content 블록 -->
-  <th:block layout:fragment="content">
-    <h1 class="mb-4">Chat 페이지</h1>
-    <p class="text-muted">1단계: 화면 골격만 확인합니다. 아직 챗봇 응답은 없습니다.</p>
+<th:block layout:fragment="content">
 
-    <!-- 채팅 카드 -->
-    <div id="chat-card" class="card shadow-sm">
-      <div class="card-body">
-        <!-- 채팅 로그 -->
-        <div id="chat-log" class="mb-3" 
-             style="height: 320px; overflow-y: auto; border: 1px solid #e9ecef; padding: 12px; border-radius: 6px;">
-          <div class="text-muted">아직 대화가 없습니다.</div>
+  <div class="container-fluid px-4">
+    <!-- AI Chat Header -->
+    <div class="chat-header">
+      <h1>🤖 AI Assistant</h1>
+      <div class="chat-subtitle">22°C 스마트 데이터 분석 챗봇</div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="chat-main">
+      <div id="chat-log">
+        <div class="empty-state">
+          <div class="empty-state-icon">💬</div>
+          <h4>관리자 AI 어시스턴트입니다</h4>
+          <p>매출 분석, 상품 관리, 고객 데이터 등 무엇이든 물어보세요!</p>
         </div>
 
-        <!-- 입력창 -->
-        <div class="d-flex gap-2">
-          <input id="chat-input" type="text" class="form-control" placeholder="메시지를 입력하세요" />
-          <button id="chat-send" class="btn btn-primary">전송</button>
+        <!-- Suggestion Cards -->
+        <div class="suggestions">
+          <div class="suggestion-card" data-suggestion="오늘 매출은 얼마나 되나요?">
+            <div class="suggestion-icon">📊</div>
+            <div class="suggestion-title">매출 분석</div>
+            <div class="suggestion-desc">일별, 월별 매출 현황을 확인하세요</div>
+          </div>
+          
+          <div class="suggestion-card" data-suggestion="인기 상품 TOP 10을 보여주세요">
+            <div class="suggestion-icon">🏆</div>
+            <div class="suggestion-title">인기 상품</div>
+            <div class="suggestion-desc">베스트셀러 상품들을 분석하세요</div>
+          </div>
+          
+          <div class="suggestion-card" data-suggestion="회원 통계 알려주세요">
+            <div class="suggestion-icon">👥</div>
+            <div class="suggestion-title">회원 현황</div>
+            <div class="suggestion-desc">신규 고객과 재방문 고객을 분석하세요</div>
+          </div>
+          
+          <div class="suggestion-card" data-suggestion="브랜드별 매출 순위를 보여주세요">
+            <div class="suggestion-icon">⭐</div>
+            <div class="suggestion-title">브랜드 분석</div>
+            <div class="suggestion-desc">브랜드별 성과를 확인하세요</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div class="typing-indicator" id="typing-indicator">
+        <div class="typing-dots">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+        <span style="margin-left: 8px; color: #718096; font-size: 13px;">AI가 분석 중...</span>
+      </div>
+
+      <!-- Input Area -->
+      <div class="chat-input-container">
+        <div class="chat-input-wrapper">
+          <input id="chat-input" type="text" placeholder="궁금한 것을 물어보세요... (예: 이번 달 매출 현황)" />
+          <button id="chat-send">전송</button>
         </div>
       </div>
     </div>
-  </th:block>
 
-  <!-- 페이지 전용 JS -->
-  <th:block layout:fragment="script">
-    <script th:src="@{/js/chat.js}"></script>
-  </th:block>
+        <!-- Chart Container -->
+        <div class="chart-container" id="chart-container" style="display: none;">
+          <div class="chart-header">
+            📈 데이터 시각화
+          </div>
+          <div class="chart-body">
+            <canvas id="aiChart" style="max-height: 350px;"></canvas>
+          </div>
+        </div>
+
+        <!-- SQL Details -->
+        <div class="sql-details" id="sql-details" style="display: none;">
+          <button class="sql-summary" onclick="toggleSqlDetails()">
+            🔍 실행된 SQL 쿼리 보기
+          </button>
+          <div class="sql-content" id="sqlBox" style="display: none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</th:block>
+
+<th:block layout:fragment="script">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Modern Chat JavaScript for Admin Layout
+    document.addEventListener('DOMContentLoaded', function() {
+      const chatInput = document.getElementById('chat-input');
+      const chatSend = document.getElementById('chat-send');
+      const chatLog = document.getElementById('chat-log');
+      const typingIndicator = document.getElementById('typing-indicator');
+      const chartContainer = document.getElementById('chart-container');
+      const sqlDetails = document.getElementById('sql-details');
+      const sqlBox = document.getElementById('sqlBox');
+      
+      let chartInstance = null;
+
+      // 제안 카드 클릭 이벤트
+      document.querySelectorAll('.suggestion-card').forEach(card => {
+        card.addEventListener('click', function() {
+          const suggestion = this.dataset.suggestion;
+          chatInput.value = suggestion;
+          sendMessage();
+        });
+      });
+
+      // 엔터키로 전송
+      chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          sendMessage();
+        }
+      });
+
+      // 전송 버튼 클릭
+      chatSend.addEventListener('click', sendMessage);
+
+      function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // 첫 메시지일 때 빈 상태 제거
+        if (chatLog.querySelector('.empty-state')) {
+          chatLog.innerHTML = '';
+        }
+
+        // 사용자 메시지 표시
+        addMessage(message, true);
+        chatInput.value = '';
+
+        // 타이핑 인디케이터 표시
+        showTypingIndicator();
+
+        // AI 응답 요청
+        fetch('/chat/ask', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: message })
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          hideTypingIndicator();
+          handleAiResponse(data);
+        })
+        .catch(error => {
+          hideTypingIndicator();
+          addMessage('죄송합니다. 서버 오류가 발생했습니다. 다시 시도해 주세요.', false);
+          console.error('Error:', error);
+        });
+      }
+
+      function addMessage(text, isUser) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${isUser ? 'user-message' : 'assistant-message'}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = `message-avatar ${isUser ? 'user-avatar' : 'assistant-avatar'}`;
+        avatar.textContent = isUser ? 'You' : 'AI';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.textContent = text;
+
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(bubble);
+        chatLog.appendChild(messageDiv);
+
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+
+      function showTypingIndicator() {
+        typingIndicator.style.display = 'flex';
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+
+      function hideTypingIndicator() {
+        typingIndicator.style.display = 'none';
+      }
+
+      function handleAiResponse(data) {
+        // AI 응답 메시지 표시
+        const answer = data.answer || data.message || '응답을 받지 못했습니다.';
+        addMessage(answer, false);
+
+        // 데이터가 있으면 테이블 표시
+        if (data.rows && data.rows.length > 0) {
+          addDataTable(data.rows);
+        }
+
+        // 차트 데이터가 있으면 차트 표시
+        if (data.chart) {
+          showChart(data.chart);
+        }
+
+        // SQL 쿼리가 있으면 표시
+        if (data.sql) {
+          showSqlDetails(data.sql);
+        }
+      }
+
+      function addDataTable(rows) {
+        if (!rows || rows.length === 0) return;
+
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'chat-message assistant-message';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar assistant-avatar';
+        avatar.textContent = 'AI';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.style.maxWidth = '90%';
+
+        const table = document.createElement('table');
+        table.className = 'data-table';
+
+        // 헤더 생성
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        const columns = Object.keys(rows[0]);
+
+        columns.forEach(col => {
+          const th = document.createElement('th');
+          th.textContent = col;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        // 데이터 행 생성
+        const tbody = document.createElement('tbody');
+        rows.forEach(row => {
+          const tr = document.createElement('tr');
+          columns.forEach(col => {
+            const td = document.createElement('td');
+            const value = row[col];
+            td.textContent = (value === null || value === undefined) ? '' : String(value);
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        bubble.appendChild(table);
+
+        tableContainer.appendChild(avatar);
+        tableContainer.appendChild(bubble);
+        chatLog.appendChild(tableContainer);
+
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+
+      function showChart(chartData) {
+        console.log('받은 차트 데이터:', chartData);
+        chartContainer.style.display = 'block';
+        
+        if (chartInstance) {
+          chartInstance.destroy();
+        }
+
+        try {
+          const ctx = document.getElementById('aiChart').getContext('2d');
+          
+          // 차트 데이터 형식 확인 및 변환
+          let processedData;
+          
+          if (chartData && chartData.labels && chartData.values) {
+            // AiResult.ChartPayload 형식
+            processedData = {
+              type: chartData.type || 'bar',
+              data: {
+                labels: chartData.labels,
+                datasets: [{
+                  label: chartData.valueLabel || '값',
+                  data: chartData.values,
+                  backgroundColor: [
+                    'rgba(102, 126, 234, 0.8)',
+                    'rgba(245, 87, 108, 0.8)',
+                    'rgba(52, 211, 153, 0.8)',
+                    'rgba(251, 191, 36, 0.8)',
+                    'rgba(139, 92, 246, 0.8)',
+                    'rgba(236, 72, 153, 0.8)'
+                  ],
+                  borderColor: [
+                    'rgba(102, 126, 234, 1)',
+                    'rgba(245, 87, 108, 1)',
+                    'rgba(52, 211, 153, 1)',
+                    'rgba(251, 191, 36, 1)',
+                    'rgba(139, 92, 246, 1)',
+                    'rgba(236, 72, 153, 1)'
+                  ],
+                  borderWidth: 2
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: 'top',
+                  },
+                  title: {
+                    display: true,
+                    text: chartData.title || '데이터 차트'
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: function(value) {
+                        if (chartData.format === 'currency') {
+                          return new Intl.NumberFormat('ko-KR').format(value) + '원';
+                        } else if (chartData.format === 'percent') {
+                          return value + '%';
+                        }
+                        return new Intl.NumberFormat('ko-KR').format(value);
+                      }
+                    }
+                  }
+                }
+              }
+            };
+          } else {
+            // 직접 Chart.js 형식
+            processedData = chartData;
+          }
+          
+          console.log('처리된 차트 데이터:', processedData);
+          chartInstance = new Chart(ctx, processedData);
+          
+        } catch (error) {
+          console.error('차트 생성 오류:', error);
+          const chartBody = document.querySelector('.chart-body');
+          chartBody.innerHTML = '<p style="text-align: center; color: #666; padding: 50px;">차트를 생성할 수 없습니다. 데이터 형식을 확인해주세요.</p>';
+        }
+      }
+
+      function showSqlDetails(sql) {
+        sqlDetails.style.display = 'block';
+        sqlBox.textContent = sql;
+      }
+
+      window.toggleSqlDetails = function() {
+        const content = document.getElementById('sqlBox');
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+      };
+    });
+  </script>
+</th:block>
 </body>
 </html>
