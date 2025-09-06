@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -152,5 +153,19 @@ public class UsersController {
     public Map<String, Object> checkPhone(@RequestParam("phone") String phone) {
         boolean available = usersService.isPhoneAvailable(phone); // 화면에서 010-****-**** 형태여도 OK
         return Map.of("ok", true, "available", available);
+    }
+    
+    @GetMapping("find")
+    public String find() {
+    	return "user/find";
+    }
+    
+    // 아이디 찾기
+    @PostMapping("findId")
+    public String findId(@RequestParam("name") String name,@RequestParam("email") String email, Model model) {
+        String userId = usersService.findId(name, email);
+        model.addAttribute("resultType", "id");
+        model.addAttribute("result", userId);
+        return "user/findResult"; // 결과 페이지
     }
 }

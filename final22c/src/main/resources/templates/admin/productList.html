@@ -95,7 +95,7 @@
 							<th scope="col">상품번호</th>
 							<th scope="col">상품명</th>
 							<th scope="col">브랜드</th>
-							<th scope="col">정가</th>
+							<th scope="col">정가(원)</th>
 							<th scope="col">할인율(%)</th>
 							<th scope="col">재고</th>
 							<th scope="col">상태</th>
@@ -121,7 +121,7 @@
 							<td th:text="${list.id}"></td>
 							<td th:text="${list.name}"></td>
 							<td th:text="${list.brand.brandName}"></td>
-							<td th:text="${#numbers.formatInteger(list.price, 3, 'COMMA')}"></td>
+							<td th:text="${#numbers.formatInteger(list.price, 1, 'COMMA')}"></td>
 							<td th:text="${#numbers.formatInteger(list.discount, 0)}"></td>
 							<td th:text="${list.count}"></td>
 							<td th:text="${list.status == 'active' ? '활성화' : '비활성화'}"></td>
