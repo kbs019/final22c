@@ -17,7 +17,7 @@ import com.ex.final22c.data.user.Users;
 
 @Repository
 public interface UserRepository extends JpaRepository<Users, Long> {
-
+	Optional<Users> findByNameAndEmail(String name, String email);
   Optional<Users> findByUserName(String userName);
 
   Optional<Users> findByEmail(String email);
