@@ -1,0 +1,55 @@
+/* final22c/src/main/resources/static/css/footer.css */
+
+/* 푸터 전체 배경 */
+.footer {
+  background-color: #ffffff; /* 흰색 배경 */
+  color: #333; /* 텍스트 색상 */
+  padding-top: 60px; /* 위쪽 여백 */
+  padding-bottom: 20px;
+  text-align: center; /* 텍스트 중앙 정렬 */
+  position: relative; /* 절대 위치 설정을 위한 준비 */
+}
+
+/* 푸터 상단에 중앙 정렬된 선 추가 */
+.footer::before {
+  content: "";
+  position: absolute;
+  top: 30px; /* 선 위에 여백을 넣어서 선과 위쪽 내용 사이 간격을 넓혔습니다 */
+  left: 50%;
+  width: 66%; /* 선의 길이를 2/3로 설정하여 양쪽 끝이 잘리게 함 */
+  height: 1px; /* 선을 더 얇게 */
+  background: #dee2e6; /* 선의 색상 */
+  transform: translateX(-50%); /* 선을 중앙에 위치시키기 위해 X축으로 이동 */
+  z-index: 1; /* 선을 다른 내용 위에 올리기 위해 z-index 설정 */
+}
+
+/* 푸터 제목 스타일 (회사명, 제작팀 등) */
+.footer .fw-bold {
+  font-weight: 700;
+  color: #333; /* 강조된 텍스트에 진한 색상 */
+}
+
+/* 푸터 내용 텍스트 (주소, 전화번호 등) */
+.footer .small {
+  font-size: 0.875rem; /* 작은 폰트 크기 */
+  line-height: 1.5;
+}
+
+/* 회사 정보와 제작팀 정보 사이에 한 줄 띄우기 */
+.footer .small p.mb-1:nth-of-type(5) {
+  margin-bottom: 20px; /* 회사 정보 마지막 항목과 제작팀 첫 번째 항목 사이에 한 줄 띄우기 */
+}
+
+/* 하단 저작권 텍스트 */
+.footer .text-center {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 15px;
+}
+
+/* 반응형: 작은 화면에서 여백을 줄여줍니다 */
+@media (max-width: 576px) {
+  .footer .small {
+    font-size: 0.75rem;
+  }
+}
