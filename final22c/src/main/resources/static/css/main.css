@@ -1,3 +1,8 @@
+:root{
+  /* 기본 썸네일 비율(메인은 1:1을 기본값으로) */
+  --media-ratio: 1 / 1;
+}
+
 /* ===== 레이아웃 폭 제한 ===== */
 .page-wrap{
   max-width: 1140px;
@@ -10,6 +15,7 @@
   border-radius: 1.25rem;
   overflow: hidden;
 }
+.main-banner img{ display:block; width:100%; height:auto; }
 
 /* ===== 섹션 타이틀 ===== */
 .section-title{
@@ -20,138 +26,112 @@
 
 /* ===== 상품 카드 (공용) ===== */
 .card.product-card {
-  border: 1px solid transparent !important; /* Bootstrap 기본 border 완전 무효화 */
+  border: 1px solid transparent !important;
   border-radius: 1rem;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
-  transition: transform .15s ease; /* box-shadow 트랜지션도 제거 */
+  transition: transform .15s ease;
   background: #fff;
-  box-shadow: none !important;     /* 기본 그림자 제거 */
+  box-shadow: none !important;
 }
-
 .card.product-card:hover {
   transform: translateY(-2px);
-  box-shadow: none !important;     /* 호버 시에도 그림자 없음 */
+  box-shadow: none !important;
   border-color: transparent !important;
 }
 
-/* 썸네일 */
-.product-thumb img{ display:block; }
+/* ===== 썸네일 컨테이너: 리스트와 동일 토대 ===== */
+.card-media{
+  aspect-ratio: var(--media-ratio);
+  background:#fff;
+  display:grid; place-items:center;
+  position: relative;               /* 오버레이 기준 */
+  border-radius: .75rem;
+  overflow: hidden;
+}
+.card-media img{
+  width:100%; height:100%;
+  object-fit:contain; display:block;
+}
 
-/* ===== 상품 텍스트(이름/가격) – 굵기/크기 낮춤 & 말줄임 제거 ===== */
+/* 비율 프리셋 */
+.media-1x1{ --media-ratio: 1 / 1; }
+.media-4x5{ --media-ratio: 4 / 5; }
+
+/* ===== 품절 오버레이(가상요소) ===== */
+.card-media.soldout::before{
+  content:"";
+  position:absolute; inset:0;
+  background: rgba(0,0,0,.28);
+  z-index:1;
+}
+.card-media.soldout::after{
+  content:"SOLD OUT";
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  z-index:2; pointer-events:none;
+  font-weight:500;
+  font-size: clamp(18px, 3vw, 32px);
+  letter-spacing:.08em;
+  color:#fff;
+  padding:.5em 1em;
+  text-align:center;
+}
+
+/* ===== 텍스트 ===== */
 .product-name{
-  font-weight: 600;                     /* 600 → 500 */
-  font-size: .8rem;                    /* 살짝 작게 */
+  font-weight: 600;
+  font-size: .8rem;
   line-height: 1.35;
-  white-space: normal;                  /* 말줄임(...) 방지 */
+  white-space: normal;
   overflow: visible;
   text-overflow: clip;
-  word-break: keep-all;                 /* 한글 가독성 */
+  word-break: keep-all;
 }
-
-.product-price .sell{
-  font-weight: 500;                     /* 700 → 600 */
-  font-size: .75rem;
-}
-
+.product-price .sell{ font-weight: 500; font-size: .75rem; }
 .product-price .origin,
-.product-price .text-muted{
-  font-weight: 400;
-  font-size: .7rem;                    /* 정가 더 작게 */
-  color: #6c757d;
-}
+.product-price .text-muted{ font-weight: 400; font-size: .7rem; color:#6c757d; }
 
-/* ===== 랭크 "텍스트" 배지 ===== */
+/* ===== 랭크 텍스트 배지 ===== */
 .rank-badge{
-  position: absolute;
-  z-index: 2;
-  top: .58rem;
-  left: .7rem;
-  background: transparent;
-  color: #111;
-  display: flex;
-  align-items: flex-start;
-  gap: .06rem;
-  line-height: 1;
-  font-size: .95rem;
-  font-weight: 700;
+  position: absolute; z-index: 3; /* 오버레이 위로 올릴 필요 없지만 안전상 3 */
+  top: .58rem; left: .7rem;
+  background: transparent; color: #111;
+  display: flex; align-items: flex-start; gap: .06rem;
+  line-height: 1; font-size: .95rem; font-weight: 700;
   text-shadow: 0 0 1px rgba(255,255,255,.35);
 }
-.rank-badge .rank-num{ line-height: 1; }
-.rank-badge .rank-suffix{
-  font-size: .7em;
-  margin-top: .08em;
-}
-.rank-badge.top{
-  font-size: 1.15rem;
-  font-weight: 800;
-}
+.rank-badge .rank-suffix{ font-size: .7em; margin-top:.08em; }
+.rank-badge.top{ font-size: 1.15rem; font-weight: 800; }
 
-/* ===== PICK 전용 – 카드가 납작해지지 않도록 보장 ===== */
-.ratio-4x5 { --bs-aspect-ratio: calc(5 / 4 * 100%); }
-.ratio > img{
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover; display: block;
+/* ===== 캐러셀 ===== */
+.pick-carousel{ background: transparent; }
+.pick-carousel .carousel-indicators{ margin-bottom: -1.2rem; }
+.pick-carousel .carousel-indicators [data-bs-target]{
+  width:.65rem; height:.65rem; border-radius:50%;
+  border:1px solid #fff; background-color:transparent; opacity:1; margin:0 .25rem;
 }
+.pick-carousel .carousel-indicators .active{ background-color:#fff; }
 
-/* 외부 화살표 여백 확보(선택) */
+/* ===== 바깥 화살표(텍스트 아이콘) ===== */
+.btn-arrow-plain{
+  appearance:none; background:transparent; border:0; padding:0 .25rem;
+  display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.btn-arrow-plain .arrow-text{
+  font-size:1.6rem; font-weight:400; color:#111; line-height:1; user-select:none;
+}
+.btn-arrow-plain:focus-visible .arrow-text{ outline:2px solid #111; outline-offset:2px; }
+
+/* 외부 화살표 여백(선택) */
 @media (min-width: 992px){
   .pick-narrow{ flex: 0 0 auto; width: 23.5%; }
 }
 
-/* 캐러셀 컨테이너 */
-.pick-carousel{ background: transparent; }
-
-/* 인디케이터: 흰색 동그라미(활성) / 투명 동그라미(비활성) */
-.pick-carousel .carousel-indicators{
-  margin-bottom: -1.2rem;
-}
-.pick-carousel .carousel-indicators [data-bs-target]{
-  width: .65rem; height: .65rem;
-  border-radius: 50%;
-  border: 1px solid #fff;
-  background-color: transparent;
-  opacity: 1;
-  margin: 0 .25rem;
-}
-.pick-carousel .carousel-indicators .active{ background-color: #fff; }
-
-/* ===== 바깥 화살표 – 배경 없이 텍스트 아이콘 ===== */
-.btn-arrow-plain{
-  appearance: none;
-  background: transparent;
-  border: 0;
-  padding: 0 .25rem;
-  display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer;
-}
-.btn-arrow-plain .arrow-text{
-  font-size: 1.6rem;
-  font-weight: 400;
-  color: #111;
-  line-height: 1;
-  user-select: none;
-}
-.btn-arrow-plain:focus-visible .arrow-text{
-  outline: 2px solid #111;
-  outline-offset: 2px;
-}
-
-/* (구) 마스크 아이콘 스타일 제거용 – 남겨두되 미사용 */
-.btn-arrow-minimal .arrow{ display:none; }
-
 /* 브랜드 라인 */
 .product-brand{
-  font-weight: 500;
-  font-size: .7rem;
-  color: #6c757d;         /* 차분한 회색톤 */
-  line-height: 1.2;
-  margin-bottom: .15rem;  /* 제품명과 간격 */
-  letter-spacing: .2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 500; font-size: .7rem; color:#6c757d;
+  line-height: 1.2; margin-bottom:.15rem; letter-spacing:.2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-

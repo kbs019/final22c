@@ -15,7 +15,7 @@
 
     <!-- 배너 -->
     <section class="mb-4 mb-md-5">
-      <div class="main-banner ratio ratio-21x9 rounded-4 overflow-hidden shadow-sm">
+      <div class="main-banner rounded-4 overflow-hidden shadow-sm">
         <a th:href="@{/main/brand/2}">
           <img src="/img/main.png" alt="메인 배너" class="w-100 h-100 object-fit-cover">
         </a>
@@ -28,9 +28,8 @@
         <h2 class="section-title">Editor Pick</h2>
       </div>
 
-      <!-- 바깥 화살표 + 캐러셀 : 화살표는 캐러셀 밖에 위치 -->
       <div class="pick-rail row align-items-center gx-2 gx-md-3">
-        <!-- 왼쪽 바깥 화살표 (텍스트 아이콘) -->
+        <!-- 왼쪽 화살표 -->
         <div class="col-auto d-none d-sm-flex">
           <button class="btn-arrow-plain" type="button"
                   data-bs-target="#pickCarousel" data-bs-slide="prev" aria-label="이전">
@@ -38,10 +37,10 @@
           </button>
         </div>
 
-        <!-- 캐러셀 본체 -->
+        <!-- 캐러셀 -->
         <div class="col">
           <div id="pickCarousel" class="carousel slide pick-carousel" data-bs-ride="false">
-            <!-- 인디케이터 -->
+
             <div class="carousel-indicators">
               <button type="button" data-bs-target="#pickCarousel" data-bs-slide-to="0"
                       class="active" aria-current="true" aria-label="1"></button>
@@ -53,19 +52,23 @@
 
             <div class="carousel-inner">
               <div class="carousel-item" th:classappend="${iter.index == 0} ? ' active'"
-                  th:each="slide, iter : ${pickSlides}">
+                   th:each="slide, iter : ${pickSlides}">
                 <div class="row g-3 g-md-4 justify-content-center">
                   <!-- 한 슬라이드에 4장 -->
                   <div class="col-6 col-md-3 pick-narrow" th:each="p : ${slide}">
                     <a th:if="${p != null}"
                        th:href="@{|/main/content/${p.id}|}"
                        class="card product-card h-100 shadow-sm">
-                      <!-- 4:5 비율 -->
-                      <div class="ratio ratio-4x5 product-thumb rounded-3">
+
+                      <!-- ★ 리스트와 동일한 구조: card-media + 오버레이(가상요소) -->
+                      <div class="card-media media-4x5"
+                           th:classappend="${p.count == 0} ? ' soldout'">
                         <img th:src="${p.imgPath + p.imgName}" th:alt="${p.name}">
                       </div>
+
                       <div class="card-body p-2 p-md-3">
-                        <div class="product-brand" th:text="${p.brand != null ? p.brand.brandName : ''}">Brand</div>
+                        <div class="product-brand"
+                             th:text="${p.brand != null ? p.brand.brandName : ''}">Brand</div>
                         <div class="product-name" th:text="${p.name}">제품명</div>
                         <div class="product-price mt-1">
                           <span class="sell"
@@ -83,7 +86,7 @@
           </div>
         </div>
 
-        <!-- 오른쪽 바깥 화살표 (텍스트 아이콘) -->
+        <!-- 오른쪽 화살표 -->
         <div class="col-auto d-none d-sm-flex">
           <button class="btn-arrow-plain" type="button"
                   data-bs-target="#pickCarousel" data-bs-slide="next" aria-label="다음">
@@ -101,22 +104,23 @@
           <a th:if="${it != null and it.product != null}"
              th:href="@{|/main/content/${it.product.id}|}"
              class="card product-card h-100 shadow-sm position-relative">
-            <!-- 랭크 텍스트 배지 -->
-            <div class="rank-badge"
-                 th:classappend="${it.rank <= 3} ? ' top'">
+
+            <div class="rank-badge" th:classappend="${it.rank <= 3} ? ' top'">
               <span class="rank-num" th:text="${it.rank}">1</span>
               <span class="rank-suffix" th:if="${it.rank == 1}">st</span>
               <span class="rank-suffix" th:if="${it.rank == 2}">nd</span>
               <span class="rank-suffix" th:if="${it.rank == 3}">rd</span>
             </div>
 
-            <div class="ratio ratio-1x1 product-thumb">
+            <div class="card-media media-1x1"
+                 th:classappend="${it.product.count == 0} ? ' soldout'">
               <img th:src="${it.product.imgPath + it.product.imgName}"
-                   th:alt="${it.product.name}"
-                   class="w-100 h-100 object-fit-cover">
+                   th:alt="${it.product.name}">
             </div>
+
             <div class="card-body p-2 p-md-3">
-              <div class="product-brand" th:text="${it.product.brand != null ? it.product.brand.brandName : ''}">Brand</div>
+              <div class="product-brand"
+                   th:text="${it.product.brand != null ? it.product.brand.brandName : ''}">Brand</div>
               <div class="product-name" th:text="${it.product.name}">제품명</div>
               <div class="product-price mt-1">
                 <span class="sell"
@@ -139,21 +143,23 @@
           <a th:if="${it != null and it.product != null}"
              th:href="@{|/main/content/${it.product.id}|}"
              class="card product-card h-100 shadow-sm position-relative">
-            <div class="rank-badge"
-                 th:classappend="${it.rank <= 3} ? ' top'">
+
+            <div class="rank-badge" th:classappend="${it.rank <= 3} ? ' top'">
               <span class="rank-num" th:text="${it.rank}">1</span>
               <span class="rank-suffix" th:if="${it.rank == 1}">st</span>
               <span class="rank-suffix" th:if="${it.rank == 2}">nd</span>
               <span class="rank-suffix" th:if="${it.rank == 3}">rd</span>
             </div>
 
-            <div class="ratio ratio-1x1 product-thumb">
+            <div class="card-media media-1x1"
+                 th:classappend="${it.product.count == 0} ? ' soldout'">
               <img th:src="${it.product.imgPath + it.product.imgName}"
-                   th:alt="${it.product.name}"
-                   class="w-100 h-100 object-fit-cover">
+                   th:alt="${it.product.name}">
             </div>
+
             <div class="card-body p-2 p-md-3">
-              <div class="product-brand" th:text="${it.product.brand != null ? it.product.brand.brandName : ''}">Brand</div>
+              <div class="product-brand"
+                   th:text="${it.product.brand != null ? it.product.brand.brandName : ''}">Brand</div>
               <div class="product-name" th:text="${it.product.name}">제품명</div>
               <div class="product-price mt-1">
                 <span class="sell"
@@ -176,21 +182,23 @@
           <a th:if="${it != null and it.product != null}"
              th:href="@{|/main/content/${it.product.id}|}"
              class="card product-card h-100 shadow-sm position-relative">
-            <div class="rank-badge"
-                 th:classappend="${it.rank <= 3} ? ' top'">
+
+            <div class="rank-badge" th:classappend="${it.rank <= 3} ? ' top'">
               <span class="rank-num" th:text="${it.rank}">1</span>
               <span class="rank-suffix" th:if="${it.rank == 1}">st</span>
               <span class="rank-suffix" th:if="${it.rank == 2}">nd</span>
               <span class="rank-suffix" th:if="${it.rank == 3}">rd</span>
             </div>
 
-            <div class="ratio ratio-1x1 product-thumb">
+            <div class="card-media media-1x1"
+                 th:classappend="${it.product.count == 0} ? ' soldout'">
               <img th:src="${it.product.imgPath + it.product.imgName}"
-                   th:alt="${it.product.name}"
-                   class="w-100 h-100 object-fit-cover">
+                   th:alt="${it.product.name}">
             </div>
+
             <div class="card-body p-2 p-md-3">
-              <div class="product-brand" th:text="${it.product.brand != null ? it.product.brand.brandName : ''}">Brand</div>
+              <div class="product-brand"
+                   th:text="${it.product.brand != null ? it.product.brand.brandName : ''}">Brand</div>
               <div class="product-name" th:text="${it.product.name}">제품명</div>
               <div class="product-price mt-1">
                 <span class="sell"
