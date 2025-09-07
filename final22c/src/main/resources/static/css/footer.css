@@ -1,55 +1,75 @@
-/* final22c/src/main/resources/static/css/footer.css */
-
-/* 푸터 전체 배경 */
+/* ===== Footer 기본 ===== */
 .footer {
-  background-color: #ffffff; /* 흰색 배경 */
-  color: #333; /* 텍스트 색상 */
-  padding-top: 60px; /* 위쪽 여백 */
+  background-color: #ffffff;
+  color: #333;
+  padding-top: 60px;
   padding-bottom: 20px;
-  text-align: center; /* 텍스트 중앙 정렬 */
-  position: relative; /* 절대 위치 설정을 위한 준비 */
+  text-align: center;
+  position: relative;
 }
 
-/* 푸터 상단에 중앙 정렬된 선 추가 */
+/* 상단 가는 선 */
 .footer::before {
   content: "";
   position: absolute;
-  top: 30px; /* 선 위에 여백을 넣어서 선과 위쪽 내용 사이 간격을 넓혔습니다 */
+  top: 30px;
   left: 50%;
-  width: 66%; /* 선의 길이를 2/3로 설정하여 양쪽 끝이 잘리게 함 */
-  height: 1px; /* 선을 더 얇게 */
-  background: #dee2e6; /* 선의 색상 */
-  transform: translateX(-50%); /* 선을 중앙에 위치시키기 위해 X축으로 이동 */
-  z-index: 1; /* 선을 다른 내용 위에 올리기 위해 z-index 설정 */
+  width: 66%;
+  height: 1px;
+  background: #dee2e6;
+  transform: translateX(-50%);
+  z-index: 1;
 }
 
-/* 푸터 제목 스타일 (회사명, 제작팀 등) */
-.footer .fw-bold {
-  font-weight: 700;
-  color: #333; /* 강조된 텍스트에 진한 색상 */
+/* 텍스트 공통 */
+.footer .fw-bold { font-weight: 700; color: #333; }
+.footer .small { font-size: 0.875rem; line-height: 1.5; }
+
+/* 회사정보 ↔ 제작팀 사이 여백(‘한 줄 띄우기’의 구조적 해결) */
+.footer-info .section + .section { margin-top: 20px; }
+
+/* 하단 저작권 */
+.footer .footer-legal { font-size: 0.75rem; color: #6c757d; margin-top: 15px; }
+
+/* ===== 오른쪽 하단 액션 ===== */
+.footer .footer-actions {
+  position: absolute;
+  right: 24px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 28px; /* 1:1문의 · FAQ · 화살표 간격 */
 }
 
-/* 푸터 내용 텍스트 (주소, 전화번호 등) */
-.footer .small {
-  font-size: 0.875rem; /* 작은 폰트 크기 */
-  line-height: 1.5;
+.footer .footer-actions .action {
+  font-size: 0.95rem;
+  color: #555;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
 }
 
-/* 회사 정보와 제작팀 정보 사이에 한 줄 띄우기 */
-.footer .small p.mb-1:nth-of-type(5) {
-  margin-bottom: 20px; /* 회사 정보 마지막 항목과 제작팀 첫 번째 항목 사이에 한 줄 띄우기 */
+.footer .footer-actions .action:hover {
+  color: #111;
+  border-bottom-color: #bbb;
 }
 
-/* 하단 저작권 텍스트 */
-.footer .text-center {
-  font-size: 0.75rem;
-  color: #6c757d;
-  margin-top: 15px;
+/* 맨 위로 버튼 (단순 화살표) */
+.footer .footer-actions .to-top {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #444;
+  padding: 0;
 }
+.footer .footer-actions .to-top:hover { color: #000; }
 
-/* 반응형: 작은 화면에서 여백을 줄여줍니다 */
+/* 반응형 */
 @media (max-width: 576px) {
-  .footer .small {
-    font-size: 0.75rem;
+  .footer .small { font-size: 0.75rem; }
+  .footer .footer-actions {
+    right: 16px;
+    gap: 20px;
   }
 }
