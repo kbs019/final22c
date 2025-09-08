@@ -519,7 +519,7 @@
                 let total = 0;
                 let anyReduced = false;
 
-                // 캐시에도 반영
+                // 라인 합산
                 itemsCache.forEach(it => {
                     const row = itemsWrap.querySelector(`.refund-item[data-refund-detail-id="${it.refundDetailId}"]`);
                     const qty = Number(row?.dataset?.refundQty ?? it.refundQty ?? 0);
@@ -528,50 +528,43 @@
                     if (qty < (it.quantity ?? 0)) anyReduced = true;
                 });
 
-                // 승인수량이 하나라도 있으면 배송비 환급 3,000 더함
+                // 승인 수량 / 배송비 환급
                 const approved = itemsCache.reduce((s, it) => s + (it.refundQty || 0), 0);
                 const shipping = approved > 0 ? 3000 : 0;
+
+                // 사용 포인트 전액 환급 규칙
+                const orderUsedPoint = Number(headerCache?.usedPoint ?? 0);
+                const refundMileage = (approved > 0 && orderUsedPoint > 0) ? orderUsedPoint : 0;
+
+                // 최종 환불 금액 = 상품 환불 합계 + 배송비 환급 - 환급 마일리지
+                const finalCashRefund = Math.max(0, total + shipping - refundMileage);
 
                 // 하단 요약 갱신
                 if (els.sumProductRefund) els.sumProductRefund.textContent = won(total);
                 if (els.sumShippingRefund) els.sumShippingRefund.textContent = won(shipping);
-                if (els.sumFinalRefund) els.sumFinalRefund.textContent = won(total + shipping);
+                if (els.sumFinalRefund) els.sumFinalRefund.textContent = won(finalCashRefund);
 
-                // ===== 환급 마일리지만 표시 =====
-                const orderUsedPoint = Number(headerCache?.usedPoint ?? 0);
-
-                // 원 주문 소계(상품만)과 현재 '승인 환불' 소계(상품만)
-                const originalSubtotal = itemsCache.reduce(
-                    (s, it) => s + (it.unitRefundAmount || 0) * (it.quantity || 0), 0
-                );
-                const approvedSubtotal = itemsCache.reduce(
-                    (s, it) => s + (it.unitRefundAmount || 0) * (it.refundQty || 0), 0
-                );
-
-                // 환급 마일리지 = 사용 포인트 × (승인 환불 금액 / 원 주문 금액)
-                const usedRatio = originalSubtotal > 0 ? (approvedSubtotal / originalSubtotal) : 0;
-                const refundMileage = Math.floor(orderUsedPoint * usedRatio);
-
+                // 환급 마일리지 표시/숨김
                 const rowRefund = document.getElementById('rowRefundMileage');
                 const elRefund = document.getElementById('sumRefundMileage');
-
-                // 0이면 행 숨김, 있으면 표시
                 if (rowRefund) rowRefund.classList.toggle('d-none', refundMileage <= 0);
                 if (elRefund) elRefund.textContent = pt(refundMileage);
-                // 필요 시 적립 차감 등도 동일하게 채우면 됨
+
+                // 거절 사유 노출
                 rejectWrap.classList.toggle('d-none', !anyReduced);
                 if (!anyReduced) rejectTextarea.value = '';
 
-                const approvedEl = document.getElementById('approvedQty');
-                if (approvedEl) approvedEl.textContent = approved.toLocaleString();
-
-                // ▼ 승인 요약 채우기
+                // 상단 요약 갱신
                 const reqSum = itemsCache.reduce((s, it) => s + (it.quantity || 0), 0);
                 setTextSafe('apReqQty', reqSum.toLocaleString());
                 setTextSafe('apApprovedQty', approved.toLocaleString());
                 setTextSafe('apItemsSubtotal', won(total));
                 setTextSafe('apShipping', won(shipping));
-                setTextSafe('apUsedPoint', pt(Number(headerCache?.usedPoint ?? 0)));
+                setTextSafe('apUsedPoint', pt(orderUsedPoint));
+
+                // 헤더 우측 승인 n/m
+                const approvedEl = document.getElementById('approvedQty');
+                if (approvedEl) approvedEl.textContent = approved.toLocaleString();
             }
 
             function updateItemsHeader() {
