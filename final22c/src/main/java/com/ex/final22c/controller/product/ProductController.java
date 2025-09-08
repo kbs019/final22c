@@ -51,6 +51,11 @@ public class ProductController {
     private final UserRepository userRepository;
     private final ChatService chatService;
 
+    @GetMapping("/faq")
+    public String faq() {
+        return ("main/faq");
+    }
+
     @GetMapping("")
     public String main(Model model) {
 
