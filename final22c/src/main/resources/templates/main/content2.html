@@ -333,6 +333,185 @@
         overflow: hidden;
         background: #f9fafb;
       }
+
+      /* ── 리뷰 점수 분포 ───────────────────────────────────────── */
+      .rating-dist {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* label + bar(꽉) / 값은 오버레이 */
+      .rating-dist li {
+        position: relative;
+        /* 값 오버레이 기준점 */
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        /* 라벨 | 막대 */
+        column-gap: 12px;
+        align-items: center;
+        padding-right: var(--valw, 100px);
+        /* 오른쪽 값 영역만 확보(막대는 그대로 100%) */
+      }
+
+      .rating-dist .label {
+        width: 40px;
+        text-align: right;
+        color: #4b5563;
+      }
+
+      .rating-dist .bar {
+        height: 12px;
+        background: #f2f4f7;
+        border-radius: 9999px;
+        overflow: hidden;
+      }
+
+      /* 0%면 진짜 0 → 최소폭 없음! */
+      .rating-dist .fill {
+        height: 100%;
+        background: #555;
+        /* 막대 색 */
+      }
+
+      /* 값 칼럼(오른쪽) */
+      .rating-dist .value {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        display: inline-flex;
+        gap: 6px;
+        justify-content: flex-end;
+        min-inline-size: var(--valw, 110px);
+        /* 값 칼럼 폭 고정 */
+        white-space: nowrap;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        /* 숫자 등폭 */
+      }
+
+      /* 개수: 고정폭 + 우측 정렬 → 1, 12, 123 모두 같은 끝선 */
+      .rating-dist .value .count {
+        display: inline-block;
+        width: 3ch;
+        /* 0의 폭 기준 3글자(0~999 대응). 더 필요하면 4ch/5ch로 */
+        text-align: right;
+      }
+
+      /* 퍼센트: 가벼운 톤 + 최소폭(선택) */
+      .rating-dist .value .pct {
+        display: inline-block;
+        min-width: 6ch;
+        /* '(100%)'까지 여유. 필요 없으면 삭제 가능 */
+        text-align: left;
+        color: #9aa3af;
+      }
+
+      /* === 리뷰 상단 요약 레이아웃: 중앙 정렬 + 균형 컬럼 === */
+      /* 기존 .review-head 를 이렇게 조정 */
+      .review-head {
+        max-width: 1120px;
+        /* 전체 폭 조금 넓혀 보기 시원하게 */
+        margin: 8px auto 0;
+        display: grid;
+        grid-template-columns: minmax(280px, 1fr) 1px 1.5fr;
+        /* ← 우측 1.5배 */
+        column-gap: 20px;
+        /* 간격 약간만 */
+        align-items: center;
+      }
+
+      /* 좌측 요약 블록을 가운데 쪽으로 붙이되, 내부 텍스트는 좌측 정렬 유지 */
+      .review-head .summary {
+        justify-self: end;
+        /* 그리드 셀 안에서 오른쪽 정렬 → 중앙으로 모임 */
+        text-align: left;
+        min-width: 280px;
+        /* 너무 좁아지지 않게 */
+      }
+
+      /* 평균 숫자/총개수 보정(보기 좋게 조금 키움) */
+      .review-head .avg-number {
+        font-size: 1.7rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-top: 6px;
+      }
+
+      .review-head .total {
+        margin-top: 2px;
+        font-size: .9rem;
+        color: #94a3b8;
+      }
+
+      /* 가운데 세로 구분선 */
+      .review-head .vrule {
+        align-self: stretch;
+        width: 1px;
+        background: #e5e7eb;
+      }
+
+      /* 우측 분포 막대: 그리드 우측 컬럼 전체를 사용 */
+      .rating-dist {
+        justify-self: start;
+        /* 중앙 쪽에서 시작 */
+        width: 100%;
+        max-width: none;
+        /* 컬럼 폭만큼 꽉 사용 */
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .rating-dist li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0;
+      }
+
+      .rating-dist .label {
+        width: 32px;
+        color: #4b5563;
+        text-align: right;
+      }
+
+      .rating-dist .bar {
+        flex: 1;
+        height: 12px;
+        background: #f2f4f7;
+        border-radius: 9999px;
+        overflow: hidden;
+      }
+
+      .rating-dist .fill {
+        height: 100%;
+        background: #555;
+      }
+
+      .rating-dist .value {
+        width: 28px;
+        text-align: right;
+        color: #4b5563;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* 모바일에서는 수직 스택 */
+      @media (max-width: 768px) {
+        .review-head {
+          grid-template-columns: 1fr;
+          row-gap: 12px;
+        }
+
+        .review-head .vrule {
+          display: none;
+        }
+
+        .review-head .summary {
+          justify-self: stretch;
+        }
+      }
     </style>
   </th:block>
 </head>
@@ -756,233 +935,261 @@
             </div>
           </div>
 
-          <!-- 평균 평점 -->
-          <div class="mb-4">
-            <div class="mb-2 fw-semibold">평균 평점</div>
-            <div class="d-flex align-items-center gap-3">
+          <!-- 점수 분포 -->
+          <!-- 리뷰 상단 요약 (좌: 평균/개수, 우: 분포) -->
+          <div class="review-head mb-4" th:if="${reviewCount >= 0}">
+            <!-- 좌측 요약 -->
+            <div class="summary">
+              <!-- ① 평균 평점: 그림(별/사각형) 한 줄 -->
               <div class="rating-bars" th:with="filled=${T(java.lang.Math).round(reviewAvg)}">
                 <div th:each="i : ${#numbers.sequence(1,5)}" th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
                 </div>
               </div>
-              <span th:text="${#numbers.formatDecimal(reviewAvg,1,1)}">0.0</span>
+              <!-- ② 평균 평점: 숫자 한 줄 -->
+              <div class="avg-number" th:text="${#numbers.formatDecimal(reviewAvg,1,1)}">0.0</div>
+              <!-- ③ 후기 개수: 작게 한 줄 -->
+              <div class="total">후기 <span th:text="${reviewCount}">0</span>개</div>
             </div>
+
+            <!-- 가운데 세로 구분선으로 시각적 결속 -->
+            <div class="vrule"></div>
+
+            <!-- 우측: 5~1점 분포 (퍼센트 제거, 개수만 표시) -->
+            <ul class="rating-dist">
+              <li th:each="i : ${#numbers.sequence(1,5)}" th:with="s=${6 - i}, cnt=${reviewCounts[s]},
+                 pct=${reviewCount > 0 ? (cnt * 100.0 / reviewCount) : 0}">
+                <span class="label" th:text="|${s}점|">5점</span>
+                <div class="bar" aria-hidden="true">
+                  <div class="fill" th:style="|width:${pct}%;|"></div>
+                </div>
+                <span class="value">
+                  <span class="count" th:text="${cnt}">0</span>
+                  <span class="pct" th:text="|(${#numbers.formatDecimal(pct,0,0)}%)|">(0%)</span>
+                </span>
+              </li>
+            </ul>
           </div>
+        </div>
 
-          <hr class="my-4">
+        <!-- 리뷰가 0개일 때 안내 (분포 대신 안내문) -->
+        <div class="text-muted small mb-4" th:if="${reviewCount == 0}">
+          아직 리뷰가 없습니다.
+        </div>
 
-          <!-- 전체 개수 + 정렬 -->
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="fw-semibold">전체 리뷰 <span th:text="${reviewCount}">0</span>개</div>
-            <form method="get" th:action="@{|/main/content/${product.id}|}">
-              <select class="form-select form-select-sm w-auto d-inline-block" name="sort">
-                <option value="best" th:selected="${sort=='best'}">추천순</option>
-                <option value="recent" th:selected="${sort=='recent'}">최신순</option>
-                <option value="rating" th:selected="${sort=='rating'}">평점순</option>
-              </select>
-            </form>
-          </div>
+        <hr class="my-4">
 
-          <!-- 리스트 -> 정렬을 위해 묶음 -->
-          <div id="reviewList" th:fragment="reviewList(reviews, likedReviewIds, productId, sort)"
-            th:with="productId=${productId} ?: ${product?.id}" class="mt-2">
+        <!-- 전체 개수 + 정렬 -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="fw-semibold">전체 리뷰 <span th:text="${reviewCount}">0</span>개</div>
+          <form method="get" th:action="@{|/main/content/${product.id}|}">
+            <select class="form-select form-select-sm w-auto d-inline-block" name="sort">
+              <option value="best" th:selected="${sort=='best'}">추천순</option>
+              <option value="recent" th:selected="${sort=='recent'}">최신순</option>
+              <option value="rating" th:selected="${sort=='rating'}">평점순</option>
+            </select>
+          </form>
+        </div>
 
-            <div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">작성된 리뷰가 없습니다.</div>
+        <!-- 리스트 -> 정렬을 위해 묶음 -->
+        <div id="reviewList" th:fragment="reviewList(reviews, likedReviewIds, productId, sort)"
+          th:with="productId=${productId} ?: ${product?.id}" class="mt-2">
 
-            <div th:each="rv : ${reviews}" class="py-4 border-top">
-              <div class="d-flex align-items-start justify-content-between">
-                <!-- 좌측: 메타 + 본문 -->
-                <div class="d-flex align-items-start gap-3 flex-grow-1">
-                  <div class="review-meta">
-                    <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
-                      th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
-                      kv**
-                    </div>
+          <div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">작성된 리뷰가 없습니다.</div>
 
-                    <div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
-                      <div th:each="i : ${#numbers.sequence(1,5)}"
-                        th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
-                      </div>
-                    </div>
+          <div th:each="rv : ${reviews}" class="py-4 border-top">
+            <div class="d-flex align-items-start justify-content-between">
+              <!-- 좌측: 메타 + 본문 -->
+              <div class="d-flex align-items-start gap-3 flex-grow-1">
+                <div class="review-meta">
+                  <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
+                    th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
+                    kv**
                   </div>
 
-                  <!-- 본문 영역 -->
-                  <div class="flex-grow-1">
-                    <!-- 리뷰 -->
-                    <div class="mb-2 text-break" th:if="${rv.status == 'ACTIVE'}" th:text="${rv.content}"
-                      style="white-space:pre-line;">내용</div>
-
-                    <!-- 좋아요 -->
-                    <div class="like-wrap" th:attr="data-id=${rv.reviewId}"
-                      th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
-                      <button type="button" class="btn-like" aria-label="공감" title="공감"
-                        sec:authorize="isAuthenticated()" th:if="${rv.status == 'ACTIVE'}">
-                        <i class="fa-regular fa-thumbs-up"></i>
-                      </button>
-                      <button type="button" class="btn-like need-login" aria-label="로그인 필요"
-                        sec:authorize="isAnonymous()" th:if="${rv.status == 'ACTIVE'}">
-                        <i class="fa-regular fa-thumbs-up"></i>
-                      </button>
-                      <span class="like-count" th:text="${#lists.size(rv.likers)}"
-                        th:if="${rv.status == 'ACTIVE'}">0</span>
+                  <div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
+                    <div th:each="i : ${#numbers.sequence(1,5)}"
+                      th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
                     </div>
                   </div>
                 </div>
 
-                <!-- 우측: 날짜 + 액션(날짜 바로 아래) — 날짜 위치는 그대로 유지 -->
-                <div class="review-right ms-3">
-                  <div class="review-date text-muted small text-nowrap"
-                    th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
+                <!-- 본문 영역 -->
+                <div class="flex-grow-1">
+                  <!-- 리뷰 -->
+                  <div class="mb-2 text-break" th:if="${rv.status == 'ACTIVE'}" th:text="${rv.content}"
+                    style="white-space:pre-line;">내용</div>
 
-                  <!-- 로그인 + (소유자 또는 관리자)만 노출 -->
-                  <div class="review-actions mt-1" sec:authorize="isAuthenticated()"
-                    th:with="isOwner=${#authentication.name == rv.userName}">
-                    <div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
-                      <a class="ra-link"
-                        th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
+                  <!-- 좋아요 -->
+                  <div class="like-wrap" th:attr="data-id=${rv.reviewId}"
+                    th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
+                    <button type="button" class="btn-like" aria-label="공감" title="공감" sec:authorize="isAuthenticated()"
+                      th:if="${rv.status == 'ACTIVE'}">
+                      <i class="fa-regular fa-thumbs-up"></i>
+                    </button>
+                    <button type="button" class="btn-like need-login" aria-label="로그인 필요" sec:authorize="isAnonymous()"
+                      th:if="${rv.status == 'ACTIVE'}">
+                      <i class="fa-regular fa-thumbs-up"></i>
+                    </button>
+                    <span class="like-count" th:text="${#lists.size(rv.likers)}"
+                      th:if="${rv.status == 'ACTIVE'}">0</span>
+                  </div>
+                </div>
+              </div>
 
-                      <form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
-                        onsubmit="return confirm('후기를 삭제하시겠습니까?');">
-                        <input type="hidden" name="productId" th:value="${productId}">
-                        <button type="submit" class="ra-link ra-danger">삭제</button>
-                      </form>
-                    </div>
+              <!-- 우측: 날짜 + 액션(날짜 바로 아래) — 날짜 위치는 그대로 유지 -->
+              <div class="review-right ms-3">
+                <div class="review-date text-muted small text-nowrap"
+                  th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
+
+                <!-- 로그인 + (소유자 또는 관리자)만 노출 -->
+                <div class="review-actions mt-1" sec:authorize="isAuthenticated()"
+                  th:with="isOwner=${#authentication.name == rv.userName}">
+                  <div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
+                    <a class="ra-link" th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
+
+                    <form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
+                      onsubmit="return confirm('후기를 삭제하시겠습니까?');">
+                      <input type="hidden" name="productId" th:value="${productId}">
+                      <button type="submit" class="ra-link ra-danger">삭제</button>
+                    </form>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <!-- 리뷰 끝 -->
         </div>
-      </section>
+        <!-- 리뷰 끝 -->
+    </div>
+    </section>
 
-      <section id="similar-products" class="mt-5">
-        <h2 class="mb-3">관련 상품</h2>
+    <section id="similar-products" class="mt-5">
+      <h2 class="mb-3">관련 상품</h2>
 
-        <!-- 같은 브랜드의 다른 상품 -->
-        <div class="mb-5">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h3 class="h5 mb-0">같은 브랜드의 다른 상품</h3>
-            <span class="small text-muted">판매량 순</span>
-          </div>
+      <!-- 같은 브랜드의 다른 상품 -->
+      <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h5 mb-0">같은 브랜드의 다른 상품</h3>
+          <span class="small text-muted">판매량 순</span>
+        </div>
 
-          <!-- 데이터 있을 때: 캐러셀 -->
-          <div th:if="${brandRecs != null and !#lists.isEmpty(brandRecs)}" class="rec-carousel">
-            <button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(brandRecs) <= 4}"
-              data-bs-target="#brandRecCarousel" data-bs-slide="prev">&lsaquo;</button>
+        <!-- 데이터 있을 때: 캐러셀 -->
+        <div th:if="${brandRecs != null and !#lists.isEmpty(brandRecs)}" class="rec-carousel">
+          <button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(brandRecs) <= 4}"
+            data-bs-target="#brandRecCarousel" data-bs-slide="prev">&lsaquo;</button>
 
-            <div class="rec-track">
-              <div id="brandRecCarousel" class="carousel slide" data-bs-ride="false" aria-label="같은 브랜드 추천 캐러셀" th:with="size=${#lists.size(brandRecs)},
+          <div class="rec-track">
+            <div id="brandRecCarousel" class="carousel slide" data-bs-ride="false" aria-label="같은 브랜드 추천 캐러셀" th:with="size=${#lists.size(brandRecs)},
               pages=${(size + 3) / 4}">
 
-                <div class="carousel-inner" th:with="size=${#lists.size(brandRecs)}">
-                  <div th:each="start : ${#numbers.sequence(0, size - 1, 4)}"
-                    th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
-                    th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
-                    <div class="row g-3">
-                      <div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}"
-                        th:with="r=${brandRecs[i]}, path=${r[3]}, name=${r[4]},
+              <div class="carousel-inner" th:with="size=${#lists.size(brandRecs)}">
+                <div th:each="start : ${#numbers.sequence(0, size - 1, 4)}"
+                  th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
+                  th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
+                  <div class="row g-3">
+                    <div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}"
+                      th:with="r=${brandRecs[i]}, path=${r[3]}, name=${r[4]},
                               img=${#strings.isEmpty(path) ? name : (path.endsWith('/') ? path + name : path + '/' + name)}">
-                        <a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
-                          <div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
-                          <div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">브랜드명</div>
-                          <div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
-                          <div class="rel-price text-muted">
-                            <strong th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
-                            <del th:if="${r[5] != null && r[5] > r[6]}"
-                              th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
-                          </div>
-                        </a>
-                      </div>
+                      <a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
+                        <div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
+                        <div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">브랜드명</div>
+                        <div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
+                        <div class="rel-price text-muted">
+                          <strong th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
+                          <del th:if="${r[5] != null && r[5] > r[6]}"
+                            th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
+                        </div>
+                      </a>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <!-- ▼ 인디케이터: 슬라이드가 2페이지 이상일 때만 노출 -->
-                <div class="carousel-indicators rec-indicators" th:if="${pages > 1}">
-                  <button type="button" th:each="p : ${#numbers.sequence(0, pages-1)}"
-                    th:classappend="${p} == 0 ? ' active' : ''"
-                    th:attr="data-bs-target='#brandRecCarousel', data-bs-slide-to=${p}, aria-label='페이지 ' + (${p}+1)">
-                  </button>
-                </div>
+              <!-- ▼ 인디케이터: 슬라이드가 2페이지 이상일 때만 노출 -->
+              <div class="carousel-indicators rec-indicators" th:if="${pages > 1}">
+                <button type="button" th:each="p : ${#numbers.sequence(0, pages-1)}"
+                  th:classappend="${p} == 0 ? ' active' : ''"
+                  th:attr="data-bs-target='#brandRecCarousel', data-bs-slide-to=${p}, aria-label='페이지 ' + (${p}+1)">
+                </button>
               </div>
             </div>
-
-            <button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(brandRecs) <= 4}"
-              data-bs-target="#brandRecCarousel" data-bs-slide="next">&rsaquo;</button>
           </div>
 
-          <!-- 데이터 없을 때: 안내 -->
-          <div th:if="${brandRecs == null or #lists.isEmpty(brandRecs)}"
-            class="text-muted small py-3 text-center border rounded-2">
-            같은 브랜드의 추천 상품이 없습니다.
-          </div>
+          <button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(brandRecs) <= 4}"
+            data-bs-target="#brandRecCarousel" data-bs-slide="next">&rsaquo;</button>
         </div>
 
-        <!-- 최근/누적 베스트 8 -->
-        <div class="mt-4" th:with="isFallback=${(recentTopIsFallback) ?: false}">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h3 class="h5 mb-0" th:text="${isFallback} ? '누적 BEST 8' : '주간 BEST 8'">주간 BEST 8</h3>
-            <span class="small text-muted" th:text="${isFallback} ? '누적 판매량 기준' : '주간 판매량 기준'">주간 판매량 기준</span>
-          </div>
+        <!-- 데이터 없을 때: 안내 -->
+        <div th:if="${brandRecs == null or #lists.isEmpty(brandRecs)}"
+          class="text-muted small py-3 text-center border rounded-2">
+          같은 브랜드의 추천 상품이 없습니다.
+        </div>
+      </div>
 
-          <!-- 데이터 있을 때: 캐러셀 -->
-          <div th:if="${recentTop8 != null and !#lists.isEmpty(recentTop8)}" class="rec-carousel">
-            <button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(recentTop8) <= 4}"
-              data-bs-target="#recentTopCarousel" data-bs-slide="prev">&lsaquo;</button>
+      <!-- 최근/누적 베스트 8 -->
+      <div class="mt-4" th:with="isFallback=${(recentTopIsFallback) ?: false}">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h5 mb-0" th:text="${isFallback} ? '누적 BEST 8' : '주간 BEST 8'">주간 BEST 8</h3>
+          <span class="small text-muted" th:text="${isFallback} ? '누적 판매량 기준' : '주간 판매량 기준'">주간 판매량 기준</span>
+        </div>
 
-            <div class="rec-track">
-              <div id="recentTopCarousel" class="carousel slide" data-bs-ride="false" aria-label="이번 주 베스트 캐러셀" th:with="size=${#lists.size(recentTop8)},
+        <!-- 데이터 있을 때: 캐러셀 -->
+        <div th:if="${recentTop8 != null and !#lists.isEmpty(recentTop8)}" class="rec-carousel">
+          <button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(recentTop8) <= 4}"
+            data-bs-target="#recentTopCarousel" data-bs-slide="prev">&lsaquo;</button>
+
+          <div class="rec-track">
+            <div id="recentTopCarousel" class="carousel slide" data-bs-ride="false" aria-label="이번 주 베스트 캐러셀" th:with="size=${#lists.size(recentTop8)},
               pages=${(size + 3) / 4}">
 
-                <div class="carousel-inner" th:with="size=${#lists.size(recentTop8)}">
-                  <div th:each="start : ${#numbers.sequence(0, size - 1, 4)}"
-                    th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
-                    th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
-                    <div class="row g-3">
-                      <div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}"
-                        th:with="r=${recentTop8[i]}, path=${r[3]}, name=${r[4]},
+              <div class="carousel-inner" th:with="size=${#lists.size(recentTop8)}">
+                <div th:each="start : ${#numbers.sequence(0, size - 1, 4)}"
+                  th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
+                  th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
+                  <div class="row g-3">
+                    <div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}"
+                      th:with="r=${recentTop8[i]}, path=${r[3]}, name=${r[4]},
                               img=${#strings.isEmpty(path) ? name : (path.endsWith('/') ? path + name : path + '/' + name)}">
-                        <a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
-                          <div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
-                          <div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">브랜드명</div>
-                          <div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
-                          <div class="rel-price text-muted">
-                            <strong th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
-                            <del th:if="${r[5] != null && r[5] > r[6]}"
-                              th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
-                          </div>
-                          <div class="small text-muted" th:if="${r[7] != null}">
-                            <span th:text="${isFallback} ? '(누적) - ' : '(최근 7일) - '">(최근 7일) - </span>
-                            <span th:text="${#numbers.formatInteger(r[7],1,'COMMA')}">0</span>개 판매
-                          </div>
-                        </a>
-                      </div>
+                      <a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
+                        <div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
+                        <div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">브랜드명</div>
+                        <div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
+                        <div class="rel-price text-muted">
+                          <strong th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
+                          <del th:if="${r[5] != null && r[5] > r[6]}"
+                            th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
+                        </div>
+                        <div class="small text-muted" th:if="${r[7] != null}">
+                          <span th:text="${isFallback} ? '(누적) - ' : '(최근 7일) - '">(최근 7일) - </span>
+                          <span th:text="${#numbers.formatInteger(r[7],1,'COMMA')}">0</span>개 판매
+                        </div>
+                      </a>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <!-- ▼ 인디케이터 -->
-                <div class="carousel-indicators rec-indicators" th:if="${pages > 1}">
-                  <button type="button" th:each="p : ${#numbers.sequence(0, pages-1)}"
-                    th:classappend="${p} == 0 ? ' active' : ''"
-                    th:attr="data-bs-target='#recentTopCarousel', data-bs-slide-to=${p}, aria-label='페이지 ' + (${p}+1)">
-                  </button>
-                </div>
+              <!-- ▼ 인디케이터 -->
+              <div class="carousel-indicators rec-indicators" th:if="${pages > 1}">
+                <button type="button" th:each="p : ${#numbers.sequence(0, pages-1)}"
+                  th:classappend="${p} == 0 ? ' active' : ''"
+                  th:attr="data-bs-target='#recentTopCarousel', data-bs-slide-to=${p}, aria-label='페이지 ' + (${p}+1)">
+                </button>
               </div>
             </div>
-
-            <button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(recentTop8) <= 4}"
-              data-bs-target="#recentTopCarousel" data-bs-slide="next">&rsaquo;</button>
           </div>
 
-          <!-- 데이터 없을 때: 안내 -->
-          <div th:if="${recentTop8 == null or #lists.isEmpty(recentTop8)}"
-            class="text-muted small py-3 text-center border rounded-2">
-            최근 7일 판매 데이터가 없어 표시할 상품이 없습니다.
-          </div>
+          <button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(recentTop8) <= 4}"
+            data-bs-target="#recentTopCarousel" data-bs-slide="next">&rsaquo;</button>
         </div>
-      </section>
-    </div> <!-- productContentsWrap 끝 -->
+
+        <!-- 데이터 없을 때: 안내 -->
+        <div th:if="${recentTop8 == null or #lists.isEmpty(recentTop8)}"
+          class="text-muted small py-3 text-center border rounded-2">
+          최근 7일 판매 데이터가 없어 표시할 상품이 없습니다.
+        </div>
+      </div>
+    </section>
+  </div> <!-- productContentsWrap 끝 -->
   </div>
 
   <!-- 스크립트 -->
