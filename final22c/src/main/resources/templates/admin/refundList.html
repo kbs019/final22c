@@ -32,11 +32,11 @@
     </style>
 </th:block>
 <div layout:fragment="content" class="container">
-    <br>
+    <h2>환불내역</h2>
     <div class="card mb-4">
         <div class="card-header">
             <i class="fas fa-table me-1"></i>
-            환불 내역
+            환불리스트
         </div>
         <div class="card-body">
             <table id="datatablesSimple">
@@ -138,7 +138,7 @@
                         </div>
                         <hr class="my-2">
                     </section>
-                    
+
                     <section id="refundItemsHeader"
                         class="d-flex justify-content-between align-items-center small bg-light rounded border px-2 py-2 mt-3 mb-2">
                         <div class="fw-semibold">환불 요청 목록</div>
@@ -175,10 +175,29 @@
                     </template>
 
 
-                    <!-- 합계 -->
-                    <div class="mt-3 p-3 bg-light rounded d-flex justify-content-between align-items-center">
-                        <div class="fw-semibold">환급 예정 금액</div>
-                        <div class="h5 m-0" id="totalRefundAmount">0</div>
+                    <!-- 하단 합계 요약 -->
+                    <div class="refund-summary bg-light rounded p-3 mt-3">
+                        <div class="d-flex justify-content-between align-items-center small text-muted">
+                            <span>상품 환불 합계</span>
+                            <strong id="sumProductRefund">0원</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center small text-muted mt-1">
+                            <span>배송비 환급</span>
+                            <strong id="sumShippingRefund">0원</strong>
+                        </div>
+
+                        <hr class="my-2">
+
+                        <div class="d-flex justify-content-between align-items-center fs-5">
+                            <span class="fw-semibold">최종 환불 금액</span>
+                            <strong id="sumFinalRefund">0원</strong>
+                        </div>
+
+                        <!-- 사용 포인트 환급: 사용 이력이 없으면 숨김 -->
+                        <div id="rowRefundMileage" class="d-flex justify-content-between small text-muted mt-2 d-none">
+                            <span>환급 마일리지</span><strong id="sumRefundMileage">0P</strong>
+                        </div>
                     </div>
 
                     <!-- 거절 사유 -->
@@ -246,7 +265,7 @@
                             <!-- ▼ 신규 -->
                             <div>
                                 <div class="small text-muted">환급 마일리지</div>
-                                <div class="h6 m-0" id="sumRefundMileage">0P</div>
+                                <div class="h6 m-0" id="resRefundMileage">0P</div>
                             </div>
                             <!-- ▲ 신규 -->
                         </div>
@@ -355,7 +374,14 @@
             const modalEl = document.getElementById('refundModal');
             const itemsWrap = document.getElementById('refundItems');
             const rowTpl = document.getElementById('refundItemRow');
-            const totalEl = document.getElementById('totalRefundAmount');
+
+            const MILEAGE_RATE = 0.05; // 적립률(서버와 동일하게)
+            const els = {
+                sumProductRefund: document.getElementById('sumProductRefund'),
+                sumShippingRefund: document.getElementById('sumShippingRefund'),
+                sumFinalRefund: document.getElementById('sumFinalRefund'),
+                sumRefundMileage: document.getElementById('sumRefundMileage'),  // 옵션
+            };
             const rejectWrap = document.getElementById('rejectReasonWrap');
             const rejectTextarea = document.getElementById('rejectReason');
 
@@ -493,7 +519,7 @@
                 let total = 0;
                 let anyReduced = false;
 
-                // 캐시에도 반영
+                // 라인 합산
                 itemsCache.forEach(it => {
                     const row = itemsWrap.querySelector(`.refund-item[data-refund-detail-id="${it.refundDetailId}"]`);
                     const qty = Number(row?.dataset?.refundQty ?? it.refundQty ?? 0);
@@ -502,24 +528,43 @@
                     if (qty < (it.quantity ?? 0)) anyReduced = true;
                 });
 
-                // 승인수량이 하나라도 있으면 배송비 환급 3,000 더함
+                // 승인 수량 / 배송비 환급
                 const approved = itemsCache.reduce((s, it) => s + (it.refundQty || 0), 0);
                 const shipping = approved > 0 ? 3000 : 0;
 
-                totalEl.textContent = won(total + shipping);
+                // 사용 포인트 전액 환급 규칙
+                const orderUsedPoint = Number(headerCache?.usedPoint ?? 0);
+                const refundMileage = (approved > 0 && orderUsedPoint > 0) ? orderUsedPoint : 0;
+
+                // 최종 환불 금액 = 상품 환불 합계 + 배송비 환급 - 환급 마일리지
+                const finalCashRefund = Math.max(0, total + shipping - refundMileage);
+
+                // 하단 요약 갱신
+                if (els.sumProductRefund) els.sumProductRefund.textContent = won(total);
+                if (els.sumShippingRefund) els.sumShippingRefund.textContent = won(shipping);
+                if (els.sumFinalRefund) els.sumFinalRefund.textContent = won(finalCashRefund);
+
+                // 환급 마일리지 표시/숨김
+                const rowRefund = document.getElementById('rowRefundMileage');
+                const elRefund = document.getElementById('sumRefundMileage');
+                if (rowRefund) rowRefund.classList.toggle('d-none', refundMileage <= 0);
+                if (elRefund) elRefund.textContent = pt(refundMileage);
+
+                // 거절 사유 노출
                 rejectWrap.classList.toggle('d-none', !anyReduced);
                 if (!anyReduced) rejectTextarea.value = '';
 
-                const approvedEl = document.getElementById('approvedQty');
-                if (approvedEl) approvedEl.textContent = approved.toLocaleString();
-
-                // ▼ 승인 요약 채우기
+                // 상단 요약 갱신
                 const reqSum = itemsCache.reduce((s, it) => s + (it.quantity || 0), 0);
                 setTextSafe('apReqQty', reqSum.toLocaleString());
                 setTextSafe('apApprovedQty', approved.toLocaleString());
                 setTextSafe('apItemsSubtotal', won(total));
                 setTextSafe('apShipping', won(shipping));
-                setTextSafe('apUsedPoint', pt(Number(headerCache?.usedPoint ?? 0)));
+                setTextSafe('apUsedPoint', pt(orderUsedPoint));
+
+                // 헤더 우측 승인 n/m
+                const approvedEl = document.getElementById('approvedQty');
+                if (approvedEl) approvedEl.textContent = approved.toLocaleString();
             }
 
             function updateItemsHeader() {
@@ -623,8 +668,8 @@
 
                 let total = (s.totalRefundAmount != null ? num(s.totalRefundAmount) : null);
 
-                let shipping = (s.shippingRefund != null ? num(s.shippingRefund) 
-                                : (s.shipping != null ? num(s.shipping) : null));
+                let shipping = (s.shippingRefund != null ? num(s.shippingRefund)
+                    : (s.shipping != null ? num(s.shipping) : null));
 
                 // 사용 마일리지(차감분) – 요약에 없으면 헤더에서라도 끌어올 준비
                 const usedPoint = num(s.usedPoint ?? h.usedPoint ?? 0);
@@ -664,7 +709,7 @@
                 if (totalEl) totalEl.textContent = won(total);
 
                 const refundMil = num(s.refundMileage, 0);
-                setText('sumRefundMileage', pt(refundMil));
+                setText('resRefundMileage', pt(refundMil));
             }
 
             function renderResultItems(items) {
@@ -731,7 +776,7 @@
                 let shipping = (s.shippingRefund != null)
                     ? Number(s.shippingRefund)
                     : (s.shipping != null ? Number(s.shipping) : null);
-                
+
                 // 차감 마일리지(사용 포인트)
                 const usedPoint = Number(s.usedPoint ?? h.usedPoint ?? 0);
 
