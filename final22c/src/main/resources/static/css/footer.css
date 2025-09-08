@@ -1,0 +1,75 @@
+/* ===== Footer 기본 ===== */
+.footer {
+  background-color: #ffffff;
+  color: #333;
+  padding-top: 60px;
+  padding-bottom: 20px;
+  text-align: center;
+  position: relative;
+}
+
+/* 상단 가는 선 */
+.footer::before {
+  content: "";
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  width: 66%;
+  height: 1px;
+  background: #dee2e6;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+/* 텍스트 공통 */
+.footer .fw-bold { font-weight: 700; color: #333; }
+.footer .small { font-size: 0.875rem; line-height: 1.5; }
+
+/* 회사정보 ↔ 제작팀 사이 여백(‘한 줄 띄우기’의 구조적 해결) */
+.footer-info .section + .section { margin-top: 20px; }
+
+/* 하단 저작권 */
+.footer .footer-legal { font-size: 0.75rem; color: #6c757d; margin-top: 15px; }
+
+/* ===== 오른쪽 하단 액션 ===== */
+.footer .footer-actions {
+  position: absolute;
+  right: 24px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 28px; /* 1:1문의 · FAQ · 화살표 간격 */
+}
+
+.footer .footer-actions .action {
+  font-size: 0.95rem;
+  color: #555;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.footer .footer-actions .action:hover {
+  color: #111;
+  border-bottom-color: #bbb;
+}
+
+/* 맨 위로 버튼 (단순 화살표) */
+.footer .footer-actions .to-top {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #444;
+  padding: 0;
+}
+.footer .footer-actions .to-top:hover { color: #000; }
+
+/* 반응형 */
+@media (max-width: 576px) {
+  .footer .small { font-size: 0.75rem; }
+  .footer .footer-actions {
+    right: 16px;
+    gap: 20px;
+  }
+}

@@ -1,0 +1,72 @@
+/* ===== 페이지 폭과 좌우 여백: 넉넉하게 ===== */
+.brand-container{
+  /* Bootstrap container-fluid를 쓰되, 안쪽에서 최대폭을 살짝 줄여 좌우 여백 확보 */
+  max-width: 1060px;               /* 필요시 1000~1140px 사이에서 조절 */
+  padding-inline: 16px;            /* 좌우 여백 */
+  margin-inline: auto;
+}
+
+/* ===== 카드: 테두리 유지, hover만 살짝 강조 ===== */
+.card.product-card{
+  border: 1px solid #e5e5e5;       /* 테두리 유지 */
+  border-radius: 1rem;
+  background: #fff;
+  overflow: hidden;
+  transition: transform .12s ease, border-color .12s ease;
+}
+.card.product-card:hover{
+  transform: translateY(-2px);
+  border-color: #cfcfcf;
+}
+
+/* ===== 이미지 영역 (리스트와 동일한 톤) ===== */
+.card-media{
+  position: relative;
+  background:#fff;                 /* 제품 대비용 순백 캔버스 */
+  display:grid; place-items:center;
+}
+.media-3x4{ aspect-ratio: 3 / 4; } /* 한 줄 4개일 때 적합한 비율 */
+.card-media img{
+  width:100%; height:100%;
+  object-fit:contain; display:block;
+}
+
+/* ===== SOLD OUT 오버레이 (가상요소만 사용) ===== */
+.card-media.soldout::before{
+  content:"";
+  position:absolute; inset:0;
+  background: rgba(0,0,0,.28);
+  z-index:1;
+}
+.card-media.soldout::after{
+  content:"SOLD OUT";
+  position:absolute; inset:0;
+  display:flex; justify-content:center; align-items:center;
+  z-index:2; pointer-events:none;
+  font-weight:600;
+  font-size: clamp(16px, 2.6vw, 28px);
+  letter-spacing:.08em;
+  color:#fff;
+  padding:.5em 1em;
+  text-align:center;
+}
+
+/* ===== 텍스트/가격 (기존 list.css 톤 유지, 살짝만 컴팩트) ===== */
+.card-body{ padding:.55rem .6rem .7rem; }
+.card-body .small{ font-size:.8rem; }
+.card-body .fw-semibold{ font-size:.9rem; line-height:1.32; }
+
+.price-row{
+  display:flex; align-items:baseline; gap:.4rem; white-space:nowrap;
+}
+.price-row .disc{ color:#c85a5a; font-weight:500; font-size:.85rem; }
+.price-row .sale{ font-weight:800; font-size:.95rem; color:#111; }
+.price-row .list{ color:#aeb4bb; text-decoration:line-through; font-size:.85rem; }
+
+/* ===== 반응형 미세조정 ===== */
+@media (max-width: 991.98px){
+  .brand-container{ max-width: 960px; padding-inline: 14px; }
+}
+@media (max-width: 575.98px){
+  .brand-container{ max-width: 100%; padding-inline: 12px; }
+}

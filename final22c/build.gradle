@@ -91,7 +91,6 @@ configurations.all {
       if (d.requested.group == "com.squareup.okhttp3") d.useVersion("4.10.0")
    }
 }
-// 여기까지입니다
 
 // 후보가 com.ex.final22c.Final22cApplication 과 com.ex.final22c.Application 두 개였으니, 실제 @SpringBootApplication 달린 쪽으로 지정.
 springBoot {

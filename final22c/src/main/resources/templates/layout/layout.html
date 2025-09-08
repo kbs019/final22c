@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>22°C</title>
-   	<!-- Summernote CSS -->
+    <!-- Summernote CSS -->
     <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
     <!-- 페이지별 추가 CSS -->
     <th:block layout:fragment="css"></th:block>
+    <!-- footer.css 파일 연결 -->
+    <link rel="stylesheet" th:href="@{/css/footer.css}">
 </head>
 <body class="bg-white">
     <!-- 고정 상단 내비게이션 -->
@@ -23,28 +25,29 @@
         <th:block layout:fragment="content"></th:block>
     </main>
 
-    <!-- 하단 여백 및 푸터(선택) -->
-    <!-- <footer th:replace="~{fragments/footer :: footer}"></footer> -->
-	<!-- jQuery (Ajax)  -->
-	    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-	    <!-- CDN 차단 대비: 로컬 폴백 -->
-	    <script>
-	      if (!window.jQuery) {
-	        document.write('<script src="/js/jquery-3.7.1.min.js"><\/script>');
-	      }
-	      console.log('[layout] jQuery:', window.jQuery ? $.fn.jquery : 'NOT LOADED');
-	    </script>
+    <!-- 푸터 참조 -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 
-	    <!-- Popper.js -->
-	    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
-	    <!-- Bootstrap JS -->
-	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-		<!-- Summernote JS -->
-		<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
-	    <!-- 페이지별 스크립트 -->
-	    <th:block layout:fragment="script"></th:block>
-<!-- 
-    상단으로 버튼 
+    <!-- jQuery (Ajax) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- CDN 차단 대비: 로컬 폴백 -->
+    <script>
+        if (!window.jQuery) {
+            document.write('<script src="/js/jquery-3.7.1.min.js"><\/script>');
+        }
+        console.log('[layout] jQuery:', window.jQuery ? $.fn.jquery : 'NOT LOADED');
+    </script>
+
+    <!-- Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <!-- Summernote JS -->
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
+    <!-- 페이지별 스크립트 -->
+    <th:block layout:fragment="script"></th:block>
+
+    <!-- 상단으로 버튼 -->
     <button type="button" class="btn btn-light border shadow-sm to-top" aria-label="상단으로 이동" title="상단으로">
         ↑
     </button>
@@ -57,6 +60,6 @@
             btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
             toggle();
         })();
-    </script> -->
+    </script>
 </body>
 </html>
