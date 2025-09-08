@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -167,5 +168,23 @@ public class UsersController {
         model.addAttribute("resultType", "id");
         model.addAttribute("result", userId);
         return "user/findResult"; // 결과 페이지
+    }
+    
+    // 비번 찾기
+    @PostMapping("/findPw")
+    public String findPw(@RequestParam("userName") String userName,
+                         @RequestParam("email") String email,
+                         Model model) {
+
+        boolean sent = usersService.sendResetPasswordAuthCode(userName, email);
+        if (!sent) {
+            model.addAttribute("error", "아이디와 이메일이 일치하지 않습니다.");
+            return "user/find"; // 기존 아이디/비밀번호 찾기 탭 페이지
+        }
+
+        // 인증 코드 발송 성공 → 다음 뷰(인증 코드 입력 + 새 비밀번호 입력 폼)로 이동
+        model.addAttribute("userId", userName);
+        model.addAttribute("email", email);
+        return "user/resetPassword"; // 방금 만든 인증코드+비밀번호 입력 페이지
     }
 }

@@ -2,11 +2,12 @@ package com.ex.final22c.service.user;
 
 import java.security.Principal;
 import java.util.Optional;
+import java.util.Random;
 
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.DataNotFoundException;
 import com.ex.final22c.data.user.Users;
@@ -22,6 +23,7 @@ public class UsersService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerifier emailVerifier;
+    private final EmailService emailService;
 
     /** 사용자명으로 조회(없으면 DataNotFoundException) */
     public Users getUser(String userName) {
@@ -229,5 +231,26 @@ public class UsersService {
             return userOpt.get().getUserName(); // 아이디 반환
         }
         return null; // 못 찾음
+    }
+    
+    public boolean sendResetPasswordAuthCode(String userName, String email) {
+        Optional<Users> userOpt = userRepository.findByUserNameAndEmail(userName, email);
+
+        if (userOpt.isEmpty()) return false;
+
+        String authCode = generateAuthCode();
+        // TODO: 인증 코드를 DB/Redis에 저장 후 만료 처리
+        emailService.sendResetPasswordEmail(email, authCode);
+        return true;
+    }
+
+    private String generateAuthCode() {
+        Random random = new Random();
+        int code = 100000 + random.nextInt(900000);
+        return String.valueOf(code);
+    }
+
+    public Optional<String> findUserIdByNameAndEmail(String name, String email) {
+        return userRepository.findByNameAndEmail(name, email).map(Users::getUserName);
     }
 }
