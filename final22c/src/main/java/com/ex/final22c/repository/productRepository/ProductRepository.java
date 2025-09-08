@@ -163,4 +163,95 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 		    WHERE p.id = :id
 		""")
 		Map<String, Object> selectProductById(@Param("id") Long id);
+
+   
+   // =================== 상품 상세 페이지에서의 상품 추천 캐러셀 ===========================================
+   // (A) 같은 브랜드: 판매량 내림차순, 자기 자신 제외, ACTIVE, 재고>0
+   @Query(value = """
+   SELECT id, name, brandName, imgPath, imgName, listPrice, sellPrice, sold FROM (
+   SELECT
+      p.id                         AS id,
+      p.name                       AS name,
+      b.brandName                  AS brandName,
+      p.imgPath                    AS imgPath,
+      p.imgName                    AS imgName,
+      p.price                      AS listPrice,
+      p.sellPrice                  AS sellPrice,
+      NVL(s.sold, 0)               AS sold,
+      ROW_NUMBER() OVER(ORDER BY NVL(s.sold,0) DESC, p.id DESC) AS rn
+   FROM Product p
+   JOIN Brand b ON b.brandNo = p.brand_brandNo
+   LEFT JOIN (
+      SELECT od.id AS pid, SUM(od.confirmQuantity) AS sold
+      FROM orderDetail od
+      GROUP BY od.id
+   ) s ON s.pid = p.id
+   WHERE p.brand_brandNo = :brandId
+      AND p.id <> :productId
+      AND p.status = 'active'
+      AND p.count  > 0
+   )
+   WHERE rn <= :limit
+   """, nativeQuery = true)
+   List<Object[]> findSameBrandSoldDesc(
+   @Param("brandId") Long brandId,
+   @Param("productId") Long productId,
+   @Param("limit") int limit
+   );
+
+   // 최근 7일간 판매량 기준 top N
+   @Query(value = """
+   SELECT id, name, brandName, imgPath, imgName, listPrice, sellPrice, sold FROM (
+   SELECT
+      p.id                         AS id,
+      p.name                       AS name,
+      b.brandName                  AS brandName,
+      p.imgPath                    AS imgPath,
+      p.imgName                    AS imgName,
+      p.price                      AS listPrice,
+      p.sellPrice                  AS sellPrice,
+      SUM(od.confirmQuantity)      AS sold,
+      ROW_NUMBER() OVER(ORDER BY SUM(od.confirmQuantity) DESC, p.id DESC) AS rn
+   FROM Product p
+   JOIN Brand b        ON b.brandNo = p.brand_brandNo
+   JOIN orderDetail od ON od.id = p.id
+   JOIN Orders o       ON o.orderId = od.orderId
+   WHERE p.status = 'active'
+      AND p.count  > 0
+      AND o.regDate >= TRUNC(SYSDATE) - 6
+      AND o.regDate <  TRUNC(SYSDATE) + 1
+      AND (:excludeId IS NULL OR p.id <> :excludeId)
+      AND o.status IN ('PAID','CONFIRMED','REFUNDED')
+   GROUP BY p.id, p.name, b.brandName, p.imgPath, p.imgName, p.price, p.sellPrice
+   )
+   WHERE rn <= :limit
+   """, nativeQuery = true)
+   List<Object[]> findRecent7DaysTopSold(@Param("limit") int limit, @Param("excludeId") Long excludeId);
+
+   // 최근 7일이 비면 쓸 누적 베스트 (현재 상품 제외 가능)
+   @Query(value = """
+   SELECT id, name, brandName, imgPath, imgName, listPrice, sellPrice, sold FROM (
+   SELECT
+      p.id                         AS id,
+      p.name                       AS name,
+      b.brandName                  AS brandName,
+      p.imgPath                    AS imgPath,
+      p.imgName                    AS imgName,
+      p.price                      AS listPrice,
+      p.sellPrice                  AS sellPrice,
+      SUM(od.confirmQuantity)      AS sold,
+      ROW_NUMBER() OVER(ORDER BY SUM(od.confirmQuantity) DESC, p.id DESC) AS rn
+   FROM Product p
+   JOIN Brand b        ON b.brandNo = p.brand_brandNo
+   JOIN orderDetail od ON od.id = p.id
+   JOIN Orders o       ON o.orderId = od.orderId
+   WHERE p.status = 'active'
+      AND p.count  > 0
+      AND (:excludeId IS NULL OR p.id <> :excludeId)
+      AND o.status IN ('PAID','CONFIRMED','REFUNDED')
+   GROUP BY p.id, p.name, b.brandName, p.imgPath, p.imgName, p.price, p.sellPrice
+   )
+   WHERE rn <= :limit
+   """, nativeQuery = true)
+   List<Object[]> findAllTimeTopSold(@Param("limit") int limit, @Param("excludeId") Long excludeId);
 }
