@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -141,7 +143,8 @@ public class ProductService {
         return out;
     }
 
-    private static <T> List<List<T>> chunk(List<T> list, int size) {
+    // 이거 public 으로 바꿨는데 이상있으면 얘기해주세요
+    public static <T> List<List<T>> chunk(List<T> list, int size) {
         List<List<T>> pages = new ArrayList<>();
         if (list == null || list.isEmpty() || size <= 0) return pages;
         for (int i = 0; i < list.size(); i += size) {
@@ -333,8 +336,48 @@ public class ProductService {
                 Integer count = (Integer) p.get("count");
                 String status = (String) p.get("status");
                 return count != null && count > 0 && 
-                       (status == null || !"inactive".equals(status));
+                        (status == null || !"inactive".equals(status));
             })
             .collect(Collectors.toList());
+    }
+
+    // =================================== 상품 상세 페이지 상품 추천 캐러셀 ========================================
+    /**
+     * 같은 브랜드의 다른 상품 추천 (판매량 desc)
+     * - 현재 상품으로부터 brandId를 내부 조회
+     * - status=ACTIVE, count>0 조건은 쿼리에서 보장
+     */
+    public List<Object[]> getSameBrandRecommendations(Long productId, Integer limit) {
+        int topN = normalizeLimit(limit, 8, 1, 20);
+
+        Product p = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 상품: " + productId));
+
+        Long brandId = p.getBrand().getId();
+
+        return productRepository.findSameBrandSoldDesc(brandId, productId, topN);
+    }
+
+    /**
+     * 이번 주 판매량 TOP N (4×2 캐러셀의 경우 N=8 권장)
+     * - excludeId는 null 허용(현재 상품 제외 안함)
+     * - status=ACTIVE, count>0 조건은 쿼리에서 보장
+     */
+    public List<Object[]> getRecentTopSold(Integer limit, Long excludeProductId) {
+        int topN = normalizeLimit(limit, 8, 1, 20);
+        return productRepository.findRecent7DaysTopSold(topN, excludeProductId);
+    }
+
+    public List<Object[]> getAllTimeTopSold(Integer limit, Long excludeProductId) {
+        int topN = normalizeLimit(limit, 8, 1, 20);
+        return productRepository.findAllTimeTopSold(topN, excludeProductId);
+    }
+
+    // ---- 내부 유틸 ----
+    private int normalizeLimit(Integer input, int defaultVal, int min, int max) {
+        int v = (input == null) ? defaultVal : input;
+        if (v < min) v = min;
+        if (v > max) v = max;
+        return v;
     }
 }

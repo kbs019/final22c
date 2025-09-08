@@ -105,6 +105,23 @@ public class ProductController {
             zzimedByMe = zzimService.isZzimed(me, id); // 초기 찜 상태
         }
 
+        // 2) 관련/추천
+        List<Object[]> brandRecs   = productService.getSameBrandRecommendations(id, 8);
+
+        // 최근 7일 TOP 8 시도
+        List<Object[]> recentTop8  = productService.getRecentTopSold(8, id); // 현재 상품 제외
+        boolean recentTopIsFallback = false;
+
+        // 비었으면 누적 베스트로 대체
+        if (recentTop8 == null || recentTop8.isEmpty()) {
+            recentTop8 = productService.getAllTimeTopSold(8, id);
+            recentTopIsFallback = true;
+        }
+
+        model.addAttribute("brandRecs", brandRecs);
+        model.addAttribute("recentTop8", recentTop8);
+        model.addAttribute("recentTopIsFallback", recentTopIsFallback);
+
         model.addAttribute("product", product);
         model.addAttribute("reviews", reviews);
         model.addAttribute("reviewCount", reviewCount);
