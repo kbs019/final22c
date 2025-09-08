@@ -1,0 +1,48 @@
+<th:block layout:fragment="css">
+  <link rel="stylesheet" th:href="@{/css/footer.css}">
+</th:block>
+
+<th:block layout:fragment="footer">
+  <footer class="footer">
+    <div class="container py-4 position-relative">
+
+      <!-- 회사·제작팀 정보 -->
+      <div class="small footer-info mx-auto">
+        <section class="section company-block">
+          <p class="mb-1 fw-bold">(주)글로벌 아이티 인재개발원</p>
+          <p class="mb-1">사업자등록번호 : 119-81-85582 | 대표자명 : 이수일</p>
+          <p class="mb-1">주소:서울시 관악구 남부순환로 1820, 에그옐로우 14층</p>
+          <p class="mb-1">전화번호 : 02-6020-0055 | 팩스 : 02-3285-0012</p>
+        </section>
+
+        <section class="section team-block">
+          <p class="mb-1 fw-bold">제작팀 : NØT</p>
+          <p class="mb-1">고범수 · 최정환 · 박수한 · 홍석범 · 김가영</p>
+          <p class="mb-1">담당강사 : 탁민지</p>
+        </section>   
+      </div>
+
+      <!-- 저작권 -->
+      <div class="footer-legal text-center small mt-3">
+        <p class="mb-0">&copy; 22°C. All rights reserved.</p>
+      </div>
+
+      <!-- 오른쪽 하단 액션 -->
+      <div class="footer-actions">
+        <a href="/qna/question" class="action">1:1문의</a>
+        <a href="/main/faq" class="action">FAQ</a>
+        <button type="button" class="to-top" aria-label="맨 위로">↑</button>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const btn = document.querySelector('.footer .to-top');
+      if (!btn) return;
+      btn.addEventListener('click', () =>
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      );
+    })();
+  </script>
+</th:block>

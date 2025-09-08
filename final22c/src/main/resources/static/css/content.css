@@ -109,6 +109,7 @@ body.modal-open { padding-right: 0 !important; }
     display: inline-block;
     flex-shrink: 0;
     flex-basis: 50%;
+    container-type: inline-size;
 }
 
 /* 기본 오버레이 숨김 */
@@ -127,14 +128,21 @@ body.modal-open { padding-right: 0 !important; }
 
 /* 중앙 배지(검정 바탕 + 흰 글자) */
 .slideWrap.soldout .overlay{
-  position:absolute; inset:0;
-  display:flex; justify-content:center; align-items:center;
-  z-index:2; pointer-events:none;
+  position:absolute; 
+  inset:0;
+  display:grid; 
+  justify-content:center; 
+  align-items:center;
+  z-index:2; 
+  pointer-events:none;
+  place-items: center;
+  text-align: center;
 }
 .slideWrap.soldout .overlay::after{
   content:"SOLD OUT";
   font-weight:500;
   font-size: clamp(90px, 4.0vw, 70px);      /* 크기 증가 */
+  white-space: nowrap;        /* ← 절대 줄바꿈 금지 */
   letter-spacing:.08em;
   color:rgb(255, 255, 255);
   /* background: rgba(0,0,0,.9);
@@ -226,8 +234,10 @@ input[type=number]::-webkit-outer-spin-button{
     flex-direction: column;
     gap: 24px;
   }
+  .productInfoWrap .slideWrap.soldout { position: relative; }
+  
   .productInfoWrap .slideWrap{
-    position: static;     /* 모바일에선 고정 해제 */
+    position: relative;     /* 모바일에선 고정 해제 */
     top: auto;
     width: 100%;
     min-width: 0;
@@ -243,16 +253,20 @@ input[type=number]::-webkit-outer-spin-button{
   .productInfoWrap .slideWrap img{
     max-height: 520px;
   }
+  .slideWrap.soldout .overlay::after{
+    letter-spacing: .03em;
+    font-size: clamp(32px, 15cqw, 84px);
+  }
 }
 
 /* 모바일: 폰트/간격 조금 더 촘촘하게 */
-    @media (max-width: 576px){
-    .productInfoWrap{
-        padding: 0 12px;
-    }
-    #buy-qty-wrap .form-control{
-        width: 70px; /* 수량 인풋 살짝 축소 */
-    }
+@media (max-width: 576px){
+  .productInfoWrap{
+    padding: 0 12px;
+  }
+  #buy-qty-wrap .form-control{
+    width: 70px; /* 수량 인풋 살짝 축소 */
+  }
 }
 
 /* 공통 바 스타일 - 테두리 두께를 변수로 통일 */

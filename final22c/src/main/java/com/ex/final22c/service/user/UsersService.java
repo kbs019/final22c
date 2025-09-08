@@ -227,4 +227,13 @@ public class UsersService {
         }
         return userRepository.findByEmail(emailNorm).isEmpty();
     }
+    
+    // 아이디 찾기
+    public String findId(String name, String email) {
+        Optional<Users> userOpt = userRepository.findByNameAndEmail(name, email);
+        if (userOpt.isPresent()) {
+            return userOpt.get().getUserName(); // 아이디 반환
+        }
+        return null; // 못 찾음
+    }
 }
