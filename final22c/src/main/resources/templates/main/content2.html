@@ -180,6 +180,10 @@
         font-size: 0.95rem;
       }
 
+      .rel-price .original {
+        font-size: 0.85rem;
+      }
+
       .rec-carousel {
         display: flex;
         align-items: center;
@@ -971,11 +975,6 @@
           </div>
         </div>
 
-        <!-- 리뷰가 0개일 때 안내 (분포 대신 안내문) -->
-        <div class="text-muted small mb-4" th:if="${reviewCount == 0}">
-          아직 리뷰가 없습니다.
-        </div>
-
         <hr class="my-4">
 
         <!-- 전체 개수 + 정렬 -->
@@ -1093,9 +1092,10 @@
                         <div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
                         <div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">브랜드명</div>
                         <div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
+                        <br>
                         <div class="rel-price text-muted">
-                          <strong th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
-                          <del th:if="${r[5] != null && r[5] > r[6]}"
+                          <strong class="sell" th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
+                          <del class="original" th:if="${r[5] != null && r[5] > r[6]}"
                             th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
                         </div>
                       </a>
@@ -1153,14 +1153,14 @@
                         <div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
                         <div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">브랜드명</div>
                         <div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
-                        <div class="rel-price text-muted">
-                          <strong th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
-                          <del th:if="${r[5] != null && r[5] > r[6]}"
-                            th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
-                        </div>
                         <div class="small text-muted" th:if="${r[7] != null}">
                           <span th:text="${isFallback} ? '(누적) - ' : '(최근 7일) - '">(최근 7일) - </span>
                           <span th:text="${#numbers.formatInteger(r[7],1,'COMMA')}">0</span>개 판매
+                        </div>  <br>
+                        <div class="rel-price text-muted">
+                          <strong class="sell" th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
+                          <del class="original" th:if="${r[5] != null && r[5] > r[6]}"
+                            th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
                         </div>
                       </a>
                     </div>
