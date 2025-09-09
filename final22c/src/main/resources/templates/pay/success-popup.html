@@ -1,33 +1,160 @@
-
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <title>결제 성공</title>
+  <title>결제 완료</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #333;
+    }
+    
+    .success-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      animation: slideUp 0.6s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: #4CAF50;
+      border-radius: 50%;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: checkmark 0.8s ease-out 0.3s both;
+    }
+    
+    @keyframes checkmark {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    .success-icon::before {
+      content: '✓';
+      color: white;
+      font-size: 36px;
+      font-weight: bold;
+    }
+    
+    .success-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 12px;
+    }
+    
+    .success-message {
+      font-size: 16px;
+      color: #7f8c8d;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #ecf0f1;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #45a049);
+      border-radius: 2px;
+      animation: progress 3s linear;
+    }
+    
+    @keyframes progress {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+    
+    .auto-close {
+      font-size: 14px;
+      color: #95a5a6;
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+  </style>
 </head>
-<body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif">
-  <div>
-    <h2>결제가 완료되었습니다.</h2>
-    <p>창이 자동으로 닫혀요…</p>
+<body>
+  <div class="success-card">
+    <div class="success-icon"></div>
+    <h2 class="success-title">결제가 완료되었습니다!</h2>
+    <p class="success-message">주문이 성공적으로 처리되었어요.<br>곧 주문 내역 페이지로 이동합니다.</p>
+    
+    <div class="progress-bar">
+      <div class="progress-fill"></div>
+    </div>
+    
+    <p class="auto-close pulse">창이 자동으로 닫힙니다...</p>
   </div>
 
   <script>
     (function () {
       try {
         if (window.opener && !window.opener.closed) {
-          // ✅ 부모창에 성공 신호 전달
           window.opener.postMessage(
             { type: 'PAY_RESULT', status: 'success' },
             window.location.origin
           );
         }
       } catch (e) {}
-      // ✅ 메시지 전송 후 약간 기다렸다 닫기(레이스 방지)
+      
       setTimeout(function(){
         try { window.close(); } catch(e) {}
-        // same-tab 폴백
         setTimeout(function(){ window.location.replace('/main/list'); }, 200);
-      }, 400);
+      }, 3000); // 3초로 조정해서 사용자가 메시지를 읽을 시간 제공
     })();
   </script>
 </body>
