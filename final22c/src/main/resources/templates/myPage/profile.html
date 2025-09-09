@@ -344,6 +344,18 @@
         inline-size: fit-content; /* 지원 브라우저에서 더 정확하게 */
         white-space: nowrap; /* 줄바꿈 방지 */
       }
+
+      /* 탈퇴 버튼: 기본 흰 배경/검은 글씨, hover 시 반전 */
+      .mp-btn--danger-ghost {
+        background: #fff;
+        color: #111827;
+        border-color: #e5e7eb;
+      }
+      .mp-btn--danger-ghost:hover {
+        background: #111827;
+        color: #fff;
+        border-color: #111827;
+      }
     </style>
 
     <section class="mypage-wrap">
@@ -593,7 +605,18 @@
                   <input type="hidden" id="email" name="email" />
                   <div id="emailError" class="mp-msg mp-msg--bad"></div>
                 </div>
-
+                <!-- 회원 탈퇴 버튼 (이메일 아래, 다른 버튼들과 톤 통일) -->
+                <div class="mp-field" th:if="${verified}">
+                  <div style="display: flex; justify-content: flex-end">
+                    <button
+                      type="button"
+                      id="btnDeleteAccount"
+                      class="mp-btn mp-btn--sm mp-btn--danger-ghost"
+                    >
+                      회원 탈퇴
+                    </button>
+                  </div>
+                </div>
                 <div
                   th:if="${message}"
                   class="mp-msg mp-msg--ok"
@@ -737,6 +760,69 @@
             id="modalEmailYes"
           >
             예
+          </button>
+          <button type="button" class="mp-btn" data-close="no">아니요</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 회원 탈퇴 모달 ===== -->
+    <div
+      id="deleteModal"
+      class="modal"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal__backdrop" data-close="backdrop"></div>
+      <div class="modal__panel" role="document">
+        <h3 class="modal__title" style="color: #991b1b">
+          정말 탈퇴하시겠습니까?
+        </h3>
+        <div class="modal__body">
+          <p style="margin: 0 0 8px">
+            아래 휴대폰 번호로 인증번호를 받아 진행합니다.
+          </p>
+
+          <div class="modal__row" style="grid-template-columns: 1fr">
+            <input
+              id="delPhoneMasked"
+              class="mp-input mp-input--readonly"
+              readonly
+              value=""
+            />
+            <input type="hidden" id="delPhoneDigits" value="" />
+          </div>
+
+          <div class="modal__row" style="grid-template-columns: 1fr auto">
+            <input
+              id="delCode"
+              class="mp-input"
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="인증번호 6자리"
+            />
+            <button
+              type="button"
+              id="delBtnAction"
+              class="mp-btn mp-btn--primary mp-btn--fit"
+            >
+              인증번호 발송
+            </button>
+          </div>
+
+          <div id="delMsg" class="mp-msg" aria-live="polite"></div>
+          <div id="delErr" class="modal__error" aria-live="polite"></div>
+        </div>
+        <div class="modal__footer">
+          <button
+            type="button"
+            class="mp-btn mp-btn--primary"
+            id="delYes"
+            disabled
+            style="background: #dc2626; border-color: #dc2626"
+          >
+            탈퇴하기
           </button>
           <button type="button" class="mp-btn" data-close="no">아니요</button>
         </div>
@@ -1293,6 +1379,258 @@
             msgEl.classList.add("mp-msg--bad");
           }
         });
+      })();
+
+      /* ===== 회원 탈퇴: 경고 버튼 + 모달 + 휴대폰 인증 후 삭제 ===== */
+      (function () {
+        const dangerBtn = document.getElementById("btnDeleteAccount");
+        const modal = document.getElementById("deleteModal");
+        if (!dangerBtn || !modal) return;
+
+        const backdrop = modal.querySelector(".modal__backdrop");
+        const noBtn = modal.querySelector('[data-close="no"]');
+        const phoneMasked = document.getElementById("delPhoneMasked");
+        const phoneDigitsEl = document.getElementById("delPhoneDigits");
+        const codeInput = document.getElementById("delCode");
+        const actionBtn = document.getElementById("delBtnAction");
+        const yesBtn = document.getElementById("delYes");
+        const msgEl = document.getElementById("delMsg");
+        const errEl = document.getElementById("delErr");
+
+        let phase = "idle"; // idle | sent | verified
+        let cooldown = 0,
+          timer = null;
+
+        function setErr(t = "") {
+          errEl.textContent = t;
+        }
+        function setMsg(t = "", ok = false) {
+          msgEl.textContent = t;
+          msgEl.classList.toggle("mp-msg--ok", ok);
+          msgEl.classList.toggle("mp-msg--bad", !ok && !!t);
+        }
+        function openModal() {
+          fetch("/mypage/profile/delete/check", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(getCsrf().token
+                ? { [getCsrf().header]: getCsrf().token }
+                : {}),
+            },
+            credentials: "same-origin",
+            body: "{}",
+          })
+            .then((r) => r.json())
+            .then((d) => {
+              if (!d.ok) {
+                throw new Error(d.message || "정보 조회 실패");
+              }
+              phoneMasked.value = d.phoneMasked || "";
+              phoneDigitsEl.value = d.phoneDigits || "";
+              phase = "idle";
+              cooldown = 0;
+              stopTimer();
+              codeInput.value = "";
+              codeInput.readOnly = false;
+              yesBtn.disabled = true;
+              setErr("");
+              setMsg("");
+              updateActionLabel();
+              modal.classList.add("is-open");
+              modal.setAttribute("aria-hidden", "false");
+              setTimeout(() => codeInput.focus(), 0);
+              document.addEventListener("keydown", onKey);
+            })
+            .catch((e) => {
+              window.openNotice?.(
+                e.message || "탈퇴 준비 중 오류가 발생했습니다."
+              );
+            });
+        }
+        function closeModal() {
+          modal.classList.remove("is-open");
+          modal.setAttribute("aria-hidden", "true");
+          document.removeEventListener("keydown", onKey);
+          stopTimer();
+        }
+        function onKey(e) {
+          if (e.key === "Escape") closeModal();
+        }
+
+        function stopTimer() {
+          if (timer) {
+            clearInterval(timer);
+            timer = null;
+          }
+        }
+        function startTimer() {
+          stopTimer();
+          timer = setInterval(() => {
+            cooldown = Math.max(0, cooldown - 1);
+            if (cooldown === 0) stopTimer();
+            updateActionLabel();
+          }, 1000);
+        }
+
+        function updateActionLabel() {
+          if (phase === "idle") {
+            actionBtn.textContent = "인증번호 발송";
+            actionBtn.classList.add("mp-btn--primary");
+            return;
+          }
+          if (phase === "sent") {
+            const hasCode = /^\d{6}$/.test(
+              (codeInput.value || "").replace(/\D+/g, "")
+            );
+            if (hasCode) {
+              actionBtn.textContent = "인증 확인";
+              actionBtn.classList.add("mp-btn--primary");
+            } else {
+              actionBtn.textContent =
+                cooldown > 0 ? `재전송 (${cooldown}s)` : "재전송";
+              actionBtn.classList.toggle("mp-btn--primary", cooldown <= 0);
+            }
+            return;
+          }
+          if (phase === "verified") {
+            actionBtn.textContent = "재요청";
+            actionBtn.classList.remove("mp-btn--primary");
+          }
+        }
+
+        function digitsOnly(s) {
+          return (s || "").replace(/\D+/g, "");
+        }
+
+        actionBtn.addEventListener("click", async () => {
+          const phone = phoneDigitsEl.value || "";
+          if (!/^01[016789]\d{8}$/.test(phone)) {
+            setErr("등록된 휴대폰 번호가 올바르지 않습니다.");
+            return;
+          }
+
+          if (phase === "idle") {
+            try {
+              const body = new URLSearchParams({ phone });
+              const res = await fetch("/auth/phone/send", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                },
+                credentials: "same-origin",
+                body,
+              });
+              const d = await res.json();
+              if (!d.ok) throw new Error(d.msg || "발송 실패");
+              setMsg("인증번호가 발송되었습니다. 5분 내 입력해 주세요.", true);
+              phase = "sent";
+              cooldown = d.cooldownSeconds ?? 60;
+              startTimer();
+            } catch (e) {
+              setMsg(e.message || "발송 중 오류", false);
+            }
+            updateActionLabel();
+            return;
+          }
+
+          if (phase === "sent") {
+            const code = digitsOnly(codeInput.value);
+            if (/^\d{6}$/.test(code)) {
+              try {
+                const body = new URLSearchParams({ phone, code });
+                const res = await fetch("/auth/phone/verify", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                  },
+                  credentials: "same-origin",
+                  body,
+                });
+                const d = await res.json();
+                if (!d.ok) throw new Error(d.msg || "인증 실패");
+                phase = "verified";
+                yesBtn.disabled = false;
+                codeInput.readOnly = true;
+                stopTimer();
+                setMsg("휴대폰 인증이 완료되었습니다.", true);
+              } catch (e) {
+                setMsg(e.message || "인증 중 오류", false);
+              }
+              updateActionLabel();
+              return;
+            }
+            if (cooldown <= 0) {
+              try {
+                const body = new URLSearchParams({ phone });
+                const res = await fetch("/auth/phone/send", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                  },
+                  credentials: "same-origin",
+                  body,
+                });
+                const d = await res.json();
+                if (!d.ok) throw new Error(d.msg || "재전송 실패");
+                setMsg("인증번호가 재전송되었습니다.", true);
+                cooldown = d.cooldownSeconds ?? 60;
+                startTimer();
+              } catch (e) {
+                setMsg(e.message || "재전송 중 오류", false);
+              }
+              updateActionLabel();
+            }
+            return;
+          }
+
+          if (phase === "verified") {
+            codeInput.readOnly = false;
+            codeInput.value = "";
+            yesBtn.disabled = true;
+            phase = "idle";
+            setMsg("");
+            setErr("");
+            updateActionLabel();
+          }
+        });
+
+        yesBtn.addEventListener("click", async () => {
+          setErr("");
+          setMsg("");
+          try {
+            const { header, token } = getCsrf();
+            const res = await fetch("/mypage/profile/delete", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { [header]: token } : {}),
+              },
+              credentials: "same-origin",
+              body: "{}",
+            });
+            const d = await res.json().catch(() => ({}));
+            if (res.status === 403) {
+              closeModal();
+              window.openNotice?.(
+                "보안을 위해 다시 한 번 비밀번호를 입력해 주세요."
+              );
+              setTimeout(() => location.reload(), 300);
+              return;
+            }
+            if (!res.ok || !d.ok) throw new Error(d.message || "탈퇴 실패");
+
+            closeModal();
+            const to = d.redirectUrl || "/main";
+            location.href = to;
+          } catch (e) {
+            setErr(e.message || "탈퇴 중 오류가 발생했습니다.");
+          }
+        });
+
+        dangerBtn.addEventListener("click", openModal);
+        backdrop.addEventListener("click", closeModal);
+        noBtn.addEventListener("click", closeModal);
       })();
     </script>
   </div>

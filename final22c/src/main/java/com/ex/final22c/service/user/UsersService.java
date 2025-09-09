@@ -227,7 +227,7 @@ public class UsersService {
         }
         return userRepository.findByEmail(emailNorm).isEmpty();
     }
-    
+
     // 아이디 찾기
     public String findId(String name, String email) {
         Optional<Users> userOpt = userRepository.findByNameAndEmail(name, email);
@@ -235,5 +235,19 @@ public class UsersService {
             return userOpt.get().getUserName(); // 아이디 반환
         }
         return null; // 못 찾음
+    }
+
+    @Transactional
+    public void deactivateAccount(String username) {
+        Users me = getUser(username);
+        me.setStatus("inactive");
+        userRepository.save(me);
+    }
+
+    // 아이디 삭제
+    @Deprecated
+    @Transactional
+    public void deleteAccount(String username) {
+        deactivateAccount(username);
     }
 }

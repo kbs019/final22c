@@ -16,6 +16,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.user.Row;
 
 import jakarta.persistence.LockModeType;
 
@@ -147,139 +148,86 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
   List<Order> findByUser_UserNameOrderByRegDateDesc(String userName);
 
-  public interface MileageRowWithBalance {
+  interface MileageRowBare {
+    Long getOrderId();
+
+    java.time.LocalDateTime getProcessedAt(); // 처리시각
+
+    Integer getUsedPointRaw(); // 결제차감(양수)
+
+    Integer getEarnPointVisible(); // 적립/환불반환(양수)
+
+    String getStatus(); // PAID / CONFIRMED / REFUNDED
+  }
+
+  // 차감(결제 시 사용 포인트)
+  @Query("""
+        select new com.ex.final22c.data.user.Row(
+          o.orderId, o.regDate, o.usedPoint, 0, 'PAID'
+        )
+        from Order o
+        where o.user.userNo = :userNo and coalesce(o.usedPoint,0) > 0
+      """)
+  List<com.ex.final22c.data.user.Row> findPaid(@Param("userNo") Long userNo);
+
+  // 적립(구매확정 시 적립 포인트)
+  @Query("""
+        select new com.ex.final22c.data.user.Row(
+          o.orderId, o.regDate, 0, coalesce(o.confirmMileage,0), 'CONFIRMED'
+        )
+        from Order o
+        where o.user.userNo = :userNo and coalesce(o.confirmMileage,0) > 0
+      """)
+  List<com.ex.final22c.data.user.Row> findConfirmed(@Param("userNo") Long userNo);
+
+  // 환불(환불 시 복구된 마일리지)
+  @Query("""
+          select new com.ex.final22c.data.user.Row(
+            r.order.orderId,
+            max(r.updateDate),
+            0,
+            coalesce(sum(r.refundMileage), 0),
+            'REFUNDED'
+          )
+          from Refund r
+          where r.user.userNo = :userNo and r.status = 'REFUNDED'
+          group by r.order.orderId
+      """)
+  List<com.ex.final22c.data.user.Row> findRefunded(@Param("userNo") Long userNo);
+
+  public interface MileageRow {
     Long getOrderId();
 
     java.time.LocalDateTime getProcessedAt();
 
-    Long getUsedPoint(); // 부분환불 반영된 사용(양수)
+    Long getUsedPoint();
 
-    Long getEarnedPoint(); // 내부 계산용(양수)
+    // 계산용: 확정 +, 환불 − (기존)
+    Long getEarnedPoint();
 
-    Long getFinalEarnPoint(); // 화면 표시용(양수)
+    // 표시용: 확정/환불 모두 양수(원래 적립될 금액)
+    Long getVisibleEarnPoint();
 
     String getStatus();
-
-    Long getBalanceAt(); // 그 주문 시점의 마일리지 스냅샷
-
-    @Query(value = """
-          select
-            o.orderId  as orderId,
-            o.regDate  as processedAt,
-            case
-              when o.status = 'REFUNDED'
-                then function('greatest', coalesce(o.usedPoint,0L) - coalesce(r.refundMileage,0L), 0L)
-              else coalesce(o.usedPoint,0L)
-            end                                                   as usedPoint,
-            case
-              when o.status = 'CONFIRMED' then coalesce(o.confirmMileage,0L)
-              when o.status = 'REFUNDED'
-                then function('greatest', coalesce(o.confirmMileage,0L) - coalesce(r.refundMileage,0L), 0L)
-              else 0L
-            end                                                   as earnedPoint,
-            case
-              when o.status = 'CONFIRMED' then coalesce(o.confirmMileage,0L)
-              when o.status = 'REFUNDED'
-                then function('greatest', coalesce(o.confirmMileage,0L) - coalesce(r.refundMileage,0L), 0L)
-              else 0L
-            end                                                   as finalEarnPoint,
-            (
-              (select coalesce(u.mileage,0L) from Users u where u.userNo = :userNo)
-              -
-              coalesce((
-                select sum(
-                  cast(
-                    case
-                      when oo.status = 'REFUNDED'
-                        then function('greatest', coalesce(oo.usedPoint,0L) - coalesce(rr.refundMileage,0L), 0L)
-                      else coalesce(oo.usedPoint,0L)
-                    end
-                  as long)
-                )
-                from Order oo
-                left join oo.refund rr
-                where oo.user.userNo = :userNo
-                  and oo.status in :statuses
-                  and (
-                    oo.regDate > o.regDate
-                    or (oo.regDate = o.regDate and oo.orderId > o.orderId)
-                  )
-              ), 0L)
-              +
-              coalesce((
-                select sum(
-                  cast(
-                    case
-                      when oo.status = 'REFUNDED'
-                        then function('greatest', coalesce(oo.confirmMileage,0L) - coalesce(rr.refundMileage,0L), 0L)
-                      when oo.status = 'CONFIRMED'
-                        then coalesce(oo.confirmMileage,0L)
-                      else 0L
-                    end
-                  as long)
-                )
-                from Order oo
-                left join oo.refund rr
-                where oo.user.userNo = :userNo
-                  and oo.status in :statuses
-                  and (
-                    oo.regDate > o.regDate
-                    or (oo.regDate = o.regDate and oo.orderId > o.orderId)
-                  )
-              ), 0L)
-            )                                                     as balanceAt,
-
-            o.status                                              as status
-          from Order o
-          left join o.refund r
-          where o.user.userNo = :userNo
-            and o.status in :statuses
-          order by o.regDate desc, o.orderId desc
-        """, countQuery = """
-          select count(o)
-          from Order o
-          where o.user.userNo = :userNo
-            and o.status in :statuses
-        """)
-    Page<OrderRepository.MileageRowWithBalance> findMileageWithBalanceByUserAndStatuses(
-        @Param("userNo") Long userNo,
-        @Param("statuses") Collection<String> statuses,
-        Pageable pageable);
-
-    public interface MileageRow {
-      Long getOrderId();
-
-      java.time.LocalDateTime getProcessedAt();
-
-      Long getUsedPoint();
-
-      // 계산용: 확정 +, 환불 − (기존)
-      Long getEarnedPoint();
-
-      // 표시용: 확정/환불 모두 양수(원래 적립될 금액)
-      Long getVisibleEarnPoint();
-
-      String getStatus();
-    }
-
-    @Query("""
-        select
-            o.orderId                            as orderId,
-            o.regDate                            as processedAt,
-            coalesce(o.usedPoint, 0)             as usedPoint,
-            case
-                when o.status = 'REFUNDED' then 0
-                else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
-            end                                   as earnedPoint,
-            o.status                             as status
-        from Order o
-        where o.user.userNo = :userNo
-          and o.status in :statuses
-        order by o.regDate desc
-        """)
-    Page<MileageRow> findMileageByUserAndStatuses(
-        @Param("userNo") Long userNo,
-        @Param("statuses") Collection<String> statuses,
-        Pageable pageable);
   }
+
+  @Query("""
+      select
+          o.orderId                            as orderId,
+          o.regDate                            as processedAt,
+          coalesce(o.usedPoint, 0)             as usedPoint,
+          case
+              when o.status = 'REFUNDED' then 0
+              else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
+          end                                   as earnedPoint,
+          o.status                             as status
+      from Order o
+      where o.user.userNo = :userNo
+        and o.status in :statuses
+      order by o.regDate desc
+      """)
+  Page<MileageRow> findMileageByUserAndStatuses(
+      @Param("userNo") Long userNo,
+      @Param("statuses") Collection<String> statuses,
+      Pageable pageable);
 }

@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,12 +15,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.service.user.PhoneCodeService;
 import com.ex.final22c.service.user.UsersService;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
 
 @Controller
@@ -206,7 +211,7 @@ public class MyProfileController {
             usersService.updatePhoneAndTelecom(principal.getName(), phone, telecom);
             phoneCodeService.clearVerified(digits);
 
-            // ✅ 성공 시 재인증 세션 연장(UX 향상)
+            // 성공 시 재인증 세션 연장(UX 향상)
             session.setAttribute("PROFILE_AUTH_AT", System.currentTimeMillis());
 
             return ResponseEntity.ok(Map.of("ok", true, "message", "변경되었습니다."));
@@ -283,5 +288,87 @@ public class MyProfileController {
         Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
         boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
         return Map.of("ok", true, "verified", verified);
+    }
+
+    /** 탈퇴 전: 내 등록 휴대폰(마스킹) 조회 (AJAX) */
+    @PostMapping(value = "/delete/check", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> preDeleteCheck(Principal principal, HttpSession session) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+        Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
+        boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
+        if (!verified) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("ok", false, "message", "재인증이 필요합니다."));
+        }
+
+        Users me = usersService.getUser(principal.getName());
+        String digits = Optional.ofNullable(me.getPhone()).orElse("").replaceAll("\\D+", "");
+        if (!digits.matches("^01[016789]\\d{8}$")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("ok", false, "message", "등록된 휴대폰 번호가 올바르지 않습니다."));
+        }
+
+        // 010-****-1234 형태로 마스킹
+        String masked = "010-" + digits.substring(3, 7).replaceAll("\\d", "*") + "-" + digits.substring(7);
+        return ResponseEntity.ok(Map.of(
+                "ok", true,
+                "phoneMasked", masked,
+                "phoneDigits", digits // 프론트가 /auth/phone/send, /auth/phone/verify에 그대로 사용
+        ));
+    }
+
+    @PostMapping(value = "/delete", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteMyAccount(
+            Principal principal,
+            HttpSession session,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+        Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
+        boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
+        if (!verified) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("ok", false, "message", "재인증이 필요합니다."));
+        }
+
+        Users me = usersService.getUser(principal.getName());
+        String digits = java.util.Optional.ofNullable(me.getPhone()).orElse("").replaceAll("\\D+", "");
+        if (!digits.matches("^01[016789]\\d{8}$")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("ok", false, "message", "등록된 휴대폰 번호가 올바르지 않습니다."));
+        }
+        if (!phoneCodeService.isVerified(digits)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("ok", false, "message", "휴대폰 인증을 먼저 완료해 주세요."));
+        }
+
+        try {
+            // 비활성화
+            usersService.deactivateAccount(principal.getName());
+            phoneCodeService.clearVerified(digits);
+
+            try {
+                session.invalidate();
+            } catch (Exception ignore) {
+            }
+            new org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler()
+                    .logout(request, response, null);
+
+            return ResponseEntity.ok(Map.of(
+                    "ok", true,
+                    "message", "회원 탈퇴(비활성화)가 완료되었습니다.",
+                    "redirectUrl", "/main"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("ok", false, "message", "탈퇴 처리 중 오류가 발생했습니다."));
+        }
     }
 }

@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.ex.final22c.data.user.MileageRowWithBalance;
 import com.ex.final22c.data.user.Users;
-import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.mypage.MyMileageService;
 
@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/mypage")
 public class MyMileageController {
+
     private final UserRepository usersRepository;
     private final MyMileageService myMileageService;
 
@@ -33,14 +34,12 @@ public class MyMileageController {
         Users me = usersRepository.findByUserName(principal.getName())
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 
-        // Page<OrderRepository.MileageRowWithBalance> rows = myMileageService.getMileageHistory(me.getUserNo(), page,
-        //         size);
+        Page<MileageRowWithBalance> rows = myMileageService.getMileageHistory(me.getUserNo(), page, size);
 
         model.addAttribute("section", "mileage");
         model.addAttribute("me", me);
-        // model.addAttribute("rows", rows);
+        model.addAttribute("rows", rows);
 
         return "mypage/mileage";
     }
-
 }
