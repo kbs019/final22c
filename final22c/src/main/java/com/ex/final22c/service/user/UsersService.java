@@ -233,24 +233,36 @@ public class UsersService {
         return null; // 못 찾음
     }
     
+    private String tempAuthCode;
+    
+    // 아이디 이메일 확인 후 인증코드 발송
     public boolean sendResetPasswordAuthCode(String userName, String email) {
         Optional<Users> userOpt = userRepository.findByUserNameAndEmail(userName, email);
-
         if (userOpt.isEmpty()) return false;
 
         String authCode = generateAuthCode();
-        // TODO: 인증 코드를 DB/Redis에 저장 후 만료 처리
+        tempAuthCode = authCode; // 임시 저장
         emailService.sendResetPasswordEmail(email, authCode);
         return true;
+    }
+    
+    // 인증코드 확인
+    public boolean verifyAuthCode(String authCode) {
+        return authCode.equals(tempAuthCode);
+    }
+    
+    //
+    public void resetPassword(String userName, String newPassword) {
+        userRepository.findByUserName(userName).ifPresent(user -> {
+            // ✅ 비밀번호 암호화
+            String encodedPw = passwordEncoder.encode(newPassword);
+            user.setPassword(encodedPw);
+            userRepository.save(user);
+        });
     }
 
     private String generateAuthCode() {
         Random random = new Random();
-        int code = 100000 + random.nextInt(900000);
-        return String.valueOf(code);
-    }
-
-    public Optional<String> findUserIdByNameAndEmail(String name, String email) {
-        return userRepository.findByNameAndEmail(name, email).map(Users::getUserName);
+        return String.valueOf(100000 + random.nextInt(900000));
     }
 }

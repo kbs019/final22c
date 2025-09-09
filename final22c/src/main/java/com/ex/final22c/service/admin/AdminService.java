@@ -231,17 +231,17 @@ public class AdminService {
             }
         }
     }
-
-    // 전체 회원목록
+    // 회원목록
     public Page<Users> getList(int page, String kw, String filter) {
+        // 최신순(userNo 기준) 정렬
         List<Sort.Order> sorts = new ArrayList<>();
-        sorts.add(Sort.Order.desc("reg"));
+        sorts.add(Sort.Order.desc("userNo"));  // userNo
         PageRequest pageable = PageRequest.of(page, 10, Sort.by(sorts));
 
         // 기존 검색 조건
         Specification<Users> spec = search(kw);
 
-        // ✅ filter 추가
+        // filter 조건
         if ("suspended".equals(filter)) {
             spec = spec.and((root, query, cb) -> cb.or(
                     cb.equal(root.get("status"), "suspended"),
@@ -249,9 +249,11 @@ public class AdminService {
         }
 
         Page<Users> result = this.userRepository.findAll(spec, pageable);
-        result.forEach(this::updateUserStatusIfExpired);
-        return result;
 
+        // 상태 만료 체크 후 업데이트
+        result.forEach(this::updateUserStatusIfExpired);
+        
+        return result;
     }
 
     // 회원 정보
