@@ -246,37 +246,37 @@ public class ChatService {
     ) {}
 
     /* ----- 추가 텍스트 생성(그대로 유지) ----- */
-    public String generateProductDescription(String prompt) { /* (네 원본 그대로) */ 
+    public String generateProductDescription(String prompt) {
         var body = Map.of(
             "model", model,
             "messages", List.of(
                 Map.of("role", "system", "content",
                     "당신은 향수 전문가입니다. 매력적이고 전문적인 상품 설명문을 작성해주세요.\n\n" +
-                    "**작성 형식:**\n" +
-                    "첫 번째 문단: 향수의 주요 특징과 노트 구성 설명\n\n" +
-                    "두 번째 문단: 어떤 상황이나 사람에게 어울리는지 설명\n\n" +
-                    "**작성 규칙:**\n" +
-                    "- 순수 한국어만 사용 (영어 단어 절대 금지)\n" +
-                    "- 한자나 특수문자 사용 금지\n" +
-                    "- HTML 태그 사용 금지, 순수 텍스트만\n" +
-                    "- 각 문단 사이에 빈 줄로 구분\n" +
-                    "- 150-200자 내외로 간결하게 작성\n" +
-                    "- 완전한 문장으로만 구성\n" +
-                    "- 어색한 표현이나 깨진 단어 사용 금지"),
+                    "형식:\n1문단: 향수의 주요 특징과 노트 구성\n2문단: 어떤 상황/사용자에게 어울리는지\n\n" +
+                    "규칙:\n- 순수 한국어\n- HTML/특수문자 금지\n- 문단 사이 한 줄 공백\n" +
+                    "- 각 문단 180~220자, 전체 2문단(과도하게 길지 않게)\n- 자연스러운 존댓말"),
                 Map.of("role", "user", "content", prompt)
             ),
-            "temperature", 0.4,
-            "max_tokens", 300
+            "temperature", 0.5,
+            "max_tokens", 800 
         );
+
         try {
             var resp = call(body);
             String result = extract(resp);
-            if (result != null && result.length() > 500) result = result.substring(0, 480) + "...";
-            if (result != null) {
-                result = result.replaceAll("[^가-힣a-zA-Z0-9\\s\\.,!?()\\-]", "")
-                               .replaceAll("[ \\t]+", " ")
-                               .replaceAll("\n{3,}", "\n\n")
-                               .trim();
+            if (result == null) return null;
+
+            result = result.replace("\r\n", "\n")
+                           .replaceAll("[ \t]+", " ")
+                           .replaceAll("\n{3,}", "\n\n")
+                           .trim();
+
+            // ⬇ 끊겼으면 1회 보정
+            if (seemsCut(result)) {
+                String tail = finishTail(result);
+                if (tail != null && !tail.isBlank()) {
+                    result = (result + " " + tail).replaceAll("[ \t]+", " ").trim();
+                }
             }
             return result;
         } catch (Exception e) {
@@ -310,11 +310,47 @@ public class ChatService {
         try {
             var resp = call(body);
             String result = extract(resp);
-            if (result != null && result.length() > 500) result = result.substring(0, 400) + "...";
+            if (result == null) return null;
+
+            result = result.replace("\r\n", "\n")
+                           .replaceAll("[ \t]+", " ")
+                           .replaceAll("\n{3,}", "\n\n")
+                           .trim();
+
+            // ⬇ 끊겼으면 1회 보정
+            if (seemsCut(result)) {
+                String tail = finishTail(result);
+                if (tail != null && !tail.isBlank()) {
+                    result = (result + " " + tail).replaceAll("[ \t]+", " ").trim();
+                }
+            }
             return result;
         } catch (Exception e) {
-            log.error("개인화 향수 분석 실패: {}", e.getMessage());
+            log.error("상품 설명문 생성 실패: {}", e.getMessage());
             return null;
         }
+    }
+ // 텍스트가 문장 중간에서 끝났는지 간단 점검
+    private static boolean seemsCut(String s) {
+        if (s == null) return false;
+        // 마침표/물음표/느낌표 혹은 '요.' '다.' 등으로 끝나지 않으면 끊긴 걸로 간주
+        return !s.trim().matches("(?s).*[.!?]|.*(요|다|함)\\.$");
+    }
+
+    // 끊긴 경우, 마지막 1~2문장만 자연스럽게 끝맺도록 모델에 한 번 더 요청
+    private String finishTail(String partial) {
+        var body = Map.of(
+            "model", model,
+            "messages", List.of(
+                Map.of("role", "system", "content",
+                    "다음 한국어 텍스트가 문장 중간에서 끊겼습니다. 의미 바꾸지 말고 1~2문장으로 자연스럽게 마무리만 해주세요. " +
+                    "앞부분을 반복하거나 요약하지 말고, 뒤에 이어질 문장만 작성하세요."),
+                Map.of("role", "user", "content", partial)
+            ),
+            "temperature", 0.3,
+            "max_tokens", 200  // 마무리만
+        );
+        var resp = call(body);
+        return extract(resp);
     }
 }
