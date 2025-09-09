@@ -220,4 +220,31 @@ public class MyPageController {
 
         return ResponseEntity.ok("선택한 상품이 장바구니에 담겼습니다.");
     }
+    
+    // 결제 페이지에서 바로 주소등록
+    @PostMapping(value = "/address/new", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> createAddressJson(
+            @RequestBody UsersAddressForm form,
+            Principal principal) {
+        
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+        
+        try {
+            Users me = usersService.getLoginUser(principal);
+            var saved = userAddressService.insertUserAddressReturn(me.getUserNo(), form);
+            
+            return ResponseEntity.ok(Map.of(
+                "ok", true, 
+                "address", AddressDto.from(saved)
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "ok", false, 
+                "message", "주소 등록에 실패했습니다: " + e.getMessage()
+            ));
+        }
+    }
 }
