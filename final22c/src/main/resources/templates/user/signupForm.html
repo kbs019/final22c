@@ -101,9 +101,9 @@
                     class="form-control"
                     minlength="8"
                     maxlength="150"
-                    pattern="^(?=.*[A-Za-z])(?=.*[0-9]).{8,}$"
+                    pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;&quot;'&lt;&gt;,.?/~`]).{8,150}$"
                     required
-                    placeholder="영문+숫자 포함 8자 이상"
+                    placeholder="영문+숫자+특수문자 포함 8자 이상"
                   />
                   <button
                     type="button"
@@ -120,7 +120,7 @@
                   class="invalid-feedback"
                   style="display: none"
                 >
-                  영문+숫자 포함 8자 이상(영문/숫자만)
+                  영문+숫자+특수문자 포함 8자 이상
                 </div>
               </div>
 
@@ -524,7 +524,7 @@
           (el) => el && (el.style.display = "none")
         );
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 로컬 '.'/특수문자 허용(표준 널널 매칭)
         let singleMode = false; // true: emailLocal에 전체 이메일을 입력하는 모드
 
         function setSingleMode(on) {
@@ -850,10 +850,14 @@
         let pwAbort,
           pwAjaxValid = false;
 
+        // 클라이언트 폴백용: 영문+숫자+특수문자 ≥1, 8~150자
+        const PW_CLIENT_REGEX =
+          /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;'"<>,.?/~`]).{8,150}$/;
+
         const showRuleError = (msg) => {
           pw1.classList.add("is-invalid");
           if (pwRule) {
-            pwRule.textContent = msg || "영문+숫자 포함 8자 이상(영문/숫자만)";
+            pwRule.textContent = msg || "영문+숫자+특수문자 포함 8자 이상";
             pwRule.style.display = "block";
           }
         };
@@ -903,7 +907,7 @@
               pw1.classList.remove("is-valid");
             }
           } catch {
-            const ok = /^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,}$/.test(v);
+            const ok = PW_CLIENT_REGEX.test(v); // 폴백 규칙도 특수문자 포함
             pwAjaxValid = ok;
             if (ok) {
               clearRuleError();
@@ -1221,7 +1225,10 @@
             const d = await r.json();
             pwOk = !!(d && d.ok && d.valid);
           } catch {
-            pwOk = /^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,}$/.test(v);
+            pwOk =
+              /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;'"<>,.?/~`]).{8,150}$/.test(
+                v
+              );
           }
           if (!pwOk) {
             document.getElementById("password1")?.focus();
@@ -1241,7 +1248,7 @@
             return;
           }
 
-          // ★ 인증 완료 여부 확인 (클라 보조)
+          //  인증 완료 여부 확인 (클라 보조)
           if (document.getElementById("phoneVerified")?.value !== "Y") {
             document.getElementById("phoneCode")?.focus();
             const m =

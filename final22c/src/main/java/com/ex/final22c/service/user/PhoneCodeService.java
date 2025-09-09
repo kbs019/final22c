@@ -12,12 +12,6 @@ import com.ex.final22c.CoolSmsSender;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * 휴대폰 인증번호 발송/검증 서비스
- * - 인메모리(ConcurrentHashMap)로 코드/쿨다운/일일횟수 관리
- * - 코드 유효시간 / 재전송 쿨다운 / 일일 발송 제한 / 검증 시도 제한
- * - 최종 회원가입 시 서버에서 isVerified로 다시 검증
- */
 @Service
 @RequiredArgsConstructor
 public class PhoneCodeService {
@@ -25,22 +19,22 @@ public class PhoneCodeService {
     private final CoolSmsSender coolSmsSender;
     private final PasswordEncoder passwordEncoder;
 
-    // ===== 정책 =====
+    // 정책
     private static final int CODE_LEN = 6;                 // 인증번호 자리수
     private static final int EXPIRE_MINUTES = 5;           // 코드 유효시간(분)
     private static final int RESEND_COOLDOWN_SEC = 60;     // 재전송 쿨다운(초)
     private static final int MAX_DAILY_SEND = 5;           // 하루 발송 제한
     private static final int MAX_VERIFY_ATTEMPTS = 5;      // 최대 검증 시도
 
-    // ===== 인메모리 저장소 =====
-    private static final ConcurrentHashMap<String, CodeEntry> CODE_MAP = new ConcurrentHashMap<>();      // phone -> code
-    private static final ConcurrentHashMap<String, Integer> DAILY_COUNT = new ConcurrentHashMap<>();     // phone:yyyymmdd -> count
-    private static final ConcurrentHashMap<String, Long> COOLDOWN_UNTIL = new ConcurrentHashMap<>();     // phone -> epochSec
-    private static final ConcurrentHashMap<String, Long> VERIFIED_UNTIL = new ConcurrentHashMap<>();     // phone -> epochMs
+    // 인메모리 저장소
+    private static final ConcurrentHashMap<String, CodeEntry> CODE_MAP = new ConcurrentHashMap<>();  // phone -> code
+    private static final ConcurrentHashMap<String, Integer> DAILY_COUNT = new ConcurrentHashMap<>(); // phone:yyyymmdd -> count
+    private static final ConcurrentHashMap<String, Long> COOLDOWN_UNTIL = new ConcurrentHashMap<>(); // phone -> epochSec
+    private static final ConcurrentHashMap<String, Long> VERIFIED_UNTIL = new ConcurrentHashMap<>(); // phone -> epochMs
 
     private static final Random RNG = new Random();
 
-    /** 내부 보관용 엔트리(기존 record -> 일반 클래스) */
+    /** 내부 보관용 엔트리 */
     private static final class CodeEntry {
         final String codeHash;
         final long expireEpochMs;
@@ -52,7 +46,7 @@ public class PhoneCodeService {
         }
     }
 
-    // ===== 유틸 =====
+    // 유틸
     private static String digits(String s) {
         return s == null ? "" : s.replaceAll("\\D+", "");
     }
@@ -66,7 +60,7 @@ public class PhoneCodeService {
         return phone + ":" + todayKey();
     }
 
-    // ===== 응답 DTO(기존 그대로) =====
+    // 응답 DTO
     public static final class SendResp {
         public final boolean ok;
         public final String msg;
@@ -88,7 +82,7 @@ public class PhoneCodeService {
         }
     }
 
-    // 인증코드 생성 (CODE_LEN 반영)
+    // 인증코드 생성
     private static String genCode() {
         int bound = (int) Math.pow(10, CODE_LEN);   // 10^len
         int n = RNG.nextInt(bound);                 // 0 ~ (10^len - 1)
@@ -124,18 +118,18 @@ public class PhoneCodeService {
         String code = genCode();
         String text = "[22°C] 인증번호 " + code + " (5분 내 유효)\n타인에게 절대 공유하지 마세요.";
 
-        // 상세 응답 사용 (A 실패 시 B로 자동 페일오버)
+        // Solapi 발송 (상세 응답)
         CoolSmsSender.SmsSendResult resp = coolSmsSender.sendPlainTextResult(phone, text);
-        if (!resp.ok) {
+        if (!resp.ok()) { // ← record는 메서드 접근
             // 실패 시 카운트 롤백
             DAILY_COUNT.compute(key, (k, v) -> v == null ? 0 : Math.max(0, v - 1));
 
             String failMsg = "문자 발송 실패";
-            if (resp.message != null && !resp.message.isBlank()) {
-                failMsg += ": " + resp.message;
+            if (resp.message() != null && !resp.message().isBlank()) {
+                failMsg += ": " + resp.message();
             }
-            if (resp.code != null && !resp.code.isBlank()) {
-                failMsg += " (코드=" + resp.code + ")";
+            if (resp.code() != null && !resp.code().isBlank()) {
+                failMsg += " (코드=" + resp.code() + ")";
             }
             int remain = Math.max(0, MAX_DAILY_SEND - DAILY_COUNT.getOrDefault(key, 0));
             return new SendResp(false, failMsg, 0, remain);
@@ -177,11 +171,11 @@ public class PhoneCodeService {
         boolean match = passwordEncoder.matches(code, e.codeHash);
         if (!match) {
             CODE_MAP.computeIfPresent(phone,
-                (k, v) -> new CodeEntry(v.codeHash, v.expireEpochMs, v.attempts + 1));
+                    (k, v) -> new CodeEntry(v.codeHash, v.expireEpochMs, v.attempts + 1));
             return new VerifyResp(false, "인증번호가 일치하지 않습니다.");
         }
 
-        // 인증 완료: 10분짜리 인증표시(회원가입 직전 서버검증용)
+        // 인증 완료: 10분 유효
         VERIFIED_UNTIL.put(phone, System.currentTimeMillis() + (10 * 60_000L));
         CODE_MAP.remove(phone); // 사용된 코드는 폐기
         return new VerifyResp(true, "인증이 완료되었습니다.");

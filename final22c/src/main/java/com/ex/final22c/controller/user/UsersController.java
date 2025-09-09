@@ -96,9 +96,10 @@ public class UsersController {
     @GetMapping(value = "/check/password", produces = "application/json")
     @ResponseBody
     public Map<String, Object> checkPassword(@RequestParam("pw") String pw) {
-        // 영문/숫자만 사용, 영문+숫자 각 1개 이상 포함, 총 8자 이상
-        boolean valid = pw != null && pw.matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$");
-        String msg = valid ? "" : "영문+숫자 포함 8자 이상(영문/숫자만)";
+        // 영문+숫자+특수문자 ≥ 1, 총 8~150
+        boolean valid = pw != null
+                && pw.matches("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_\\-+={}\\[\\]|\\\\:;'\"<>,.?/~`]).{8,150}$");
+        String msg = valid ? "" : "영문+숫자+특수문자 포함 8자 이상";
         return Map.of("ok", true, "valid", valid, "msg", msg);
     }
 
@@ -162,15 +163,15 @@ public class UsersController {
         boolean available = usersService.isPhoneAvailable(phone); // 화면에서 010-****-**** 형태여도 OK
         return Map.of("ok", true, "available", available);
     }
-    
+
     @GetMapping("find")
     public String find() {
-    	return "user/find";
+        return "user/find";
     }
-    
+
     // 아이디 찾기
     @PostMapping("findId")
-    public String findId(@RequestParam("name") String name,@RequestParam("email") String email, Model model) {
+    public String findId(@RequestParam("name") String name, @RequestParam("email") String email, Model model) {
         String userId = usersService.findId(name, email);
         model.addAttribute("resultType", "id");
         model.addAttribute("result", userId);
