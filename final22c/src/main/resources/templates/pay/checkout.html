@@ -57,12 +57,20 @@
       <!-- 배송지 -->
       <div class="card addr-card">
         <div class="addr-head">
-          <h3 class="addr-title">배송정보</h3>
+          <strong>배송정보</strong>
         </div>
 
-        <div th:if="${defaultAddr == null}" class="text-muted">
-          등록된 배송지가 없습니다. <a th:href="@{/mypage/address}">여기</a>에서 등록해 주세요.
-        </div>
+		<div th:if="${defaultAddr == null}" class="border rounded p-3 bg-light text-center">
+		  <div class="mb-2">
+		    <i class="bi bi-house-door"></i>
+		    <strong>배송지를 등록해 주세요</strong>
+		  </div>
+		  <p class="text-muted mb-3">상품을 받으실 주소를 등록하면 결제를 진행할 수 있습니다.</p>
+		  <button type="button" class="btn btn-primary btn-sm" 
+		          data-bs-toggle="modal" data-bs-target="#addAddrModal">
+		    배송지 등록하기
+		  </button>
+		</div>
 
         <div th:if="${defaultAddr != null}">
           <dl class="addr-dl">
@@ -506,62 +514,132 @@
         });
         addAddrModalEl.addEventListener('hidden.bs.modal', () => { $('.modal-backdrop').each(function(i, el){ if (i) $(el).remove(); }); });
 
-        function openPostcodeIn(layerId, zoneInput, roadInput) {
-          const $ly = $(layerId);
-          new daum.Postcode({
-            oncomplete: function(data){
-              $(zoneInput).val(data.zonecode || '');
-              $(roadInput).val(data.roadAddress || data.jibunAddress || '');
-              $ly.hide().empty();
-              $("#f_detailAddress").focus();
-            },
-            onresize : function(size){ $ly.height(size.height); }
-          }).embed($ly.get(0));
-          $ly.show();
-        }
+		function openPostcodeIn(layerId, zoneInput, roadInput) {
+		  const $ly = $(layerId);
+		  
+		  // 모달 내부에 완전히 포함되도록 스타일 적용
+		  $ly.css({
+		    'margin': '16px 0',
+		    'height': '350px',
+		    'border-radius': '8px',
+		    'overflow': 'hidden' // 내부 스크롤 숨기기
+		  });
+		  
+		  // 원래 상태 저장
+		  const originalBodyOverflow = document.body.style.overflow;
+		  const originalHtmlOverflow = document.documentElement.style.overflow;
+		  
+		  // 스크롤 숨기기
+		  document.body.style.overflow = 'hidden';
+		  document.documentElement.style.overflow = 'hidden';
+		  
+		  function restoreScroll() {
+		    document.body.style.overflow = originalBodyOverflow;
+		    document.documentElement.style.overflow = originalHtmlOverflow;
+		  }
+		  
+		  new daum.Postcode({
+		    oncomplete: function(data){
+		      $(zoneInput).val(data.zonecode || '');
+		      $(roadInput).val(data.roadAddress || data.jibunAddress || '');
+		      $ly.hide().empty();
+		      restoreScroll();
+		      $("#f_detailAddress").focus();
+		    },
+		    onclose: function() {
+		      restoreScroll();
+		      $ly.hide().empty();
+		    },
+		    width: '100%',
+		    height: '350px',
+		    autoClose: true // 주소 선택 시 자동 닫기
+		  }).embed($ly.get(0));
+		  
+		  $ly.show();
+		  
+		  // API 로드 후 내부 스크롤 제거
+		  setTimeout(() => {
+		    $ly.find('*').css('overflow', 'hidden');
+		  }, 100);
+		  
+		  // 감시자로 DOM 변화 체크
+		  const checkInterval = setInterval(() => {
+		    if ($ly.is(':empty') || !$ly.is(':visible')) {
+		      restoreScroll();
+		      clearInterval(checkInterval);
+		    }
+		  }, 100);
+		  
+		  // 10초 후 강제 정리
+		  setTimeout(() => {
+		    restoreScroll();
+		    clearInterval(checkInterval);
+		  }, 10000);
+		}
+		
         $("#btnFindZip2").on("click", function(){ openPostcodeIn("#postcodeLayer2", "#f_zonecode", "#f_roadAddress"); });
 
-        // 새 주소 저장
-        $("#addAddrForm").on("submit", function(e){
-          e.preventDefault();
-          const data = {
-            addressName:   $("#f_addressName").val().trim(),
-            recipient:     $("#f_recipient").val().trim(),
-            phone:         $("#f_phone").val().trim(),
-            zonecode:      $("#f_zonecode").val().trim(),
-            roadAddress:   $("#f_roadAddress").val().trim(),
-            detailAddress: $("#f_detailAddress").val().trim(),
-            isDefault:     $("#f_isDefault").is(":checked")
-          };
-          if (!data.addressName || !data.recipient || !data.phone || !data.zonecode || !data.roadAddress) {
-            alert("필수 항목을 입력해 주세요."); return;
-          }
-          const token  = $('meta[name="_csrf"]').attr('content');
-          const header = $('meta[name="_csrf_header"]').attr('content');
-          $.ajax({
-            type: "POST",
-            url:  "/mypage/address/new",
-            data,
-            beforeSend: function(xhr){ if (token && header) xhr.setRequestHeader(header, token); },
-            dataType: "json"
-          })
-          .done(function(res){
-            if (!res || !res.ok || !res.address) { alert("등록에 실패했습니다."); return; }
-            const a = res.address;
-
-            // 기본 체크 여부와 무관하게 이번 주문 화면엔 즉시 적용
-            applyAddressToView(a);
-
-            const addModalInst  = bootstrap.Modal.getInstance(addAddrModalEl);
-            if (addModalInst) addModalInst.hide();
-            const addrModalInst = bootstrap.Modal.getInstance(document.getElementById('addrModal'));
-            if (addrModalInst) addrModalInst.hide();
-
-            window._unlockAfterAddressChange();
-          })
-          .fail(function(xhr){ alert("등록 실패 ("+xhr.status+")"); });
-        });
-      }
+        
+		// 수정된 새 주소 저장 코드:
+		$("#addAddrForm").on("submit", function(e){
+		  e.preventDefault();
+		  const data = {
+		    addressName: $("#f_addressName").val().trim(),
+		    recipient: $("#f_recipient").val().trim(),
+		    phone: $("#f_phone").val().trim(),
+		    zonecode: $("#f_zonecode").val().trim(),
+		    roadAddress: $("#f_roadAddress").val().trim(),
+		    detailAddress: $("#f_detailAddress").val().trim(),
+		    isDefault: $("#f_isDefault").is(":checked")
+		  };
+		  
+		  if (!data.addressName || !data.recipient || !data.phone || !data.zonecode || !data.roadAddress) {
+		    alert("필수 항목을 입력해 주세요."); 
+		    return;
+		  }
+		  
+		  const token = $('meta[name="_csrf"]').attr('content');
+		  const header = $('meta[name="_csrf_header"]').attr('content');
+		  
+		  $.ajax({
+		    type: "POST",
+		    url: "/mypage/address/new",  // ← 새로 추가한 JSON 엔드포인트 사용
+		    data: JSON.stringify(data),  // ← JSON으로 직렬화
+		    contentType: "application/json; charset=UTF-8",  // ← Content-Type 설정
+		    beforeSend: function(xhr){ 
+		      if (token && header) xhr.setRequestHeader(header, token); 
+		    },
+		    dataType: "json"
+		  })
+		  .done(function(res){
+		    if (!res || !res.ok || !res.address) { 
+		      alert("등록에 실패했습니다."); 
+		      return; 
+		    }
+		    
+		    const a = res.address;
+		    
+		    // 주소 정보 적용
+		    applyAddressToView(a);
+		    
+		    // 결제 버튼 활성화
+		    $("#payBtn").prop("disabled", false).attr("data-has-addr", "true");
+		    
+		    // 모달 닫기
+		    const addModalInst = bootstrap.Modal.getInstance(addAddrModalEl);
+		    if (addModalInst) addModalInst.hide();
+		    
+		    window._unlockAfterAddressChange();
+		    showToast("배송지가 등록되었습니다!");
+		    
+		    // 가장 안전한 방법: 1초 후 페이지 새로고침
+		    setTimeout(() => location.reload(), 1000);
+		  })
+		  .fail(function(xhr){ 
+		    alert("등록 실패 (" + xhr.status + ")"); 
+		  });
+		});
+	  }
 
       /* ================== 결제 팝업/오버레이 ================== */
       function showOverlay(){ $("#payOverlay").show(); $("body").addClass("overlay-lock"); }
