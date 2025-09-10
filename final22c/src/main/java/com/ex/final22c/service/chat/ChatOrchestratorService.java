@@ -257,12 +257,12 @@ public class ChatOrchestratorService {
         String safe;
         try {
             safe = SqlGuard.ensureSelect(normalized);
-            safe = SqlGuard.ensureLimit(safe, 300);
+            safe = SqlGuard.ensureLimit(safe, 2000);
         } catch (Exception e) {
             String fallback = createFallbackQuery(userMsg, period);
             try {
                 safe = SqlGuard.ensureSelect(fallback);
-                safe = SqlGuard.ensureLimit(safe, 300);
+                safe = SqlGuard.ensureLimit(safe,2000);
             } catch (Exception e2) {
                 return new AiResult("죄송합니다. 서버 오류가 발생했습니다. 다시 시도해주세요.", null, List.of(), null);
             }
@@ -776,7 +776,7 @@ public class ChatOrchestratorService {
             Long userNo = (principal == null) ? null : 0L; // TODO 실제 조회
             params.put("userNo", userNo != null ? userNo : 1L);
         }
-        if (sql.contains(":limit")) params.put("limit", 300);
+        if (sql.contains(":limit")) params.put("limit", 3000);
 
         String brand = extractBrandName(userMsg);
         if (brand != null && sql.contains(":brandName")) params.put("brandName", brand);

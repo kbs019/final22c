@@ -550,10 +550,6 @@ public class AdminController {
 	}
 	// =========================================================== 매출 통계 끝 =======================================================
 
-    @GetMapping("reviews/badwords")
-    public List<Review> badWordReviews() {
-        return adminService.getFilteredReviews();
-    }
     
     // 회원 정지
     @PostMapping("/sanction")
