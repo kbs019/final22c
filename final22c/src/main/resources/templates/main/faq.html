@@ -1,141 +1,227 @@
-<!doctype html>
-<html lang="ko">
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>자주 묻는 질문(FAQ)</title>
-<style>
-  :root{--bg:#fafafa;--ink:#1f2937;--muted:#6b7280;--line:#e5e7eb}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Noto Sans KR",Segoe UI,Roboto,sans-serif}
-  .wrap{max-width:920px;margin:48px auto;padding:0 16px}
-  h1{margin:0 0 20px;font-size:28px}
-  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 20px}
-  .tab{padding:10px 16px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer}
-  .tab[aria-selected="true"]{border-color:#111;font-weight:700}
-  .badge{font-size:12px;color:var(--muted);margin-left:6px}
-  .faq-list{display:flex;flex-direction:column;gap:12px}
-  .faq-item{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .faq-q{width:100%;text-align:left;background:#fff;border:none;padding:16px 18px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
-  .faq-q:hover{background:#f7f7f7}
-  .faq-a{display:none;padding:0 18px 16px;border-top:1px dashed var(--line);background:#fff}
-  .faq-a.open{display:block;animation:fade .15s ease}
-  @keyframes fade{from{opacity:0}to{opacity:1}}
-  .empty{text-align:center;color:var(--muted);padding:32px 0;border:1px dashed var(--line);border-radius:12px;background:#fff}
-  .faq-q:focus{outline:2px solid #111;outline-offset:-2px}
-</style>
+  <title>자주 묻는 질문(FAQ)</title>
+
+  <!-- 페이지 전용 CSS -->
+  <th:block layout:fragment="css">
+    <style>
+      .faq-page { color: #1f2937; }
+      .faq-page h1{
+        margin: 0 0 45px;
+        font-size: 28px;       /* 헤더 로고보다 작게 */
+        line-height: 1.3;
+        text-align: center;
+        font-weight: 600;      /* 너무 두껍지 않게 */
+      }
+
+      /* 탭 */
+      .faq-page .tabs{
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        justify-content: center;
+        column-gap: 8px;
+        row-gap: 12px;
+        margin: 12px auto 28px;
+        align-items: center;
+      }
+      .faq-page .tab{
+        padding: 9px 14px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        border-radius: 12px;
+        cursor: pointer;
+        min-width: auto;
+        font-weight: 600;
+        transition: transform .12s ease, box-shadow .12s ease,
+                    border-color .12s ease, background-color .12s ease;
+      }
+      .faq-page .tab:hover{ background:#f8fafc }
+      .faq-page .tab[aria-selected="true"]{
+        border-color:#111;
+        box-shadow:0 1px 0 rgba(0,0,0,.03);
+      }
+      .faq-page .tab:focus-visible{ outline:2px solid #111; outline-offset:2px }
+      .faq-page .badge{ font-size:12px; color:#6b7280; margin-left:6px }
+
+      /* 첫 번째 탭(전체) */
+      .faq-page .tabs .tab:first-child{
+        grid-column: 1 / -1;
+        justify-self: center;
+        padding: 13px 24px;
+        font-size: 18px;
+        border-radius: 14px;
+      }
+
+      /* FAQ 리스트 */
+      .faq-page .faq-list{ display:flex; flex-direction:column; gap:0 }
+      .faq-page .faq-item{ background:transparent; border:none; border-radius:0; overflow:visible }
+
+      .faq-page .faq-q{
+        width:100%; text-align:left; background:transparent; border:none;
+        padding:18px 2px; font-size:18px; cursor:pointer;
+        display:flex; align-items:center; justify-content:space-between;
+        border-bottom:1px solid #e5e7eb;
+        transition: background-color .12s ease;
+      }
+      .faq-page .faq-q:hover{ background:transparent }
+      .faq-page .faq-q:focus-visible{ outline:2px solid #111; outline-offset:-2px }
+
+      .faq-page .faq-q .mark{
+        display:inline-block;
+        background:none;    /* 노란 배경 제거 */
+        color:#111;
+        font-weight:600;
+        padding:0;
+      }
+
+      /* 답변 */
+      .faq-page .faq-a{
+        display:none; padding:0; background:#fff;
+        border:1px solid #e5e7eb; border-radius:12px; margin:12px 0 18px;
+        box-shadow:0 1px 0 rgba(0,0,0,.02);
+      }
+      .faq-page .faq-a.open{ display:block; animation:fadeUp .16s ease }
+      .faq-page .faq-a.open p{
+        margin:0; padding:16px 18px; font-size:15px; line-height:1.7; color:#374151;
+      }
+
+      /* 빈 상태 */
+      .faq-page .empty{
+        text-align:center; color:#6b7280; padding:32px 0;
+        border:1px dashed #e5e7eb; border-radius:12px; background:#fff;
+        max-width:680px; margin:0 auto;
+      }
+
+      @keyframes fadeUp{ from{opacity:0; transform:translateY(-4px)} to{opacity:1; transform:none} }
+
+      @media (max-width:480px){
+        .faq-page .faq-q{ font-size:17px }
+      }
+    </style>
+  </th:block>
 </head>
+
 <body>
-<div class="wrap">
-  <h1>자주 묻는 질문 (FAQ)</h1>
+  <!-- 본문 -->
+  <th:block layout:fragment="content">
+    <section class="faq-page">
 
-  <div class="tabs" role="tablist" aria-label="FAQ 카테고리">
-    <button class="tab" role="tab" data-cat="전체" aria-selected="true">전체<span class="badge" id="count-전체"></span></button>
-    <button class="tab" role="tab" data-cat="회원" aria-selected="false">회원<span class="badge" id="count-회원"></span></button>
-    <button class="tab" role="tab" data-cat="향수" aria-selected="false">향수<span class="badge" id="count-향수"></span></button>
-    <button class="tab" role="tab" data-cat="주문" aria-selected="false">주문<span class="badge" id="count-주문"></span></button>
-  </div>
+      <h1>자주 묻는 질문 (FAQ)</h1>
 
-  <div id="faq" class="faq-list" aria-live="polite"></div>
-  <div id="empty" class="empty" style="display:none;">해당 카테고리의 질문이 없습니다.</div>
-</div>
+      <div class="tabs" role="tablist" aria-label="FAQ 카테고리">
+        <button class="tab" role="tab" data-cat="전체" aria-selected="true">
+          전체 <span class="badge" id="count-전체"></span>
+        </button>
+        <button class="tab" role="tab" data-cat="회원" aria-selected="false">
+          회원 <span class="badge" id="count-회원"></span>
+        </button>
+        <button class="tab" role="tab" data-cat="향수" aria-selected="false">
+          향수 <span class="badge" id="count-향수"></span>
+        </button>
+        <button class="tab" role="tab" data-cat="주문" aria-selected="false">
+          주문 <span class="badge" id="count-주문"></span>
+        </button>
+      </div>
 
-<script>
-const FAQ = [
-  // 향수
-  {cat:"향수", q:"정품인가요?",
-   a:`당사는 공식 유통 경로로 공급받은 정품만을 취급합니다.
+      <div id="faq" class="faq-list" aria-live="polite"></div>
+      <div id="empty" class="empty" style="display:none;">해당 카테고리의 질문이 없습니다.</div>
+
+    </section>
+  </th:block>
+
+  <!-- 페이지 전용 스크립트 -->
+  <th:block layout:fragment="script">
+    <script>
+      const FAQ = [
+        {cat:"향수", q:"정품인가요?", a:`당사는 공식 유통 경로로 공급받은 정품만을 취급합니다.
 제품 패키지의 로트 번호와 정품 표기로 확인하실 수 있습니다.`},
-
-  {cat:"향수", q:"향수 안정화 기간이 필요한가요?",
-   a:`개봉 직후에는 탑 노트와 알코올 향이 먼저 느껴질 수 있습니다.
+        {cat:"향수", q:"향수 안정화 기간이 필요한가요?", a:`개봉 직후에는 탑 노트와 알코올 향이 먼저 느껴질 수 있습니다.
 분사 후 10~15분이 지나면 향이 안정적으로 발현되는 경우가 많습니다.
 또한 개봉 후 1~2주 사이에 자연스럽게 향이 자리 잡을 수 있습니다.`},
-
-  {cat:"향수", q:"향수 첫 분사 시 알코올 향기가 강하게 납니다.",
-   a:`노즐/튜브에 남은 알코올과 상단 노트 특성 때문입니다.
+        {cat:"향수", q:"향수 첫 분사 시 알코올 향기가 강하게 납니다.", a:`노즐/튜브에 남은 알코올과 상단 노트 특성 때문입니다.
 피부에 분사 후 약 10분이 지나면 알코올 향은 빠르게 휘발되고 본 향이 느껴집니다.`},
-
-  {cat:"향수", q:"향수가 지속력이 약한 것 같습니다.",
-   a:`지속력은 피부 타입, 온·습도, 활동량, 분사 부위 등에 따라 달라집니다.
+        {cat:"향수", q:"향수가 지속력이 약한 것 같습니다.", a:`지속력은 피부 타입, 온·습도, 활동량, 분사 부위 등에 따라 달라집니다.
 맥박이 뛰는 부위(손목, 귀 뒤, 쇄골 등)에 1~2회 레이어링하시고 보습 제품과 함께 사용하시면 체감 지속력이 향상됩니다.
 변색 우려가 없는 어두운 색 의류에 가볍게 분사하는 방법도 도움이 됩니다.`},
-
-  {cat:"향수", q:"향수 스프레이 분사량이 약하거나, 새는 것 같습니다.",
-   a:`① 노즐 막힘이 있는지 확인한 뒤, 미지근한 물에 5~10분 담가 부드럽게 닦아 주세요.
+        {cat:"향수", q:"향수 스프레이 분사량이 약하거나, 새는 것 같습니다.", a:`① 노즐 막힘이 있는지 확인한 뒤, 미지근한 물에 5~10분 담가 부드럽게 닦아 주세요.
 ② 병을 수직으로 세우고 분사해 주세요. 스프레이 결합이 헐겁지 않은지도 점검해 주세요.
 조치 후에도 문제가 지속되면 고객센터로 문의해 주세요. 확인 후 교환 또는 환불을 도와드립니다.`},
-
-  // 주문
-  {cat:"주문", q:"품절 상품 재입고 여부를 알 수 있나요?",
-   a:`재입고 일정은 변동 가능성이 커 사전 확약이 어렵습니다.
+        {cat:"주문", q:"품절 상품 재입고 여부를 알 수 있나요?", a:`재입고 일정은 변동 가능성이 커 사전 확약이 어렵습니다.
 재입고 시 공지 또는 상품 상세의 상태 표기를 통해 안내드립니다.`},
-
-  {cat:"주문", q:"배송 전 상품 변경 혹은 주문 취소가 가능한가요?",
-   a:`결제 완료 후 ‘상품 준비 중’ 이전 상태에서는 취소가 가능합니다.
+        {cat:"주문", q:"배송 전 상품 변경 혹은 주문 취소가 가능한가요?", a:`결제 완료 후 ‘상품 준비 중’ 이전 상태에서는 취소가 가능합니다.
 ‘준비 중’ 단계로 넘어간 경우 포장·출고 절차가 진행되어 취소가 어려울 수 있으니 빠르게 문의해 주세요.`},
-
-  {cat:"주문", q:"교환 및 반품 기준이 어떻게 되나요? (환불 기준)",
-   a:`단순 변심의 경우 상품 수령 후 7일 이내, 미사용·미개봉 상태에서 환불 요청이 가능합니다.
+        {cat:"주문", q:"교환 및 반품 기준이 어떻게 되나요? (환불 기준)", a:`단순 변심의 경우 상품 수령 후 7일 이내, 미사용·미개봉 상태에서 환불 요청이 가능합니다.
 향수 특성상 포장을 개봉하거나 내용물을 사용한 경우 환불이 제한됩니다.
 상품 하자 또는 오배송은 확인 즉시 무상 환불을 진행해 드립니다.`},
-
-  {cat:"주문", q:"결제 후 배송지 변경이 가능한가요?",
-   a:`죄송하지만 결제 완료 후에는 배송지 변경이 불가능합니다.
+        {cat:"주문", q:"결제 후 배송지 변경이 가능한가요?", a:`죄송하지만 결제 완료 후에는 배송지 변경이 불가능합니다.
 부득이하게 변경이 필요하신 경우 기존 주문을 취소하고 재주문해 주세요.`},
-
-  {cat:"주문", q:"제품을 받았는데 불량/파손/오배송일 경우 어떻게 처리해야 하나요?",
-   a:`수령일 또는 가능한 빠른 시일 내에 제품과 패키지 상태가 보이도록 사진을 촬영하여 고객센터로 문의해 주세요.
+        {cat:"주문", q:"제품을 받았는데 불량/파손/오배송일 경우 어떻게 처리해야 하나요?", a:`수령일 또는 가능한 빠른 시일 내에 제품과 패키지 상태가 보이도록 사진을 촬영하여 고객센터로 문의해 주세요.
 확인 후 무상 환불을 진행해 드립니다.`},
-
-  {cat:"주문", q:"선물하려고 하는데 받는 사람 이름으로 수령인을 기재해도 되나요?",
-   a:`가능합니다. 수령인의 성함·연락처·주소를 정확히 입력해 주세요.
+        {cat:"주문", q:"선물하려고 하는데 받는 사람 이름으로 수령인을 기재해도 되나요?", a:`가능합니다. 수령인의 성함·연락처·주소를 정확히 입력해 주세요.
 영수증/현금영수증 등 결제 내역은 주문자 정보를 기준으로 처리됩니다.`},
-
-  // 회원
-  {cat:"회원", q:"회원탈퇴는 어떻게 하나요?",
-   a:`마이페이지 &gt; 회원정보 &gt; 회원탈퇴에서 진행하실 수 있습니다.
+        {cat:"회원", q:"회원탈퇴는 어떻게 하나요?", a:`마이페이지 &gt; 회원정보 &gt; 회원탈퇴에서 진행하실 수 있습니다.
 탈퇴 시 보유 적립금과 쿠폰은 소멸되며, 전자상거래법에 따라 주문·환불 기록은 법정 기간 동안 별도 보관됩니다.`},
-
-  {cat:"회원", q:"적립금 혹은 쿠폰 사용은 어떻게 하나요?",
-   a:`장바구니 또는 주문서 페이지에서 적용합니다.
+        {cat:"회원", q:"적립금 혹은 쿠폰 사용은 어떻게 하나요?", a:`장바구니 또는 주문서 페이지에서 적용합니다.
 쿠폰은 최소 결제금액, 카테고리 제한, 유효기간 등 조건에 따라 적용 여부가 달라질 수 있으니 상세 조건을 확인해 주세요.`},
-];
+      ];
 
-  // 렌더링
-  const elList = document.getElementById('faq');
-  const elEmpty = document.getElementById('empty');
-  const tabs = document.querySelectorAll('.tab');
+      const elList = document.getElementById('faq');
+      const elEmpty = document.getElementById('empty');
+      const tabs = document.querySelectorAll('.faq-page .tab');
 
-  // 뱃지 카운트
-  for (const c of ["전체","회원","향수","주문"]) {
-    const n = c==="전체" ? FAQ.length : FAQ.filter(i=>i.cat===c).length;
-    const b = document.getElementById(`count-${c}`); if (b) b.textContent = `(${n})`;
-  }
+      // 뱃지 카운트
+      for (const c of ["전체","회원","향수","주문"]) {
+        const n = (c === "전체") ? FAQ.length : FAQ.filter(i => i.cat === c).length;
+        const b = document.getElementById(`count-${c}`);
+        if (b) b.textContent = `(${n})`;
+      }
 
-  function render(category="전체"){
-    elList.innerHTML = "";
-    const data = category==="전체" ? FAQ : FAQ.filter(i=>i.cat===category);
-    elEmpty.style.display = data.length ? "none" : "block";
-    data.forEach(item=>{
-      const box = document.createElement('article'); box.className="faq-item";
-      const q = document.createElement('button'); q.className="faq-q"; q.setAttribute("aria-expanded","false");
-      q.innerHTML = `<span>Q. ${item.q}</span><span aria-hidden="true">＋</span>`;
-      const a = document.createElement('div'); a.className="faq-a"; a.innerHTML = `<p>${item.a.replace(/\n/g,"<br>")}</p>`;
-      q.addEventListener('click',()=>{ const open=a.classList.toggle('open'); q.setAttribute("aria-expanded",open?"true":"false"); q.lastElementChild.textContent=open?"－":"＋"; });
-      box.appendChild(q); box.appendChild(a); elList.appendChild(box);
-    });
-  }
-  render();
+      function render(category = "전체"){
+        elList.innerHTML = "";
+        const data = (category === "전체") ? FAQ : FAQ.filter(i => i.cat === category);
+        elEmpty.style.display = data.length ? "none" : "block";
 
-  tabs.forEach(t=>{
-    t.addEventListener('click', ()=>{
-      tabs.forEach(x=>x.setAttribute("aria-selected","false"));
-      t.setAttribute("aria-selected","true");
-      render(t.dataset.cat);
-      window.scrollTo({top:document.querySelector('.wrap').offsetTop, behavior:"smooth"});
-    });
-  });
-</script>
+        data.forEach(item => {
+          const box = document.createElement('article');
+          box.className = "faq-item";
+
+          const q = document.createElement('button');
+          q.className = "faq-q";
+          q.setAttribute("aria-expanded","false");
+          q.innerHTML = `<span>Q. ${item.q}</span><span class="mark" aria-hidden="true">＋</span>`;
+
+          const a = document.createElement('div');
+          a.className = "faq-a";
+          a.innerHTML = `<p>${item.a.replace(/\n/g,"<br>")}</p>`;
+
+          q.addEventListener('click', () => {
+            const open = a.classList.toggle('open');
+            q.setAttribute("aria-expanded", open ? "true" : "false");
+            q.querySelector('.mark').textContent = open ? "－" : "＋";
+          });
+
+          box.appendChild(q);
+          box.appendChild(a);
+          elList.appendChild(box);
+        });
+      }
+
+      render();
+
+      tabs.forEach(t => {
+        t.addEventListener('click', () => {
+          tabs.forEach(x => x.setAttribute("aria-selected","false"));
+          t.setAttribute("aria-selected","true");
+          render(t.dataset.cat);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+    </script>
+  </th:block>
 </body>
 </html>
