@@ -1,17 +1,13 @@
 package com.ex.final22c.service.mypage;
 
-import java.time.LocalDateTime;
 import java.util.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import java.time.LocalDateTime;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.ex.final22c.data.user.MileageRowWithBalance;
 import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.repository.user.UserRepository;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -28,12 +24,11 @@ public class MyMileageService {
                 var paid = orderRepository.findPaid(userNo);
                 var confirmed = orderRepository.findConfirmed(userNo); // 확정 시각용
                 var refdMil = orderRepository.findRefunded(userNo); // 환불로 복구된 포인트
-                var refdCash = orderRepository.findRefundedCash(userNo); // 현금 환불 합(시각 병합용)
-                var confirmSnap = orderRepository.findConfirmSnapshot(userNo); // orders.confirmMileage 스냅샷
+                var refdCash = orderRepository.findRefundedCash(userNo); // 현금 환불 합(시각용)
+                var confirmSnap = orderRepository.findConfirmSnapshot(userNo);// orders.confirmMileage 스냅샷
 
-                if (paid.isEmpty() && confirmed.isEmpty() && refdMil.isEmpty() && refdCash.isEmpty()) {
+                if (paid.isEmpty() && confirmed.isEmpty() && refdMil.isEmpty() && refdCash.isEmpty())
                         return Page.empty(PageRequest.of(Math.max(page - 1, 0), Math.max(size, 1)));
-                }
 
                 // 시각 맵
                 Map<Long, LocalDateTime> paidAt = new HashMap<>();
@@ -50,14 +45,14 @@ public class MyMileageService {
                         confirmedAt.putIfAbsent(r.getOrderId(), r.getWhen());
                 }
 
-                // 환불 복구 포인트 / 환불 현금
+                // 환불 복구 포인트 / 환불 현금(최신시각)
                 Map<Long, Integer> refundMileage = new HashMap<>();
                 for (var r : refdMil) {
                         refundMileage.merge(r.getOrderId(), Math.max(r.getEarnRaw(), 0), Integer::sum);
                         refundedAt.merge(r.getOrderId(), r.getWhen(), (a, b) -> a.isAfter(b) ? a : b);
                 }
-                // 현금 환불도 '환불 시각' 병합에만 사용
                 for (var r : refdCash) {
+                        // 현금 환불액은 적립 계산에 쓰지 않지만, 환불 시각의 기준으로 반영
                         refundedAt.merge(r.getOrderId(), r.getWhen(), (a, b) -> a.isAfter(b) ? a : b);
                 }
 
@@ -108,7 +103,7 @@ public class MyMileageService {
                                                 .build());
                         }
 
-                        // (C) 적립 — ✅ 스냅샷만 사용(산식 fallback 제거)
+                        // (C) 적립 — 스냅샷만 사용(산식 fallback 제거)
                         Integer snapEarn = confirmMileageSnap.get(oid);
                         if (snapEarn != null && snapEarn > 0) {
                                 LocalDateTime earnWhen = confirmedAt.getOrDefault(
@@ -134,7 +129,7 @@ public class MyMileageService {
                                         if (r.getUsedPointRaw() < 0)
                                                 return 2; // 복구
                                         if (r.getEarnPointVisible() > 0)
-                                                return 3; // 적립
+                                                return 3;// 적립
                                         return 99;
                                 })
                                 .thenComparing(MileageRowWithBalance::getOrderId);
@@ -176,9 +171,6 @@ public class MyMileageService {
                 int pageSize = Math.max(size, 1);
                 int from = Math.min(pageIndex * pageSize, rowsAsc.size());
                 int to = Math.min(from + pageSize, rowsAsc.size());
-
-                return new PageImpl<>(rowsAsc.subList(from, to),
-                                PageRequest.of(pageIndex, pageSize),
-                                rowsAsc.size());
+                return new PageImpl<>(rowsAsc.subList(from, to), PageRequest.of(pageIndex, pageSize), rowsAsc.size());
         }
 }

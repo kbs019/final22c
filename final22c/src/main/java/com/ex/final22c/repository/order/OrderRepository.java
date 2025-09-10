@@ -167,53 +167,51 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
       )
         from Order o
         where o.user.userNo = :userNo
-        and coalesce(o.usedPoint,0) > 0
-        and o.status in ('PAID','CONFIRMED','REFUNDED','CANCELED')
+          and coalesce(o.usedPoint,0) > 0
+          and o.status in ('PAID','CONFIRMED','REFUNDED','CANCELED')
       """)
   List<com.ex.final22c.data.user.Row> findPaid(@Param("userNo") Long userNo);
 
   // 적립(구매확정 시 적립 포인트)
   @Query("""
-        select new com.ex.final22c.data.user.Row(
-          o.orderId,
-          o.regDate,
-          0,
-          coalesce(o.confirmMileage, 0),
-          'CONFIRMED'
-        )
+      select new com.ex.final22c.data.user.Row(
+        o.orderId, o.regDate, 0,
+        cast(function('trunc', coalesce(o.totalAmount,0) * 0.05) as long),
+        'CONFIRMED'
+      )
         from Order o
-        where o.user.userNo = :userNo
-          and o.status = 'CONFIRMED'
+       where o.user.userNo = :userNo
+         and o.status = 'CONFIRMED'
       """)
   List<com.ex.final22c.data.user.Row> findConfirmed(@Param("userNo") Long userNo);
 
   // 환불(환불 시 복구된 마일리지)
   @Query("""
-          select new com.ex.final22c.data.user.Row(
-            r.order.orderId,
-            max(r.updateDate),
-            0,
-            coalesce(sum(r.refundMileage), 0),
-            'REFUNDED'
-          )
-          from Refund r
-          where r.user.userNo = :userNo and r.status = 'REFUNDED'
-          group by r.order.orderId
+      select new com.ex.final22c.data.user.Row(
+        r.order.orderId,
+        max(r.updateDate),
+        0,
+        coalesce(sum(r.refundMileage), 0),
+        'REFUNDED'
+      )
+        from Refund r
+       where r.user.userNo = :userNo and r.status = 'REFUNDED'
+       group by r.order.orderId
       """)
   List<com.ex.final22c.data.user.Row> findRefunded(@Param("userNo") Long userNo);
 
   // 환불(현금 환불 합계)
   @Query("""
-        select new com.ex.final22c.data.user.Row(
-          r.order.orderId,
-          max(r.updateDate),
-          0,
-          coalesce(sum(r.totalRefundAmount), 0),
-          'REFUNDED_CASH'
-        )
+      select new com.ex.final22c.data.user.Row(
+        r.order.orderId,
+        max(r.updateDate),
+        0,
+        coalesce(sum(r.totalRefundAmount), 0),
+        'REFUNDED_CASH'
+      )
         from Refund r
-        where r.user.userNo = :userNo and r.status = 'REFUNDED'
-        group by r.order.orderId
+       where r.user.userNo = :userNo and r.status = 'REFUNDED'
+       group by r.order.orderId
       """)
   List<com.ex.final22c.data.user.Row> findRefundedCash(@Param("userNo") Long userNo);
 
@@ -247,15 +245,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   List<com.ex.final22c.data.user.Row> findItemsSubtotal(@Param("userNo") Long userNo);
 
   @Query("""
-        select new com.ex.final22c.data.user.Row(
-          o.orderId,
-          o.regDate,
-          0,
-          coalesce(o.confirmMileage, 0),
-          'CONFIRM_SNAPSHOT'
-        )
+      select new com.ex.final22c.data.user.Row(
+        o.orderId,
+        o.regDate,
+        0,
+        coalesce(o.confirmMileage, 0),
+        'CONFIRM_SNAPSHOT'
+      )
         from Order o
-        where o.user.userNo = :userNo and o.status = 'CONFIRMED'
+       where o.user.userNo = :userNo
+         and o.status = 'CONFIRMED'
       """)
   List<com.ex.final22c.data.user.Row> findConfirmSnapshot(@Param("userNo") Long userNo);
 
