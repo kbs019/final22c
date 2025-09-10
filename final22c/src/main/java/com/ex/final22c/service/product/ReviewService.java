@@ -1,20 +1,22 @@
 package com.ex.final22c.service.product;
 
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Collections;
-
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.product.ReviewDto;
 import com.ex.final22c.data.user.Users;
+import com.ex.final22c.repository.orderDetail.OrderDetailRepository;
 import com.ex.final22c.repository.productRepository.ReviewRepository;
 import com.ex.final22c.repository.user.UserRepository;
 
@@ -28,6 +30,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProfanityFilter profanityFilter;
     private final UserRepository userRepository;
+    private final OrderDetailRepository orderDetailRepository;
 
     public List<ReviewDto> getReviews(Product product, String sort) {
         List<Review> reviews;
@@ -69,13 +72,22 @@ public class ReviewService {
     }
 
     @Transactional
-    public Review write(Product product, Users writer, int rating, String content) {
+    public Review write(Product product, Users writer, int rating, String content, Long orderDetailId) {
+        // 1️⃣ Review 저장
         Review r = new Review();
         r.setProduct(product);
         r.setWriter(writer);
         r.setRating(Math.max(1, Math.min(5, rating)));
         r.setContent(content);
-        return reviewRepository.save(r);
+        Review saved = reviewRepository.save(r);
+
+        // 2️⃣ OrderDetail 업데이트
+        OrderDetail od = orderDetailRepository.findById(orderDetailId)
+                .orElseThrow(() -> new IllegalArgumentException("주문 상세를 찾을 수 없습니다."));
+        od.setReviewWritten("Y");
+        orderDetailRepository.save(od); // 필요 시 save, JPA는 @Transactional 안이면 flush 됨
+
+        return saved;
     }
 
     public Review get(Long reviewId) {
@@ -150,5 +162,18 @@ public class ReviewService {
         if (user == null) return Collections.emptyList();
         
         return reviewRepository.findByWriter(user);
+    }
+    
+    public boolean canWriteReview(String username, Long productId, LocalDateTime confirmedAt) {
+        // 이미 리뷰 작성했는지 확인
+        boolean alreadyWritten = reviewRepository.existsByWriterUserNameAndProductId(username, productId);
+        if (alreadyWritten) return false;
+
+        // 7일 이내인지 확인
+        return confirmedAt.plusDays(7).isAfter(LocalDateTime.now());
+    }
+    
+    public boolean existsReview(String username, Long productId) {
+        return reviewRepository.existsByWriterAndProduct(username, productId);
     }
 }

@@ -23,7 +23,7 @@
         html, body { height:100%; }
         .survey-body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, var(--bg-grad-a) 0%, var(--bg-grad-b) 100%);
+            background:white;
             min-height: 100vh;
             color: var(--text);
         }
@@ -39,13 +39,13 @@
             justify-content: center;
         }
 
-        .card {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 3rem 2.25rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid var(--line);
-        }
+		.card {
+		    background: white;
+		    border-radius: 24px;
+		    padding: 3rem 2.25rem;
+		    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+		    border: none;
+		}
 
         /* ====== Header ====== */
         .header {
@@ -85,7 +85,7 @@
             background: linear-gradient(90deg, var(--brand), var(--brand-dark));
             border-radius: 9999px;
             transition: width 0.28s ease;
-            width: 20%;
+            width: 0%;
         }
 
         /* ====== Questions ====== */
@@ -549,7 +549,7 @@ function safeJsonParse(raw) {
 // ============ 메인 클래스 ============
 class SimplePerfumeSurvey {
   constructor() {
-    this.currentStep = 1;
+    this.currentStep = 0;
     this.totalSteps  = 5;
     this.answers     = {};
     this.result      = null;
@@ -557,13 +557,13 @@ class SimplePerfumeSurvey {
   }
 
   async init() {
-    document.getElementById('survey-section').style.display  = 'block';
-    document.getElementById('results-section').style.display = 'none';
-    document.querySelectorAll('.option-card').forEach(card => {
-      card.addEventListener('click', () => this.selectOption(card));
-    });
-    this.updateProgress();
-  }
+      document.getElementById('survey-section').style.display  = 'block';
+      document.getElementById('results-section').style.display = 'none';
+      document.querySelectorAll('.option-card').forEach(card => {
+        card.addEventListener('click', () => this.selectOption(card));
+      });
+      this.updateProgress(); 
+    }
 
   selectOption(card) {
     const grid     = card.closest('.options-grid');
@@ -572,26 +572,30 @@ class SimplePerfumeSurvey {
     grid.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
     this.answers[dataName] = value;
+	
+	this.currentStep++;
     this.updateProgress();
-    setTimeout(() => {
-      if (this.currentStep < this.totalSteps) this.nextStep();
-      else this.submitSurvey();
-    }, 450);
-  }
+	setTimeout(() => {
+	      if (this.currentStep < this.totalSteps) {
+	        this.nextStep();
+	      } else {
+	        this.submitSurvey();
+	      }
+	    }, 450);
+	  }
 
-  nextStep() {
-    this.currentStep++;
-    document.querySelectorAll('.question-card').forEach(c => c.classList.remove('active'));
-    const cur = document.querySelector(`[data-question="${this.currentStep}"]`);
-    if (cur) cur.classList.add('active');
-    this.updateProgress();
-  }
+    nextStep() {
+      // currentStep은 이미 selectOption에서 증가했으므로 여기서는 증가하지 않음
+      document.querySelectorAll('.question-card').forEach(c => c.classList.remove('active'));
+      const cur = document.querySelector(`[data-question="${this.currentStep + 1}"]`);
+      if (cur) cur.classList.add('active');
+    }
 
-  updateProgress() {
-    const progress = (this.currentStep / this.totalSteps) * 100;
-    document.getElementById('progress-fill').style.width = progress + '%';
-    document.getElementById('current-step').textContent = this.currentStep;
-  }
+	updateProgress() {
+	    const progress = (this.currentStep / this.totalSteps) * 100;
+	    document.getElementById('progress-fill').style.width = progress + '%';
+	    document.getElementById('current-step').textContent = this.currentStep || 1;
+	}
 
   getUserName() {
     const bodyUser = document.body.dataset.user;

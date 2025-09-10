@@ -1,0 +1,25 @@
+@font-face {
+  font-family: 'JNEBareun';
+  src: url('/fonts/Pretendard-Medium.woff2') format('woff2'),
+       url('/fonts/Pretendard-Medium.woff') format('woff');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* :root + 테마 스코프 전부 묶고, 변수에 !important로 고정 */
+:root,
+[data-bs-theme],
+html[data-bs-theme],
+[data-bs-theme="light"],
+[data-bs-theme="dark"] {
+  --bs-font-sans-serif: 'JNEBareun', system-ui, -apple-system, 'Segoe UI',
+                        Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif !important;
+  --bs-body-font-family: var(--bs-font-sans-serif) !important;
+}
+
+/* 상속 경로 확정 */
+html, body { font-family: var(--bs-body-font-family); }
+
+/* 에디터 등 별도 영역 */
+.note-editor .note-editable { font-family: inherit !important; }

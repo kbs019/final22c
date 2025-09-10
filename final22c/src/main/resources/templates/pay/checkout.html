@@ -271,7 +271,7 @@
                   <label class="form-check-label" for="f_isDefault">이 주소를 기본 배송지로 저장</label>
                 </div>
 
-                <div id="postcodeLayer2" style="display:none; position:relative; height:500px; margin-top:8px; border:1px solid #eee; border-radius:10px;"></div>
+                <div id="postcodeLayer2" style="display:none; position:relative; height:400px; margin-top:8px; border:1px solid #eee; border-radius:10px;"></div>
               </div>
             </div>
 
@@ -517,37 +517,64 @@
 		function openPostcodeIn(layerId, zoneInput, roadInput) {
 		  const $ly = $(layerId);
 		  
-		  // 바깥 스크롤 완전히 숨기기
-		  $('body, html').css({
-		    'overflow': 'hidden',
-		    'height': '100%'
+		  // 모달 내부에 완전히 포함되도록 스타일 적용
+		  $ly.css({
+		    'margin': '16px 0',
+		    'height': '350px',
+		    'border-radius': '8px',
+		    'overflow': 'hidden' // 내부 스크롤 숨기기
 		  });
+		  
+		  // 원래 상태 저장
+		  const originalBodyOverflow = document.body.style.overflow;
+		  const originalHtmlOverflow = document.documentElement.style.overflow;
+		  
+		  // 스크롤 숨기기
+		  document.body.style.overflow = 'hidden';
+		  document.documentElement.style.overflow = 'hidden';
+		  
+		  function restoreScroll() {
+		    document.body.style.overflow = originalBodyOverflow;
+		    document.documentElement.style.overflow = originalHtmlOverflow;
+		  }
 		  
 		  new daum.Postcode({
 		    oncomplete: function(data){
 		      $(zoneInput).val(data.zonecode || '');
 		      $(roadInput).val(data.roadAddress || data.jibunAddress || '');
 		      $ly.hide().empty();
-		      
-		      // 스크롤 복원
-		      $('body, html').css({
-		        'overflow': '',
-		        'height': ''
-		      });
-		      
+		      restoreScroll();
 		      $("#f_detailAddress").focus();
 		    },
 		    onclose: function() {
+		      restoreScroll();
 		      $ly.hide().empty();
-		      $('body, html').css({
-		        'overflow': '',
-		        'height': ''
-		      });
 		    },
 		    width: '100%',
-		    height: '100%'
+		    height: '350px',
+		    autoClose: true // 주소 선택 시 자동 닫기
 		  }).embed($ly.get(0));
+		  
 		  $ly.show();
+		  
+		  // API 로드 후 내부 스크롤 제거
+		  setTimeout(() => {
+		    $ly.find('*').css('overflow', 'hidden');
+		  }, 100);
+		  
+		  // 감시자로 DOM 변화 체크
+		  const checkInterval = setInterval(() => {
+		    if ($ly.is(':empty') || !$ly.is(':visible')) {
+		      restoreScroll();
+		      clearInterval(checkInterval);
+		    }
+		  }, 100);
+		  
+		  // 10초 후 강제 정리
+		  setTimeout(() => {
+		    restoreScroll();
+		    clearInterval(checkInterval);
+		  }, 10000);
 		}
 		
         $("#btnFindZip2").on("click", function(){ openPostcodeIn("#postcodeLayer2", "#f_zonecode", "#f_roadAddress"); });
