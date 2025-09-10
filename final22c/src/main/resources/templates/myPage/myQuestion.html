@@ -106,11 +106,11 @@
           <tbody>
             <tr th:each="question : ${questions}">
               <td>
-                <a href="#" th:attr="data-id=${question.qcId}" class="question-title" data-toggle="modal" data-target="#questionModal">
+                <a href="#" th:attr="data-id=${question.qId}" class="question-title" data-toggle="modal" data-target="#questionModal">
                   <span th:text="${question.title}"></span>
                 </a>
               </td>
-              <td th:text="${#dates.format(question.createDate, 'yyyy-MM-dd')}"></td>
+              <td th:text="${#temporals.format(question.createDate, 'yyyy-MM-dd')}"></td>
               <td th:text="${question.status}"></td>
             </tr>
           </tbody>
@@ -148,8 +148,8 @@
     if (e.target.closest(".question-title")) {
       let questionId = e.target.closest(".question-title").getAttribute("data-id");
 
-      // AJAX로 데이터 가져오기 (예시)
-      fetch(`/user/questionDetail/${questionId}`)
+      // AJAX로 데이터 가져오기
+      fetch(`/mypage/questionDetail/${questionId}`)
         .then(response => response.json())
         .then(data => {
           // 모달 데이터 채우기
@@ -158,6 +158,9 @@
           document.getElementById("modalContent").innerText = data.content;
           document.getElementById("modalAnswer").innerText = data.answer || "답변 대기 중";
           document.getElementById("modalAnswerDate").innerText = data.answerCreateDate || "없음";
+
+          // 모달 열기
+          $('#questionModal').modal('show');  // 모달을 여는 코드
         })
         .catch(err => console.error('Error fetching question details:', err));
     }

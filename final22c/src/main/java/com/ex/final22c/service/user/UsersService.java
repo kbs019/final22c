@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.ex.final22c.DataNotFoundException;
+import com.ex.final22c.data.qna.Answer;
 import com.ex.final22c.data.qna.Question;
 import com.ex.final22c.data.qna.QuestionDto;
 import com.ex.final22c.data.user.Users;
@@ -240,11 +241,22 @@ public class UsersService {
     public List<QuestionDto> getUserQuestions(String userName) {
         List<Question> questions = questionRepository.findByWriterUserName(userName);
         List<QuestionDto> questionDtos = new ArrayList<>();
+        
         for (Question question : questions) {
             QuestionDto dto = new QuestionDto();
+            dto.setQId(question.getQId());
+            dto.setStatus(question.getStatus());
             dto.setTitle(question.getTitle());
             dto.setContent(question.getContent());
             dto.setQcId(question.getQc().getQcId());
+            dto.setCreateDate(question.getCreateDate());
+            
+            // 답변 추가
+            Answer answer = question.getAnswer();
+            if (answer != null) {
+                dto.setAnswer(answer.getContent());
+                dto.setAnswerCreateDate(answer.getCreateDate());
+            }
             questionDtos.add(dto);
         }
         return questionDtos;

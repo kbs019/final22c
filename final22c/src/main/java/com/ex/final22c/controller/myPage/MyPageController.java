@@ -270,18 +270,22 @@ public class MyPageController {
     @GetMapping("/questionDetail/{questionId}")
     @ResponseBody
     public QuestionDto getQuestionDetail(@PathVariable Long questionId) {
-        Question question = questionRepository.findById(questionId)
+        Question question = questionRepository.findByIdWithAnswer(questionId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid question ID"));
+        
         QuestionDto dto = new QuestionDto();
+        dto.setQId(question.getQId());
+        dto.setStatus(question.getStatus());
         dto.setTitle(question.getTitle());
         dto.setContent(question.getContent());
-        dto.setCreateDate(question.getCreateDate().toString());
+        dto.setQcId(question.getQc().getQcId());
+        dto.setCreateDate(question.getCreateDate());
 
         Answer answer = question.getAnswer();
         if (answer != null) {
             dto.setAnswer(answer.getContent());
-            dto.setAnswerCreateDate(answer.getCreateDate().toString());
+            dto.setAnswerCreateDate(answer.getCreateDate());
         }
-        return dto; // JSON 형태로 반환
+        return dto;  // JSON 형태로 반환
     }
 }
