@@ -297,4 +297,8 @@ public class OrderService {
             .filter(detail -> "CONFIRMED".equals(detail.getOrder().getStatus()))
             .collect(Collectors.toList());
     }
+    
+    public boolean hasPurchasedProduct(String username, long productId) {
+        return orderRepository.existsByUserAndProduct(username, productId);
+    }
 }

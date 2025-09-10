@@ -66,35 +66,44 @@
         </div>
     </div>
 
-    <!-- 공용 모달 -->
-    <div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="questionModalLabel">문의 상세</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+<!-- 공용 모달 -->
+<!-- 공용 모달 -->
+<div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+			<!-- 헤더 -->
+			<div class="modal-header bg-light text-dark">
+			    <h5 class="modal-title" id="questionModalLabel">문의 상세</h5>
+			    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+			</div>
+
+            <!-- 본문 -->
+            <div class="modal-body">
+                <!-- 제목과 작성자 -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="fw-bold mb-0" id="modalTitle"></h4>
+                    <small class="text-muted" id="modalWriter"></small>
                 </div>
 
-                <div class="modal-body">
-                    <h5 id="modalTitle"></h5>
-                    <p class="text-muted">작성자: <span id="modalWriter"></span></p>
-                    <hr>
-                    <div id="modalContent"></div>
-                </div>
-
-                <div class="modal-footer">
-                    <form th:action="@{/admin/answerSave}" method="post" class="w-100">
-                        <input type="hidden" name="qId" id="modalQId">
-                        <div class="mb-3">
-                            <textarea name="content" class="form-control" rows="4" placeholder="답변 내용을 입력하세요" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">등록</button>
-                    </form>
-                </div>
-
+                <!-- 내용 -->
+                <div class="p-3 border rounded" style="background-color: #f8f9fa;" id="modalContent"></div>
             </div>
+
+            <!-- 답변 폼 -->
+            <div class="modal-footer">
+                <form th:action="@{/admin/answerSave}" method="post" class="w-100">
+                    <input type="hidden" name="qId" id="modalQId">
+                    <div class="mb-3">
+                        <textarea name="content" class="form-control" rows="4" placeholder="답변 내용을 입력하세요" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">답변 등록</button>
+                </form>
+            </div>
+
         </div>
     </div>
+</div>
 
 </div>
 
@@ -140,15 +149,14 @@
 	        // status가 'done'이거나 '답변완료' 텍스트인 경우 답변을 보여주도록 처리
 	        if(status === 'done' || status === '답변완료' || status === '답변완료'.toLowerCase()) {
 	            modalContent.innerHTML = `
-	                <h6>질문 내용</h6>
 	                <div class="p-2 border mb-2">${question}</div>
+	                <hr>
 	                <h6>답변 내용</h6>
 	                <div class="p-2 border">${answer}</div>
 	            `;
 	            modalEl.querySelector(".modal-footer form")?.classList.add("d-none"); // 답변폼 숨김
 	        } else {
 	            modalContent.innerHTML = `
-	                <h6>질문 내용</h6>
 	                <div class="p-2 border mb-2">${question}</div>
 	            `;
 	            modalEl.querySelector(".modal-footer form")?.classList.remove("d-none"); // 폼 보이기
