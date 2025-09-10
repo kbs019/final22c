@@ -71,7 +71,7 @@
                             <td th:text="${list.id}"></td>
                             <td th:text="${list.name}"></td>
                             <td th:text="${list.brand.brandName}"></td>
-                            <td th:text="${#numbers.formatInteger(list.costPrice, 3, 'COMMA')}"></td>
+                            <td th:text="${#numbers.formatInteger(list.costPrice, 1, 'COMMA')}"></td>
                             <td th:text="${list.count}"></td>
                             <td style="width: 120px;">
                                 <div class="d-flex gap-1 align-items-center">
@@ -121,9 +121,9 @@
                                 <td th:text="${pr.product.id}"></td>
                                 <td th:text="${pr.product.name}"></td>
                                 <td th:text="${pr.product.brand.brandName}"></td>
-                                <td th:text="${#numbers.formatInteger(pr.product.costPrice, 3, 'COMMA')}"></td>
+                                <td th:text="${#numbers.formatInteger(pr.product.costPrice, 1, 'COMMA')}"></td>
                                 <td th:text="${pr.qty}"></td>
-                                <td th:text="${#numbers.formatInteger(pr.product.costPrice * pr.qty, 3, 'COMMA')}"></td>
+                                <td th:text="${#numbers.formatInteger(pr.product.costPrice * pr.qty, 1, 'COMMA')}"></td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-danger delete-order"
                                         th:attr="data-prid=${pr.prId}">X</button>
@@ -287,7 +287,7 @@
                 .then(data => {
                     if (data.success) {
                         showAlert('추가되었습니다', 'success');
-                        input.value = 0;
+                        input.value = '';
                         loadPurchaseList();
                     } else {
                         showAlert(data.message || '추가 실패', 'danger');

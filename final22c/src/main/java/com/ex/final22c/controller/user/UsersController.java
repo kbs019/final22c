@@ -2,6 +2,7 @@ package com.ex.final22c.controller.user;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.security.core.Authentication;
@@ -13,11 +14,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ex.final22c.form.UsersForm;
 import com.ex.final22c.service.user.EmailVerifier;
 import com.ex.final22c.service.user.UsersService;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -176,5 +179,51 @@ public class UsersController {
         model.addAttribute("resultType", "id");
         model.addAttribute("result", userId);
         return "user/findResult"; // 결과 페이지
+    }
+    
+    // Step 1: 아이디 + 이메일 입력 → 인증번호 발송
+    @PostMapping("/findPw")
+    @ResponseBody
+    public Map<String, Object> sendAuthCode(@RequestParam("userName") String userName,
+                                            @RequestParam("email") String email,
+                                            HttpSession session) {
+        boolean result = usersService.sendResetPasswordAuthCode(userName, email);
+
+        if (result) {
+            session.setAttribute("resetUserName", userName); // ✅ 세션 저장
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", result);
+        return response;
+    }
+
+    // Step 2: 인증번호 검증
+    @PostMapping("/verifyAuthCode")
+    @ResponseBody
+    public Map<String, Object> verifyAuthCode(@RequestParam("authCode") String authCode) {
+        boolean result = usersService.verifyAuthCode(authCode);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", result);
+        return response;
+    }
+
+    // Step 3: 새 비밀번호 입력 화면
+    @GetMapping("/resetPwForm")
+    public String resetPwForm(HttpSession session, Model model) {
+        String userName = (String) session.getAttribute("resetUserName");
+        model.addAttribute("userName", userName);
+        return "user/resetPwForm";
+    }
+
+    // Step 4: 새 비밀번호 저장
+    @PostMapping("/resetPw")
+    public String resetPw(@RequestParam("userName") String userName,
+                          @RequestParam("newPassword") String newPassword, RedirectAttributes redirectAttributes) {
+        usersService.resetPassword(userName, newPassword);
+
+        redirectAttributes.addFlashAttribute("msg", "비밀번호가 성공적으로 변경되었습니다.");
+        return "redirect:/user/resetPwForm?userName=" + userName;
     }
 }

@@ -2,6 +2,7 @@ package com.ex.final22c.service.user;
 
 import java.security.Principal;
 import java.util.Optional;
+import java.util.Random;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +23,7 @@ public class UsersService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerifier emailVerifier;
+    private final EmailService emailService;
     private final PhoneCodeService phoneCodeService;
 
     /** 사용자명으로 조회(없으면 DataNotFoundException) */
@@ -236,6 +238,40 @@ public class UsersService {
         }
         return null; // 못 찾음
     }
+    
+    private String tempAuthCode;
+    
+    // 아이디 이메일 확인 후 인증코드 발송
+    public boolean sendResetPasswordAuthCode(String userName, String email) {
+        Optional<Users> userOpt = userRepository.findByUserNameAndEmail(userName, email);
+        if (userOpt.isEmpty()) return false;
+
+        String authCode = generateAuthCode();
+        tempAuthCode = authCode; // 임시 저장
+        emailService.sendResetPasswordEmail(email, authCode);
+        return true;
+    }
+    
+    // 인증코드 확인
+    public boolean verifyAuthCode(String authCode) {
+        return authCode.equals(tempAuthCode);
+    }
+    
+    //
+    public void resetPassword(String userName, String newPassword) {
+        userRepository.findByUserName(userName).ifPresent(user -> {
+            // ✅ 비밀번호 암호화
+            String encodedPw = passwordEncoder.encode(newPassword);
+            user.setPassword(encodedPw);
+            userRepository.save(user);
+        });
+    }
+
+    private String generateAuthCode() {
+        Random random = new Random();
+        return String.valueOf(100000 + random.nextInt(900000));
+    }
+}
 
     @Transactional
     public void deactivateAccount(String username) {

@@ -14,16 +14,17 @@
 
 <body>
 <th:block layout:fragment="content">
+  <div class="list-container">
 
-  <div class="row g-4">
-
+    <div class="row g-4 list-shell"><!-- ① 리스트 전체 너비 축소용 래퍼(list-shell) 추가 -->
+      
     <!-- 좌측 필터 -->
     <aside class="col-12 col-md-3 col-lg-2">
       <div class="filter-panel filter-sticky">
         <h6 class="mb-3 fw-semibold filter-title">필터</h6>
 
         <div class="filter-scroll">
-
+          
           <div class="accordion minimalist" id="filterAccordion">
             
           <!-- Brand -->
@@ -94,7 +95,7 @@
               </div>
             </div>
           </div>
-
+          
           <!-- Volume -->
           <div class="accordion-item">
             <h2 class="accordion-header" id="headingVolume">
@@ -118,38 +119,39 @@
             </div>
           </div>
         </div>
-
-        </div>
         
-        <div class="d-grid mt-3">
+      </div>
+      
+      <div class="d-grid mt-3">
           <button id="btn-reset" class="btn btn-reset btn-sm">필터 초기화</button>
         </div>
       </div>
     </aside>
-
+    
     <!-- 중앙 리스트 -->
-    <section class="col-12 col-md-9 col-lg-10">
+    <section class="col-12 col-md-9 col-lg-10 list-body-narrow ps-md-5"><!-- ① 너비 축소 + ② 사이드바와 간격 -->
       
       <!-- 상단 검색창 -->
       <div class="search-wrap my-2">
         <form id="search-form" class="search-box" action="javascript:void(0);" role="search">
           <input id="keyword" name="q" type="search" placeholder="상품명을 입력하세요"
-                 th:value="${keyword}" autocomplete="off">
+          th:value="${keyword}" autocomplete="off">
           <button id="btn-search" aria-label="검색">
             <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
           </button>
+          <!-- ⑦ 오른쪽 위 X만 사용(검정색). 네이티브 X는 CSS로 숨김 -->
           <button id="btn-clear" type="button" aria-label="지우기" hidden>&times;</button>
         </form>
       </div>
-
+      
       <!-- 결과영역(Fragment로 교체) -->
       <div id="list-body" th:fragment="listBody" th:attr="data-page=${page}">
         <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
           <div class="small text-secondary">검색결과 <span id="result-count" th:text="${total}">0</span>개</div>
-
+          
           <!-- 정렬 드롭다운 -->
           <div class="sort-wrap ms-auto">
-            <select id="sort-select" class="form-select form-select-sm sort-select minimalist-select">
+            <select id="sort-select" class="sort-select minimalist-select">
               <option th:value="'id'"         th:selected="${sort == 'id'}">기본순</option>
               <option th:value="'popular'"    th:selected="${sort == 'popular'}">인기순</option>
               <option th:value="'priceAsc'"   th:selected="${sort == 'priceAsc'}">가격 낮은 순</option>
@@ -159,7 +161,14 @@
           </div>
         </div>
 
-        <div id="product-grid" class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3">
+        <!-- ⑥ 검색결과 0건일 때: 빈 상태 문구만 표시하고 그리드/페이징 숨김 -->
+        <div th:if="${total == 0}" class="empty-state">
+          <div class="empty-icon" aria-hidden="true">﹖</div>
+          <p class="mb-1">해당하는 상품이 없습니다.</p>
+          <p class="text-secondary small">검색어 또는 필터를 변경해 보세요.</p>
+        </div>
+        
+        <div id="product-grid" class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-3" th:if="${total > 0}">
           <div class="col" th:each="p : ${products}">
             <div class="card product-card h-100">
               <!-- ⬇️ 품절 오버레이 적용 -->
@@ -171,29 +180,29 @@
               <div class="card-body p-2">
                 <div class="small text-secondary brand-compact" th:text="${p['brandName']}">Brand</div>
                 <div class="fw-semibold name-compact text-truncate linkish" th:title="${p['name']}" th:text="${p['name']}">Name</div>
-
+                
                 <!-- 가격영역 -->
                 <div class="price-row mt-1">
                   <span class="disc"
-                        th:if="${p['discount'] != null and p['discount'] > 0}"
-                        th:text="${#numbers.formatInteger(p['discount'],0)} + '%'">10%</span>
+                  th:if="${p['discount'] != null and p['discount'] > 0}"
+                  th:text="${#numbers.formatInteger(p['discount'],0)} + '%'">10%</span>
 
                   <span class="sale"
                         th:text="${#numbers.formatInteger(p['sellPrice'],3,'COMMA')} + '원'">0원</span>
-
-                  <span class="list"
+                        
+                        <span class="list"
                         th:if="${p['price'] != null and p['price'] > p['sellPrice']}"
                         th:text="${#numbers.formatInteger(p['price'],3,'COMMA')} + '원'">0원</span>
-
-                  <a class="stretched-link" th:href="@{'/main/content/' + ${p['id']}}"></a>
-                </div>
+                        
+                        <a class="stretched-link" th:href="@{'/main/content/' + ${p['id']}}"></a>
+                      </div>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- 페이지네이션 -->
-        <nav class="mt-3" aria-label="상품 목록 페이지">
+        
+        <!-- 페이지네이션: ③ 간격 확대 + ⑥ total>0 일 때만 노출 -->
+        <nav class="mt-5" aria-label="상품 목록 페이지" th:if="${total > 0}">
           <ul class="pagination pagination-sm justify-content-center pager-minimal">
             <li class="page-item" th:classappend="${page <= 1} ? ' disabled'">
               <a class="page-link" href="#" data-page="1" aria-label="처음">«</a>
@@ -201,7 +210,7 @@
             <li class="page-item" th:classappend="${page <= 1} ? ' disabled'">
               <a class="page-link" href="#" th:attr="data-page=${page-1}" aria-label="이전">‹</a>
             </li>
-
+            
             <th:block th:with="
               tp=${totalPages.intValue()},
               pg=${page},
@@ -210,9 +219,9 @@
               _end=${T(java.lang.Math).min(tp, pg+2)},
               start=${T(java.lang.Math).max(1, T(java.lang.Math).min(_start, tp-4))},
               end=${T(java.lang.Math).min(tp, T(java.lang.Math).max(_end, 5))}
-            ">
+              ">
               <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
-                  th:classappend="${i == page} ? ' active'">
+              th:classappend="${i == page} ? ' active'">
                 <a class="page-link" href="#" th:text="${i}" th:attr="data-page=${i}">1</a>
               </li>
             </th:block>
@@ -225,13 +234,14 @@
             </li>
           </ul>
         </nav>
-
+        
       </div>
 
     </section>
 
   </div>
-
+</div>
+  
 </th:block>
 
 <!-- jQuery만 사용 -->
@@ -254,6 +264,9 @@
 
     $("#keyword").focus();
 
+    /* =============================
+       유틸
+       ============================= */
     function collect(name){
       return $("input[name='" + name + "']:checked")
               .map(function(){ return this.value; }).get();
@@ -285,21 +298,95 @@
       return q.length ? ("?" + q.join("&")) : "";
     }
 
+    /* =============================
+       커스텀 정렬 드롭다운 (네이티브 select 대체)
+       ============================= */
+    function enhanceSortDropdown(){
+      var $sel = $("#sort-select");                 // 새로 로드된 select
+      if (!$sel.length || $sel.hasClass("is-enhanced")) return;
+
+      // Bootstrap 기본 스타일 제거(있다면)
+      $sel.removeClass("form-select form-select-sm");
+
+      // 네이티브 select는 화면에서 숨김, 중복 장착 방지 플래그
+      $sel.addClass("visually-hidden is-enhanced");
+
+      // UI 생성
+      var $wrap = $('<div class="sort-custom" aria-haspopup="listbox" aria-expanded="false"></div>');
+      var currentText = $sel.find("option:selected").text();
+      var $btn  = $('<button type="button" class="sort-btn" aria-label="정렬 기준"></button>');
+      $btn.append('<span class="label">'+ currentText +'</span>');
+      $btn.append('<span class="caret">▾</span>');
+      var $menu = $('<div class="menu" role="listbox" tabindex="-1"></div>');
+
+      // 옵션 → 메뉴 아이템
+      $sel.find("option").each(function(){
+        var val = $(this).attr("value");
+        var txt = $(this).text();
+        var $item = $('<button type="button" class="item" role="option"></button>')
+                      .text(txt).attr("data-value", val);
+        if ($(this).is(":selected")) $item.attr("aria-current","true");
+        $menu.append($item);
+      });
+
+      $wrap.append($btn).append($menu);
+      $sel.after($wrap);
+
+      // 열기/닫기 (문서 전역 핸들러는 중복 방지를 위해 네임스페이스 off 후 on)
+      function open(){ $wrap.addClass("open").attr("aria-expanded","true"); }
+      function close(){ $wrap.removeClass("open").attr("aria-expanded","false"); }
+
+      $btn.on("click", function(e){
+        e.stopPropagation();
+        $wrap.hasClass("open") ? close() : open();
+      });
+
+      $(document).off(".sortdd");                    // 중복 제거
+      $(document).on("click.sortdd", function(){ close(); });
+      $(document).on("keydown.sortdd", function(e){ if(e.key==="Escape") close(); });
+
+      // 선택 → 네이티브 값 갱신 → 기존 change 핸들러(reload) 호출
+      $menu.on("click", ".item", function(e){
+        e.preventDefault();
+        var val = String($(this).data("value"));
+        var label = $(this).text();
+
+        $menu.find(".item").removeAttr("aria-current");
+        $(this).attr("aria-current","true");
+        $btn.find(".label").text(label);
+
+        if ($sel.val() !== val) {
+          $sel.val(val).trigger("change");
+        }
+        close();
+      });
+    }
+
+    /* =============================
+       부분 로딩
+       ============================= */
     function reload(opts){
       opts = opts || {};
       if (typeof opts.page === "undefined") opts.page = 1;
 
       var url = "/main/list/partial" + buildQS(opts);
       console.log('[product-list] reload ->', url);
+
       $("#list-body").load(url + " #list-body>*", function(response, status, xhr){
         if(status !== "success"){
           console.error("[product-list] 부분 로드 실패:", xhr.status, xhr.statusText);
           return;
         }
         history.replaceState(null, "", "/main/list" + buildQS(opts));
+
+        // 부분 로딩 끝난 뒤 새로 생성된 select에 다시 커스텀 드롭다운 장착
+        enhanceSortDropdown();
       });
     }
 
+    /* =============================
+       이벤트 바인딩
+       ============================= */
     $(document).on("change", ".filter-check", function(e){
       e.stopPropagation();
       reload({ page: 1 });
@@ -333,10 +420,18 @@
       if (!p || $(this).closest(".page-item").hasClass("disabled")) return;
       reload({ page: p });
     });
+
+    /* =============================
+       초기 진입 보장(처음만 안 붙는 이슈 방지)
+       ============================= */
+    enhanceSortDropdown();                      // 즉시 1회
+    requestAnimationFrame(enhanceSortDropdown); // 첫 페인트 직후 1회
+    setTimeout(enhanceSortDropdown, 0);         // 마이크로 딜레이 1회 (안전망)
   });
 })();
 </script>
 </th:block>
+
 
 </body>
 </html>
