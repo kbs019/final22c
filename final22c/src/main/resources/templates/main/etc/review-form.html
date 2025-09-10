@@ -24,6 +24,7 @@
 
   <form method="post" th:action="@{/main/etc/review}">
     <input type="hidden" name="productId" th:value="${product.id}">
+    <input type="hidden" name="orderDetailId" th:value="${orderDetailId}" />
     <input type="hidden" name="rating" id="rating" value="5">
 
     <div class="mb-3">

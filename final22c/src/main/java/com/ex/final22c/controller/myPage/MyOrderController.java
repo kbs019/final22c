@@ -1,7 +1,9 @@
 package com.ex.final22c.controller.myPage;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -12,8 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.service.order.MyOrderService;
+import com.ex.final22c.service.product.ReviewService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/mypage")
 public class MyOrderController {
 	private final MyOrderService myOrderService;
+	private final ReviewService reviewService;
 
 	/** 전체 페이지(레이아웃 포함) */
 	@GetMapping("/order")
@@ -90,17 +95,28 @@ public class MyOrderController {
 	/** 주문 상세 전체 페이지 */
 	@GetMapping("/order/{id}")
 	public String orderDetailPage(@PathVariable("id") Long id,
-			Principal principal,
-			Model model) {
-		if (principal == null)
-			return "redirect:/user/login";
+	                              Principal principal,
+	                              Model model) {
+	    if (principal == null) {
+	        return "redirect:/user/login";
+	    }
 
-		Order order = myOrderService.findMyOrderWithDetails(principal.getName(), id);
-		List<Payment> payments = myOrderService.findPaymentsofOrder(id);
+	    String username = principal.getName();
 
-		model.addAttribute("order", order);
-		model.addAttribute("payments", payments);
-		model.addAttribute("section", "orders");
-		return "mypage/orderDetail";
+	    // 주문 + 상세 정보 조회
+	    Order order = myOrderService.findMyOrderWithDetails(username, id);
+	    List<Payment> payments = myOrderService.findPaymentsofOrder(id);
+
+	    // ✅ 각 상품별 리뷰 작성 여부 세팅 (String 'Y'/'N')
+	    for (OrderDetail d : order.getDetails()) {
+	        boolean exists = reviewService.existsReview(username, d.getProduct().getId());
+	        d.setReviewWritten(exists ? "Y" : "N"); // Boolean → 'Y'/'N'
+	    }
+
+	    model.addAttribute("order", order);
+	    model.addAttribute("payments", payments);
+	    model.addAttribute("section", "orders");
+
+	    return "mypage/orderDetail";
 	}
 }

@@ -282,4 +282,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         @Param("statuses") Collection<String> statuses,
         Pageable pageable);
   }
+  
+  @Query("""
+	        SELECT COUNT(d) > 0
+	        FROM Order o 
+	        JOIN o.details d
+	        WHERE o.user.userName = :username
+	          AND d.product.id = :productId
+	          AND o.status = 'CONFIRMED'
+	    """)
+	    boolean existsByUserAndProduct(@Param("username") String username,
+	                                   @Param("productId") Long productId);
 }
