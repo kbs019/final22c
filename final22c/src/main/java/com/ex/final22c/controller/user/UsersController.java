@@ -82,7 +82,7 @@ public class UsersController {
         }
         usersForm.setEmail(emailNorm);
         usersService.create(usersForm);
-        return "redirect:/user/login";
+        return "redirect:/user/login?joined=1";
     }
 
     @GetMapping(value = "/check/password", produces = "application/json")
