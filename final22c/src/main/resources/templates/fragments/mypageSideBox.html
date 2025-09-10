@@ -31,6 +31,7 @@
     border-color: #111827
   }
 </style>
+
 <th:block th:fragment="mypageSidebox(section)">
   <aside class="mp-sidebox" role="navigation" aria-label="마이페이지 메뉴">
     <h2 class="mp-sidebox__title">마이페이지</h2>
@@ -59,6 +60,12 @@
         th:attr="aria-current=(${section}=='mileage') ? 'page' : null">
         <span>마일리지 내역</span>
       </a>
+      
+      <a th:href="@{/mypage/zzimList}" class="mp-sidebox__link"
+        th:classappend="${section}=='wishlist' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='wishlist') ? 'page' : null">
+        위시리스트
+      </a>
 
       <a th:href="@{/mypage/profile}" class="mp-sidebox__link"
         th:classappend="${section}=='profile' ? ' is-active' : ''"
@@ -66,10 +73,11 @@
         개인정보
       </a>
 
-      <a th:href="@{/mypage/zzimList}" class="mp-sidebox__link"
-        th:classappend="${section}=='wishlist' ? ' is-active' : ''"
-        th:attr="aria-current=(${section}=='wishlist') ? 'page' : null">
-        위시리스트
+      <!-- '내 문의' 메뉴 항목 추가 -->
+      <a th:href="@{/mypage/myQuestion}" class="mp-sidebox__link"
+        th:classappend="${section}=='myQuestion' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='myQuestion') ? 'page' : null">
+        내 문의
       </a>
     </nav>
   </aside>

@@ -1,6 +1,8 @@
 package com.ex.final22c.service.user;
 
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -9,9 +11,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.ex.final22c.DataNotFoundException;
+import com.ex.final22c.data.qna.Question;
+import com.ex.final22c.data.qna.QuestionDto;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersForm;
 import com.ex.final22c.repository.user.UserRepository;
+import com.ex.final22c.repository.qna.QuestionRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class UsersService {
 
     private final UserRepository userRepository;
+    private final QuestionRepository questionRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerifier emailVerifier;
 
@@ -229,5 +235,18 @@ public class UsersService {
             return userOpt.get().getUserName(); // 아이디 반환
         }
         return null; // 못 찾음
+    }
+
+    public List<QuestionDto> getUserQuestions(String userName) {
+        List<Question> questions = questionRepository.findByWriterUserName(userName);
+        List<QuestionDto> questionDtos = new ArrayList<>();
+        for (Question question : questions) {
+            QuestionDto dto = new QuestionDto();
+            dto.setTitle(question.getTitle());
+            dto.setContent(question.getContent());
+            dto.setQcId(question.getQc().getQcId());
+            questionDtos.add(dto);
+        }
+        return questionDtos;
     }
 }
