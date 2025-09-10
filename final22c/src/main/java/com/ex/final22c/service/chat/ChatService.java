@@ -172,12 +172,12 @@ public class ChatService {
         return extract(resp);
     }
 
+    // 관리자페이지 AI
     public String summarize(String question, String sql, String table) {
         var body = Map.of(
             "model", model,
             "messages", List.of(
                 Map.of("role", "system", "content",
-                    // ✅ 톤 & 형식 가이드
                     "너는 매장 데이터 분석 도우미야. 결과를 한 줄로 아주 간단히, 친근한 존댓말로 요약해.\n" +
                     "- 문장 끝은 '~예요/네요' 위주(지나친 격식 '입니다'는 가급적 피함)\n" +
                     "- 핵심만 1문장: 기간·지표·숫자 중심\n" +
@@ -191,6 +191,7 @@ public class ChatService {
         var resp = call(body);
         return extract(resp);
     }
+
     /* -------------------- AI SQL 실행(표준화 → 가드 → 실행) -------------------- */
     public AiRunResult runAiSqlWithPeriod(String question,
                                           String schemaDoc,
@@ -245,20 +246,24 @@ public class ChatService {
         List<Object[]> rows
     ) {}
 
-    /* ----- 추가 텍스트 생성(그대로 유지) ----- */
+    /* ----- 관리자가 상품 등록할때 AIGUIDE 생성 ----- */
     public String generateProductDescription(String prompt) {
         var body = Map.of(
             "model", model,
             "messages", List.of(
                 Map.of("role", "system", "content",
-                    "당신은 향수 전문가입니다. 매력적이고 전문적인 상품 설명문을 작성해주세요.\n\n" +
-                    "형식:\n1문단: 향수의 주요 특징과 노트 구성\n2문단: 어떤 상황/사용자에게 어울리는지\n\n" +
-                    "규칙:\n- 순수 한국어\n- HTML/특수문자 금지\n- 문단 사이 한 줄 공백\n" +
-                    "- 각 문단 180~220자, 전체 2문단(과도하게 길지 않게)\n- 자연스러운 존댓말"),
+                    "당신은 향수 전문가입니다. 사용자가 제공하는 모든 조건과 요구사항을 정확히 따라 상품 설명문을 작성해주세요.\n\n" +
+                    "기본 규칙:\n" +
+                    "- 반드시 순수 한국어로만 작성 (중국어, 영어 절대 금지)\n" +
+                    "- HTML 태그나 특수문자 사용 금지\n" +
+                    "- 자연스럽고 완전한 한국어 문장으로 구성\n" +
+                    "- 사용자의 모든 요구사항을 빠짐없이 포함\n" +
+                    "- 문단 사이에는 빈 줄로 구분\n" +
+                    "- 맞춤법과 띄어쓰기 정확히 준수"),
                 Map.of("role", "user", "content", prompt)
             ),
-            "temperature", 0.5,
-            "max_tokens", 800 
+            "temperature", 0.1,
+            "max_tokens", 1100
         );
 
         try {
@@ -266,18 +271,35 @@ public class ChatService {
             String result = extract(resp);
             if (result == null) return null;
 
+            // 기본 포맷 정리
             result = result.replace("\r\n", "\n")
                            .replaceAll("[ \t]+", " ")
                            .replaceAll("\n{3,}", "\n\n")
                            .trim();
 
-            // ⬇ 끊겼으면 1회 보정
+            // 중국어 한자 제거 + 허용 문자 확장(콜론, 세미콜론, 앰퍼샌드, 슬래시, 중점 등 보존)
+            result = result.replaceAll("[一-龯]", "");
+            result = result.replaceAll(
+                "[^가-힣a-zA-Z0-9\\s\\.,!?()\\-:;/&·—'\"%\\n]",
+                ""
+            ).trim();
+
+            // 짤림 보정: "자르지" 않고 "마무리만 추가"
             if (seemsCut(result)) {
-                String tail = finishTail(result);
-                if (tail != null && !tail.isBlank()) {
-                    result = (result + " " + tail).replaceAll("[ \t]+", " ").trim();
+                log.warn("AI 응답 마무리 보정");
+                result = finishTail(result);
+            }
+
+            // 섹션이 없다면 기본 섹션 추가(싱글/복합 추정은 prompt로 판단)
+            boolean hasGuide = result.contains("활용 가이드") || result.contains("활용 꿀팁");
+            if (!hasGuide) {
+                if (prompt != null && prompt.contains("싱글노트:")) {
+                    result += "\n\n활용 꿀팁:\n- 일상에서 부담 없이 사용하기 좋아요.\n- 다른 향수와 레이어링하기에도 적합해요.";
+                } else {
+                    result += "\n\n향의 시간별 변화 & 활용 가이드:\n- 시간에 따라 다양한 매력을 선사하는 향입니다.\n- 하루 종일 변화하는 향의 여정을 즐겨보세요.";
                 }
             }
+
             return result;
         } catch (Exception e) {
             log.error("상품 설명문 생성 실패: {}", e.getMessage());
@@ -285,6 +307,7 @@ public class ChatService {
         }
     }
 
+    /* ----- 상품 상세페이지에서 유저가 AI 맞춤 가이드할때 사용 ----- */
     public String generatePersonaRecommendation(String prompt) {
         var body = Map.of(
             "model", model,
@@ -297,7 +320,7 @@ public class ChatService {
                     "- 주변 사람들이 느낄 수 있는 좋은 인상들\n" +
                     "- 사용자에게 선사할 특별한 분위기\n\n" +
                     "**작성 가이드:**\n" +
-                    "- 한국어만 사용하고 자연스러운 표현 사용\n" +
+                    "- 반드시 한국어만 사용하고 자연스러운 표현 사용\n" +
                     "- 친근하고 따뜻한 말투로 작성\n" +
                     "- 각 문단 사이에 빈 줄을 넣어 구분\n" +
                     "- '착용자' 대신 '사용자'라는 표현 사용\n" +
@@ -317,12 +340,8 @@ public class ChatService {
                            .replaceAll("\n{3,}", "\n\n")
                            .trim();
 
-            // ⬇ 끊겼으면 1회 보정
             if (seemsCut(result)) {
-                String tail = finishTail(result);
-                if (tail != null && !tail.isBlank()) {
-                    result = (result + " " + tail).replaceAll("[ \t]+", " ").trim();
-                }
+                result = finishTail(result);
             }
             return result;
         } catch (Exception e) {
@@ -330,27 +349,36 @@ public class ChatService {
             return null;
         }
     }
- // 텍스트가 문장 중간에서 끝났는지 간단 점검
-    private static boolean seemsCut(String s) {
-        if (s == null) return false;
-        // 마침표/물음표/느낌표 혹은 '요.' '다.' 등으로 끝나지 않으면 끊긴 걸로 간주
-        return !s.trim().matches("(?s).*[.!?]|.*(요|다|함)\\.$");
+
+    // 텍스트가 문장 중간에서 끝났는지 간단 점검(완화 버전)
+    private boolean seemsCut(String text) {
+        if (text == null) return true;
+        String t = text.trim();
+        if (t.isEmpty()) return true;
+
+        // 문장 종료 기호들: . ? ! 그리고 "다." "요."
+        boolean endsWithSentence =
+            t.endsWith(".") || t.endsWith("?") || t.endsWith("!")
+            || t.endsWith("다.") || t.endsWith("요.");
+
+        // 너무 짧을 때만 보수적으로 (예: 80자 미만)
+        boolean suspiciouslyShort = t.length() < 80;
+
+        // "짤림"은 정말 명백할 때만 true
+        return !endsWithSentence && suspiciouslyShort;
     }
 
-    // 끊긴 경우, 마지막 1~2문장만 자연스럽게 끝맺도록 모델에 한 번 더 요청
-    private String finishTail(String partial) {
-        var body = Map.of(
-            "model", model,
-            "messages", List.of(
-                Map.of("role", "system", "content",
-                    "다음 한국어 텍스트가 문장 중간에서 끊겼습니다. 의미 바꾸지 말고 1~2문장으로 자연스럽게 마무리만 해주세요. " +
-                    "앞부분을 반복하거나 요약하지 말고, 뒤에 이어질 문장만 작성하세요."),
-                Map.of("role", "user", "content", partial)
-            ),
-            "temperature", 0.3,
-            "max_tokens", 200  // 마무리만
-        );
-        var resp = call(body);
-        return extract(resp);
+    // 끊긴 경우, "잘라내지 않고" 자연스럽게 끝맺는 꼬리만 추가
+    private String finishTail(String cutText) {
+        if (cutText == null || cutText.isBlank()) return null;
+
+        // 뒤쪽에 마침표가 가깝게 있으면 그대로 둠
+        int lastPeriod = cutText.lastIndexOf('.');
+        if (lastPeriod > 0 && cutText.length() - lastPeriod < 120) {
+            return cutText;
+        }
+
+        // 자연스러운 꼬리만 추가
+        return cutText + "\n\n향의 시간별 변화 & 활용 가이드:\n- 자세한 활용법은 상품 상세정보를 참고해주세요.";
     }
 }
