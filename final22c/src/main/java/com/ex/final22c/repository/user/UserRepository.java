@@ -76,4 +76,7 @@ public interface UserRepository extends JpaRepository<Users, Long> {
   // userName으로 PK만 뽑아오기(경량)
   @Query("select u.userNo from Users u where u.userName = :userName")
   Optional<Long> findUserNoByUserName(@Param("userName") String userName);
+  
+  // 아이디 + 이메일로 조회
+  Optional<Users> findByUserNameAndEmail(String userName, String email);
 }
