@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{/layout/layout}">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>마이페이지 - 내 문의</title>
+</head>
+
+<th:block layout:fragment="css">
+  <style>
+    /* === 사이드박스 공통 레이아웃 === */
+    .mp-grid {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .mp-col-left {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      z-index: 1;
+    }
+
+    .mp-col-right {
+      min-width: 0;
+    }
+
+    .mp-sidebox__title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+
+    .mp-sidebox__nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mp-sidebox__link {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #111827;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+    }
+
+    .mp-sidebox__link:hover {
+      background: #f3f7ff;
+    }
+
+    .mp-sidebox__link.is-active {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    @media (max-width:860px) {
+      .mp-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mp-col-left {
+        position: static;
+      }
+    }
+
+    /* === 내 문의 테이블 === */
+    .table th, .table td {
+      vertical-align: middle;
+    }
+
+    .modal-header .btn-close {
+      outline: none;
+    }
+
+    /* === 모달창 스타일 === */
+    .modal-dialog {
+      max-width: 800px;
+    }
+  </style>
+</th:block>
+
+<th:block layout:fragment="content">
+  <section class="mypage-wrap">
+    <div class="mp-grid">
+      <!-- 좌측: 사이드박스(활성키는 controller에서 넣은 section='myQuestions') -->
+      <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+
+      <!-- 우측: 내 문의 본문 -->
+      <div class="mp-col-right">
+        <h2>내 문의</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>제목</th>
+              <th>작성일</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="question : ${questions}">
+              <td>
+                <a href="#" th:attr="data-id=${question.qId}" class="question-title" data-toggle="modal" data-target="#questionModal">
+                  <span th:text="${question.title}"></span>
+                </a>
+              </td>
+              <td th:text="${#temporals.format(question.createDate, 'yyyy-MM-dd')}"></td>
+              <td th:text="${question.status}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- === 모달 === -->
+    <div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="questionModalLabel">문의 상세</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>제목: </strong><span id="modalTitle"></span></p>
+            <p><strong>작성일: </strong><span id="modalCreateDate"></span></p>
+            <p><strong>문의 내용: </strong><span id="modalContent"></span></p>
+            <p><strong>답변 내용: </strong><span id="modalAnswer"></span></p>
+            <p><strong>답변 작성일: </strong><span id="modalAnswerDate"></span></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</th:block>
+
+<script layout:fragment="script">
+  // 모달에 데이터 채우기
+  document.addEventListener("click", function (e) {
+    if (e.target.closest(".question-title")) {
+      let questionId = e.target.closest(".question-title").getAttribute("data-id");
+
+      // AJAX로 데이터 가져오기
+      fetch(`/mypage/questionDetail/${questionId}`)
+        .then(response => response.json())
+        .then(data => {
+          // 모달 데이터 채우기
+          document.getElementById("modalTitle").innerText = data.title;
+          document.getElementById("modalCreateDate").innerText = data.createDate;
+          document.getElementById("modalContent").innerText = data.content;
+          document.getElementById("modalAnswer").innerText = data.answer || "답변 대기 중";
+          document.getElementById("modalAnswerDate").innerText = data.answerCreateDate || "없음";
+
+          // 모달 열기
+          $('#questionModal').modal('show');  // 모달을 여는 코드
+        })
+        .catch(err => console.error('Error fetching question details:', err));
+    }
+  });
+</script>
+</html>
