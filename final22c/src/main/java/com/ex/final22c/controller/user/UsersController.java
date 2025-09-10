@@ -20,6 +20,7 @@ import com.ex.final22c.form.UsersForm;
 import com.ex.final22c.service.user.EmailVerifier;
 import com.ex.final22c.service.user.UsersService;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -175,8 +176,13 @@ public class UsersController {
     @PostMapping("/findPw")
     @ResponseBody
     public Map<String, Object> sendAuthCode(@RequestParam("userName") String userName,
-                                            @RequestParam("email") String email) {
+                                            @RequestParam("email") String email,
+                                            HttpSession session) {
         boolean result = usersService.sendResetPasswordAuthCode(userName, email);
+
+        if (result) {
+            session.setAttribute("resetUserName", userName); // ✅ 세션 저장
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", result);
@@ -196,8 +202,10 @@ public class UsersController {
 
     // Step 3: 새 비밀번호 입력 화면
     @GetMapping("/resetPwForm")
-    public String resetPwForm() {
-        return "user/resetPwForm"; 
+    public String resetPwForm(HttpSession session, Model model) {
+        String userName = (String) session.getAttribute("resetUserName");
+        model.addAttribute("userName", userName);
+        return "user/resetPwForm";
     }
 
     // Step 4: 새 비밀번호 저장

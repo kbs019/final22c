@@ -1126,7 +1126,6 @@ public class AdminService {
     	return questionRepository.findAllByOrderByCreateDateDesc();
     }
     
-    // 답변 작성
  // 답변 작성
     @Transactional
     public void saveAnswer(Long qId, String content, Users admin) {
