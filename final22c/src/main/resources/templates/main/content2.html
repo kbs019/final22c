@@ -28,6 +28,11 @@
         color: #4a5568;
         font-size: 14px;
       }
+            
+	  .desc .desc-title { margin: 1rem 0 .5rem; font-weight: 600; font-size: 1.05rem; }
+	  .desc .desc-list  { margin: 0 0 1rem 1.2rem; line-height: 1.6; }
+	  .desc .desc-list li { margin: .35rem 0; }
+	  .desc .desc-block + .desc-block { margin-top: .5rem; } /* 블록 간 간격 */
 
       /* 우측 날짜/액션 컬럼: 줄바꿈 최소화용 폭 */
       .review-right {
@@ -832,10 +837,7 @@
           <div class="my-5">
             <h2>향 소개</h2>
             <!-- AI 생성 컨텐츠 컬럼에 저장 후, 출력 -->
-            <div>
-              <span th:text="${product.aiGuide}" style="white-space:pre-line;"></span>
-            </div>
-
+			<div class="desc" th:utext="${guideHtml}"></div>
           </div>
           <!-- AI 개인화 추천 섹션 -->
           <div class="ai-persona-recommendation mt-4">

@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -51,6 +50,7 @@ public class ProductController {
     private final ReviewService reviewService;
     private final UserRepository userRepository;
     private final ChatService chatService;
+    private final ProductDescriptionService productDescriptionService;
 
     @GetMapping("/faq")
     public String faq() {
@@ -85,7 +85,8 @@ public class ProductController {
             Model model) {
 
         Product product = productService.getProduct(id);
-
+        String guideHtml = productDescriptionService.formatForDisplay(product.getAiGuide(), product);
+        
         long reviewCount = reviewService.count(product);
         double avg = reviewService.avg(product);
         List<ReviewDto> reviews = reviewService.getReviews(product, sort);
@@ -147,6 +148,7 @@ public class ProductController {
 
         model.addAttribute("loggedIn", loggedIn);
         model.addAttribute("zzimedByMe", zzimedByMe);
+        model.addAttribute("guideHtml", guideHtml);
 
         return "main/content2";
     }
