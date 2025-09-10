@@ -44,7 +44,6 @@ public class HybridRecommendationService {
     }
 
     // ===================== 내부 유틸 =====================
- // ===================== 내부 유틸 =====================
     /** 설문 기반 후보 선별 (성별/강도/메인노트/가격은 DB에서 필터) + 후보 상한 */
     private List<Map<String, Object>> getFilteredCandidates(Map<String, String> survey) {
         final String gender     = survey.get("gender");       // male/female/null

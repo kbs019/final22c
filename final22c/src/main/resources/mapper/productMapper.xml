@@ -314,10 +314,10 @@
   <if test="priceRange != null and priceRange != ''">
     <choose>
       <when test="priceRange == 'low'">
-        AND p.SELLPRICE &lt; 100000
+        AND p.SELLPRICE &lt; 150000
       </when>
       <when test="priceRange == 'medium'">
-        AND p.SELLPRICE BETWEEN 100000 AND 300000
+        AND p.SELLPRICE BETWEEN 150000 AND 300000
       </when>
       <when test="priceRange == 'high'">
         AND p.SELLPRICE &gt; 300000

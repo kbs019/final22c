@@ -308,7 +308,10 @@ public class ChatService {
     }
 
     /* ----- 상품 상세페이지에서 유저가 AI 맞춤 가이드할때 사용 ----- */
+    /* ----- 상품 상세페이지: AI 맞춤 가이드 (seemsCut 건드리지 않는 안정화 버전) ----- */
     public String generatePersonaRecommendation(String prompt) {
+        final String END_MARK = "<<END>>";
+
         var body = Map.of(
             "model", model,
             "messages", List.of(
@@ -324,32 +327,130 @@ public class ChatService {
                     "- 친근하고 따뜻한 말투로 작성\n" +
                     "- 각 문단 사이에 빈 줄을 넣어 구분\n" +
                     "- '착용자' 대신 '사용자'라는 표현 사용\n" +
-                    "- 150-200자 내외로 작성"),
+                    "- 150-200자 내외로 작성\n" +
+                    "- 마지막 줄에 정확히 " + END_MARK + " 를 붙여서 글이 끝났음을 표시하세요."),
                 Map.of("role", "user", "content", prompt)
             ),
-            "temperature", 0.7,
-            "max_tokens", 300
+            "temperature", 0.6,
+            "max_tokens", 800 // 여유 넉넉히
         );
+
         try {
             var resp = call(body);
             String result = extract(resp);
             if (result == null) return null;
 
-            result = result.replace("\r\n", "\n")
-                           .replaceAll("[ \t]+", " ")
-                           .replaceAll("\n{3,}", "\n\n")
-                           .trim();
+            result = normalizeTextKeep(result);
+            boolean hasEnd = hasEndMarker(result, END_MARK);
+            if (!hasEnd && isFinishByLength(resp)) {
+                // 1회 이어쓰기: 기존 텍스트를 수정하지 말고 END_MARK까지 마무리
+                String cont = continueToEndMarker(result, END_MARK);
+                if (cont != null && !cont.isBlank()) {
+                    result = mergeTail(result, cont);
+                }
+                hasEnd = hasEndMarker(result, END_MARK);
+            }
 
+            // END 마커 제거
+            result = stripEndMarker(result, END_MARK);
+
+            // 그래도 너무 불안하면(초단문 등) 기존 seemsCut로 보조만 수행
             if (seemsCut(result)) {
-                result = finishTail(result);
+                result = safeFinishTail(result);
             }
             return result;
+
         } catch (Exception e) {
             log.error("상품 설명문 생성 실패: {}", e.getMessage());
             return null;
         }
     }
 
+    /* ===== 보조 유틸 (새로 추가) ===== */
+    private boolean hasEndMarker(String s, String end) {
+        if (s == null) return false;
+        return s.trim().endsWith(end);
+    }
+    private String stripEndMarker(String s, String end) {
+        if (s == null) return null;
+        String t = s.trim();
+        if (t.endsWith(end)) t = t.substring(0, t.length() - end.length()).trim();
+        return t;
+    }
+    /** 이어쓰기: 본문은 수정하지 말고 END_MARK까지 1~2문장으로 마무리 */
+    private String continueToEndMarker(String partial, String END_MARK) {
+        try {
+            var body = Map.of(
+                "model", model,
+                "messages", List.of(
+                    Map.of("role", "system", "content",
+                        "아래 글을 수정하지 말고, 자연스럽게 마무리 문장 1~2개만 이어서 작성하세요. " +
+                        "반드시 마지막에 " + END_MARK + " 를 붙이세요."),
+                    Map.of("role", "user", "content", partial + "\n\n[마무리만 이어쓰기]")
+                ),
+                "temperature", 0.3,
+                "max_tokens", 160
+            );
+            var resp = call(body);
+            String tail = extract(resp);
+            if (tail == null) return null;
+            return normalizeTextKeep(tail);
+        } catch (Exception e) {
+            log.warn("이어쓰기 실패: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /** 텍스트 정리: 불필요 개행/스페이스만 정돈(마커는 보존) */
+    private String normalizeTextKeep(String s) {
+        if (s == null) return null;
+        return s.replace("\r\n", "\n")
+                .replaceAll("[\\t\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]+", " ")
+                .replaceAll(" +", " ")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
+    }
+
+    /** 최종 안전 마감: seemsCut 유지하면서도 과도한 수정 없이 1문장 추가 */
+    private String safeFinishTail(String cutText) {
+        if (cutText == null || cutText.isBlank()) return null;
+        int lastPeriod = Math.max(cutText.lastIndexOf('.'), cutText.lastIndexOf('。'));
+        if (lastPeriod > 0 && cutText.length() - lastPeriod < 80) return cutText.trim();
+        return (cutText.trim() + " 마지막으로, 이 향수는 일상과 특별한 순간 모두에서 사용자의 품격을 한층 돋보이게 해줍니다.").trim();
+    }
+
+    /** call() 응답 구조에 맞게 finish_reason이 length인지 확인하도록 구현 */
+    @SuppressWarnings("unchecked")
+    private boolean isFinishByLength(Object resp) {
+        try {
+            if (!(resp instanceof Map)) return false;
+            Map<String, Object> map = (Map<String, Object>) resp;
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) map.get("choices");
+            if (choices == null || choices.isEmpty()) return false;
+
+            Map<String, Object> choice0 = choices.get(0);
+            Object fr = choice0.get("finish_reason");
+            String reason = (fr == null) ? "" : String.valueOf(fr);
+
+            // (선택) 디버깅에 도움
+            Object usage = map.get("usage");
+            log.debug("AI finish_reason={}, usage={}", reason, usage);
+
+            return "length".equalsIgnoreCase(reason);
+        } catch (Exception ignore) {
+            return false;
+        }
+    }
+    
+
+    /** 기존 mergeTail 재사용 (본문 + 이어쓰기 합치기) */
+    private String mergeTail(String base, String tail) {
+        if (tail == null || tail.isBlank()) return base;
+        if (tail.startsWith(base)) tail = tail.substring(base.length()).trim();
+        if (tail.isBlank()) return base;
+        String sep = base.endsWith("\n") ? "" : "\n";
+        return (base + sep + tail).trim();
+    }
     // 텍스트가 문장 중간에서 끝났는지 간단 점검(완화 버전)
     private boolean seemsCut(String text) {
         if (text == null) return true;
