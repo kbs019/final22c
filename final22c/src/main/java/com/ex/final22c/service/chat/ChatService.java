@@ -204,11 +204,17 @@ public class ChatService {
         Query q = em.createNativeQuery(checked);
         q.setParameter("start", Timestamp.valueOf(period.start()));
         q.setParameter("end",   Timestamp.valueOf(period.end()));
+
+        if (checked.contains(":q")) {
+            q.setParameter("q", ""); // 상품명이 없을 땐 빈 문자열 → LIKE '%%'
+        }
+
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
 
         return new AiRunResult(aiSqlRaw, normalized, checked, rows);
     }
+
 
     /* -------------------- 유틸 -------------------- */
     @SuppressWarnings("unchecked")
