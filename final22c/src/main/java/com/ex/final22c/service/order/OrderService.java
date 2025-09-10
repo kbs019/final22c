@@ -32,7 +32,6 @@ public class OrderService {
     private final UserRepository usersRepository;
     private final OrderDetailRepository orderDetailRepository;
     private final CartService cartService;
-   
 
     private static final int SHIPPING_FEE = 3000;
 
@@ -45,20 +44,21 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalStateException("로그인이 필요합니다. userId=" + userId));
 
         Product p = productService.getProduct(productId);
-        if (p == null) throw new IllegalArgumentException("상품 없음: " + productId);
+        if (p == null)
+            throw new IllegalArgumentException("상품 없음: " + productId);
 
-        int quantity  = Math.max(1, qty);
-        int unitPrice = p.getSellPrice();     // ← 가격 스냅샷 단가
+        int quantity = Math.max(1, qty);
+        int unitPrice = p.getSellPrice(); // ← 가격 스냅샷 단가
         int lineTotal = unitPrice * quantity; // ← 가격 스냅샷 합계
 
         // 마일리지 계산(서버에서 클램프)
         int owned = (user.getMileage() == null) ? 0 : user.getMileage();
         int maxUsable = Math.min(owned, lineTotal + SHIPPING_FEE);
-        int use   = Math.max(0, Math.min(usedPoint, maxUsable));
+        int use = Math.max(0, Math.min(usedPoint, maxUsable));
         int payable = lineTotal + SHIPPING_FEE - use;
 
         // 1) 재고 ‘예약’(감소) — 승인 전이지만 오버셀 방지용으로 미리 잡아둠
-        //    실패 시(재고 부족 등) 예외 발생 → 트랜잭션 롤백
+        // 실패 시(재고 부족 등) 예외 발생 → 트랜잭션 롤백
         try {
             productService.decreaseStock(p.getId(), quantity);
         } catch (IllegalStateException e) {
@@ -70,15 +70,15 @@ public class OrderService {
         Order order = new Order();
         order.setUser(user);
         order.setUsedPoint(use);
-        order.setTotalAmount(payable);     // 스냅샷 결제금
-        order.setShippingSnapshot(ship);   // 배송지 스냅샷
+        order.setTotalAmount(payable); // 스냅샷 결제금
+        order.setShippingSnapshot(ship); // 배송지 스냅샷
         // status, regDate 는 @PrePersist 로 PENDING/now 자동 세팅
 
         OrderDetail d = new OrderDetail();
         d.setProduct(p);
         d.setQuantity(quantity);
-        d.setSellPrice(unitPrice);    // ← 스냅샷
-        d.setTotalPrice(lineTotal);   // ← 스냅샷
+        d.setSellPrice(unitPrice); // ← 스냅샷
+        d.setTotalPrice(lineTotal); // ← 스냅샷
         order.addDetail(d);
 
         return orderRepository.save(order);
@@ -106,23 +106,25 @@ public class OrderService {
     public void markPaid(Long orderId) {
         // 디테일까지 로딩해서 LAZY 예외 방지
         Order o = orderRepository.findOneWithDetails(orderId)
-            .orElseThrow(() -> new IllegalArgumentException("주문 없음: " + orderId));
+                .orElseThrow(() -> new IllegalArgumentException("주문 없음: " + orderId));
 
-        if ("PAID".equalsIgnoreCase(o.getStatus())) return; // 멱등
+        if ("PAID".equalsIgnoreCase(o.getStatus()))
+            return; // 멱등
 
         // 0) 결제 성공했으니까 장바구니에서 삭제해주기
         var ids = o.getSelectedCartDetailIds();
         if (ids != null && !ids.isEmpty()) {
-        	String username = o.getUser().getUserName();
-        	cartService.removeAll(username, ids);
-        	o.getSelectedCartDetailIds().clear();  // -> 조인테이블에도 행삭제
+            String username = o.getUser().getUserName();
+            cartService.removeAll(username, ids);
+            o.getSelectedCartDetailIds().clear(); // -> 조인테이블에도 행삭제
         }
-        
+
         // 1) 마일리지 차감
         int used = o.getUsedPoint();
         if (used > 0) {
             int updated = usersRepository.deductMileage(o.getUser().getUserNo(), used);
-            if (updated != 1) throw new IllegalStateException("마일리지 차감 실패/부족");
+            if (updated != 1)
+                throw new IllegalStateException("마일리지 차감 실패/부족");
         }
 
         // 2) 재고 추가 차감 없음 (이미 예약됨)
@@ -131,7 +133,7 @@ public class OrderService {
         o.setStatus("PAID");
         o.setDeliveryStatus("ORDERED");
         orderRepository.save(o);
-        
+
         // 4) PAID시 quantity만큼 confirmquantity에 추가
         orderDetailRepository.fillConfirmQtyToQuantity(orderId);
     }
@@ -145,8 +147,10 @@ public class OrderService {
         Order o = orderRepository.findOneWithDetails(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문 없음: " + orderId));
 
-        if ("PAID".equalsIgnoreCase(o.getStatus())) return;  // 이미 결제됨 → 무시
-        if ("CANCELED".equalsIgnoreCase(o.getStatus())) return; // 멱등
+        if ("PAID".equalsIgnoreCase(o.getStatus()))
+            return; // 이미 결제됨 → 무시
+        if ("CANCELED".equalsIgnoreCase(o.getStatus()))
+            return; // 멱등
 
         if ("PENDING".equalsIgnoreCase(o.getStatus())) {
             // 재고 해제(증가)
@@ -170,7 +174,8 @@ public class OrderService {
         int used = order.getUsedPoint();
         if (used > 0) {
             int restore = (cancelAmount >= order.getTotalAmount()) ? used : Math.min(used, cancelAmount);
-            if (restore > 0) usersRepository.addMileage(order.getUser().getUserNo(), restore);
+            if (restore > 0)
+                usersRepository.addMileage(order.getUser().getUserNo(), restore);
         }
 
         // 재고 복구 (전액 환불 시)
@@ -195,7 +200,8 @@ public class OrderService {
         Order o = orderRepository.findOneWithDetails(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문 없음: " + orderId));
 
-        if ("PAID".equalsIgnoreCase(o.getStatus())) return; // 이미 결제됨 → 무시
+        if ("PAID".equalsIgnoreCase(o.getStatus()))
+            return; // 이미 결제됨 → 무시
         if (!"PENDING".equalsIgnoreCase(o.getStatus())) {
             // 이미 CANCELED/FAILED라면 멱등 처리
             return;
@@ -218,13 +224,13 @@ public class OrderService {
      */
     @Transactional
     public Order createCartPendingOrder(String userId,
-                                        List<CartLine> lines,
-                                        int itemsTotal,    // 서버 재계산 합계(참고)
-                                        int shipping,      // 보통 3000
-                                        int usedPoint,     // 서버 클램프
-                                        int payableHint,   // 프론트 계산 값(참고용)
-                                        ShipSnapshotReq ship,
-                                        List<Long> selectedCartDetailIds) {
+            List<CartLine> lines,
+            int itemsTotal, // 서버 재계산 합계(참고)
+            int shipping, // 보통 3000
+            int usedPoint, // 서버 클램프
+            int payableHint, // 프론트 계산 값(참고용)
+            ShipSnapshotReq ship,
+            List<Long> selectedCartDetailIds) {
         if (lines == null || lines.isEmpty()) {
             throw new IllegalArgumentException("선택된 상품이 없습니다.");
         }
@@ -234,17 +240,18 @@ public class OrderService {
 
         // 서버 기준 마일리지/결제금액 재계산
         int owned = Objects.requireNonNullElse(user.getMileage(), 0);
-        int shipfee  = Math.max(0, shipping);
+        int shipfee = Math.max(0, shipping);
         int maxUsable = Math.min(owned, itemsTotal + shipfee);
         int use = Math.max(0, Math.min(usedPoint, maxUsable));
         int payable = Math.max(0, itemsTotal + shipfee - use);
 
         // 1) 먼저 모든 라인의 재고 ‘예약’(감소)
-        //    하나라도 실패하면 예외 발생 → 트랜잭션 롤백
+        // 하나라도 실패하면 예외 발생 → 트랜잭션 롤백
         for (CartLine l : lines) {
             int qty = Math.max(1, l.getQuantity());
             Product p = productService.getProduct(l.getId());
-            if (p == null) throw new IllegalArgumentException("상품 없음: " + l.getId());
+            if (p == null)
+                throw new IllegalArgumentException("상품 없음: " + l.getId());
             try {
                 productService.decreaseStock(p.getId(), qty); // 예약
             } catch (IllegalStateException e) {
@@ -256,45 +263,87 @@ public class OrderService {
         Order order = new Order();
         order.setUser(user);
         order.setUsedPoint(use);
-        order.setTotalAmount(payable);   // 스냅샷 결제금
+        order.setTotalAmount(payable); // 스냅샷 결제금
         order.setShippingSnapshot(ship); // 배송지 스냅샷
-        
+
         order.selectedCartDetailIds(selectedCartDetailIds);
-        
+
         for (CartLine l : lines) {
             Product p = productService.getProduct(l.getId()); // 영속 엔티티
-            int qty  = Math.max(1, l.getQuantity());
-            int unit = p.getSellPrice();                      // ← 서버 기준 단가 스냅샷
+            int qty = Math.max(1, l.getQuantity());
+            int unit = p.getSellPrice(); // ← 서버 기준 단가 스냅샷
             OrderDetail d = new OrderDetail();
             d.setProduct(p);
             d.setQuantity(qty);
-            d.setSellPrice(unit);             // 스냅샷
-            d.setTotalPrice(unit * qty);      // 스냅샷
+            d.setSellPrice(unit); // 스냅샷
+            d.setTotalPrice(unit * qty); // 스냅샷
             order.addDetail(d);
         }
 
         return orderRepository.save(order);
     }
-    
+
     /**
      * 사용자 주문 이력 조회
      */
     public List<Order> getUserOrders(String userName) {
         Users user = usersRepository.findByUserName(userName)
-            .orElse(null);
-        if (user == null) return Collections.emptyList();
-        
+                .orElse(null);
+        if (user == null)
+            return Collections.emptyList();
+
         return orderRepository.findByUser_UserNameOrderByRegDateDesc(user.getUserName());
     }
-    
+
     /**
      * 사용자 구매 상품 상세 조회
      */
     public List<OrderDetail> getUserPurchaseHistory(String userName) {
         List<Order> orders = getUserOrders(userName);
         return orders.stream()
-            .flatMap(order -> order.getDetails().stream())
-            .filter(detail -> "CONFIRMED".equals(detail.getOrder().getStatus()))
-            .collect(Collectors.toList());
+                .flatMap(order -> order.getDetails().stream())
+                .filter(detail -> "CONFIRMED".equals(detail.getOrder().getStatus()))
+                .collect(Collectors.toList());
     }
+
+    // 구매확정 처리: 적립 스냅샷 기록 + 사용자 마일리지 적립 + 상태전이
+    @Transactional
+    public void confirmOrder(Long orderId, Long userNo) {
+        Order o = orderRepository.findOneWithDetails(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문 없음: " + orderId));
+
+        if (!Objects.equals(o.getUser().getUserNo(), userNo))
+            throw new IllegalStateException("권한 없음");
+
+        // 이미 확정/환불이면 멱등
+        if ("CONFIRMED".equalsIgnoreCase(o.getStatus()) || "REFUNDED".equalsIgnoreCase(o.getStatus()))
+            return;
+
+        // 배송완료 + 결제완료 상태만 허용(원하면 정책 조정)
+        if (!"PAID".equalsIgnoreCase(o.getStatus()))
+            throw new IllegalStateException("결제완료 상태가 아님");
+        if (!"DELIVERED".equalsIgnoreCase(o.getDeliveryStatus()))
+            throw new IllegalStateException("배송완료 상태가 아님");
+
+        // 1) 적립 포인트 계산: 상품합계(배송비 제외) × 5% 내림
+        int itemsTotal = o.getDetails().stream()
+                .mapToInt(d -> Objects.requireNonNullElse(d.getTotalPrice(), 0))
+                .sum();
+        int earn = (int) Math.floor(itemsTotal * 0.05);
+
+        // 2) 주문 적립 스냅샷 저장
+        o.setConfirmMileage(earn);
+
+        // 3) 사용자 마일리지 적립
+        if (earn > 0) {
+            int updated = usersRepository.addMileage(o.getUser().getUserNo(), earn);
+            if (updated != 1)
+                throw new IllegalStateException("마일리지 적립 실패");
+        }
+
+        // 4) 상태 전이
+        o.setStatus("CONFIRMED");
+        orderRepository.saveAndFlush(o);
+    }
+
 }

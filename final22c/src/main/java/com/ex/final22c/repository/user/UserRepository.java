@@ -17,7 +17,8 @@ import com.ex.final22c.data.user.Users;
 
 @Repository
 public interface UserRepository extends JpaRepository<Users, Long> {
-	Optional<Users> findByNameAndEmail(String name, String email);
+  Optional<Users> findByNameAndEmail(String name, String email);
+
   Optional<Users> findByUserName(String userName);
 
   Optional<Users> findByEmail(String email);
@@ -38,19 +39,19 @@ public interface UserRepository extends JpaRepository<Users, Long> {
   // 결제 승인 시 사용 마일리지 차감
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
-          UPDATE Users u
-             SET u.mileage = u.mileage - :used
-           WHERE u.userNo = :userNo
-             AND u.mileage >= :used
+          update Users u
+             set u.mileage = coalesce(u.mileage,0) - :used
+           where u.userNo = :userNo
+             and coalesce(u.mileage,0) >= :used
       """)
   int deductMileage(@Param("userNo") Long userNo, @Param("used") int used);
 
   // 결제 취소시 마일리지 복구
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
-          UPDATE Users u
-             SET u.mileage = u.mileage + :amount
-           WHERE u.userNo = :userNo
+          update Users u
+             set u.mileage = coalesce(u.mileage,0) + :amount
+           where u.userNo = :userNo
       """)
   int addMileage(@Param("userNo") Long userNo, @Param("amount") int amount);
 
@@ -76,7 +77,7 @@ public interface UserRepository extends JpaRepository<Users, Long> {
   // userName으로 PK만 뽑아오기(경량)
   @Query("select u.userNo from Users u where u.userName = :userName")
   Optional<Long> findUserNoByUserName(@Param("userName") String userName);
-  
+
   // 아이디 + 이메일로 조회
   Optional<Users> findByUserNameAndEmail(String userName, String email);
 }

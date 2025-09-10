@@ -104,17 +104,21 @@ public class MyOrderService {
         Order order = orderRepository.findOneWithDetails(orderId)
                 .orElseThrow(() -> new IllegalStateException("주문을 찾을 수 없습니다."));
 
-        // 3) 적립 마일리지 계산 및 반영
-        int earnBase = Math.max(0, order.getTotalAmount());
-        int mileage = (int) Math.floor(earnBase * 0.05);
+        // 3) 적립 마일리지: Σ detail.totalPrice(배송비 제외) × 5% 내림
+        int itemsTotal = (order.getDetails() == null) ? 0
+                : order.getDetails().stream()
+                        .mapToInt(d -> java.util.Objects.requireNonNullElse(d.getTotalPrice(), 0))
+                        .sum();
 
+        int mileage = (int) Math.floor(Math.max(0, itemsTotal) * 0.05);
+
+        // 4) 스냅샷 저장(내역 화면이 이 값을 우선 사용)
+        order.setConfirmMileage(mileage);
+        orderRepository.save(order);
+
+        // 5) 사용자 잔액 증가
         if (mileage > 0) {
-            // 사용자 잔액 증가
             usersRepository.addMileage(me.getUserNo(), mileage);
-
-            // 주문건에도 적립 스냅샷 저장(이게 빠지면 내역에서 '적립포인트'가 0으로 보임)
-            order.setConfirmMileage(mileage);
-            orderRepository.save(order);
         }
 
         return order;

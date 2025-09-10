@@ -238,29 +238,30 @@ public class UsersService {
         }
         return null; // 못 찾음
     }
-    
+
     private String tempAuthCode;
-    
+
     // 아이디 이메일 확인 후 인증코드 발송
     public boolean sendResetPasswordAuthCode(String userName, String email) {
         Optional<Users> userOpt = userRepository.findByUserNameAndEmail(userName, email);
-        if (userOpt.isEmpty()) return false;
+        if (userOpt.isEmpty())
+            return false;
 
         String authCode = generateAuthCode();
-        tempAuthCode = authCode; // 임시 저장
+        tempAuthCode = authCode; // 임시 저장 (⚠ 멀티유저 환경에서는 사용자별 저장 구조로 바꾸세요)
         emailService.sendResetPasswordEmail(email, authCode);
         return true;
     }
-    
+
     // 인증코드 확인
     public boolean verifyAuthCode(String authCode) {
-        return authCode.equals(tempAuthCode);
+        return authCode != null && authCode.equals(tempAuthCode);
     }
-    
-    //
+
+    // 비밀번호 재설정
+    @Transactional
     public void resetPassword(String userName, String newPassword) {
         userRepository.findByUserName(userName).ifPresent(user -> {
-            // ✅ 비밀번호 암호화
             String encodedPw = passwordEncoder.encode(newPassword);
             user.setPassword(encodedPw);
             userRepository.save(user);
@@ -271,8 +272,8 @@ public class UsersService {
         Random random = new Random();
         return String.valueOf(100000 + random.nextInt(900000));
     }
-}
 
+    /** 계정 비활성화 */
     @Transactional
     public void deactivateAccount(String username) {
         Users me = getUser(username);
@@ -280,7 +281,7 @@ public class UsersService {
         userRepository.save(me);
     }
 
-    // 아이디 삭제
+    /** 계정 삭제(Deprecated: 비활성화로 대체) */
     @Deprecated
     @Transactional
     public void deleteAccount(String username) {

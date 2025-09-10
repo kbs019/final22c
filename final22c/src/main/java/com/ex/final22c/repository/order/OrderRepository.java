@@ -162,21 +162,28 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
   // 차감(결제 시 사용 포인트)
   @Query("""
-        select new com.ex.final22c.data.user.Row(
-          o.orderId, o.regDate, o.usedPoint, 0, 'PAID'
-        )
+      select new com.ex.final22c.data.user.Row(
+        o.orderId, o.regDate, o.usedPoint, 0, 'PAID'
+      )
         from Order o
-        where o.user.userNo = :userNo and coalesce(o.usedPoint,0) > 0
+        where o.user.userNo = :userNo
+        and coalesce(o.usedPoint,0) > 0
+        and o.status in ('PAID','CONFIRMED','REFUNDED','CANCELED')
       """)
   List<com.ex.final22c.data.user.Row> findPaid(@Param("userNo") Long userNo);
 
   // 적립(구매확정 시 적립 포인트)
   @Query("""
         select new com.ex.final22c.data.user.Row(
-          o.orderId, o.regDate, 0, coalesce(o.confirmMileage,0), 'CONFIRMED'
+          o.orderId,
+          o.regDate,
+          0,
+          coalesce(o.confirmMileage, 0),
+          'CONFIRMED'
         )
         from Order o
-        where o.user.userNo = :userNo and coalesce(o.confirmMileage,0) > 0
+        where o.user.userNo = :userNo
+          and o.status = 'CONFIRMED'
       """)
   List<com.ex.final22c.data.user.Row> findConfirmed(@Param("userNo") Long userNo);
 
@@ -194,6 +201,63 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
           group by r.order.orderId
       """)
   List<com.ex.final22c.data.user.Row> findRefunded(@Param("userNo") Long userNo);
+
+  // 환불(현금 환불 합계)
+  @Query("""
+        select new com.ex.final22c.data.user.Row(
+          r.order.orderId,
+          max(r.updateDate),
+          0,
+          coalesce(sum(r.totalRefundAmount), 0),
+          'REFUNDED_CASH'
+        )
+        from Refund r
+        where r.user.userNo = :userNo and r.status = 'REFUNDED'
+        group by r.order.orderId
+      """)
+  List<com.ex.final22c.data.user.Row> findRefundedCash(@Param("userNo") Long userNo);
+
+  @Query("""
+          select new com.ex.final22c.data.user.Row(
+            o.orderId,
+            o.regDate,
+            0,
+            coalesce(o.totalAmount, 0),
+            'ORDER_CASH'
+          )
+          from Order o
+          where o.user.userNo = :userNo
+      """)
+  List<com.ex.final22c.data.user.Row> findOrderCash(@Param("userNo") Long userNo);
+
+  // 각 주문의 '상품합계'(Σ detail.totalPrice) 스냅샷
+  @Query("""
+        select new com.ex.final22c.data.user.Row(
+          o.orderId,
+          o.regDate,
+          0,
+          coalesce(sum(d.totalPrice), 0),
+          'ITEMS_SUBTOTAL'
+        )
+        from Order o
+        join o.details d
+        where o.user.userNo = :userNo
+        group by o.orderId, o.regDate
+      """)
+  List<com.ex.final22c.data.user.Row> findItemsSubtotal(@Param("userNo") Long userNo);
+
+  @Query("""
+        select new com.ex.final22c.data.user.Row(
+          o.orderId,
+          o.regDate,
+          0,
+          coalesce(o.confirmMileage, 0),
+          'CONFIRM_SNAPSHOT'
+        )
+        from Order o
+        where o.user.userNo = :userNo and o.status = 'CONFIRMED'
+      """)
+  List<com.ex.final22c.data.user.Row> findConfirmSnapshot(@Param("userNo") Long userNo);
 
   public interface MileageRow {
     Long getOrderId();
