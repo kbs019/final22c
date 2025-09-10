@@ -399,17 +399,38 @@ public class ProductDescriptionService {
                 if (inSection) {
                     if (s.isEmpty()) { out.add(""); continue; }
 
-                    // 기존 불릿/숫자 → "- "로 통일
-                    s = s.replaceFirst("^(?:[-•·]\\s*|\\d+[\\).]\\s*)", "");
+                    // 기존 불릿/숫자 불릿 제거 → 통일
+                    // ( - / • / · / 1) / 1. 등 제거)
+                    s = s.replaceFirst("^(?:[-•·]\\s*|\\d+[\\).]\\s*)", "").trim();
+
+                    // 비어 있으면 스킵
+                    if (s.isEmpty()) continue;
+
+                    // 표준 불릿 접두어 부여
                     s = "- " + s;
 
-                    // 복합노트에서만 라벨 부여
+                    // 복합 노트에서만 카테고리 라벨 자동 부여
                     if (mode == Mode.COMPLEX) {
-                        switch (count) {
-                            case 0 -> s = "- 시간별 변화: " + s.substring(2);
-                            case 1 -> s = "- 상황별 활용: " + s.substring(2);
-                            case 2 -> s = "- 사용 팁: " + s.substring(2);
-                            case 3 -> s = "- 특별 효과: " + s.substring(2);
+                        // "- " 이후의 본문만 추출
+                        String body = s.substring(2).trim();
+
+                        // 이미 라벨(시간별 변화/상황별 활용/사용 팁/특별 효과)이 붙어 있으면 다시 안 붙임
+                        boolean hasLabel = body.matches(
+                                "^(시간별\\s*변화|상황별\\s*활용|사용\\s*팁|특별\\s*효과)\\s*[:：].*"
+                        );
+
+                        if (!hasLabel) {
+                            // 라벨 없을 때만 순서대로 라벨 부여
+                            switch (count) {
+                                case 0 -> s = "- 시간별 변화: " + body;
+                                case 1 -> s = "- 상황별 활용: " + body;
+                                case 2 -> s = "- 사용 팁: "   + body;
+                                case 3 -> s = "- 특별 효과: " + body;
+                                default -> s = "- " + body; // limit 넘어가는 예외 상황 대비
+                            }
+                        } else {
+                            // 라벨이 이미 있으면 그대로 유지
+                            s = "- " + body;
                         }
                     }
 
@@ -420,7 +441,8 @@ public class ProductDescriptionService {
                     out.add(line0);
                 }
             }
-            // 항목/타이틀 사이 간격
+
+            // 타이틀/항목 사이 간격 가독성 유지
             return String.join("\n\n", out);
         }
 
@@ -455,6 +477,10 @@ public class ProductDescriptionService {
             text = text.replaceAll("(?m)^(-\\s*)(사용\\s*팁)\\s*:\\s*(사용\\s*팁)\\s*:?\\s*", "$1$2: ");
             text = text.replaceAll("(?m)^(-\\s*)(특별\\s*효과)\\s*:\\s*\\2\\s*:?\\s*", "$1$2: ");
             text = text.replaceAll("(?m)^(-\\s*(?:시간별\\s*변화|상황별\\s*활용|사용\\s*팁|특별\\s*효과):)\\s{2,}", "$1 ");
+            text = text.replaceAll(
+            	    "(?m)^-\\s*(시간별\\s*변화|상황별\\s*활용|사용\\s*팁|특별\\s*효과)\\s*[:：]\\s*\\1\\s*[:：]?\\s*",
+            	    "- $1: "
+            	);
             return text;
         }
 
