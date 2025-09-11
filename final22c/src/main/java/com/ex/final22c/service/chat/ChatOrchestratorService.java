@@ -47,10 +47,13 @@ public class ChatOrchestratorService {
             --         BRAND_BRANDNO FK->BRAND.BRANDNO, VOLUME_VOLUMENO FK->VOLUME.VOLUMENO, 
             --         GRADE_GRADENO FK->GRADE.GRADENO, MAINNOTE_MAINNOTENO FK->MAINNOTE.MAINNOTENO,
             --         ISPICKED, STATUS, SELLPRICE, DISCOUNT, COSTPRICE)
+            -- ⚠️ 중요: PRODUCT.NAME에 이미 용량이 포함되어 있음 (예: "샹스 오드 뚜왈렛 150ml")
+            -- ⚠️ 상품명에 용량 조건이 있다면 VOLUME 테이블 조인하지 말고 PRODUCT.NAME으로만 필터링할 것
+            -- ⚠️ 예시: "샹스 오드 뚜왈렛 150ml" → WHERE UPPER(p.NAME) LIKE UPPER('%샹스%오드%뚜왈렛%150ml%')
             -- BRAND(BRANDNO PK, BRANDNAME, IMGNAME, IMGPATH)
             -- GRADE(GRADENO PK, GRADENAME)
             -- MAINNOTE(MAINNOTENO PK, MAINNOTENAME)
-            -- VOLUME(VOLUMENO PK, VOLUMENAME)
+            -- VOLUME(VOLUMENO PK, VOLUMENAME) -- 이 테이블은 상품 통계 조회시 사용하지 않음
 
             -- 🛒 장바구니 관련
             -- CART(CARTID PK, USERNO FK->USERS.USERNO UK, CREATEDATE, UPDATEDATE)
@@ -80,25 +83,35 @@ public class ChatOrchestratorService {
             -- PURCHASE 1:N PURCHASEDETAIL
             -- ORDERDETAIL 1:1 REFUNDDETAIL
 
-            -- 📊 비즈니스 규칙 (매우 중요)
-            -- 1) '판매량'(수량) = SUM(ORDERDETAIL.CONFIRMQUANTITY) (환불 시 차감 반영)
-            -- 2) '매출'(금액) = SUM(ORDERDETAIL.CONFIRMQUANTITY * ORDERDETAIL.SELLPRICE)
-            -- 3) 집계 대상 주문 = ORDERS.STATUS IN ('PAID','CONFIRMED','REFUNDED') 만 포함
-            -- 4) 매출/판매량 계산에는 PAYMENT 테이블을 사용하지 않음
-            -- 5) 제품별 집계 시 ORDERDETAIL.ID = PRODUCT.ID 로 조인
-            -- 6) 발주량 = SUM(PURCHASEDETAIL.QTY), 매입원가 = SUM(PURCHASEDETAIL.QTY * PRODUCT.COSTPRICE)
-            -- 7) 환불률 = (환불수량 / 확정수량(CONFIRMQUANTITY)) * 100
-            -- 8) 상품 통계에서 REVIEW는 직접 JOIN 금지. 반드시
-            --    (SELECT PRODUCT_ID, COUNT(*) AS TOTAL_REVIEWS, ROUND(AVG(RATING),1) AS AVG_RATING FROM REVIEW GROUP BY PRODUCT_ID)
-            --    서브쿼리/CTE로 집계 후 LEFT JOIN (중복 집계 방지)
-            -- 9) 기간이 명시되지 않은 '상품 통계/누적/총계' 질문은 기본을 '전체 기간'으로 가정
+            -- 📊 비즈니스 규칙 (매우 중요)  *개정판*
+			-- 1) '판매량'(수량) = SUM(ORDERDETAIL.CONFIRMQUANTITY)
+			-- 2) '매출'(금액) = SUM(ORDERDETAIL.CONFIRMQUANTITY * ORDERDETAIL.SELLPRICE)
+			-- 3) 집계 대상 주문 = ORDERS.STATUS IN ('PAID','CONFIRMED','REFUNDED') 만 포함
+			-- 4) 매출/판매량 계산에는 PAYMENT 테이블을 사용하지 않음
+			-- 5) 제품별 집계 조인 키 = ORDERDETAIL.ID = PRODUCT.ID   -- (스키마 기준 유지)
+			-- 6) 발주량 = SUM(PURCHASEDETAIL.QTY), 매입원가 = SUM(PURCHASEDETAIL.QTY * PRODUCT.COSTPRICE)
+			-- 7) 환불률(%) = CASE WHEN SUM(od.CONFIRMQUANTITY)>0
+			--                  THEN ROUND( NVL(SUM(rd.REFUNDQTY),0) / SUM(od.CONFIRMQUANTITY) * 100, 2 )
+			--                  ELSE 0 END
+			-- 8) REVIEW는 직접 JOIN 금지.
+			--    반드시 (SELECT PRODUCT_ID, COUNT(*) TOTAL_REVIEWS, ROUND(AVG(RATING),1) AVG_RATING FROM REVIEW GROUP BY PRODUCT_ID)
+			--    서브쿼리/CTE로 집계 후 LEFT JOIN (중복 집계 방지)
+			-- 9) 기간이 명시되지 않은 '상품 통계/누적/총계' 질문은 기본을 '전체 기간'으로 가정
+			-- 10) ⚠️상품명 검색 규칙(용량 포함, 공백/대소문자 차이 허용):
+			--     WHERE UPPER(REPLACE(p.NAME,' ','')) LIKE UPPER('%' || REPLACE(NVL(:q,''), ' ', '') || '%')
+			--     예) :q = '샹스 오드 뚜왈렛 150ml'
+			--     (VOLUME 조인 금지. NAME만으로 필터링)
+			-- 11) 필요한 컬럼만 SELECT 하고, 그 컬럼을 위해서만 최소 조인:
+			--     - BRAND/GRADE/MAINNOTE는 해당 이름을 SELECT에 넣을 때만 조인
+			--     - REFUNDDETAIL은 환불 지표를 요구할 때만 LEFT JOIN
+			--     - REVIEW 서브쿼리도 리뷰 지표 요청시에만 포함
+			-- 12) 세미콜론 금지, 네임드 바인드만 사용(:start, :end, :q, :limit 등)
 
             -- 🔒 날짜 규칙:
             -- - WHERE 절에서는 TRUNC/EXTRACT 금지
             -- - 날짜 WHERE: o.REGDATE >= :start AND o.REGDATE < :end (반열림)
             -- - 버킷팅(TRUNC)은 SELECT/GROUP BY에서만 사용
             """;
-
     private static final Set<String> ID_PARAMS = Set.of(
         ":id", ":productId", ":orderId", ":paymentId",
         ":brandNo", ":gradeNo", ":mainNoteNo", ":volumeNo",
@@ -176,16 +189,31 @@ public class ChatOrchestratorService {
 
     public AiResult handle(String userMsg, Principal principal){
         PeriodResolver.ResolvedPeriod period;
+        
         if (isAllTimeQuery(userMsg)) {
+            // "전체", "누적", "모든" 등이 포함된 경우
             LocalDateTime startTime = LocalDateTime.of(2020, 1, 1, 0, 0);
             LocalDateTime endTime = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
             period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "전체 기간");
+            
         } else if (isComparisonQuery(userMsg)) {
             LocalDateTime endTime = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
             LocalDateTime startTime = endTime.minusMonths(3);
             period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "최근 3개월");
-        } else {
+        } else if (hasExplicitPeriodWords(userMsg)) {
+            // 명확한 기간 표현이 있는 경우만 PeriodResolver 사용
             period = PeriodResolver.resolveFromUtterance(userMsg);
+        } else {
+            // 기간 미지정 시 적절한 기본값 설정
+            if (isOrdersRelatedQuery(userMsg, null)) {
+                LocalDateTime endTime = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                LocalDateTime startTime = endTime.minusDays(30);
+                period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "최근 30일");
+            } else {
+                LocalDateTime startTime = LocalDateTime.of(2020, 1, 1, 0, 0);
+                LocalDateTime endTime = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "전체 기간");
+            }
         }
 
         if (isChartIntent(userMsg)) {
@@ -243,12 +271,6 @@ public class ChatOrchestratorService {
 
         ai = smartSqlPostprocess(ai);
 
-        if (shouldDefaultAllTime(userMsg, ai)) {
-            LocalDateTime startTime = LocalDateTime.of(2020, 1, 1, 0, 0);
-            LocalDateTime endTime   = LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "전체 기간");
-        }
-
         String normalized = SqlNormalizer.enforceDateRangeWhere(ai, true);
         normalized = fixWhereClauseTrunc(normalized);
         normalized = fixCommonJoinMistakes(normalized);
@@ -257,12 +279,12 @@ public class ChatOrchestratorService {
         String safe;
         try {
             safe = SqlGuard.ensureSelect(normalized);
-            safe = SqlGuard.ensureLimit(safe, 300);
+            safe = SqlGuard.ensureLimit(safe, 2000);
         } catch (Exception e) {
             String fallback = createFallbackQuery(userMsg, period);
             try {
                 safe = SqlGuard.ensureSelect(fallback);
-                safe = SqlGuard.ensureLimit(safe, 300);
+                safe = SqlGuard.ensureLimit(safe,2000);
             } catch (Exception e2) {
                 return new AiResult("죄송합니다. 서버 오류가 발생했습니다. 다시 시도해주세요.", null, List.of(), null);
             }
@@ -756,12 +778,17 @@ public class ChatOrchestratorService {
                                                    Principal principal, String userMsg) {
         Map<String,Object> params = new HashMap<>();
 
+        if (sql.contains(":q")) {
+            params.put("q", extractSearchKeyword(userMsg)); // null이면 "" 리턴되게
+        }
         if (sql.contains(":currentDate")) {
             params.put("currentDate", new Timestamp(System.currentTimeMillis()));
         }
-        if (isOrdersRelatedQuery(userMsg, sql)) {
-            if (sql.contains(":start")) params.put("start", Timestamp.valueOf(period.start()));
-            if (sql.contains(":end"))   params.put("end",   Timestamp.valueOf(period.end()));
+        if (sql.contains(":start")) {
+            params.put("start", Timestamp.valueOf(period.start()));
+        }
+        if (sql.contains(":end")) {
+            params.put("end", Timestamp.valueOf(period.end()));
         }
         if (sql.contains(":param")) params.put("param", Timestamp.valueOf(period.start()));
 
@@ -776,7 +803,7 @@ public class ChatOrchestratorService {
             Long userNo = (principal == null) ? null : 0L; // TODO 실제 조회
             params.put("userNo", userNo != null ? userNo : 1L);
         }
-        if (sql.contains(":limit")) params.put("limit", 300);
+        if (sql.contains(":limit")) params.put("limit", 3000);
 
         String brand = extractBrandName(userMsg);
         if (brand != null && sql.contains(":brandName")) params.put("brandName", brand);
@@ -784,6 +811,18 @@ public class ChatOrchestratorService {
         return params;
     }
 
+    private static String extractSearchKeyword(String msg) {
+        if (msg == null) return "";
+        // 큰따옴표 안에 상품명이 들어오면 그걸 우선 사용: 예) "샹스 오드 뚜왈렛 150ml"
+        var m = Pattern.compile("\"([^\"]{2,80})\"").matcher(msg);
+        if (m.find()) return m.group(1).trim();
+
+        // 흔한 불용어 제거 후 남은 텍스트를 q로 사용
+        String t = msg.replaceAll("\\s+", " ")
+                      .replaceAll("(상품|제품|통계|누적|총계|알려줘|보여줘|조회|검색|데이터|매출|판매량|수량|리뷰|평점)", "")
+                      .trim();
+        return t.isEmpty() ? "" : t;
+    }
     private String createFallbackQuery(String userMsg, PeriodResolver.ResolvedPeriod period) {
         if (isOrdersRelatedQuery(userMsg, null)) {
             return """

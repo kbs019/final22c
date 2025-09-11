@@ -10,22 +10,104 @@
   <th:block layout:fragment="css">
     <style>
       /* Modern AI Chat Styling - Admin Layout Compatible */
-      .chat-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 25px;
-        border-radius: 15px 15px 0 0;
-        text-align: center;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        margin-bottom: 0;
-      }
+  /* Header Styling */
+  .chat-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 15px 15px 0 0;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 0;
 
-      .chat-header h1 {
-        margin: 0;
-        font-size: 2rem;
-        font-weight: 600;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
+    display: flex;          /* Flex 사용 */
+    justify-content: space-between; /* 좌우 배치 */
+    align-items: center;    /* 세로 중앙 정렬 */
+  }
+
+  .chat-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .chat-subtitle {
+    font-size: 0.9rem;
+    margin-top: 5px;
+    color: #f0f0f0;
+  }
+  
+
+  /* 가이드라인 버튼 */
+  .guide-btn {
+    background-color: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+  }
+
+  .guide-btn:hover {
+    background-color: rgba(255,255,255,0.4);
+  }
+
+  /* 모달 오버레이 */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(0,0,0,0.4);
+    z-index: 1000;
+    padding: 50px 0;
+  }
+
+  /* 모달 내용 */
+  .modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    margin: 0 auto;
+    text-align: left;
+  }
+
+  /* 섹션 제목 */
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 15px;
+    margin-bottom: 8px;
+  }
+
+  /* guide-item 스타일 */
+  .guide-item {
+    cursor: pointer;
+    margin: 5px 0;
+    padding: 5px 10px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+  .guide-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  /* 닫기 버튼 */
+  .close-btn {
+    background: #764ba2;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 15px;
+  }
 
       .chat-subtitle {
         opacity: 0.9;
@@ -411,10 +493,13 @@
 
   <div class="container-fluid px-4">
     <!-- AI Chat Header -->
-    <div class="chat-header">
-      <h1>🤖 AI Assistant</h1>
-      <div class="chat-subtitle">22°C 스마트 데이터 분석 챗봇</div>
-    </div>
+<div class="chat-header">
+  <div>
+    <h1>🤖 AI Assistant</h1>
+    <div class="chat-subtitle">22°C 스마트 데이터 분석 챗봇</div>
+  </div>
+  <button class="guide-btn" id="guideBtn">가이드라인</button>
+</div>
 
     <!-- Main Chat Area -->
     <div class="chat-main">
@@ -492,7 +577,31 @@
       </div>
     </div>
   </div>
+<!-- 모달 -->
+<div class="modal" id="guideModal">
+  <div class="modal-content">
+    <h2>가이드라인</h2>
 
+    <div class="section-title">📊 매출/통계 관련</div>
+    <div class="guide-item">이번 주 가장 많이 팔린 상품은 무엇이야?</div>
+    <div class="guide-item">이번 달 총 매출액과 주문 건수 알려줘</div>
+    <div class="guide-item">특정 기간(예: 8월 1일 ~ 8월 31일) 동안의 매출 및 주문 수 요약해줘</div>
+
+    <div class="section-title">👥 회원/고객 관리</div>
+    <div class="guide-item">가장 많이 구매한 고객 TOP 10 보여줘</div>
+    <div class="guide-item">VIP 고객(누적 구매액 100만원 이상) 명단 알려줘</div>
+
+    <div class="section-title">📦 주문/환불/배송</div>
+    <div class="guide-item">오늘 접수된 주문 건수와 상태별 분포 알려줘</div>
+
+    <div class="section-title">🤖 AI 분석/추천</div>
+    <div class="guide-item">리뷰 평점이 가장 높은 상품 TOP 5 알려줘</div>
+    <div class="guide-item">남성 고객이 선호하는 노트(향 계열) TOP 3 알려줘</div>
+    <div class="guide-item">20대 여성 고객이 가장 많이 구매한 브랜드는 무엇이야?</div>
+
+    <button class="close-btn" id="closeModal">닫기</button>
+  </div>
+</div>
 </th:block>
 
 <th:block layout:fragment="script">
@@ -768,6 +877,38 @@
         const content = document.getElementById('sqlBox');
         content.style.display = content.style.display === 'none' ? 'block' : 'none';
       };
+    });
+    
+    const guideBtn = document.getElementById('guideBtn');
+    const guideModal = document.getElementById('guideModal');
+    const closeModal = document.getElementById('closeModal');
+    const chatInput = document.getElementById('chat-input');
+
+    // 모달 열기
+    guideBtn.addEventListener('click', () => {
+      guideModal.style.display = 'flex';
+    });
+
+    // 모달 닫기
+    closeModal.addEventListener('click', () => {
+      guideModal.style.display = 'none';
+    });
+
+    // 모달 외부 클릭 시 닫기
+    guideModal.addEventListener('click', (e) => {
+      if(e.target === guideModal) {
+        guideModal.style.display = 'none';
+      }
+    });
+
+    // <div class="guide-item"> 클릭 시 인풋에 값 넣기
+    const guideItems = guideModal.querySelectorAll('.guide-item');
+    guideItems.forEach(div => {
+      div.addEventListener('click', () => {
+        chatInput.value = div.textContent;
+        guideModal.style.display = 'none';
+        chatInput.focus();
+      });
     });
   </script>
 </th:block>
