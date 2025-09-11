@@ -44,7 +44,9 @@ public class ChatOrchestratorService {
         ).matcher(s);
         return m.find() ? m.group(1).trim() : s.trim();
     }
-
+    private static boolean mentionsThisWeek(String msg){
+        return mentionsThisWeekStrict(msg);
+    }
     private String autoQuoteProductName(String msg) {
         if (msg == null) return null;
         if (msg.contains("\"")) return msg; // 이미 따옴표 있으면 그대로
@@ -219,7 +221,7 @@ public class ChatOrchestratorService {
     );
 
     private static final Pattern USERS_RELATED_KEYWORDS =
-    	    Pattern.compile("(?i)(회원|가입|신규|고객|사용자|마일리지|일주일|7일|\\bTOP\\b|\\bVIP\\b|\\bmembers?\\b|\\busers?\\b|\\bcustomers?\\b)");
+    	    Pattern.compile("(?i)(회원|가입|신규|고객|사용자|마일리지|\\bTOP\\b|\\bVIP\\b|\\bmembers?\\b|\\busers?\\b|\\bcustomers?\\b)");
 
     private static boolean isUsersRelatedQuery(String userMsg) {
         if (userMsg != null && USERS_RELATED_KEYWORDS.matcher(userMsg).find()) {
@@ -242,7 +244,10 @@ public class ChatOrchestratorService {
             Pattern.compile("(?i)(통계|누적|총계|전체\\s*내역|전기간|lifetime|all\\s*-?time)");
 
     private static final Pattern EXPLICIT_PERIOD_KEYWORDS =
-            Pattern.compile("(?i)(오늘|어제|이번|지난|작년|올해|전년|전월|월별|주별|일별|분기|상반기|하반기|최근\\s*\\d+\\s*(일|주|개월|달|년)|\\bQ[1-4]\\b|\\d{4}\\s*년|\\d{1,2}\\s*월|this|last|previous)");
+    	    Pattern.compile("(?i)(오늘|어제|이번|지난|작년|올해|전년|전월|월별|주별|일별|분기|상반기|하반기"
+    	        + "|최근\\s*\\d+\\s*(일|주|개월|달|년)"
+    	        + "|(일주일|1주일|한\\s*주|한주)"
+    	        + "|\\bQ[1-4]\\b|\\d{4}\\s*년|\\d{1,2}\\s*월|this|last|previous)");
 
     private static String extractBrandName(String msg){
         if (msg == null) return null;
@@ -259,6 +264,28 @@ public class ChatOrchestratorService {
     }
     private static boolean hasExplicitPeriodWords(String msg){
         return msg != null && EXPLICIT_PERIOD_KEYWORDS.matcher(msg).find();
+    }
+    // "이번 주" 단독 의도만 잡기 (주간 비교/복합표현은 제외)
+    private static boolean mentionsThisWeekStrict(String msg){
+        if (msg == null) return false;
+
+        String s = msg.toLowerCase();
+        String sNoSpace = s.replaceAll("\\s+", "");
+
+        boolean hasThisWeek =
+                s.contains("이번 주") || sNoSpace.contains("이번주")
+             || s.contains("금주")   || s.contains("this week");
+
+        boolean looksLikeWeekCompare =
+                s.contains("지난주") || s.contains("지난 주") || s.contains("전주")
+             || s.matches(".*이번\\s*주\\s*(vs|대비|비교).*");
+
+        // YYYY-MM-DD, YYYY/MM/DD, "8월 1일" 등 대략적인 절대 날짜 탐지
+        boolean hasAbsoluteDate =
+                s.matches(".*\\d{4}\\s*[-/.년]\\s*\\d{1,2}(\\s*[-/.월]\\s*\\d{1,2}(\\s*일)?)?.*")
+             || s.matches(".*\\d{1,2}\\s*월\\s*\\d{1,2}\\s*일.*");
+
+        return hasThisWeek && !looksLikeWeekCompare && !hasAbsoluteDate;
     }
 
 
@@ -388,28 +415,35 @@ public class ChatOrchestratorService {
         }
 
         // 2) 기간 결정
+     // ===================== 2) 기간 결정 (handle() 내부 교체) =====================
         PeriodResolver.ResolvedPeriod period;
 
-        if (hasExplicitPeriodWords(msg)) {
-            // 사용자가 "이번달", "지난주", "최근 10일" 등 기간을 명시한 경우
+        if (mentionsThisWeek(msg)) {
+            var range = weekRangeKST(); // 이미 있는 util (월요일~다음주 월요일 00:00)
+            period = new PeriodResolver.ResolvedPeriod(
+                    range[0].toLocalDateTime(),
+                    range[1].toLocalDateTime(),
+                    "이번 주"
+            );
+
+        } else if (hasExplicitPeriodWords(msg)) {
+            // "지난주/전월/8월 1일~8월 31일/최근 7일" 등은 여기서 정밀 파싱
             period = PeriodResolver.resolveFromUtterance(msg);
 
         } else if (isAllTimeQuery(msg)) {
-            // "전체/누적/all time" 등 전체기간 키워드
             LocalDateTime startTime = LocalDateTime.of(2020, 1, 1, 0, 0);
             LocalDateTime endTime   = LocalDateTime.now()
                 .plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
             period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "전체 기간");
 
         } else if (isTwoProductCompare(msg)) {
-            // 비교 의도인데 기간 언급이 없으면 기본을 전체기간으로
             LocalDateTime startTime = LocalDateTime.of(2020, 1, 1, 0, 0);
             LocalDateTime endTime   = LocalDateTime.now()
                 .plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
             period = new PeriodResolver.ResolvedPeriod(startTime, endTime, "전체 기간(비교)");
 
         } else {
-            // 그 외: 주문/회원 관련은 최근 30일, 아니면 전체기간
+            // 주문/회원 관련이면 기본 최근 30일, 그 외 전체기간
             if (isOrdersRelatedQuery(msg, null) || isUsersRelatedQuery(msg)) {
                 LocalDateTime endTime   = LocalDateTime.now()
                     .plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
