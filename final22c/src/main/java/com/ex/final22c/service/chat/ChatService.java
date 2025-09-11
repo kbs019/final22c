@@ -151,6 +151,8 @@ public class ChatService {
             - WHERE 날짜 필터는 아래 두 줄만 포함:
                 AND o.REGDATE >= :start
                 AND o.REGDATE <  :end
+            - USERS.REG 날짜 비교는 반드시 파라미터 사용: WHERE REG >= :start AND REG < :end
+            - Oracle 날짜 함수(SYSDATE, TRUNC, ADD_MONTHS) 사용 금지
             - 버킷팅(TRUNC)은 SELECT/GROUP BY에서만 사용.
             - 상태 필터:
                 o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
@@ -180,6 +182,7 @@ public class ChatService {
                 Map.of("role", "system", "content",
                     "너는 매장 데이터 분석 도우미야. 결과를 한 줄로 아주 간단히, 친근한 존댓말로 요약해.\n" +
                     "- 문장 끝은 '~예요/네요' 위주(지나친 격식 '입니다'는 가급적 피함)\n" +
+                    "- 결과는 우리 테이블에 있는 값만 언급(외부 플랫폼/추정 수치 금지)\n" +
                     "- 핵심만 1문장: 기간·지표·숫자 중심\n" +
                     "- 금액엔 '원' 붙이고, 숫자는 천 단위 콤마\n" +
                     "- 표/코드블록/불필요한 설명 금지, 이모지는 최대 1개"),
