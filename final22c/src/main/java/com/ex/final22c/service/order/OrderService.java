@@ -171,15 +171,17 @@ public class OrderService {
     @Transactional
     public void applyCancel(Order order, int cancelAmount, String reason) {
         // 마일리지 복구
-        int used = order.getUsedPoint();
-        if (used > 0) {
-            int restore = (cancelAmount >= order.getTotalAmount()) ? used : Math.min(used, cancelAmount);
-            if (restore > 0)
-                usersRepository.addMileage(order.getUser().getUserNo(), restore);
+        int used = Math.max(0, order.getUsedPoint());
+        int total = Math.max(0, order.getTotalAmount());
+
+        // “전액 취소”일 때만 복구
+        int restore = (cancelAmount >= total) ? used : 0;
+        if (restore > 0) {
+            usersRepository.addMileage(order.getUser().getUserNo(), restore);
         }
 
         // 재고 복구 (전액 환불 시)
-        if (cancelAmount >= order.getTotalAmount()) {
+        if (cancelAmount >= total) {
             for (OrderDetail d : order.getDetails()) {
                 productService.increaseStock(d.getProduct().getId(), d.getQuantity());
             }

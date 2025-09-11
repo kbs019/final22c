@@ -1,6 +1,7 @@
 package com.ex.final22c.controller.myPage;
 
 import java.security.Principal;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -36,9 +37,13 @@ public class MyMileageController {
 
         Page<MileageRowWithBalance> rows = myMileageService.getMileageHistory(me.getUserNo(), page, size);
 
+        // 칩 = DB 보유치 그대로
+        int chip = Optional.ofNullable(me.getMileage()).orElse(0);
+
         model.addAttribute("section", "mileage");
         model.addAttribute("me", me);
         model.addAttribute("rows", rows);
+        model.addAttribute("adjustedMileage", chip);
 
         return "mypage/mileage";
     }

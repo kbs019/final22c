@@ -79,7 +79,7 @@ public class MyOrderService {
         Order order = orderRepository.findOneWithDetails(orderId)
                 .orElseThrow(() -> new IllegalStateException("주문을 찾을 수 없습니다."));
 
-        int earnBase = Math.max(0, order.getTotalAmount() -3000); // 배송비 차감
+        int earnBase = Math.max(0, order.getTotalAmount() );
         int mileage = (int) Math.floor(earnBase * 0.05);
 
         if (mileage > 0) {

@@ -175,8 +175,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   // 적립(구매확정 시 적립 포인트)
   @Query("""
       select new com.ex.final22c.data.user.Row(
-        o.orderId, o.regDate, 0,
-        cast(function('trunc', coalesce(o.totalAmount,0) * 0.05) as long),
+        o.orderId,
+        o.regDate,
+        0,
+        cast(function('trunc', (coalesce(o.totalAmount,0) - coalesce(o.usedPoint,0)) * 0.05) as long),
         'CONFIRMED'
       )
         from Order o
@@ -257,6 +259,42 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
          and o.status = 'CONFIRMED'
       """)
   List<com.ex.final22c.data.user.Row> findConfirmSnapshot(@Param("userNo") Long userNo);
+
+  // 환불 완료된 주문별 "상품 환불액(Σ quantity * unitRefundAmount)" 스냅샷
+  @Query("""
+        select new com.ex.final22c.data.user.Row(
+          r.order.orderId,
+          max(r.updateDate),
+          0,
+          coalesce(sum(d.quantity * d.unitRefundAmount), 0),
+          'REFUNDED_ITEMS'
+        )
+        from Refund r
+        join r.details d
+        where r.user.userNo = :userNo
+          and r.status = 'REFUNDED'
+        group by r.order.orderId
+      """)
+  List<com.ex.final22c.data.user.Row> findRefundedItemsSubtotal(@Param("userNo") Long userNo);
+
+  // 환불된 "상품 금액" 합 (RefundDetail의 단가 스냅샷 × 수량)
+  @Query("""
+          select coalesce(sum(coalesce(d.unitRefundAmount,0) * coalesce(d.quantity,0)), 0)
+            from Refund r
+            join r.details d
+           where r.order.orderId = :orderId
+             and r.status = 'REFUNDED'
+      """)
+  int sumRefundedItemsOfOrder(@Param("orderId") Long orderId);
+
+  // 환불된 "현금" 합 (PG 환불 트랜잭션 총액) — 프로젝트 구조에 맞는 소스에서 집계
+  @Query("""
+        select coalesce(sum(r.totalRefundAmount), 0)
+          from Refund r
+         where r.order.orderId = :orderId
+           and r.status = 'REFUNDED'
+      """)
+  int sumRefundedCashOfOrder(@Param("orderId") Long orderId);
 
   public interface MileageRow {
     Long getOrderId();
