@@ -338,6 +338,35 @@ input[type=number]::-webkit-outer-spin-button{
 .review-actions a:visited{ color:inherit; }
 .review-actions button{ font:inherit; }
 
+/* === 리뷰 레이아웃 안정화 === */
+/* 좌측 '작성자+별점' 메타 폭 고정(본문이 밀리지 않도록) */
+#reviewList .review-meta{
+  flex: 0 0 92px;   /* 고정폭 */
+  max-width: 92px;
+  min-width: 92px;
+}
+
+/* 아이디가 길어도 한 줄 + 말줄임 */
+#reviewList .review-meta .user-mask{
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 미니 별바도 폭을 고정(5칸*10px + 간격 4*3px = 62px) */
+#reviewList .rating-bars.rating-bars--item{ width: 62px; }
+
+/* 본문 칼럼이 줄어들 수 있게 최소폭 0(ellipsis/줄바꿈 정상 작동) */
+#reviewList .review-body{ min-inline-size: 0; }
+
+@media (max-width: 576px){
+  #reviewList .review-meta{
+    flex-basis: 78px; max-width: 78px; min-width: 78px;  /* 모바일에서 살짝 좁게 */
+  }
+}
+
 /* 좋아요 영역 */
 .like-wrap{
   display:inline-flex; align-items:center; gap:6px;
