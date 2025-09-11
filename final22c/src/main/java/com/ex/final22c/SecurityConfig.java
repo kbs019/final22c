@@ -18,8 +18,8 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final UsersSecurityService usersSecurityService;
-    private final AuthenticationFailureHandler failureHandler; // ★ CustomAuthFailureHandler 주입
-    private final CustomAuthenticationProvider customAuthenticationProvider; // ★ CustomAuthenticationProvider 주입
+    private final AuthenticationFailureHandler failureHandler; 
+    private final CustomAuthenticationProvider customAuthenticationProvider; 
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -36,6 +36,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/main/etc/review/new").authenticated()
                 .requestMatchers(HttpMethod.POST, "/main/etc/review").authenticated()
 
+                // --- 1:1 문의: 인증 필요 ---
+                .requestMatchers("/qna/question").authenticated()
+
                 // --- 역할 보호 구간 ---
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/mypage/**").hasRole("USER")
@@ -47,9 +50,9 @@ public class SecurityConfig {
 
             // --- ★ 폼 로그인 설정 ---
             .formLogin(form -> form
-                .loginPage("/user/login") // 로그인 페이지 URL
-                .loginProcessingUrl("/user/login") // ★ 폼 action과 일치해야 함
-                .failureHandler(failureHandler) // ★ 정지/영구정지 메시지 전달
+                .loginPage("/user/login")
+                .loginProcessingUrl("/user/login")
+                .failureHandler(failureHandler)
                 .defaultSuccessUrl("/user/redirectByRole", true)
                 .permitAll()
             )
@@ -66,6 +69,5 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 
 }
