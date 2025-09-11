@@ -1,13 +1,25 @@
 package com.ex.final22c.service.mypage;
 
-import java.util.*;
 import java.time.LocalDateTime;
-import org.springframework.data.domain.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.ex.final22c.data.user.MileageRowWithBalance;
 import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.repository.user.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -150,20 +162,25 @@ public class MyMileageService {
                         running += (r.getEarnPointVisible() - r.getUsedPointRaw());
                         r.setBalanceAt(running);
                 }
-
-                // ===== 정렬 2: 화면 표시용(시간 내림차순 + 적립→복구→차감) =====
+                // ===== 정렬 2: 화면 표시용 (주문번호 ↓ → 이벤트시간 ↓ → 적립>복구>차감) =====
                 Comparator<MileageRowWithBalance> forDisplay = Comparator
-                                .comparing(MileageRowWithBalance::getProcessedAt,
-                                                Comparator.nullsLast(Comparator.naturalOrder()))
-                                .reversed()
-                                .thenComparingInt(r -> {
-                                        int rank = (r.getEarnPointVisible() > 0) ? 3
-                                                        : (r.getUsedPointRaw() < 0) ? 2
-                                                                        : (r.getUsedPointRaw() > 0) ? 1
-                                                                                        : 0;
-                                        return -rank; // 높은 우선순위 먼저
-                                })
-                                .thenComparing(MileageRowWithBalance::getOrderId, Comparator.reverseOrder());
+                                // 주문번호 내림차순 (최신 주문이 위)
+                                .comparing(MileageRowWithBalance::getOrderId,
+                                                Comparator.nullsLast(Comparator.reverseOrder()))
+                                // 같은 주문 내에서 이벤트시간 내림차순
+                                .thenComparing(MileageRowWithBalance::getProcessedAt,
+                                                Comparator.nullsLast(Comparator.reverseOrder()))
+                                // 같은 시각이면 적립 → 복구 → 차감
+                                .thenComparing(
+                                                Comparator.comparingInt((MileageRowWithBalance r) -> {
+                                                        if (r.getEarnPointVisible() > 0)
+                                                                return 3; // 적립
+                                                        if (r.getUsedPointRaw() < 0)
+                                                                return 2; // 복구
+                                                        if (r.getUsedPointRaw() > 0)
+                                                                return 1; // 차감
+                                                        return 0;
+                                                }).reversed()); // 3 > 2 > 1 순으로
 
                 rowsAsc.sort(forDisplay);
 
