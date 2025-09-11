@@ -29,13 +29,40 @@
 
       <!-- 오른쪽 하단 액션 -->
       <div class="footer-actions">
-        <a href="/qna/question" class="action">1:1문의</a>
+        <a href="/qna/question" class="action"  id="qnaBtn">1:1문의</a>
         <a href="/main/faq" class="action">FAQ</a>
         <button type="button" class="to-top" aria-label="맨 위로">↑</button>
       </div>
     </div>
+    <!-- ✅ 로그인 필요 모달 -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      
+      <!-- 헤더 -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="loginModalLabel">로그인이 필요합니다</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      
+      <!-- 바디 -->
+      <div class="modal-body">
+        이 서비스를 이용하시려면 로그인이 필요합니다.<br>
+        로그인 하시겠습니까?
+      </div>
+      
+      <!-- 푸터 -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+        <button type="button" class="btn btn-primary" id="goLoginBtn">확인</button>
+      </div>
+    </div>
+  </div>
+</div>
   </footer>
-
+ 
+</th:block>    
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     (function () {
       const btn = document.querySelector('.footer .to-top');
@@ -44,5 +71,20 @@
         window.scrollTo({ top: 0, behavior: 'smooth' })
       );
     })();
+    
+    // ✅ 로그인 여부 체크 (서버에서 로그인 상태를 JS 변수로 내려주면 됨)
+    const isLoggedIn = false; // ← 서버에서 true/false 로 내려주도록 처리하세요.
+
+    document.getElementById("qnaBtn").addEventListener("click", function (e) {
+      if (!isLoggedIn) {
+        e.preventDefault(); // 원래 링크 이동 막기
+        const modal = new bootstrap.Modal(document.getElementById("loginModal"));
+        modal.show();
+      }
+    });
+
+    // ✅ 확인 버튼 클릭 → 로그인 페이지로 이동
+    document.getElementById("goLoginBtn").addEventListener("click", function () {
+      window.location.href = "/user/login"; // ← 실제 로그인 URL로 변경
+    });
   </script>
-</th:block>    
