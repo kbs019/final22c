@@ -27,14 +27,15 @@ public class MyMileageService {
     //     return orderRepository.findMileageWithBalanceByUserAndStatuses(userNo, MILEAGE_STATUSES, pageable);
     // }
     
-    public List<MileageUsageDto> getMileageUsage(Long userId) {
+    public List<MileageUsageDto> getMileageUsage(String username) {
+    	long userId = getUserIdByUsername(username);
         return mileageRepository.findMileageUsage(userId);
     }
 
     public Long getUserIdByUsername(String username) {
-        return userRepository.findByUserName(username)
-                             .map(u -> u.getUserNo())
-                             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+    	return userRepository.findByUserName(username)
+    			.map(u -> u.getUserNo())
+    			.orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
     }
 
 }

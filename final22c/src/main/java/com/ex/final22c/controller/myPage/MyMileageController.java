@@ -45,13 +45,12 @@ public class MyMileageController {
 
     
     @GetMapping("/mileage2")
-    public String mileageUsage(Model model, Principal principal) {
-        // Principal에서 로그인한 유저 정보 가져오기
-        String username = principal.getName(); // 보통 username 혹은 email
-        Long userId = myMileageService.getUserIdByUsername(username); // username → DB userId 조회
+    public String mileageList(Principal principal, Model model) {
+        // principal.getName()은 일반적으로 username (또는 userId)을 반환
+        String username = principal.getName();
 
-        List<MileageUsageDto> usages = myMileageService.getMileageUsage(userId);
-        model.addAttribute("usages", usages);
-        return "mypage/mileage2";
+        List<MileageUsageDto> list = myMileageService.getMileageUsage(username);
+        model.addAttribute("mileageList", list);
+        return "mypage/mileage2"; // Thymeleaf 뷰
     }
 }

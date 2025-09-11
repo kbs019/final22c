@@ -8,24 +8,28 @@
 <body>
 <div class="container mt-4">
     <h3>마일리지 내역</h3>
-    <table class="table table-bordered">
-        <thead>
-        <tr>
-            <th>날짜</th>
-            <th>유형</th>
-            <th>금액</th>
-            <th>주문번호</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="u : ${usages}">
-            <td th:text="${u.date}"></td>
-            <td th:text="${u.type}"></td>
-            <td th:text="${u.amount}"></td>
-            <td th:text="${u.description}"></td>
-        </tr>
-        </tbody>
-    </table>
+	<table class="table table-bordered">
+	    <thead>
+	        <tr>
+	            <th>날짜</th>
+	            <th>사용 포인트</th>
+	            <th>확정 마일리지</th>
+	            <th>환불 마일리지</th>
+	            <th>환불 리베이트</th>
+	            <th>주문ID</th>
+	        </tr>
+	    </thead>
+		<tbody>
+		    <tr th:each="m : ${mileageList}">
+		        <td th:text="${m.date}"></td>
+		        <td th:text="${m.usedPoint}"></td>
+		        <td th:text="${m.confirmedMileage}"></td>
+		        <td th:text="${m.refundMileage}"></td>
+		        <td th:text="${m.refundRebate}"></td>
+		        <td th:text="${m.description}"></td>
+		    </tr>
+		</tbody>
+	</table>
 </div>
 </body>
 </html>
