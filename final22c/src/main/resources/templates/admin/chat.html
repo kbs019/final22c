@@ -9,111 +9,48 @@
 
   <th:block layout:fragment="css">
     <style>
-      /* Modern AI Chat Styling - Admin Layout Compatible */
-  /* Header Styling */
-  .chat-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 25px;
-    border-radius: 15px 15px 0 0;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    margin-bottom: 0;
+      /* ===== Modern AI Chat Styling - Admin Layout Compatible ===== */
 
-    display: flex;          /* Flex 사용 */
-    justify-content: space-between; /* 좌우 배치 */
-    align-items: center;    /* 세로 중앙 정렬 */
-  }
+      /* Header Styling */
+      .chat-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px 15px 0 0;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 0;
 
-  .chat-header h1 {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 600;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
+        display: flex;
+        justify-content: space-between; /* 좌우 배치 */
+        align-items: center;            /* 세로 중앙 정렬 */
+      }
 
-  .chat-subtitle {
-    font-size: 0.9rem;
-    margin-top: 5px;
-    color: #f0f0f0;
-  }
-  
-
-  /* 가이드라인 버튼 */
-  .guide-btn {
-    background-color: rgba(255,255,255,0.2);
-    border: none;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-  }
-
-  .guide-btn:hover {
-    background-color: rgba(255,255,255,0.4);
-  }
-
-  /* 모달 오버레이 */
-  .modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: rgba(0,0,0,0.4);
-    z-index: 1000;
-    padding: 50px 0;
-  }
-
-  /* 모달 내용 */
-  .modal-content {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    max-width: 500px;
-    width: 90%;
-    margin: 0 auto;
-    text-align: left;
-  }
-
-  /* 섹션 제목 */
-  .section-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-top: 15px;
-    margin-bottom: 8px;
-  }
-
-  /* guide-item 스타일 */
-  .guide-item {
-    cursor: pointer;
-    margin: 5px 0;
-    padding: 5px 10px;
-    border-radius: 6px;
-    transition: background 0.2s;
-  }
-  .guide-item:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-
-  /* 닫기 버튼 */
-  .close-btn {
-    background: #764ba2;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-top: 15px;
-  }
+      .chat-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
 
       .chat-subtitle {
-        opacity: 0.9;
-        margin-top: 10px;
-        font-size: 1rem;
+        font-size: 0.9rem;
+        margin-top: 5px;
+        color: #f0f0f0;
       }
+
+      /* 가이드라인 버튼 */
+      .guide-btn {
+        background-color: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.2s;
+      }
+      .guide-btn:hover { background-color: rgba(255,255,255,0.4); }
 
       .chat-main {
         background: white;
@@ -132,19 +69,9 @@
         scrollbar-width: thin;
         scrollbar-color: #cbd5e0 transparent;
       }
-
-      #chat-log::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      #chat-log::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      #chat-log::-webkit-scrollbar-thumb {
-        background: #cbd5e0;
-        border-radius: 3px;
-      }
+      #chat-log::-webkit-scrollbar { width: 6px; }
+      #chat-log::-webkit-scrollbar-track { background: transparent; }
+      #chat-log::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 3px; }
 
       .chat-message {
         margin-bottom: 20px;
@@ -152,14 +79,8 @@
         align-items: flex-start;
         animation: fadeInUp 0.3s ease-out;
       }
-
-      .user-message {
-        justify-content: flex-end;
-      }
-
-      .assistant-message {
-        justify-content: flex-start;
-      }
+      .user-message { justify-content: flex-end; }
+      .assistant-message { justify-content: flex-start; }
 
       .message-avatar {
         width: 35px;
@@ -173,13 +94,11 @@
         margin: 0 10px;
         flex-shrink: 0;
       }
-
       .user-avatar {
         background: linear-gradient(135deg, #ff6b6b, #ffa500);
         color: white;
         order: 2;
       }
-
       .assistant-avatar {
         background: linear-gradient(135deg, #4c63d2, #667eea);
         color: white;
@@ -195,14 +114,12 @@
         font-size: 14px;
         line-height: 1.4;
       }
-
       .user-message .message-bubble {
         background: linear-gradient(135deg, #667eea, #764ba2);
         color: white;
         margin-right: 0;
         border-bottom-right-radius: 4px;
       }
-
       .assistant-message .message-bubble {
         background: white;
         color: #2d3748;
@@ -215,14 +132,12 @@
         background: #f7fafc;
         border-top: 1px solid #e2e8f0;
       }
-
       .chat-input-wrapper {
         display: flex;
         gap: 12px;
         align-items: center;
         max-width: 100%;
       }
-
       #chat-input {
         flex: 1;
         padding: 12px 18px;
@@ -232,13 +147,11 @@
         transition: all 0.3s ease;
         background: white;
       }
-
       #chat-input:focus {
         border-color: #667eea;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         outline: none;
       }
-
       #chat-send {
         padding: 12px 20px;
         background: linear-gradient(135deg, #667eea, #764ba2);
@@ -250,15 +163,11 @@
         transition: all 0.3s ease;
         font-size: 14px;
       }
-
       #chat-send:hover {
         transform: translateY(-1px);
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
       }
-
-      #chat-send:active {
-        transform: translateY(0);
-      }
+      #chat-send:active { transform: translateY(0); }
 
       .typing-indicator {
         display: none;
@@ -271,39 +180,16 @@
         border: 1px solid #e2e8f0;
         margin-bottom: 15px;
       }
-
-      .typing-dots {
-        display: flex;
-        gap: 4px;
-      }
-
+      .typing-dots { display: flex; gap: 4px; }
       .typing-dot {
-        width: 6px;
-        height: 6px;
-        background: #cbd5e0;
-        border-radius: 50%;
+        width: 6px; height: 6px; background: #cbd5e0; border-radius: 50%;
         animation: typingPulse 1.4s infinite ease-in-out;
       }
+      .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+      .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-      .typing-dot:nth-child(2) {
-        animation-delay: 0.2s;
-      }
-
-      .typing-dot:nth-child(3) {
-        animation-delay: 0.4s;
-      }
-
-      .empty-state {
-        text-align: center;
-        padding: 50px 20px;
-        color: #718096;
-      }
-
-      .empty-state-icon {
-        font-size: 3rem;
-        margin-bottom: 15px;
-        opacity: 0.5;
-      }
+      .empty-state { text-align: center; padding: 50px 20px; color: #718096; }
+      .empty-state-icon { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
 
       .suggestions {
         display: grid;
@@ -312,7 +198,6 @@
         margin-top: 25px;
         padding: 0 5px;
       }
-
       .suggestion-card {
         background: white;
         border: 1px solid #e2e8f0;
@@ -322,30 +207,14 @@
         transition: all 0.3s ease;
         text-align: left;
       }
-
       .suggestion-card:hover {
         border-color: #667eea;
         transform: translateY(-1px);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
       }
-
-      .suggestion-icon {
-        font-size: 1.3rem;
-        margin-bottom: 8px;
-        color: #667eea;
-      }
-
-      .suggestion-title {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 4px;
-        font-size: 14px;
-      }
-
-      .suggestion-desc {
-        color: #718096;
-        font-size: 12px;
-      }
+      .suggestion-icon { font-size: 1.3rem; margin-bottom: 8px; color: #667eea; }
+      .suggestion-title { font-weight: 600; color: #2d3748; margin-bottom: 4px; font-size: 14px; }
+      .suggestion-desc { color: #718096; font-size: 12px; }
 
       .chart-container {
         margin-top: 25px;
@@ -354,7 +223,6 @@
         box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
         overflow: hidden;
       }
-
       .chart-header {
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         color: white;
@@ -362,10 +230,7 @@
         font-weight: 600;
         font-size: 1.1rem;
       }
-
-      .chart-body {
-        padding: 25px;
-      }
+      .chart-body { padding: 25px; }
 
       .sql-details {
         margin-top: 20px;
@@ -374,7 +239,6 @@
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         overflow: hidden;
       }
-
       .sql-summary {
         background: #f7fafc;
         padding: 12px 16px;
@@ -387,11 +251,7 @@
         transition: background 0.3s ease;
         font-size: 14px;
       }
-
-      .sql-summary:hover {
-        background: #edf2f7;
-      }
-
+      .sql-summary:hover { background: #edf2f7; }
       .sql-content {
         padding: 16px;
         background: #1a202c;
@@ -404,13 +264,7 @@
       }
 
       /* Data Table Styling */
-      .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-        font-size: 13px;
-      }
-
+      .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
       .data-table th {
         background: #f8f9fa;
         padding: 10px 12px;
@@ -419,71 +273,126 @@
         color: #495057;
         text-align: left;
       }
-
       .data-table td {
         padding: 10px 12px;
         border: 1px solid #dee2e6;
         color: #495057;
       }
-
-      .data-table tbody tr:nth-child(even) {
-        background: #f8f9fa;
-      }
-
-      .data-table tbody tr:hover {
-        background: #e9ecef;
-      }
+      .data-table tbody tr:nth-child(even) { background: #f8f9fa; }
+      .data-table tbody tr:hover { background: #e9ecef; }
 
       @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(15px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(15px); }
+        to   { opacity: 1; transform: translateY(0); }
       }
-
       @keyframes typingPulse {
-        0%, 60%, 100% {
-          transform: scale(1);
-          opacity: 0.5;
-        }
-        30% {
-          transform: scale(1.2);
-          opacity: 1;
-        }
+        0%, 60%, 100% { transform: scale(1); opacity: 0.5; }
+        30%           { transform: scale(1.2); opacity: 1; }
       }
 
-      /* 반응형 디자인 */
+      /* ===== Guide Modal (redesigned) ===== */
+      .modal {
+        display: none; /* JS에서 'flex'로 열어줌 */
+        position: fixed; inset: 0; z-index: 1000;
+        align-items: center; justify-content: center;
+        background: rgba(17, 24, 39, 0.55);       /* 어두운 오버레이 */
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        animation: modalFadeIn .2s ease-out;
+        padding: 24px;
+      }
+
+      .modal-content {
+        width: min(960px, 94vw);
+        max-height: 82vh;
+        background: linear-gradient(#fff, #fff) padding-box,
+                    linear-gradient(135deg, #667eea, #764ba2) border-box; /* 그라데이션 보더 */
+        border: 1px solid transparent;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+        overflow: hidden;
+        display: flex; flex-direction: column;
+      }
+
+      .modal-header {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 12px;
+        align-items: center;
+        padding: 16px 18px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+      }
+      .modal-title { font-size: 1.2rem; font-weight: 700; letter-spacing: .2px; }
+      .modal-subtitle { grid-column: 1 / 4; margin-top: 2px; font-size: .85rem; opacity: .9; }
+
+      .modal-search {
+        grid-column: 2 / 3;
+        width: 280px; max-width: 40vw;
+        padding: 8px 12px; border-radius: 10px;
+        border: 1px solid rgba(255,255,255,.45);
+        background: rgba(255,255,255,.15); color: #fff;
+        outline: none;
+      }
+      .modal-search::placeholder { color: rgba(255,255,255,.85); }
+      .modal-search:focus { background: rgba(255,255,255,.25); }
+
+      .modal-close {
+        grid-column: 3 / 4;
+        appearance: none; border: none;
+        background: rgba(255,255,255,.18); color: #fff;
+        width: 36px; height: 36px; border-radius: 10px;
+        cursor: pointer; font-size: 18px; line-height: 1;
+        transition: background .2s ease;
+      }
+      .modal-close:hover { background: rgba(255,255,255,.3); }
+
+      .modal-body {
+        padding: 16px 18px 18px;
+        overflow: auto;
+        background: #fff;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));  /* 2열 */
+        gap: 8px 12px;
+      }
+      .modal-body .section-title {
+        grid-column: 1 / -1;
+        font-size: 1.05rem; font-weight: 700; color: #374151;
+        margin: 8px 0 2px; padding-top: 10px;
+        border-top: 1px dashed #e5e7eb;
+      }
+      .modal-body .guide-item {
+        background: #f9fafb; border: 1px solid #e5e7eb;
+        border-radius: 10px; padding: 10px 12px; font-size: .92rem;
+        color: #374151; cursor: pointer;
+        transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .modal-body .guide-item::before { content: "↳"; opacity: .45; font-size: .9rem; }
+      .modal-body .guide-item:hover {
+        transform: translateY(-1px);
+        background: #ffffff; border-color: #cbd5e1;
+        box-shadow: 0 6px 18px rgba(0,0,0,.06);
+      }
+
       @media (max-width: 768px) {
-        .chat-header {
-          padding: 20px 15px;
-        }
+        .chat-header { padding: 20px 15px; }
+        .chat-header h1 { font-size: 1.6rem; }
+        #chat-log { height: 350px; padding: 20px 15px; }
+        .message-bubble { max-width: 85%; font-size: 13px; }
+        .suggestions { grid-template-columns: 1fr; padding: 0 10px; }
+        .chart-body { padding: 15px; }
 
-        .chat-header h1 {
-          font-size: 1.6rem;
-        }
+        .modal-content { width: 94vw; max-height: 86vh; }
+        .modal-header { grid-template-columns: 1fr auto; }
+        .modal-subtitle { display: none; }
+        .modal-search { grid-column: 1 / 3; width: 100%; max-width: 100%; }
+        .modal-body { grid-template-columns: 1fr; }
+      }
 
-        #chat-log {
-          height: 350px;
-          padding: 20px 15px;
-        }
-
-        .message-bubble {
-          max-width: 85%;
-          font-size: 13px;
-        }
-
-        .suggestions {
-          grid-template-columns: 1fr;
-          padding: 0 10px;
-        }
-
-        .chart-body {
-          padding: 15px;
-        }
+      @keyframes modalFadeIn {
+        from { opacity: 0; transform: translateY(6px) scale(.995); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
       }
     </style>
   </th:block>
@@ -493,13 +402,13 @@
 
   <div class="container-fluid px-4">
     <!-- AI Chat Header -->
-<div class="chat-header">
-  <div>
-    <h1>🤖 AI Assistant</h1>
-    <div class="chat-subtitle">22°C 스마트 데이터 분석 챗봇</div>
-  </div>
-  <button class="guide-btn" id="guideBtn">가이드라인</button>
-</div>
+    <div class="chat-header">
+      <div>
+        <h1>🤖 AI Assistant</h1>
+        <div class="chat-subtitle">22°C 스마트 데이터 분석 챗봇</div>
+      </div>
+      <button class="guide-btn" id="guideBtn">가이드라인</button>
+    </div>
 
     <!-- Main Chat Area -->
     <div class="chat-main">
@@ -517,19 +426,19 @@
             <div class="suggestion-title">매출 분석</div>
             <div class="suggestion-desc">일별, 월별 매출 현황을 확인하세요</div>
           </div>
-          
+
           <div class="suggestion-card" data-suggestion="인기 상품 TOP 10을 보여주세요">
             <div class="suggestion-icon">🏆</div>
             <div class="suggestion-title">인기 상품</div>
             <div class="suggestion-desc">베스트셀러 상품들을 분석하세요</div>
           </div>
-          
+
           <div class="suggestion-card" data-suggestion="회원 통계 알려주세요">
             <div class="suggestion-icon">👥</div>
             <div class="suggestion-title">회원 현황</div>
             <div class="suggestion-desc">신규 고객과 재방문 고객을 분석하세요</div>
           </div>
-          
+
           <div class="suggestion-card" data-suggestion="브랜드별 매출 순위를 보여주세요">
             <div class="suggestion-icon">⭐</div>
             <div class="suggestion-title">브랜드 분석</div>
@@ -557,58 +466,138 @@
       </div>
     </div>
 
-        <!-- Chart Container -->
-        <div class="chart-container" id="chart-container" style="display: none;">
-          <div class="chart-header">
-            📈 데이터 시각화
-          </div>
-          <div class="chart-body">
-            <canvas id="aiChart" style="max-height: 350px;"></canvas>
-          </div>
-        </div>
+    <!-- Chart Container -->
+    <div class="chart-container" id="chart-container" style="display: none;">
+      <div class="chart-header">
+        📈 데이터 시각화
+      </div>
+      <div class="chart-body">
+        <canvas id="aiChart" style="max-height: 350px;"></canvas>
+      </div>
+    </div>
 
-        <!-- SQL Details -->
-        <div class="sql-details" id="sql-details" style="display: none;">
-          <button class="sql-summary" onclick="toggleSqlDetails()">
-            🔍 실행된 SQL 쿼리 보기
-          </button>
-          <div class="sql-content" id="sqlBox" style="display: none;"></div>
-        </div>
+    <!-- SQL Details -->
+    <div class="sql-details" id="sql-details" style="display: none;">
+      <button class="sql-summary" onclick="toggleSqlDetails()">🔍 실행된 SQL 쿼리 보기</button>
+      <div class="sql-content" id="sqlBox" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- ===== Guide Modal (redesigned) ===== -->
+  <div class="modal" id="guideModal" role="dialog" aria-hidden="true" aria-labelledby="guideTitle">
+    <div class="modal-content" role="document">
+      <div class="modal-header">
+        <div class="modal-title" id="guideTitle">가이드라인</div>
+        <input id="guideSearch" class="modal-search" type="text" placeholder="키워드로 빠르게 찾기 (예: 매출, 환불, 20대, 샤넬)" />
+        <button class="modal-close" id="closeModal" aria-label="닫기">✕</button>
+        <div class="modal-subtitle">원하는 항목을 클릭하면 질문 입력창에 자동 삽입됩니다.</div>
+      </div>
+
+      <div class="modal-body" id="guideBody">
+        <!-- 📊 매출/통계 관리 -->
+        <div class="section-title">📊 매출/통계 관리</div>
+
+        <!-- 기본 매출 통계 -->
+        <div class="guide-item">이번 주 가장 많이 팔린 상품은 무엇이야?</div>
+        <div class="guide-item">이번 달 총 매출액과 주문 건수 알려줘</div>
+        <div class="guide-item">특정 기간(예: 8월 1일 ~ 8월 31일) 동안의 매출 및 주문 수 요약해줘</div>
+        <div class="guide-item">최근 30일 일별 판매 추이 차트</div>
+        <div class="guide-item">월별 매출 추이(올해)</div>
+
+        <!-- 상품별 통계 -->
+        <div class="guide-item">"상탈 33 오 드 퍼퓸 30ml" 상품 통계 알려줘</div>
+        <div class="guide-item">"오르페옹 오 드 퍼퓸 75ml" 판매량/매출/환불/리뷰 보여줘</div>
+        <div class="guide-item">"베티베리오 오 드 뚜왈렛 50ml" 평균 평점과 리뷰 수</div>
+        <div class="guide-item">환불률이 낮은 상위 10개 상품</div>
+        <div class="guide-item">최근 1개월 매출 Top 10 상품</div>
+
+        <!-- 브랜드/노트 분석 -->
+        <div class="section-title">브랜드/노트 분석</div>
+        <div class="guide-item">브랜드별 매출 비중 도넛 차트(전체 기간)</div>
+        <div class="guide-item">샤넬 브랜드 매출/판매량(최근 90일)</div>
+        <div class="guide-item">판매량 상위 TOP3 메인노트</div>
+        <div class="guide-item">가장 많이 팔린 메인노트 상품</div>
+
+        <!-- 차트 시각화 -->
+        <div class="section-title">차트 시각화</div>
+        <div class="guide-item">이번주 일별 매출 그래프</div>
+        <div class="guide-item">"일랑 49 오 드 퍼퓸 100ml" 최근 30일 추이 차트</div>
+        <div class="guide-item">"상탈 33 오 드 퍼퓸 30ml" 주별 매출 추이</div>
+
+        <!-- 상품 비교 분석 -->
+        <div class="section-title">상품 비교 분석</div>
+        <div class="guide-item">"오르페옹 오 드 퍼퓸 75ml" vs "롬브르 단 로 오 드 퍼퓸 75ml" 전체기간 매출/판매량 비교</div>
+        <div class="guide-item">"오 드 썽 오 드 뚜왈렛 50ml" vs "베티베리오 오 드 뚜왈렛 50ml" 이번달 매출/수량 비교</div>
+        <div class="guide-item">"상탈 33 오 드 퍼퓸 30ml" vs "일랑 49 오 드 퍼퓸 100ml" 환불률 비교</div>
+        <div class="guide-item">"베르가모또 디 칼라브리아 오 드 뚜왈렛 150ml" vs "만다리노 디 시칠리아 오 드 뚜왈렛 30ml" 리뷰 수/평점 비교</div>
+
+        <!-- 기간별 비교 -->
+        <div class="section-title">기간별 비교</div>
+        <div class="guide-item">이번 달 매출 vs 지난 달 매출 비교해줘</div>
+        <div class="guide-item">"만다리노 디 시칠리아 오 드 뚜왈렛 30ml" 전년 동기 대비 매출/수량</div>
+        <div class="guide-item">최근 7일 가장 많이 팔린 상품 5개만 요약해줘</div>
+
+        <!-- 개별 상품 상세 분석 -->
+        <div class="section-title">개별 상품 상세 분석</div>
+        <div class="guide-item">"롬브르 단 로 오 드 퍼퓸 75ml" 월별 매출/수량</div>
+        <div class="guide-item">"베티베리오 오 드 뚜왈렛 50ml" 환불 수량과 환불률</div>
+        <div class="guide-item">"베르가모또 디 칼라브리아 오 드 뚜왈렛 150ml" 누적 매출/판매량</div>
+        <div class="guide-item">"필르시코스 오 드 뚜왈렛 50ml" 최근 90일 매출 추이 차트</div>
+        <div class="guide-item">"오이 드 오 드 뚜왈렛 100ml" 이번달 매출/수량</div>
+
+        <!-- 👥 회원/고객 관리 -->
+        <div class="section-title">👥 회원/고객 관리</div>
+        <div class="guide-item">회원 통계 요약해줘</div>
+        <div class="guide-item">가장 많이 구매한 고객 TOP 10 보여줘</div>
+        <div class="guide-item">VIP 고객(누적 구매액 100만원 이상) 명단 알려줘</div>
+        <div class="guide-item">연령대별 회원 분포 보여줘</div>
+        <div class="guide-item">20대 회원이 몇 명인가요?</div>
+        <div class="guide-item">30대 이상 회원 수는?</div>
+        <div class="guide-item">평균 회원당 구매 금액은?</div>
+        <div class="guide-item">최근 3개월 가입 회원 수</div>
+        <div class="guide-item">올해 가입한 회원 수</div>
+        <div class="guide-item">재구매율 분석</div>
+        <div class="guide-item">성별 평균 구매 금액</div>
+        <div class="guide-item">마일리지 보유 상위 10명</div>
+        <div class="guide-item">마일리지 평균은?</div>
+        <div class="guide-item">마일리지 10만점 이상 회원</div>
+        <div class="guide-item">월별 신규 가입자 차트</div>
+        <div class="guide-item">신규 가입 후 첫 구매까지 기간 알려줘</div>
+
+        <!-- 📦 주문/환불/배송 -->
+        <div class="section-title">📦 주문/환불/배송</div>
+        <div class="guide-item">오늘 접수된 주문 건수와 상태별 분포 알려줘</div>
+        <div class="guide-item">오늘 vs 어제 주문수/매출 비교</div>
+        <div class="guide-item">이번주 일별 매출 추이 차트</div>
+        <div class="guide-item">이번달 결제완료/확정/환불 건수 비중</div>
+        <div class="guide-item">최근 30일 주문수/매출/평균주문액(AOV)</div>
+        <div class="guide-item">전월 대비 주문수/매출 증감 알려줘</div>
+        <div class="guide-item">최근 7일 상품별 판매수량 TOP 10</div>
+        <div class="guide-item">이번달 브랜드별 매출 TOP 10</div>
+        <div class="guide-item">시간대별 주문 분포 차트(오늘)</div>
+        <div class="guide-item">이번달 환불 건수/금액/환불률 알려줘</div>
+        <div class="guide-item">상품별 환불률 상위 10개(전체기간)</div>
+
+        <!-- 🤖 AI 분석/추천 -->
+        <div class="section-title">🤖 AI 분석/추천</div>
+        <div class="guide-item">리뷰 평점이 가장 높은 상품 TOP 5 알려줘</div>
+        <div class="guide-item">남성 고객이 선호하는 노트(향 계열) TOP 3 알려줘</div>
+        <div class="guide-item">20대 여성 고객이 가장 많이 구매한 브랜드는 무엇이야?</div>
+        <div class="guide-item">마진(판매가-원가) 기준 TOP 10 및 저마진·고매출 상품 리스트</div>
+        <div class="guide-item">"오르페옹 오 드 퍼퓸 75ml" 구매 고객이 함께 많이 산 상품 TOP 5 추천</div>
+        <div class="guide-item">최근 30일 판매 대비 재고 회전이 느린 상품 TOP 10</div>
+        <div class="guide-item">남성 고객의 환불률이 낮은 베스트 셀러 TOP 10</div>
+        <div class="guide-item">브랜드별 평균주문액(AOV)·구매주기(일)·LTV 요약표</div>
       </div>
     </div>
   </div>
-<!-- 모달 -->
-<div class="modal" id="guideModal">
-  <div class="modal-content">
-    <h2>가이드라인</h2>
-
-    <div class="section-title">📊 매출/통계 관련</div>
-    <div class="guide-item">이번 주 가장 많이 팔린 상품은 무엇이야?</div>
-    <div class="guide-item">이번 달 총 매출액과 주문 건수 알려줘</div>
-    <div class="guide-item">특정 기간(예: 8월 1일 ~ 8월 31일) 동안의 매출 및 주문 수 요약해줘</div>
-
-    <div class="section-title">👥 회원/고객 관리</div>
-    <div class="guide-item">가장 많이 구매한 고객 TOP 10 보여줘</div>
-    <div class="guide-item">VIP 고객(누적 구매액 100만원 이상) 명단 알려줘</div>
-
-    <div class="section-title">📦 주문/환불/배송</div>
-    <div class="guide-item">오늘 접수된 주문 건수와 상태별 분포 알려줘</div>
-
-    <div class="section-title">🤖 AI 분석/추천</div>
-    <div class="guide-item">리뷰 평점이 가장 높은 상품 TOP 5 알려줘</div>
-    <div class="guide-item">남성 고객이 선호하는 노트(향 계열) TOP 3 알려줘</div>
-    <div class="guide-item">20대 여성 고객이 가장 많이 구매한 브랜드는 무엇이야?</div>
-
-    <button class="close-btn" id="closeModal">닫기</button>
-  </div>
-</div>
 </th:block>
 
 <th:block layout:fragment="script">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Modern Chat JavaScript for Admin Layout
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
+      /* ===== Core Chat JS ===== */
       const chatInput = document.getElementById('chat-input');
       const chatSend = document.getElementById('chat-send');
       const chatLog = document.getElementById('chat-log');
@@ -616,36 +605,36 @@
       const chartContainer = document.getElementById('chart-container');
       const sqlDetails = document.getElementById('sql-details');
       const sqlBox = document.getElementById('sqlBox');
-      
+
       let chartInstance = null;
 
-      // 제안 카드 클릭 이벤트
+      // 제안 카드 클릭
       document.querySelectorAll('.suggestion-card').forEach(card => {
-        card.addEventListener('click', function() {
-          const suggestion = this.dataset.suggestion;
-          chatInput.value = suggestion;
+        card.addEventListener('click', () => {
+          const suggestion = card.dataset.suggestion;
+          if (chatInput) chatInput.value = suggestion;
           sendMessage();
         });
       });
 
-      // 엔터키로 전송
-      chatInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-          sendMessage();
-        }
-      });
+      // 엔터키 전송
+      if (chatInput) {
+        chatInput.addEventListener('keypress', function (e) {
+          if (e.key === 'Enter') sendMessage();
+        });
+      }
 
-      // 전송 버튼 클릭
-      chatSend.addEventListener('click', sendMessage);
+      // 전송 버튼
+      if (chatSend) chatSend.addEventListener('click', sendMessage);
 
       function sendMessage() {
+        if (!chatInput) return;
         const message = chatInput.value.trim();
         if (!message) return;
 
         // 첫 메시지일 때 빈 상태 제거
-        if (chatLog.querySelector('.empty-state')) {
-          chatLog.innerHTML = '';
-        }
+        const empty = chatLog && chatLog.querySelector('.empty-state');
+        if (empty && chatLog) chatLog.innerHTML = '';
 
         // 사용자 메시지 표시
         addMessage(message, true);
@@ -657,29 +646,26 @@
         // AI 응답 요청
         fetch('/chat/ask', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ message: message })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
         })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          hideTypingIndicator();
-          handleAiResponse(data);
-        })
-        .catch(error => {
-          hideTypingIndicator();
-          addMessage('죄송합니다. 서버 오류가 발생했습니다. 다시 시도해 주세요.', false);
-          console.error('Error:', error);
-        });
+          .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            return response.json();
+          })
+          .then(data => {
+            hideTypingIndicator();
+            handleAiResponse(data);
+          })
+          .catch(error => {
+            hideTypingIndicator();
+            addMessage('죄송합니다. 서버 오류가 발생했습니다. 다시 시도해 주세요.', false);
+            console.error('Error:', error);
+          });
       }
 
       function addMessage(text, isUser) {
+        if (!chatLog) return;
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${isUser ? 'user-message' : 'assistant-message'}`;
 
@@ -699,37 +685,24 @@
       }
 
       function showTypingIndicator() {
-        typingIndicator.style.display = 'flex';
-        chatLog.scrollTop = chatLog.scrollHeight;
+        if (typingIndicator) typingIndicator.style.display = 'flex';
+        if (chatLog) chatLog.scrollTop = chatLog.scrollHeight;
       }
-
       function hideTypingIndicator() {
-        typingIndicator.style.display = 'none';
+        if (typingIndicator) typingIndicator.style.display = 'none';
       }
 
       function handleAiResponse(data) {
-        // AI 응답 메시지 표시
         const answer = data.answer || data.message || '응답을 받지 못했습니다.';
         addMessage(answer, false);
 
-        // 데이터가 있으면 테이블 표시
-        if (data.rows && data.rows.length > 0) {
-          addDataTable(data.rows);
-        }
-
-        // 차트 데이터가 있으면 차트 표시
-        if (data.chart) {
-          showChart(data.chart);
-        }
-
-        // SQL 쿼리가 있으면 표시
-        if (data.sql) {
-          showSqlDetails(data.sql);
-        }
+        if (data.rows && data.rows.length > 0) addDataTable(data.rows);
+        if (data.chart) showChart(data.chart);
+        if (data.sql) showSqlDetails(data.sql);
       }
 
       function addDataTable(rows) {
-        if (!rows || rows.length === 0) return;
+        if (!rows || rows.length === 0 || !chatLog) return;
 
         const tableContainer = document.createElement('div');
         tableContainer.className = 'chat-message assistant-message';
@@ -745,7 +718,6 @@
         const table = document.createElement('table');
         table.className = 'data-table';
 
-        // 헤더 생성
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
         const columns = Object.keys(rows[0]);
@@ -757,7 +729,6 @@
         });
         thead.appendChild(headerRow);
 
-        // 데이터 행 생성
         const tbody = document.createElement('tbody');
         rows.forEach(row => {
           const tr = document.createElement('tr');
@@ -782,21 +753,17 @@
       }
 
       function showChart(chartData) {
-        console.log('받은 차트 데이터:', chartData);
+        if (!chartContainer) return;
         chartContainer.style.display = 'block';
-        
-        if (chartInstance) {
-          chartInstance.destroy();
-        }
+        if (chartInstance) chartInstance.destroy();
 
         try {
-          const ctx = document.getElementById('aiChart').getContext('2d');
-          
-          // 차트 데이터 형식 확인 및 변환
+          const canvas = document.getElementById('aiChart');
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+
           let processedData;
-          
           if (chartData && chartData.labels && chartData.values) {
-            // AiResult.ChartPayload 형식
             processedData = {
               type: chartData.type || 'bar',
               data: {
@@ -827,20 +794,14 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                  legend: {
-                    display: true,
-                    position: 'top',
-                  },
-                  title: {
-                    display: true,
-                    text: chartData.title || '데이터 차트'
-                  }
+                  legend: { display: true, position: 'top' },
+                  title: { display: true, text: chartData.title || '데이터 차트' }
                 },
                 scales: {
                   y: {
                     beginAtZero: true,
                     ticks: {
-                      callback: function(value) {
+                      callback: (value) => {
                         if (chartData.format === 'currency') {
                           return new Intl.NumberFormat('ko-KR').format(value) + '원';
                         } else if (chartData.format === 'percent') {
@@ -854,63 +815,102 @@
               }
             };
           } else {
-            // 직접 Chart.js 형식
-            processedData = chartData;
+            processedData = chartData; // 이미 Chart.js 형식
           }
-          
-          console.log('처리된 차트 데이터:', processedData);
+
           chartInstance = new Chart(ctx, processedData);
-          
         } catch (error) {
           console.error('차트 생성 오류:', error);
           const chartBody = document.querySelector('.chart-body');
-          chartBody.innerHTML = '<p style="text-align: center; color: #666; padding: 50px;">차트를 생성할 수 없습니다. 데이터 형식을 확인해주세요.</p>';
+          if (chartBody) chartBody.innerHTML =
+            '<p style="text-align: center; color: #666; padding: 50px;">차트를 생성할 수 없습니다. 데이터 형식을 확인해주세요.</p>';
         }
       }
 
       function showSqlDetails(sql) {
+        if (!sqlDetails || !sqlBox) return;
         sqlDetails.style.display = 'block';
         sqlBox.textContent = sql;
       }
 
-      window.toggleSqlDetails = function() {
+      window.toggleSqlDetails = function () {
         const content = document.getElementById('sqlBox');
+        if (!content) return;
         content.style.display = content.style.display === 'none' ? 'block' : 'none';
       };
-    });
-    
-    const guideBtn = document.getElementById('guideBtn');
-    const guideModal = document.getElementById('guideModal');
-    const closeModal = document.getElementById('closeModal');
-    const chatInput = document.getElementById('chat-input');
 
-    // 모달 열기
-    guideBtn.addEventListener('click', () => {
-      guideModal.style.display = 'flex';
-    });
+      /* ===== Guide Modal JS ===== */
+      const guideBtn = document.getElementById('guideBtn');
+      const guideModal = document.getElementById('guideModal');
+      const closeModal = document.getElementById('closeModal');
+      const guideSearch = document.getElementById('guideSearch');
+      const guideBody = document.getElementById('guideBody');
 
-    // 모달 닫기
-    closeModal.addEventListener('click', () => {
-      guideModal.style.display = 'none';
-    });
-
-    // 모달 외부 클릭 시 닫기
-    guideModal.addEventListener('click', (e) => {
-      if(e.target === guideModal) {
-        guideModal.style.display = 'none';
+      // 모달 열기
+      if (guideBtn && guideModal) {
+        guideBtn.addEventListener('click', () => {
+          guideModal.style.display = 'flex';
+          setTimeout(() => guideSearch && guideSearch.focus(), 30);
+        });
       }
-    });
 
-    // <div class="guide-item"> 클릭 시 인풋에 값 넣기
-    const guideItems = guideModal.querySelectorAll('.guide-item');
-    guideItems.forEach(div => {
-      div.addEventListener('click', () => {
-        chatInput.value = div.textContent;
-        guideModal.style.display = 'none';
-        chatInput.focus();
+      // 모달 닫기
+      function hideGuide() {
+        if (guideModal) guideModal.style.display = 'none';
+      }
+      if (closeModal) closeModal.addEventListener('click', hideGuide);
+      if (guideModal) {
+        guideModal.addEventListener('click', (e) => {
+          if (e.target === guideModal) hideGuide();
+        });
+      }
+
+      // ESC 닫기
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && guideModal && guideModal.style.display !== 'none') hideGuide();
       });
+
+      // 아이템 클릭 시 인풋에 넣고 닫기
+      function bindGuideItems() {
+        if (!guideBody) return;
+        const items = guideBody.querySelectorAll('.guide-item');
+        items.forEach(div => {
+          div.addEventListener('click', () => {
+            if (chatInput) chatInput.value = div.textContent.trim();
+            hideGuide();
+            if (chatInput) chatInput.focus();
+          });
+        });
+      }
+      bindGuideItems();
+
+      // 라이브 검색 필터
+      function filterGuide(q) {
+        if (!guideBody) return;
+        const query = (q || '').trim().toLowerCase();
+        const items = [...guideBody.querySelectorAll('.guide-item')];
+        const titles = [...guideBody.querySelectorAll('.section-title')];
+
+        items.forEach(el => {
+          const show = !query || el.textContent.toLowerCase().includes(query);
+          el.style.display = show ? '' : 'none';
+        });
+
+        // 섹션 타이틀 표시/숨김
+        titles.forEach(title => {
+          let next = title.nextElementSibling;
+          let visible = false;
+          while (next && !next.classList.contains('section-title')) {
+            if (next.classList.contains('guide-item') && next.style.display !== 'none') { visible = true; break; }
+            next = next.nextElementSibling;
+          }
+          title.style.display = visible ? '' : 'none';
+        });
+      }
+      if (guideSearch) guideSearch.addEventListener('input', (e) => filterGuide(e.target.value));
     });
   </script>
 </th:block>
+
 </body>
 </html>
