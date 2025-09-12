@@ -282,7 +282,7 @@ public class ProductService {
                 productRepository.findBuyerStatsByProduct(productId);
 
         // UI 스케치(상단이 고연령) 기준 버킷 순서
-        List<String> ageBuckets = Arrays.asList("50대","40대","30대","20대","10대","기타");
+        List<String> ageBuckets = Arrays.asList("50대+","40대","30대","20대","10대");
 
         Map<String, long[]> byGender = new LinkedHashMap<>();
         byGender.put("M", new long[ageBuckets.size()]);
