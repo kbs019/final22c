@@ -588,13 +588,6 @@
 				}
 			}
 
-			.ai-row .form-label {
-				display: block;
-				margin-bottom: 6px;
-				font-weight: 700;
-				font-size: .95rem;
-				color: #111;
-			}
 
 			.scent-kv {
 				margin: 40px 0
@@ -773,11 +766,10 @@
 				align-items: end;
 			}
 
-			.ai-row .form-label {
-				margin-bottom: 6px;
-				font-weight: 600;
-				font-size: .9rem;
-			}
+.ai-row .form-label{
+  display:block; margin-bottom:6px;
+  font-weight:600; font-size:.9rem; color:#111;
+}
 
 			.ai-row .form-select {
 				height: 42px;
@@ -917,10 +909,77 @@
 				gap: 12px;
 			}
 
-			/* 버튼은 고정 높이 */
-			.ai-row .btn-cta {
-				height: 42px;
-				padding-inline: 18px;
+			/* ====== AI 가이드 드롭다운 반응형 보강 ====== */
+
+			/* 기본: 컨테이너에 꽉 차게, 최대폭만 제한 */
+			.ai-vert .cs {
+				width: 100%;
+				max-width: 560px;
+				/* 데스크톱에서 너무 길어지지 않게 상한선 */
+			}
+
+			/* 메뉴는 부모 폭을 따라가되, 넘칠 경우 스크롤 */
+			.ai-vert .cs-menu {
+				left: 0;
+				right: 0;
+				max-width: 100%;
+				max-height: 260px;
+				overflow-y: auto;
+				z-index: 1000;
+			}
+
+			/* 그리드 한 줄일 때(dropdown 2개+버튼) 간격 확보 */
+			.ai-vert .ai-row {
+				grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+				gap: 12px;
+			}
+
+			/* ── 브레이크포인트: 태블릿 이하 ───────────────── */
+			@media (max-width: 992px) {
+				.ai-vert .cs {
+					max-width: 480px;
+				}
+			}
+
+			/* ── 모바일(작은 화면/작은 창) ─────────────────── */
+			@media (max-width: 768px) {
+
+				/* 행을 세로 스택 */
+				.ai-vert .ai-row {
+					grid-template-columns: 1fr;
+					gap: 10px;
+				}
+
+				/* 드롭다운/메뉴는 카드 폭에 맞춰 100% */
+				.ai-vert .cs {
+					max-width: none;
+					width: 100%;
+				}
+
+				/* 메뉴 폭: 화면 기준 92vw로 안전하게 (좌우 4vw 여백) */
+				.ai-vert .cs-menu {
+					width: 92vw;
+					left: 4vw;
+					right: 4vw;
+				}
+
+				/* 버튼은 전체폭 */
+				.ai-vert .btn-cta {
+					width: 100%;
+				}
+			}
+
+			/* 초소형 화면(≤ 420px)에서 최소 폭 강제 금지 */
+			@media (max-width: 420px) {
+				.ai-vert .cs {
+					max-width: none;
+				}
+
+				.ai-vert .cs-menu {
+					width: 94vw;
+					left: 3vw;
+					right: 3vw;
+				}
 			}
 		</style>
 	</th:block>
@@ -1192,6 +1251,22 @@
 					<div class="modal-footer">
 						<button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
 						<a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 공용 안내 모달 -->
+		<div class="modal fade" id="noticeModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="noticeModalTitle">안내</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body" id="noticeModalBody">메시지</div>
+					<div class="modal-footer">
+						<button class="btn btn-secondary" data-bs-dismiss="modal" id="noticeModalOk">확인</button>
 					</div>
 				</div>
 			</div>
@@ -1644,6 +1719,21 @@
 				};
 			}
 
+			// 간단 안내 모달 열기
+			function showNoticeModal({ title = '안내', message = '' } = {}) {
+				const el = document.getElementById('noticeModal');
+				if (!el || typeof bootstrap === 'undefined') {
+					// 부트스트랩 로딩이 안 된 비상 상황 폴백
+					window.alert((title ? `[${title}] ` : '') + (message || ''));
+					return;
+				}
+				document.getElementById('noticeModalTitle').textContent = title;
+				document.getElementById('noticeModalBody').innerHTML = message; // 줄바꿈/굵게 허용
+				const modal = new bootstrap.Modal(el);
+				modal.show();
+				return modal;
+			}
+
 			// 공용 로그인 모달 오픈 헬퍼
 			function showLoginModal({
 				title = '로그인 필요',
@@ -1787,7 +1877,7 @@
 		</script>
 
 		<script th:inline="javascript">
-			// 수량/합계 계산
+			// 수량/합계 계산 (입력 UX 개선판)
 			document.querySelectorAll('#buy-qty-wrap').forEach(container => {
 				const minusBtn = container.querySelector('.btn-minus');
 				const plusBtn = container.querySelector('.btn-plus');
@@ -1796,17 +1886,14 @@
 				const rewardEl = container.querySelector('.reward-amount');
 
 				const MIN = parseInt(input.getAttribute('min')) || 1;
-				const MAX = parseInt(input.getAttribute('max')) || 0;
+				const MAX = parseInt(input.getAttribute('max')) || 0; // 재고
 				const SELLPRICE = /*[[${product.sellPrice}]]*/ 0;
 				const RATE = 0.05;
-
 				const fmt = n => Number(n || 0).toLocaleString('ko-KR');
 
 				const hintEl = document.getElementById('stockHint');
 				let hintTimer = null;
-				let prevQty = NaN; // 이전 수량
 
-				// 최대 재고 알림 노출
 				function showMaxHint(max) {
 					if (!hintEl) return;
 					const n = Number(max || 0).toLocaleString('ko-KR');
@@ -1824,7 +1911,7 @@
 					if (isNaN(v)) v = MIN;
 					v = Math.floor(v);
 					if (v < MIN) v = MIN;
-					if (v > MAX) v = MAX;
+					if (MAX > 0 && v > MAX) v = MAX;
 					return v;
 				}
 
@@ -1835,61 +1922,151 @@
 					rewardEl.textContent = fmt(point);
 				}
 
-				function updateUI() {
-					const v = parseInt(input.value, 10);
+				function applyDisabledByStock() {
 					if (MAX < 1) {
 						input.value = 0;
 						input.disabled = true;
 						minusBtn.disabled = true;
 						plusBtn.disabled = true;
-
-						// ⬇️ 바로결제만 막고, 장바구니는 활성 유지 (품절 시 알림 유도용)
 						document.getElementById('btn-buy-now')?.setAttribute('disabled', 'true');
 						document.getElementById('btn-add-cart')?.removeAttribute('disabled');
-
 						recalcAndRender(0);
-						prevQty = 0;
-						return;
+						return true;
 					}
-					input.value = clamp(v);
-					minusBtn.disabled = (parseInt(input.value, 10) <= MIN);
-					plusBtn.disabled = (parseInt(input.value, 10) >= MAX);
-					input.max = String(MAX);
-					recalcAndRender(parseInt(input.value, 10));
-
-					// 재고 있을 때는 둘 다 활성
 					document.getElementById('btn-buy-now')?.removeAttribute('disabled');
 					document.getElementById('btn-add-cart')?.removeAttribute('disabled');
-
-					// ⬇️ 여기 추가: “MAX로 도달”했을 때만 1회 노출
-					const now = parseInt(input.value, 10) || 0;
-					if (MAX > 0 && now === MAX && prevQty !== MAX) {
-						showMaxHint(MAX);
-					}
-					prevQty = now;
+					return false;
 				}
 
-				updateUI();
+				// ▼ 초기 상태 반영
+				if (!applyDisabledByStock()) {
+					const init = clamp(parseInt(input.value, 10) || MIN);
+					input.value = init;
+					minusBtn.disabled = (init <= MIN);
+					plusBtn.disabled = (init >= MAX && MAX > 0);
+					recalcAndRender(init);
+				}
+
+				// 포커스되면 커서를 맨 끝으로만 이동(전체선택 금지)
+				input.addEventListener('focus', () => {
+					const L = input.value.length;
+					input.setSelectionRange?.(L, L);
+				});
+
+				// ====== 입력 즉시 제한 + '1' 덮어쓰기 규칙 수정 ======
+				const ENFORCE_ON_INPUT = true;
+
+				// 다음 값 시뮬레이션
+				function nextNumericValue(current, insert, start, end) {
+					return (current.slice(0, start) + insert + current.slice(end)).replace(/\D+/g, '');
+				}
+
+				// 1) beforeinput: 다음 값 미리 계산해 제어
+				input.addEventListener('beforeinput', (e) => {
+					const t = e.inputType;
+					const inserting =
+						t === 'insertText' ||
+						t === 'insertCompositionText' ||
+						t === 'insertFromPaste' ||
+						t === 'insertFromDrop';
+					if (!inserting) return;
+
+					// 입력될 텍스트
+					let ins = e.data ?? '';
+					if (t === 'insertFromPaste' && e.clipboardData) {
+						ins = e.clipboardData.getData('text') ?? '';
+					}
+					// 숫자만 허용
+					if (!/^\d*$/.test(ins)) { e.preventDefault(); return; }
+
+					const start = input.selectionStart ?? 0;
+					const end = input.selectionEnd ?? input.value.length;
+
+					// ★ 즉시 MAX 제한: 초과 입력 자체 차단 + 바로 MAX로 보정
+					if (ENFORCE_ON_INPUT) {
+						const next = nextNumericValue(input.value, ins, start, end);
+						if (next !== '' && MAX > 0 && parseInt(next, 10) > MAX) {
+							e.preventDefault();
+							input.value = String(MAX);
+							recalcAndRender(MAX);
+							showMaxHint(MAX);
+							const L = input.value.length; input.setSelectionRange?.(L, L);
+						}
+					}
+				});
+
+				// 2) input: 숫자만 유지 + 즉시 MAX 보정, MIN 보정은 blur에서
+				input.addEventListener('input', function () {
+					// 숫자 외 제거
+					let only = this.value.replace(/\D+/g, '');
+
+					// 선행 0 제거 (모두 0이면 ''가 됨)
+					if (only.length > 1) {
+						only = only.replace(/^0+/, '');
+					}
+					// 편집 중엔 빈값 허용
+					this.value = only;
+
+					// 편집 중(빈값/0)에는 계산만 0으로, MIN 보정은 blur에서 처리
+					if (only === '' || only === '0') {
+						recalcAndRender(0);
+						// 버튼 상태: minus 비활성, plus는 재고 있으면 활성
+						minusBtn.disabled = true;
+						plusBtn.disabled = (MAX > 0 ? false : true);
+						return;
+					}
+
+					// 숫자 확정
+					let num = parseInt(only, 10);
+
+					// MAX는 입력 순간 즉시 보정
+					if (ENFORCE_ON_INPUT && MAX > 0 && num > MAX) {
+						num = MAX;
+						this.value = String(num);
+						showMaxHint(MAX);
+					}
+
+					recalcAndRender(num);
+					minusBtn.disabled = (num <= MIN);
+					plusBtn.disabled = (MAX > 0) ? (num >= MAX) : false;
+
+					if (MAX > 0 && num === MAX) showMaxHint(MAX);
+				});
+
+				// --- blur: 여기서만 최종 클램프/정규화 ---
+				input.addEventListener('blur', function () {
+					let v = parseInt(this.value, 10);
+					if (isNaN(v)) v = MIN;
+					const c = clamp(v);
+					if (c !== v) {
+						// MAX 초과로 줄어든 경우 안내 1회
+						if (MAX > 0 && v > MAX) showMaxHint(MAX);
+					}
+					this.value = c;
+					recalcAndRender(c);
+					minusBtn.disabled = (c <= MIN);
+					plusBtn.disabled = (MAX > 0) ? (c >= MAX) : false;
+				});
+
 				minusBtn.addEventListener('click', function () {
-					if (this.disabled) return;
-					input.value = clamp(parseInt(input.value, 10) - 1);
-					updateUI();
+					if (applyDisabledByStock()) return;
+					let v = parseInt(input.value, 10) || MIN;
+					v = clamp(v - 1);
+					input.value = v;
+					recalcAndRender(v);
+					minusBtn.disabled = (v <= MIN);
+					plusBtn.disabled = (MAX > 0) ? (v >= MAX) : false;
 				});
 
 				plusBtn.addEventListener('click', function () {
-					if (this.disabled) return;
-					input.value = clamp(parseInt(input.value, 10) + 1);
-					updateUI();
-				});
-
-				input.addEventListener('input', function () {
-					this.value = this.value.replace(/[^0-9]/g, '');
-					updateUI();
-				});
-
-				input.addEventListener('blur', function () {
-					this.value = clamp(parseInt(this.value, 10));
-					updateUI();
+					if (applyDisabledByStock()) return;
+					let v = parseInt(input.value, 10) || MIN;
+					v = clamp(v + 1);
+					input.value = v;
+					recalcAndRender(v);
+					minusBtn.disabled = (v <= MIN);
+					plusBtn.disabled = (MAX > 0) ? (v >= MAX) : false;
+					if (MAX > 0 && v === MAX) showMaxHint(MAX);
 				});
 			});
 		</script>
@@ -2337,57 +2514,69 @@
 
 			document.addEventListener('DOMContentLoaded', function () {
 				const form = document.getElementById('personaRecommendationForm');
-				const resultDiv = document.getElementById('aiRecommendationResult');
-				const chipsRow = document.getElementById('aiSummaryRow');
-				const chips = document.getElementById('aiChips');
 				const submitBtn = document.getElementById('getRecommendationBtn');
-				// const resetBtn = document.getElementById('resetAnalysisBtn');
 				const btnText = submitBtn.querySelector('.btn-text');
 				const spinner = submitBtn.querySelector('.spinner-border');
+
+				const chipsRow = document.getElementById('aiSummaryRow');
+				const resultDiv = document.getElementById('aiRecommendationResult');
 
 				const productId = /*[[${product.id}]]*/ 0;
 
 				function renderChips(g, a) {
 					const gMap = { M: '남성', F: '여성' };
 					const aMap = { '10s': '10대', '20s': '20대', '30s': '30대', '40s': '40대', '50plus': '50대 이상' };
-
-					// 선택칩 2개를 '라벨/값' 구조로 명확히
 					document.getElementById('aiChips').innerHTML = `
-      <span class="ai-chip ai-chip--sel">
-        <span class="k">성별</span><span class="v">${gMap[g] || ''}</span>
-      </span>
-      <span class="ai-chip ai-chip--sel">
-        <span class="k">나이대</span><span class="v">${aMap[a] || ''}</span>
-      </span>
-    `;
-					document.getElementById('aiSummaryRow').classList.remove('d-none');
+        <span class="ai-chip ai-chip--sel"><span class="k">성별</span><span class="v">${gMap[g] || ''}</span></span>
+        <span class="ai-chip ai-chip--sel"><span class="k">나이대</span><span class="v">${aMap[a] || ''}</span></span>
+      `;
+					chipsRow.classList.remove('d-none');
 				}
 
 				function showSkeleton() {
 					resultDiv.classList.remove('d-none');
 					resultDiv.innerHTML = `
-      <div class="ai-skel" style="width:82%"></div>
-      <div class="ai-skel" style="width:96%"></div>
-      <div class="ai-skel" style="width:88%"></div>
-      <div class="ai-skel" style="width:72%"></div>
-    `;
+        <div class="ai-skel" style="width:82%"></div>
+        <div class="ai-skel" style="width:96%"></div>
+        <div class="ai-skel" style="width:88%"></div>
+        <div class="ai-skel" style="width:72%"></div>
+      `;
 				}
 
-				function resetAll() {
-					document.getElementById('gender').value = '';
-					document.getElementById('ageGroup').value = '';
-					chipsRow.classList.add('d-none');
-					resultDiv.classList.add('d-none');
-					resultDiv.innerHTML = '';
-					form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-				}
-
+				// ✅ 여기부터: 검증 실패 시 모달 출력
 				form.addEventListener('submit', async function (e) {
 					e.preventDefault();
+
 					const gender = document.getElementById('gender').value;
 					const ageGroup = document.getElementById('ageGroup').value;
-					if (!gender || !ageGroup) { alert('성별과 나이대를 모두 선택해주세요.'); return; }
 
+					// 어느 쪽이 비었는지에 따라 메시지 구분
+					let message = '';
+					let focusTargetBtn = null;
+					if (!gender && !ageGroup) {
+						message = '성별과 나이대를 모두 선택해주세요.';
+						focusTargetBtn = document.querySelector('#cs-gender .cs-btn') || document.querySelector('#cs-ageGroup .cs-btn');
+					} else if (!gender) {
+						message = '성별을 선택해주세요.';
+						focusTargetBtn = document.querySelector('#cs-gender .cs-btn');
+					} else if (!ageGroup) {
+						message = '나이대를 선택해주세요.';
+						focusTargetBtn = document.querySelector('#cs-ageGroup .cs-btn');
+					}
+
+					if (message) {
+						const modal = showNoticeModal({ title: 'AI 가이드', message });
+						// 모달이 닫힌 후 포커스 복구
+						const okBtn = document.getElementById('noticeModalOk');
+						const handler = () => {
+							if (focusTargetBtn) focusTargetBtn.focus();
+							okBtn.removeEventListener('click', handler);
+						};
+						okBtn.addEventListener('click', handler, { once: true });
+						return;
+					}
+
+					// 이하 기존 성공 흐름 유지
 					submitBtn.disabled = true;
 					btnText.textContent = '분석 중...';
 					spinner.classList.remove('d-none');
@@ -2405,21 +2594,17 @@
 						if (data.success) {
 							resultDiv.textContent = data.recommendation || '';
 						} else {
-							alert('분석 생성에 실패했습니다.');
-							resetAll();
+							showNoticeModal({ title: 'AI 가이드', message: '분석 생성에 실패했습니다. 잠시 후 다시 시도해주세요.' });
+							// 필요하면 여기서 선택 초기화 로직 호출
 						}
-						// resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
 					} catch (err) {
-						alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
-						resetAll();
+						showNoticeModal({ title: 'AI 가이드', message: '네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' });
 					} finally {
 						submitBtn.disabled = false;
 						btnText.textContent = '맞춤 추천 보기';
 						spinner.classList.add('d-none');
 					}
 				});
-
-				// resetBtn.addEventListener('click', resetAll);
 			});
 
 			/* ---- 커스텀 셀렉트: 단일 버전(지연 로드/동적 삽입 대응 + 방어/정리 포함) ---- */
