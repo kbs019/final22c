@@ -76,6 +76,7 @@ public class ChatOrchestratorService {
     	    if (m.find()) try { return Math.max(1, Integer.parseInt(m.group(1))); } catch (Exception ignore) {}
     	    return def;
     	}
+    	
     private String autoQuoteProductName(String msg) {
         if (msg == null) return null;
         if (msg.contains("\"")) return msg; // 이미 따옴표 있으면 그대로
@@ -143,6 +144,29 @@ public class ChatOrchestratorService {
             return Integer.parseInt(m.group(1));
         }
         return 3; // 기본값
+    }
+    // 클래스 안 어딘가에 유틸 추가
+    private static boolean hasOrdersDateRange(String sql){
+        if (sql == null) return false;
+        String startBind = "(?:\\?|:start)";
+        String endBind   = "(?:\\?|:end)";
+        boolean ge = Pattern.compile("(?is)\\bo\\s*\\.\\s*regdate\\s*>?=\\s*" + startBind).matcher(sql).find();
+        boolean lt = Pattern.compile("(?is)\\bo\\s*\\.\\s*regdate\\s*<\\s*"  + endBind  ).matcher(sql).find();
+        return ge && lt;
+    }
+
+    // ORDER BY 뒤에 잘못 붙은 WHERE 1=1 …를 앞으로 당겨줌(벨트+서스펜더)
+    private static String fixMisplacedDateWhere(String sql){
+        if (sql == null) return null;
+        Pattern p = Pattern.compile(
+            "(?is)(ORDER\\s+BY[\\s\\S]*?)\\s*"
+          + "(WHERE\\s+1\\s*=\\s*1\\s+AND\\s+O\\.REGDATE\\s*>?=\\s*(?:\\?|:start)\\s+AND\\s+O\\.REGDATE\\s*<\\s*(?:\\?|:end))"
+        );
+        Matcher m = p.matcher(sql);
+        if (m.find()){
+            return sql.substring(0, m.start(1)) + m.group(2) + " " + m.group(1) + sql.substring(m.end(2));
+        }
+        return sql;
     }
     private static final String SCHEMA_DOC = """
             -- Oracle / 화이트리스트 (대문자 컬럼)
@@ -267,11 +291,18 @@ public class ChatOrchestratorService {
         }
         return false;
     }
+    private static final Pattern ORDER_COUNT_KEYWORDS =
+    	    Pattern.compile("(?i)(주문\\s*건수|건수|몇\\s*건|order\\s*count|주문\\s*수)");
+
+    	private static boolean wantsOrderCount(String msg){
+    	    return msg != null && ORDER_COUNT_KEYWORDS.matcher(msg).find();
+    	}
+    	
     private static boolean saysMonthly(String msg){
         return containsAny(msg, "월별", "monthly", "month");
     }
     private static final Pattern INTENT_ANY_CHART =
-            Pattern.compile("(차트|그래프|chart)", Pattern.CASE_INSENSITIVE);
+    	    Pattern.compile("(차트|그래프|분포|비율|파이|도넛|chart|distribution)", Pattern.CASE_INSENSITIVE);
 
     private static final Pattern ORDERS_RELATED_KEYWORDS =
     	    Pattern.compile("(?i)(매출|주문|결제|판매량|매출액|\\brevenue\\b|\\bsales\\b|\\borders?\\b|\\bpayments?\\b)");
@@ -960,10 +991,20 @@ public class ChatOrchestratorService {
         if (wantCompare || yoyApplied || momApplied) {
             normalized = ai;  // 템플릿에 기간/상태 포함
         } else {
-        	if (ai == null || ai.isBlank()) {
-        	    ai = createFallbackQuery(msg, period);
-        	}
-            normalized = SqlNormalizer.enforceDateRangeWhere(ai, true);
+            if (ai == null || ai.isBlank()) {
+                ai = createFallbackQuery(msg, period);
+            }
+
+            // ✅ 이미 기간 조건이 있으면 주입 스킵, 없을 때만 주입
+            if (hasOrdersDateRange(ai)) {
+                normalized = ai;
+            } else {
+                normalized = SqlNormalizer.enforceDateRangeWhere(ai, true);
+            }
+
+            // ✅ 혹시 ORDER BY 뒤에 WHERE 1=1 …가 붙었으면 앞으로 재배치
+            normalized = fixMisplacedDateWhere(normalized);
+
             normalized = fixWhereClauseTrunc(normalized);
             normalized = fixCommonJoinMistakes(normalized);
             normalized = fixProductStatsQuery(normalized, msg);
@@ -971,13 +1012,13 @@ public class ChatOrchestratorService {
                 normalized = stripReviewColsFromGroupBy(normalized);
             }
         }
+
         String safe;
         try {
             safe = SqlGuard.ensureSelect(normalized);
             safe = SqlGuard.ensureLimit(safe, 2000);
         } catch (Exception e) {
-        	if (wantCompare || yoyApplied || momApplied) {
-                // 비교/YoY 템플릿은 신뢰 가능: 가드 실패해도 템플릿 그대로 실행
+            if (wantCompare || yoyApplied || momApplied) {
                 log.warn("Guard rejected trusted template (compare/YoY); executing as-is. err={}", e.toString());
                 safe = normalized; // 템플릿 내부에 FETCH FIRST 포함
             } else {
@@ -1210,7 +1251,7 @@ public class ChatOrchestratorService {
 
     private AiResult handleChartGeneric(String userMsg, Principal principal, PeriodResolver.ResolvedPeriod period) {
         ChartSpec spec = null;
-        try { spec = chat.generateChartSpec(userMsg, SCHEMA_DOC); } catch (Exception ignore) {}
+        try { spec = chat.generateChartSpec(userMsg, SCHEMA_DOC); spec = coerceStatusDistribution(spec, userMsg);} catch (Exception ignore) {}
 
         if (spec == null || spec.sql() == null ||
                 !spec.sql().toUpperCase(Locale.ROOT).contains("LABEL") ||
@@ -1243,7 +1284,11 @@ public class ChatOrchestratorService {
             );
         }
 
-        String normalized = SqlNormalizer.enforceDateRangeWhere(spec.sql().trim(), true);
+        String normalized = spec.sql().trim();
+        if (!hasOrdersDateRange(normalized)) {
+            normalized = SqlNormalizer.enforceDateRangeWhere(normalized, true);
+        }
+        normalized = fixMisplacedDateWhere(normalized);
         normalized = tokenInjector.inject(normalized);
         normalized = fixCommonJoinMistakes(normalized);
         String safe = SqlGuard.ensureSelect(normalized);
@@ -1345,10 +1390,54 @@ public class ChatOrchestratorService {
                 labels, values, qtys, valueLabel, title, type, horizontal, format
         );
 
-        String msg = rows.isEmpty()
-                ? "%s 기준 조건에 맞는 데이터가 없습니다.".formatted(period.label())
-                : "%s 기준 요청하신 차트를 표시했습니다.".formatted(period.label());
+
+        String msg;
+        if (rows.isEmpty()){
+            msg = "%s 기준 조건에 맞는 데이터가 없습니다.".formatted(period.label());
+        } else {
+        	boolean looksStatusDistribution =
+        		    safe.toUpperCase(Locale.ROOT).matches(".*\\bSTATUS\\s+AS\\s+LABEL\\b.*")
+        		    || title.contains("상태"); // 기존 로직 + 정규식
+            boolean wantsCount = wantsOrderCount(userMsg);
+
+            if ("count".equalsIgnoreCase(format) && (looksStatusDistribution || wantsCount)) {
+                long total = 0L;
+                for (Number v : values) if (v != null) total += v.longValue();
+
+                // 상태별 상세도 같이 표현
+                StringBuilder byStatus = new StringBuilder();
+                for (int i = 0; i < labels.size(); i++) {
+                    if (i > 0) byStatus.append(", ");
+                    String lab = labels.get(i) == null ? "-" : labels.get(i);
+                    long val = (values.get(i) == null) ? 0L : values.get(i).longValue();
+                    byStatus.append(lab).append(" ").append(String.format("%,d건", val));
+                }
+                msg = String.format("%s 기준 총 주문 %,d건. 상태별: %s.", period.label(), total, byStatus);
+            } else {
+                msg = "%s 기준 요청하신 차트를 표시했습니다.".formatted(period.label());
+            }
+        }
+
         return new AiResult(msg, safe, rows, chart);
+    }
+    
+    private ChartSpec coerceStatusDistribution(ChartSpec spec, String userMsg) {
+        if (spec == null || spec.sql() == null) return spec;
+        String up = spec.sql().toUpperCase(Locale.ROOT);
+        boolean wantsStatus = containsAny(userMsg, "상태별","상태 분포","분포","distribution","status");
+        if (wantsStatus && (up.contains("STATUS") || up.contains("GROUP BY STATUS"))) {
+            return new ChartSpec("""
+                SELECT o.STATUS AS label,
+                       COUNT(*)  AS value
+                FROM ORDERS o
+                WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+                  AND o.REGDATE >= :start
+                  AND o.REGDATE <  :end
+                GROUP BY o.STATUS
+                ORDER BY value DESC
+            """, "주문 상태별 분포", "주문 건수", 6, "doughnut", "count");
+        }
+        return spec;
     }
 
     /* -------------------- 폴백 차트 스펙 -------------------- */
@@ -1356,6 +1445,19 @@ public class ChatOrchestratorService {
         String brand = extractBrandName(userMsg);
         boolean byBrand = brand != null && !brand.isBlank();
         boolean usersIntent = isUsersRelatedQuery(userMsg) || containsAny(userMsg, "가입", "신규", "회원");
+        boolean byStatus = containsAny(userMsg, "상태별","상태 분포","분포","distribution","status");
+        if (byStatus) {
+            return new ChartSpec("""
+                SELECT o.STATUS AS label,
+                       COUNT(*)  AS value
+                FROM ORDERS o
+                WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+                  AND o.REGDATE >= :start
+                  AND o.REGDATE <  :end
+                GROUP BY o.STATUS
+                ORDER BY value DESC
+            """, "주문 상태별 분포", "주문 건수", 6, "doughnut", "count");
+        }
         if (usersIntent) {
             String title;
             String sql;
@@ -1792,29 +1894,31 @@ public class ChatOrchestratorService {
 
 
     private String createFallbackQuery(String userMsg, PeriodResolver.ResolvedPeriod period) {
-        if (isOrdersRelatedQuery(userMsg, null)) {
+        if (isOrdersRelatedQuery(userMsg, null)
+            && containsAny(userMsg, "상태별","상태 분포","분포","distribution","status")) {
             return """
-                SELECT 
-                    SUM(od.CONFIRMQUANTITY * od.SELLPRICE) AS total_sales,
-                    COUNT(DISTINCT o.ORDERID) AS order_count,
-                    SUM(od.CONFIRMQUANTITY) AS total_quantity
+                SELECT o.STATUS AS label,
+                       COUNT(*)  AS value
                 FROM ORDERS o
-                JOIN ORDERDETAIL od ON o.ORDERID = od.ORDERID
                 WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
                   AND o.REGDATE >= :start 
-                  AND o.REGDATE < :end
-                """;
-        } else {
-            return """
-                SELECT 
-                    p.NAME as product_name,
-                    b.BRANDNAME as brand_name,
-                    p.PRICE as price
-                FROM PRODUCT p
-                LEFT JOIN BRAND b ON p.BRAND_BRANDNO = b.BRANDNO
-                WHERE ROWNUM <= 10
-                """;
+                  AND o.REGDATE <  :end
+                GROUP BY o.STATUS
+                ORDER BY value DESC
+            """;
         }
+        // 기존 총합 폴백
+        return """
+            SELECT 
+                SUM(od.CONFIRMQUANTITY * od.SELLPRICE) AS total_sales,
+                COUNT(DISTINCT o.ORDERID)              AS order_count,
+                SUM(od.CONFIRMQUANTITY)                AS total_quantity
+            FROM ORDERS o
+            JOIN ORDERDETAIL od ON o.ORDERID = od.ORDERID
+            WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+              AND o.REGDATE >= :start 
+              AND o.REGDATE < :end
+        """;
     }
 
     // --- chart helpers ---
