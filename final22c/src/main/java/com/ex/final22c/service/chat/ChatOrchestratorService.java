@@ -743,7 +743,7 @@ public class ChatOrchestratorService {
 
         } else {
             // 기본값: 주문/회원 관련이면 최근 30일, 그 외 전체기간
-            if (isOrdersRelatedQuery(msg, null) || isUsersRelatedQuery(msg)) {
+        	if ((isOrdersRelatedQuery(msg, null) && !isProductStatsIntent(msg)) || isUsersRelatedQuery(msg)) {
                 LocalDateTime endTime   = LocalDateTime.now()
                         .plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
                 LocalDateTime startTime = endTime.minusDays(30);
