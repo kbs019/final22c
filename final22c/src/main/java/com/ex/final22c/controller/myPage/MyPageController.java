@@ -269,7 +269,7 @@ public class MyPageController {
 
     @GetMapping("/questionDetail/{questionId}")
     @ResponseBody
-    public QuestionDto getQuestionDetail(@PathVariable Long questionId) {
+    public QuestionDto getQuestionDetail(@PathVariable("questionId") Long questionId) {
         Question question = questionRepository.findByIdWithAnswer(questionId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid question ID"));
         

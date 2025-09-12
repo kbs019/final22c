@@ -71,7 +71,8 @@
     }
 
     /* === 내 문의 테이블 === */
-    .table th, .table td {
+    .table th,
+    .table td {
       vertical-align: middle;
     }
 
@@ -106,7 +107,8 @@
           <tbody>
             <tr th:each="question : ${questions}">
               <td>
-                <a href="#" th:attr="data-id=${question.qId}" class="question-title" data-toggle="modal" data-target="#questionModal">
+                <a href="#" th:attr="data-id=${question.qId}" class="question-title" data-toggle="modal"
+                  data-target="#questionModal">
                   <span th:text="${question.title}"></span>
                 </a>
               </td>
@@ -129,7 +131,7 @@
           <div class="modal-body">
             <p><strong>제목: </strong><span id="modalTitle"></span></p>
             <p><strong>작성일: </strong><span id="modalCreateDate"></span></p>
-            <p><strong>문의 내용: </strong><span id="modalContent"></span></p>
+            <p><strong>문의 내용: </strong><span id="modalContent" style="border-collapse: collapse;"></span></p>
             <p><strong>답변 내용: </strong><span id="modalAnswer"></span></p>
             <p><strong>답변 작성일: </strong><span id="modalAnswerDate"></span></p>
           </div>
@@ -143,6 +145,15 @@
 </th:block>
 
 <script layout:fragment="script">
+  const pad = n => String(n).padStart(2, '0');
+  const fmtDate = iso => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;        // 파싱 실패 시 원문 표시
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+      `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   // 모달에 데이터 채우기
   document.addEventListener("click", function (e) {
     if (e.target.closest(".question-title")) {
@@ -154,10 +165,10 @@
         .then(data => {
           // 모달 데이터 채우기
           document.getElementById("modalTitle").innerText = data.title;
-          document.getElementById("modalCreateDate").innerText = data.createDate;
-          document.getElementById("modalContent").innerText = data.content;
-          document.getElementById("modalAnswer").innerText = data.answer || "답변 대기 중";
-          document.getElementById("modalAnswerDate").innerText = data.answerCreateDate || "없음";
+          document.getElementById("modalCreateDate").innerText = fmtDate(data.createDate);
+          document.getElementById("modalContent").innerHTML = data.content;
+          document.getElementById("modalAnswer").innerHTML = data.answer || "답변 대기 중";
+          document.getElementById("modalAnswerDate").innerText = fmtDate(data.answerCreateDate) || "없음";
 
           // 모달 열기
           $('#questionModal').modal('show');  // 모달을 여는 코드
@@ -166,4 +177,5 @@
     }
   });
 </script>
+
 </html>

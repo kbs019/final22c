@@ -766,10 +766,13 @@
 				align-items: end;
 			}
 
-.ai-row .form-label{
-  display:block; margin-bottom:6px;
-  font-weight:600; font-size:.9rem; color:#111;
-}
+			.ai-row .form-label {
+				display: block;
+				margin-bottom: 6px;
+				font-weight: 600;
+				font-size: .9rem;
+				color: #111;
+			}
 
 			.ai-row .form-select {
 				height: 42px;
@@ -1018,7 +1021,8 @@
 							<div>
 								<strong class="rate"
 									th:text="${#numbers.formatDecimal(T(java.lang.Math).floor(product.discount), 0, 0)} + '%'"></strong>
-								<span class="sale" th:text="${#numbers.formatInteger(product.sellPrice, 3,'COMMA')} + '원'"></span>
+								<span class="sale"
+									th:text="${#numbers.formatInteger(product.sellPrice, 3,'COMMA')} + '원'"></span>
 							</div>
 							<div>
 								<del class="list" th:if="${product.price > product.sellPrice}"
@@ -1047,8 +1051,8 @@
 								<button type="button" class="btn btn-outline-secondary btn-sm btn-minus">-</button>
 
 								<!-- 수량 입력: min=1, max=재고 -->
-								<input type="number" class="form-control text-center qty-input" style="width:80px;" name="quantity"
-									th:attr="max=${product.count}" min="1" value="1">
+								<input type="number" class="form-control text-center qty-input" style="width:80px;"
+									name="quantity" th:attr="max=${product.count}" min="1" value="1">
 
 								<button type="button" class="btn btn-outline-secondary btn-sm btn-plus">+</button>
 
@@ -1071,13 +1075,14 @@
 								</button>
 
 								<!-- 재고 있을 때만 바로결제 -->
-								<button type="submit" class="btn btn-secondary" formaction="/checkout/order" formmethod="post"
-									id="btn-buy-now" th:if="${product.count > 0}">
+								<button type="submit" class="btn btn-secondary" formaction="/checkout/order"
+									formmethod="post" id="btn-buy-now" th:if="${product.count > 0}">
 									바로 결제
 								</button>
 
 								<!-- 재고 없을 때 입고 알림 -->
-								<button type="button" class="btn btn-secondary" id="btn-restock" th:if="${product.count == 0}">
+								<button type="button" class="btn btn-secondary" id="btn-restock"
+									th:if="${product.count == 0}">
 									입고 알림 신청
 								</button>
 							</div>
@@ -1351,7 +1356,8 @@
 									<div>
 										<label class="form-label">성별</label>
 										<div class="cs" id="cs-gender">
-											<button type="button" class="cs-btn" aria-haspopup="listbox" aria-expanded="false">선택</button>
+											<button type="button" class="cs-btn" aria-haspopup="listbox"
+												aria-expanded="false">선택</button>
 											<ul class="cs-menu" role="listbox">
 												<!-- <li class="cs-item is-disabled" aria-disabled="true" data-value="">선택</li> -->
 												<li class="cs-item" data-value="M">남성</li>
@@ -1365,7 +1371,8 @@
 									<div>
 										<label class="form-label">나이대</label>
 										<div class="cs" id="cs-ageGroup">
-											<button type="button" class="cs-btn" aria-haspopup="listbox" aria-expanded="false">선택</button>
+											<button type="button" class="cs-btn" aria-haspopup="listbox"
+												aria-expanded="false">선택</button>
 											<ul class="cs-menu" role="listbox">
 												<!-- <li class="cs-item is-disabled" aria-disabled="true" data-value="">선택</li> -->
 												<li class="cs-item" data-value="10s">10대</li>
@@ -1382,7 +1389,8 @@
 									<div class="text-end">
 										<button type="submit" class="btn btn-dark btn-cta" id="getRecommendationBtn">
 											<span class="btn-text">맞춤 추천 보기</span>
-											<span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
+											<span class="spinner-border spinner-border-sm ms-2 d-none"
+												role="status"></span>
 										</button>
 									</div>
 								</div>
@@ -1456,7 +1464,8 @@
 						<div class="summary">
 							<!-- ① 평균 평점: 그림(별/사각형) 한 줄 -->
 							<div class="rating-bars my-3" th:with="filled=${T(java.lang.Math).round(reviewAvg)}">
-								<div th:each="i : ${#numbers.sequence(1,5)}" th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
+								<div th:each="i : ${#numbers.sequence(1,5)}"
+									th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
 								</div>
 							</div>
 							<!-- ② 평균 평점: 숫자 한 줄 -->
@@ -1525,18 +1534,18 @@
 								<!-- 본문 영역 -->
 								<div class="flex-grow-1">
 									<!-- 리뷰 -->
-									<div class="mb-2 text-break" th:if="${rv.status == 'ACTIVE'}" th:text="${rv.content}"
-										style="white-space:pre-line;">내용</div>
+									<div class="mb-2 text-break" th:if="${rv.status == 'ACTIVE'}"
+										th:text="${rv.content}" style="white-space:pre-line;">내용</div>
 
 									<!-- 좋아요 -->
 									<div class="like-wrap" th:attr="data-id=${rv.reviewId}"
 										th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
-										<button type="button" class="btn-like" aria-label="공감" title="공감" sec:authorize="isAuthenticated()"
-											th:if="${rv.status == 'ACTIVE'}">
+										<button type="button" class="btn-like" aria-label="공감" title="공감"
+											sec:authorize="isAuthenticated()" th:if="${rv.status == 'ACTIVE'}">
 											<i class="fa-regular fa-thumbs-up"></i>
 										</button>
-										<button type="button" class="btn-like need-login" aria-label="로그인 필요" sec:authorize="isAnonymous()"
-											th:if="${rv.status == 'ACTIVE'}">
+										<button type="button" class="btn-like need-login" aria-label="로그인 필요"
+											sec:authorize="isAnonymous()" th:if="${rv.status == 'ACTIVE'}">
 											<i class="fa-regular fa-thumbs-up"></i>
 										</button>
 										<span class="like-count" th:text="${#lists.size(rv.likers)}"
@@ -1554,10 +1563,11 @@
 								<div class="review-actions mt-1" sec:authorize="isAuthenticated()"
 									th:with="isOwner=${#authentication.name == rv.userName}">
 									<div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
-										<a class="ra-link" th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
+										<a class="ra-link"
+											th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
 
-										<form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
-											onsubmit="return confirm('후기를 삭제하시겠습니까?');">
+										<form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post"
+											class="d-inline" onsubmit="return confirm('후기를 삭제하시겠습니까?');">
 											<input type="hidden" name="productId" th:value="${productId}">
 											<button type="submit" class="ra-link ra-danger">삭제</button>
 										</form>
@@ -1581,11 +1591,13 @@
 
 					<!-- 데이터 있을 때: 캐러셀 -->
 					<div th:if="${brandRecs != null and !#lists.isEmpty(brandRecs)}" class="rec-carousel">
-						<button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(brandRecs) <= 4}"
-							data-bs-target="#brandRecCarousel" data-bs-slide="prev">&lsaquo;</button>
+						<button class="rec-nav" type="button" aria-label="이전"
+							th:disabled="${#lists.size(brandRecs) <= 4}" data-bs-target="#brandRecCarousel"
+							data-bs-slide="prev">&lsaquo;</button>
 
 						<div class="rec-track">
-							<div id="brandRecCarousel" class="carousel slide" data-bs-ride="false" aria-label="같은 브랜드 추천 캐러셀" th:with="size=${#lists.size(brandRecs)},
+							<div id="brandRecCarousel" class="carousel slide" data-bs-ride="false"
+								aria-label="같은 브랜드 추천 캐러셀" th:with="size=${#lists.size(brandRecs)},
 									pages=${(size + 3) / 4}">
 
 								<div class="carousel-inner" th:with="size=${#lists.size(brandRecs)}">
@@ -1593,16 +1605,20 @@
 										th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
 										th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
 										<div class="row g-3">
-											<div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}" th:with="r=${brandRecs[i]}, path=${r[3]}, name=${r[4]},
+											<div class="col-6 col-md-3"
+												th:each="i : ${#numbers.sequence(start, endIdx)}" th:with="r=${brandRecs[i]}, path=${r[3]}, name=${r[4]},
 																	img=${#strings.isEmpty(path) ? name : (path.endsWith('/') ? path + name : path + '/' + name)}">
 												<a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
-													<div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
-													<div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">
+													<div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}"
+															alt="" loading="lazy"></div>
+													<div class="rel-brand small text-muted text-truncate"
+														th:text="${r[2]}">
 														브랜드명</div>
 													<div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
 													<br>
 													<div class="rel-price text-muted">
-														<strong class="sell" th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
+														<strong class="sell"
+															th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
 														<del class="original" th:if="${r[5] != null && r[5] > r[6]}"
 															th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
 													</div>
@@ -1622,8 +1638,9 @@
 							</div>
 						</div>
 
-						<button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(brandRecs) <= 4}"
-							data-bs-target="#brandRecCarousel" data-bs-slide="next">&rsaquo;</button>
+						<button class="rec-nav" type="button" aria-label="다음"
+							th:disabled="${#lists.size(brandRecs) <= 4}" data-bs-target="#brandRecCarousel"
+							data-bs-slide="next">&rsaquo;</button>
 					</div>
 
 					<!-- 데이터 없을 때: 안내 -->
@@ -1643,11 +1660,13 @@
 
 					<!-- 데이터 있을 때: 캐러셀 -->
 					<div th:if="${recentTop8 != null and !#lists.isEmpty(recentTop8)}" class="rec-carousel">
-						<button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(recentTop8) <= 4}"
-							data-bs-target="#recentTopCarousel" data-bs-slide="prev">&lsaquo;</button>
+						<button class="rec-nav" type="button" aria-label="이전"
+							th:disabled="${#lists.size(recentTop8) <= 4}" data-bs-target="#recentTopCarousel"
+							data-bs-slide="prev">&lsaquo;</button>
 
 						<div class="rec-track">
-							<div id="recentTopCarousel" class="carousel slide" data-bs-ride="false" aria-label="이번 주 베스트 캐러셀" th:with="size=${#lists.size(recentTop8)},
+							<div id="recentTopCarousel" class="carousel slide" data-bs-ride="false"
+								aria-label="이번 주 베스트 캐러셀" th:with="size=${#lists.size(recentTop8)},
 									pages=${(size + 3) / 4}">
 
 								<div class="carousel-inner" th:with="size=${#lists.size(recentTop8)}">
@@ -1655,22 +1674,27 @@
 										th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
 										th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
 										<div class="row g-3">
-											<div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}" th:with="r=${recentTop8[i]}, path=${r[3]}, name=${r[4]},
+											<div class="col-6 col-md-3"
+												th:each="i : ${#numbers.sequence(start, endIdx)}" th:with="r=${recentTop8[i]}, path=${r[3]}, name=${r[4]},
 																	img=${#strings.isEmpty(path) ? name : (path.endsWith('/') ? path + name : path + '/' + name)}">
 												<a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
-													<div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
-													<div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">
+													<div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}"
+															alt="" loading="lazy"></div>
+													<div class="rel-brand small text-muted text-truncate"
+														th:text="${r[2]}">
 														브랜드명</div>
 													<div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
 													<div class="small text-muted" th:if="${r[7] != null}">
 														<span th:text="${isFallback} ? '(누적) - ' : '(최근 7일) - '">(최근 7일)
 															-
 														</span>
-														<span th:text="${#numbers.formatInteger(r[7],1,'COMMA')}">0</span>개
+														<span
+															th:text="${#numbers.formatInteger(r[7],1,'COMMA')}">0</span>개
 														판매
 													</div> <br>
 													<div class="rel-price text-muted">
-														<strong class="sell" th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
+														<strong class="sell"
+															th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
 														<del class="original" th:if="${r[5] != null && r[5] > r[6]}"
 															th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
 													</div>
@@ -1690,8 +1714,9 @@
 							</div>
 						</div>
 
-						<button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(recentTop8) <= 4}"
-							data-bs-target="#recentTopCarousel" data-bs-slide="next">&rsaquo;</button>
+						<button class="rec-nav" type="button" aria-label="다음"
+							th:disabled="${#lists.size(recentTop8) <= 4}" data-bs-target="#recentTopCarousel"
+							data-bs-slide="next">&rsaquo;</button>
 					</div>
 
 					<!-- 데이터 없을 때: 안내 -->
@@ -1900,11 +1925,17 @@
 					hintEl.textContent = `현재 재고가 ${n}개 존재하기 때문에 수량이 ${n}개로 제한됩니다.`;
 					hintEl.hidden = false;
 					hintEl.dataset.pop = '1';
-					clearTimeout(hintTimer);
-					hintTimer = setTimeout(() => {
-						hintEl.hidden = true;
-						delete hintEl.dataset.pop;
-					}, 3000);
+					// clearTimeout(hintTimer);
+					// hintTimer = setTimeout(() => {
+					// 	hintEl.hidden = true;
+					// 	delete hintEl.dataset.pop;
+					// }, 3000);
+				}
+
+				function hideMaxHint() {
+					if (!hintEl) return;
+					hintEl.hidden = true;
+					delete hintEl.dataset.pop;
 				}
 
 				function clamp(v) {
@@ -2013,6 +2044,8 @@
 						// 버튼 상태: minus 비활성, plus는 재고 있으면 활성
 						minusBtn.disabled = true;
 						plusBtn.disabled = (MAX > 0 ? false : true);
+						// 재고 안내 숨김
+						if (hintEl) { hintEl.hidden = true; delete hintEl.dataset.pop; }
 						return;
 					}
 
@@ -2030,7 +2063,12 @@
 					minusBtn.disabled = (num <= MIN);
 					plusBtn.disabled = (MAX > 0) ? (num >= MAX) : false;
 
-					if (MAX > 0 && num === MAX) showMaxHint(MAX);
+					if (MAX > 0 && num === MAX) {
+						showMaxHint(MAX);
+					} else {
+						// MAX가 아니면 숨김
+						if (hintEl) { hintEl.hidden = true; delete hintEl.dataset.pop; }
+					}
 				});
 
 				// --- blur: 여기서만 최종 클램프/정규화 ---
@@ -2038,14 +2076,15 @@
 					let v = parseInt(this.value, 10);
 					if (isNaN(v)) v = MIN;
 					const c = clamp(v);
-					if (c !== v) {
-						// MAX 초과로 줄어든 경우 안내 1회
-						if (MAX > 0 && v > MAX) showMaxHint(MAX);
-					}
+
 					this.value = c;
 					recalcAndRender(c);
 					minusBtn.disabled = (c <= MIN);
 					plusBtn.disabled = (MAX > 0) ? (c >= MAX) : false;
+
+					// MAX면 표시, 아니면 숨김
+					if (MAX > 0 && c === MAX) showMaxHint(MAX);
+					else hideMaxHint();
 				});
 
 				minusBtn.addEventListener('click', function () {
@@ -2056,6 +2095,10 @@
 					recalcAndRender(v);
 					minusBtn.disabled = (v <= MIN);
 					plusBtn.disabled = (MAX > 0) ? (v >= MAX) : false;
+
+					// MAX면 표시, 아니면 숨김
+					if (MAX > 0 && v === MAX) showMaxHint(MAX);
+					else hideMaxHint();
 				});
 
 				plusBtn.addEventListener('click', function () {
@@ -2066,7 +2109,10 @@
 					recalcAndRender(v);
 					minusBtn.disabled = (v <= MIN);
 					plusBtn.disabled = (MAX > 0) ? (v >= MAX) : false;
+					
+					// MAX면 표시, 아니면 숨김
 					if (MAX > 0 && v === MAX) showMaxHint(MAX);
+					else hideMaxHint();
 				});
 			});
 		</script>
