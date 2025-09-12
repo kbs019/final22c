@@ -984,6 +984,15 @@
 					right: 3vw;
 				}
 			}
+
+			/* 리뷰 정렬 드롭다운만 더 짧게 */
+			#cs-reviewSort.cs {
+				width: 140px;
+			}
+
+			#cs-reviewSort .cs-btn {
+				padding: 6px 10px;
+			}
 		</style>
 	</th:block>
 </head>
@@ -1500,11 +1509,23 @@
 				<div class="d-flex justify-content-between align-items-center mb-3">
 					<div class="fw-semibold">전체 리뷰 <span th:text="${reviewCount}">0</span>개</div>
 					<form method="get" th:action="@{|/main/content/${product.id}|}">
-						<select data-cs class="form-select form-select-sm w-auto d-inline-block" name="sort">
-							<option value="best"   th:selected="${sort=='best'}">추천순</option>
-							<option value="recent" th:selected="${sort=='recent'}">최신순</option>
-							<option value="rating" th:selected="${sort=='rating'}">평점순</option>
-						</select>
+						<!-- 커스텀 셀렉트 -->
+						<div class="cs" id="cs-reviewSort">
+							<button type="button" class="cs-btn" aria-haspopup="listbox" aria-expanded="false"
+								th:text="${sort=='best'} ? '추천순' : (${sort=='recent'} ? '최신순' : '평점순')">선택</button>
+
+							<ul class="cs-menu" role="listbox">
+								<li class="cs-item" data-value="best" th:classappend="${sort=='best'} ? ' is-selected'">
+									추천순</li>
+								<li class="cs-item" data-value="recent"
+									th:classappend="${sort=='recent'} ? ' is-selected'">최신순</li>
+								<li class="cs-item" data-value="rating"
+									th:classappend="${sort=='rating'} ? ' is-selected'">평점순</li>
+							</ul>
+
+							<!-- 폼 제출용 값 -->
+							<input type="hidden" name="sort" id="reviewSortVal" th:value="${sort}">
+						</div>
 					</form>
 				</div>
 
@@ -1684,14 +1705,7 @@
 														th:text="${r[2]}">
 														브랜드명</div>
 													<div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
-													<div class="small text-muted" th:if="${r[7] != null}">
-														<span th:text="${isFallback} ? '(누적) - ' : '(최근 7일) - '">(최근 7일)
-															-
-														</span>
-														<span
-															th:text="${#numbers.formatInteger(r[7],1,'COMMA')}">0</span>개
-														판매
-													</div> <br>
+													<br>
 													<div class="rel-price text-muted">
 														<strong class="sell"
 															th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
@@ -2109,7 +2123,7 @@
 					recalcAndRender(v);
 					minusBtn.disabled = (v <= MIN);
 					plusBtn.disabled = (MAX > 0) ? (v >= MAX) : false;
-					
+
 					// MAX면 표시, 아니면 숨김
 					if (MAX > 0 && v === MAX) showMaxHint(MAX);
 					else hideMaxHint();
@@ -2194,165 +2208,165 @@
 		<!-- Chart.js + 구매자 피라미드 렌더 -->
 		<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 		<script th:inline="javascript">
-		(function () {
-		const productId = /*[[${product.id}]]*/ 0;
-		const api = `/main/api/product/${productId}/buyer-stats`;
-		const $canvas = document.getElementById('buyerStatChart');
-		const $empty  = document.getElementById('buyerStatEmpty');
-		if (!$canvas) return;
+			(function () {
+				const productId = /*[[${product.id}]]*/ 0;
+				const api = `/main/api/product/${productId}/buyer-stats`;
+				const $canvas = document.getElementById('buyerStatChart');
+				const $empty = document.getElementById('buyerStatEmpty');
+				if (!$canvas) return;
 
-		// CSS 변수 읽기(없으면 기본값 사용)
-		const root = document.querySelector('#buyer-stats') || document.documentElement;
-		const css  = getComputedStyle(root);
-		const C = (name, fallback) => (css.getPropertyValue(name).trim() || fallback);
+				// CSS 변수 읽기(없으면 기본값 사용)
+				const root = document.querySelector('#buyer-stats') || document.documentElement;
+				const css = getComputedStyle(root);
+				const C = (name, fallback) => (css.getPropertyValue(name).trim() || fallback);
 
-		// 막대 두께/간격 & 중앙 라벨 폰트 (원하면 CSS 변수로 조절)
-		const BAR_THICKNESS = parseFloat(C('--buyer-bar-thickness', '20')) || 12; // px
-		const CAT_PCT       = parseFloat(C('--buyer-category-pct', '0.55')) || 0.55; // 카테고리 높이 사용 비율
-		const BAR_PCT       = parseFloat(C('--buyer-bar-pct', '0.9')) || 0.9;       // 동일 그룹 내 사용 비율
-		const CENTER_FS     = C('--buyer-center-font-size', '14px');                // 중앙 라벨 글자 크기
-		const CENTER_FW     = C('--buyer-center-font-weight', '500');               // 중앙 라벨 굵기
+				// 막대 두께/간격 & 중앙 라벨 폰트 (원하면 CSS 변수로 조절)
+				const BAR_THICKNESS = parseFloat(C('--buyer-bar-thickness', '20')) || 12; // px
+				const CAT_PCT = parseFloat(C('--buyer-category-pct', '0.55')) || 0.55; // 카테고리 높이 사용 비율
+				const BAR_PCT = parseFloat(C('--buyer-bar-pct', '0.9')) || 0.9;       // 동일 그룹 내 사용 비율
+				const CENTER_FS = C('--buyer-center-font-size', '14px');                // 중앙 라벨 글자 크기
+				const CENTER_FW = C('--buyer-center-font-weight', '500');               // 중앙 라벨 굵기
 
-		// 중앙 라벨 + 중앙 여백(막대 잘라내기)
-		const centerPlugin = {
-			id: 'pyramidCenter',
-			beforeDatasetsDraw(chart) {
-			const { ctx, chartArea } = chart;
-			if (!chartArea) return;
-			const gutter = 64;
-			const midX   = (chartArea.left + chartArea.right) / 2;
-			const leftW  = midX - gutter / 2 - chartArea.left;
-			const rightW = chartArea.right - (midX + gutter / 2);
+				// 중앙 라벨 + 중앙 여백(막대 잘라내기)
+				const centerPlugin = {
+					id: 'pyramidCenter',
+					beforeDatasetsDraw(chart) {
+						const { ctx, chartArea } = chart;
+						if (!chartArea) return;
+						const gutter = 64;
+						const midX = (chartArea.left + chartArea.right) / 2;
+						const leftW = midX - gutter / 2 - chartArea.left;
+						const rightW = chartArea.right - (midX + gutter / 2);
 
-			ctx.save();
-			ctx.beginPath();
-			ctx.rect(chartArea.left, chartArea.top, Math.max(0, leftW), chartArea.bottom - chartArea.top);
-			ctx.rect(midX + gutter / 2, chartArea.top, Math.max(0, rightW), chartArea.bottom - chartArea.top);
-			ctx.clip();
-			},
-			afterDatasetsDraw(chart) {
-			const { ctx, chartArea, scales } = chart;
-			if (!chartArea || !scales?.y) return;
-			const y    = scales.y;
-			const midX = (chartArea.left + chartArea.right) / 2;
-
-			ctx.restore(); // 클리핑 해제
-
-			// 가운데 축 라벨(10대/20대…)
-			const labels = chart.data.labels || [];
-			ctx.save();
-			ctx.textAlign    = 'center';
-			ctx.textBaseline = 'middle';
-			ctx.fillStyle    = C('--buyer-label', '#2c2f34');
-			ctx.font         = `${CENTER_FW} ${CENTER_FS} system-ui`; // ← 더 작고 가벼운 폰트
-			labels.forEach((lab, i) => ctx.fillText(lab, midX, y.getPixelForTick(i)));
-			ctx.restore();
-			}
-		};
-
-		fetch(api, { credentials: 'same-origin' })
-			.then(r => r.ok ? r.json() : Promise.reject())
-			.then(data => {
-			const labels = Array.isArray(data?.labels) ? data.labels : [];
-			const ds     = Array.isArray(data?.datasets) ? data.datasets : [];
-
-			const male   = (ds.find(v => v.label === '남성')?.data || []).map(Number);
-			const female = (ds.find(v => v.label === '여성')?.data || []).map(Number);
-
-			const hasData = [...male, ...female].some(v => Number.isFinite(v) && v > 0);
-			if (!hasData) { if ($empty) $empty.style.display = 'block'; return; }
-
-			const femaleNeg = female.map(v => -Math.abs(v));
-			const maxAbs    = Math.max(1, ...male.map(Math.abs), ...female.map(Math.abs));
-
-			new Chart($canvas.getContext('2d'), {
-				type: 'bar',
-				data: {
-				labels,
-				datasets: [
-					{
-					label: '여성',
-					data: femaleNeg,
-					stack: 'gender',
-					backgroundColor: C('--buyer-female', '#e2e4e9') // 기본: 밝은 쿨 그레이-블루
+						ctx.save();
+						ctx.beginPath();
+						ctx.rect(chartArea.left, chartArea.top, Math.max(0, leftW), chartArea.bottom - chartArea.top);
+						ctx.rect(midX + gutter / 2, chartArea.top, Math.max(0, rightW), chartArea.bottom - chartArea.top);
+						ctx.clip();
 					},
-					{
-					label: '남성',
-					data: male,
-					stack: 'gender',
-					backgroundColor: C('--buyer-male', '#555')   // 기본: 슬레이트 그레이
+					afterDatasetsDraw(chart) {
+						const { ctx, chartArea, scales } = chart;
+						if (!chartArea || !scales?.y) return;
+						const y = scales.y;
+						const midX = (chartArea.left + chartArea.right) / 2;
+
+						ctx.restore(); // 클리핑 해제
+
+						// 가운데 축 라벨(10대/20대…)
+						const labels = chart.data.labels || [];
+						ctx.save();
+						ctx.textAlign = 'center';
+						ctx.textBaseline = 'middle';
+						ctx.fillStyle = C('--buyer-label', '#2c2f34');
+						ctx.font = `${CENTER_FW} ${CENTER_FS} system-ui`; // ← 더 작고 가벼운 폰트
+						labels.forEach((lab, i) => ctx.fillText(lab, midX, y.getPixelForTick(i)));
+						ctx.restore();
 					}
-				]
-				},
-				options: {
-				locale: 'ko-KR',
-				indexAxis: 'y',
-				responsive: true,
-				maintainAspectRatio: false,
-				animation: { duration: 600, easing: 'easeOutQuart' },
-				elements: { bar: { borderRadius: 8, borderSkipped: false } },
-				// ↓ 막대 두께/간격을 여기서 일괄 제어
-				datasets: {
-					bar: {
-					barThickness: BAR_THICKNESS,
-					maxBarThickness: BAR_THICKNESS, // 과두꺼워지는 것 방지
-					categoryPercentage: CAT_PCT,
-					barPercentage: BAR_PCT
-					}
-				},
-				plugins: {
-					legend: {
-					position: 'top',
-					labels: {
-						color: C('--buyer-muted', '#6b7280'),
-						usePointStyle: true,
-						pointStyle: 'rectRounded',
-						padding: 12,
-						boxWidth: 12
-					}
-					},
-					tooltip: {
-					backgroundColor: 'rgba(0,0,0,.75)',
-					titleColor: '#fff',
-					bodyColor: '#fff',
-					padding: 10,
-					callbacks: {
-						label: (ctx) => {
-						const v = Math.abs(ctx.raw ?? 0);
-						return `${ctx.dataset.label}: ${v.toLocaleString('ko-KR')}명`;
-						}
-					}
-					}
-				},
-				scales: {
-					y: {
-					stacked: true,
-					ticks: { display: false },
-					grid: { display: false, drawBorder: false }
-					},
-					x: {
-					stacked: true,
-					min: -maxAbs,
-					max:  maxAbs,
-					grid: {
-						drawBorder: true,
-						drawOnChartArea: false,
-						color: C('--buyer-grid', '#E2E7EE')
-					},
-					border: { color: C('--buyer-grid', '#E2E7EE') },
-					ticks: {
-						color: C('--buyer-tick', '#7B8592'),
-						padding: 6,
-						callback: (v) => Math.abs(v).toLocaleString('ko-KR')
-					}
-					}
-				}
-				},
-				plugins: [centerPlugin]
-			});
-			})
-			.catch(() => { if ($empty) $empty.style.display = 'block'; });
-		})();
+				};
+
+				fetch(api, { credentials: 'same-origin' })
+					.then(r => r.ok ? r.json() : Promise.reject())
+					.then(data => {
+						const labels = Array.isArray(data?.labels) ? data.labels : [];
+						const ds = Array.isArray(data?.datasets) ? data.datasets : [];
+
+						const male = (ds.find(v => v.label === '남성')?.data || []).map(Number);
+						const female = (ds.find(v => v.label === '여성')?.data || []).map(Number);
+
+						const hasData = [...male, ...female].some(v => Number.isFinite(v) && v > 0);
+						if (!hasData) { if ($empty) $empty.style.display = 'block'; return; }
+
+						const femaleNeg = female.map(v => -Math.abs(v));
+						const maxAbs = Math.max(1, ...male.map(Math.abs), ...female.map(Math.abs));
+
+						new Chart($canvas.getContext('2d'), {
+							type: 'bar',
+							data: {
+								labels,
+								datasets: [
+									{
+										label: '여성',
+										data: femaleNeg,
+										stack: 'gender',
+										backgroundColor: C('--buyer-female', '#e2e4e9') // 기본: 밝은 쿨 그레이-블루
+									},
+									{
+										label: '남성',
+										data: male,
+										stack: 'gender',
+										backgroundColor: C('--buyer-male', '#555')   // 기본: 슬레이트 그레이
+									}
+								]
+							},
+							options: {
+								locale: 'ko-KR',
+								indexAxis: 'y',
+								responsive: true,
+								maintainAspectRatio: false,
+								animation: { duration: 600, easing: 'easeOutQuart' },
+								elements: { bar: { borderRadius: 8, borderSkipped: false } },
+								// ↓ 막대 두께/간격을 여기서 일괄 제어
+								datasets: {
+									bar: {
+										barThickness: BAR_THICKNESS,
+										maxBarThickness: BAR_THICKNESS, // 과두꺼워지는 것 방지
+										categoryPercentage: CAT_PCT,
+										barPercentage: BAR_PCT
+									}
+								},
+								plugins: {
+									legend: {
+										position: 'top',
+										labels: {
+											color: C('--buyer-muted', '#6b7280'),
+											usePointStyle: true,
+											pointStyle: 'rectRounded',
+											padding: 12,
+											boxWidth: 12
+										}
+									},
+									tooltip: {
+										backgroundColor: 'rgba(0,0,0,.75)',
+										titleColor: '#fff',
+										bodyColor: '#fff',
+										padding: 10,
+										callbacks: {
+											label: (ctx) => {
+												const v = Math.abs(ctx.raw ?? 0);
+												return `${ctx.dataset.label}: ${v.toLocaleString('ko-KR')}명`;
+											}
+										}
+									}
+								},
+								scales: {
+									y: {
+										stacked: true,
+										ticks: { display: false },
+										grid: { display: false, drawBorder: false }
+									},
+									x: {
+										stacked: true,
+										min: -maxAbs,
+										max: maxAbs,
+										grid: {
+											drawBorder: true,
+											drawOnChartArea: false,
+											color: C('--buyer-grid', '#E2E7EE')
+										},
+										border: { color: C('--buyer-grid', '#E2E7EE') },
+										ticks: {
+											color: C('--buyer-tick', '#7B8592'),
+											padding: 6,
+											callback: (v) => Math.abs(v).toLocaleString('ko-KR')
+										}
+									}
+								}
+							},
+							plugins: [centerPlugin]
+						});
+					})
+					.catch(() => { if ($empty) $empty.style.display = 'block'; });
+			})();
 		</script>
 
 		<script th:inline="javascript">
@@ -2557,7 +2571,7 @@
 
 				// ✅ 정렬 Ajax
 				const form = document.querySelector('#review-section form');
-				const select = form?.querySelector('select[name="sort"]');
+				const select = form?.querySelector('[name="sort"]'); // select든 hidden이든 잡히게
 				let listHost = document.getElementById('reviewList'); // replace 후 재할당 필요하므로 let
 
 				async function loadReviews(sort) {
@@ -2593,6 +2607,22 @@
 					}
 				}
 
+				// 이미 아래쪽에 있는 mountCS 재사용 (성별/나이대와 동일)
+				(function () {
+					// 마운트
+					if (typeof mountSimpleCS === 'function') {
+						mountSimpleCS('cs-reviewSort');
+					}
+
+					// 선택되면 폼 자동 제출 (Ajax 로드 로직이 이미 form.submit/RequestSubmit에 연결돼 있음)
+					const host = document.getElementById('cs-reviewSort');
+					const form = host?.closest('form');
+					const hidden = host?.querySelector('input[name="sort"]');
+					if (host && form && hidden) {
+						hidden.addEventListener('change', () => form.requestSubmit());
+					}
+				})();
+
 				// 폼 submit 가로채기 + change 연동
 				form?.addEventListener('submit', (e) => {
 					e.preventDefault();
@@ -2618,7 +2648,7 @@
 					document.getElementById('aiChips').innerHTML = `
         <span class="ai-chip ai-chip--sel"><span class="k">성별</span><span class="v">${gMap[g] || ''}</span></span>
         <span class="ai-chip ai-chip--sel"><span class="k">나이대</span><span class="v">${aMap[a] || ''}</span></span>
-      `;
+    `;
 					chipsRow.classList.remove('d-none');
 				}
 
@@ -2629,7 +2659,7 @@
         <div class="ai-skel" style="width:96%"></div>
         <div class="ai-skel" style="width:88%"></div>
         <div class="ai-skel" style="width:72%"></div>
-      `;
+    `;
 				}
 
 				// ✅ 여기부터: 검증 실패 시 모달 출력
@@ -2846,46 +2876,49 @@
 
 		<script>
 			(function () {
-				function mountCS(rootId) {
+				function mountSimpleCS(rootId) {
 					const root = document.getElementById(rootId);
 					if (!root) return;
+
 					const btn = root.querySelector('.cs-btn');
 					const menu = root.querySelector('.cs-menu');
 					const input = root.querySelector('input[type="hidden"]');
 
-					// 열고/닫기
-					const open = () => root.classList.add('is-open');
-					const close = () => root.classList.remove('is-open');
+					const open = () => { root.classList.add('is-open'); btn.setAttribute('aria-expanded', 'true'); };
+					const close = () => { root.classList.remove('is-open'); btn.setAttribute('aria-expanded', 'false'); };
 
-					btn.addEventListener('click', () => {
+					btn.addEventListener('click', (e) => {
+						e.preventDefault();
+						e.stopPropagation(); // 전역 클릭 핸들러와 충돌 방지
 						root.classList.toggle('is-open');
 						btn.setAttribute('aria-expanded', root.classList.contains('is-open') ? 'true' : 'false');
 					});
+
 					document.addEventListener('click', (e) => {
 						if (!root.contains(e.target)) close();
 					});
 
-					// 항목 선택
 					menu.addEventListener('click', (e) => {
 						const li = e.target.closest('.cs-item');
 						if (!li || li.classList.contains('is-disabled')) return;
 
-						// 선택 표시 갱신
 						menu.querySelectorAll('.cs-item').forEach(n => n.classList.remove('is-selected'));
 						li.classList.add('is-selected');
 
-						// 값/라벨 반영
 						input.value = li.dataset.value || '';
 						btn.textContent = li.textContent || '선택';
 
-						// change 이벤트 (폼 바깥 JS가 듣고 있으면)
 						input.dispatchEvent(new Event('change', { bubbles: true }));
 						close();
 					});
 				}
 
-				mountCS('cs-gender');
-				mountCS('cs-ageGroup');
+				// 페이지 준비 후 마운트
+				document.addEventListener('DOMContentLoaded', function () {
+					mountSimpleCS('cs-gender');
+					mountSimpleCS('cs-ageGroup');
+					mountSimpleCS('cs-reviewSort'); // ← 리뷰 정렬 드롭다운도 같이 초기화
+				});
 			})();
 		</script>
 	</th:block>
