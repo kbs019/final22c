@@ -179,6 +179,7 @@
         <div class="summary-row" style="font-weight:800"><span>결제금액</span><span id="payTotalLabel" th:text="${#numbers.formatInteger(summary.grandTotal,0)}+'원'"></span></div>
         <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(summary.subtotal*0.05,0)}+'원'"></span></div>
 
+
         <input type="hidden" id="mode" value="cart">
         <button id="payBtn" th:disabled="${defaultAddr == null}" th:data-has-addr="${defaultAddr != null}" class="btn" type="button">결제하기</button>
       </div>
