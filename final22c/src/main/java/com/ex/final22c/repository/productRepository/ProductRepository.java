@@ -129,8 +129,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             when u.age between 20 and 29 then '20대'
             when u.age between 30 and 39 then '30대'
             when u.age between 40 and 49 then '40대'
-            when u.age between 50 and 59 then '50대'
-            else '기타'
+            when u.age >= 50 then '50대+'
          end as ageBucket,
          count(distinct u.userNo) as cnt
       from com.ex.final22c.data.order.OrderDetail od
@@ -144,8 +143,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             when u.age between 20 and 29 then '20대'
             when u.age between 30 and 39 then '30대'
             when u.age between 40 and 49 then '40대'
-            when u.age between 50 and 59 then '50대'
-            else '기타'
+            when u.age >= 50 then '50대+'
          end
       order by ageBucket
       """)

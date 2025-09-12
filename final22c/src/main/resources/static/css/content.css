@@ -466,3 +466,48 @@ section[id] > :first-child{
   margin-top: clamp(0px, 1.2vh, 16px);
 }
 
+/* Buyer Stats – monochrome theme */
+#buyer-stats{
+  --buyer-bg: #ffffff;
+  --buyer-edge: #e6e8eb;
+  --buyer-shadow: 0 6px 16px rgba(0,0,0,.05);
+
+  /* 팔레트 (무채색) */
+  --buyer-female: #e2e4e9; /* 밝은 회색 */
+  --buyer-male:   #555; /* 짙은 회색 */
+
+  /* UI 색상 */
+  --buyer-label: #2c2f34;
+  --buyer-muted: #6b7280;
+  --buyer-grid:  #d9dee5;
+  --buyer-tick:  #7b828b;
+}
+
+/* 카드 톤 & 타이포 */
+#buyer-stats .card{
+  border:1px solid var(--buyer-edge);
+  border-radius:16px;
+  background:var(--buyer-bg);
+  box-shadow:var(--buyer-shadow);
+}
+#buyer-stats h2{ font-weight:800; letter-spacing:.2px; }
+#buyer-stats .text-muted.small{ color:var(--buyer-muted)!important; }
+
+/* WOMAN / MAN 라벨 */
+#buyer-stats .d-flex.small.text-muted span{
+  color:var(--buyer-muted)!important;
+  font-weight:600;
+  letter-spacing:.6px;
+}
+
+/* 캔버스 외곽만 부드럽게 */
+#buyer-stats canvas{
+  display:block;
+  width:100%!important;
+  height:300px!important;
+  border-radius:12px;
+}
+
+/* 빈 데이터 문구 톤 */
+#buyerStatEmpty{ color:var(--buyer-muted)!important; }
+
