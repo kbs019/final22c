@@ -17,12 +17,14 @@
   <div layout:fragment="content">
 
     <style>
-      /* =================== 타이포그래피(공통) - order.html 기준 =================== */
+      /* =================== 타이포그래피(공통) =================== */
       :root {
         scrollbar-gutter: stable;
         --font-sans: system-ui, -apple-system, "Noto Sans KR", "Malgun Gothic",
           "Segoe UI", Roboto, "Helvetica Neue", Arial,
           "Apple SD Gothic Neo", "Apple Color Emoji", "Segoe UI Emoji";
+        --brand: #111827;
+        --border: #e5e7eb;
       }
 
       html {
@@ -47,70 +49,104 @@
         padding: 0;
         overflow: hidden;
         clip: rect(0 0 0 0);
-        border: 0;
+        border: 0
       }
 
-      /* =================== 공통 버튼 스타일 (order.html 통일) =================== */
-      .cm-btn {
-        appearance: none;
-        border: 1px solid #e5e7eb;
+      /* =================== 버튼 =================== */
+      .btn {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
         background: #fff;
-        color: #111827;
-        padding: 8px 14px;
-        border-radius: 12px;
-        font-weight: 600;
-        line-height: 1;
         cursor: pointer;
+        line-height: 1;
+        font-weight: 600;
         transition: background .15s, border-color .15s, opacity .15s, box-shadow .15s;
         min-height: 36px;
-        min-width: 84px;
-        white-space: nowrap;
+        white-space: nowrap
       }
 
-      .cm-btn:hover {
-        background: #f3f4f6;
+      .btn:hover {
+        background: #f3f4f6
       }
 
-      .cm-btn:active {
-        opacity: .95;
+      .btn:active {
+        opacity: .95
       }
 
-      .cm-btn:focus-visible {
+      .btn:focus-visible {
         outline: 0;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .15)
       }
 
-      .cm-btn[disabled] {
+      .btn[disabled] {
         opacity: .6;
-        cursor: not-allowed;
+        cursor: not-allowed
+      }
+
+      .btn.primary {
+        background: #111827;
+        color: #fff;
+        border-color: #111827
+      }
+
+      .btn.primary:hover {
+        opacity: .92
+      }
+
+      .btn.primary:active {
+        opacity: .88
+      }
+
+      .cm-btn {
+        all: unset
+      }
+
+      .cm-btn,
+      .cm-btn--primary {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #fff;
+        cursor: pointer;
+        line-height: 1;
+        font-weight: 600;
+        display: inline-block
       }
 
       .cm-btn--primary {
         background: #111827;
         color: #fff;
-        border-color: #111827;
-      }
-
-      .cm-btn--primary:hover {
-        opacity: .92;
-      }
-
-      .cm-btn--primary:active {
-        opacity: .88;
+        border-color: #111827
       }
 
       /* =================== activity 레이아웃 =================== */
       .mypage-body {
         max-width: 900px;
-        margin: 0 auto;
+        margin: 0 auto
+      }
+
+      .page-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px
+      }
+
+      .page-title {
+        font-size: 20px;
+        font-weight: 800 !important;
+        margin: 0;
+        color: #111827;
+        font-family: var(--font-sans)
       }
 
       .pill-tabs {
         display: inline-flex;
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         border-radius: 9999px;
         overflow: hidden;
-        background: #fff;
+        background: #fff
       }
 
       .pill-tabs button {
@@ -118,22 +154,22 @@
         background: #fff;
         padding: 10px 18px;
         cursor: pointer;
-        font-weight: 700;
+        font-weight: 700
       }
 
       .pill-tabs button:hover {
-        background: #e8f0ff;
+        background: #e8f0ff
       }
 
       .pill-tabs button.is-active {
         background: #2563eb;
-        color: #fff;
+        color: #fff
       }
 
       .list-wrap {
         margin-top: 16px;
         display: grid;
-        gap: 14px;
+        gap: 14px
       }
 
       .card {
@@ -142,9 +178,9 @@
         gap: 16px;
         align-items: start;
         background: #fff;
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 14px 16px;
+        padding: 14px 16px
       }
 
       .thumb {
@@ -152,52 +188,46 @@
         height: 88px;
         border-radius: 10px;
         object-fit: cover;
-        background: #f3f4f6;
+        background: #f3f4f6
       }
 
       .title {
-        font-weight: 800;
+        font-weight: 800
       }
 
       .meta {
         color: #6b7280;
         font-size: 13px;
-        margin-top: 2px;
-      }
-
-      .rating {
-        font-weight: 700;
-        color: #2563eb;
-        margin-left: 6px;
+        margin-top: 2px
       }
 
       .content {
         margin-top: 8px;
         line-height: 1.55;
-        white-space: pre-wrap;
+        white-space: pre-wrap
       }
 
       .actions a,
       .actions button {
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 12px;
         background: #fff;
-        cursor: pointer;
+        cursor: pointer
       }
 
       .actions a:hover,
       .actions button:hover {
-        background: #f3f7ff;
+        background: #f3f7ff
       }
 
       .empty {
         padding: 36px 12px;
         text-align: center;
         color: #9ca3af;
-        border: 1px dashed #e5e7eb;
+        border: 1px dashed var(--border);
         border-radius: 12px;
-        background: #fafafa;
+        background: #fafafa
       }
 
       /* ====== 페이저 ====== */
@@ -206,25 +236,20 @@
         gap: 6px;
         align-items: center;
         justify-content: center;
-        margin: 16px 0;
+        margin: 16px 0
       }
 
-      .pager--right {
-        justify-content: flex-end;
-      }
-
-      /* ★ 오른쪽 정렬 */
       .pager .page-btn {
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         background: #fff;
         padding: 6px 10px;
         border-radius: 8px;
-        cursor: pointer;
+        cursor: pointer
       }
 
       .pager .page-btn[aria-current="page"] {
         background: #2563eb;
-        color: #fff;
+        color: #fff
       }
 
       /* =================== 모달 (amodal) =================== */
@@ -234,17 +259,17 @@
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 2000;
+        z-index: 2000
       }
 
       .amodal.is-open {
-        display: flex;
+        display: flex
       }
 
       .amodal__backdrop {
         position: absolute;
         inset: 0;
-        background: rgba(0, 0, 0, .45);
+        background: rgba(0, 0, 0, .45)
       }
 
       .amodal__box {
@@ -254,14 +279,14 @@
         border-radius: 12px;
         box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
         padding: 16px;
-        z-index: 1;
+        z-index: 1
       }
 
       .amodal__head {
         display: flex;
         gap: 12px;
         align-items: center;
-        margin-bottom: 10px;
+        margin-bottom: 10px
       }
 
       .amodal__thumb {
@@ -270,30 +295,43 @@
         border-radius: 10px;
         overflow: hidden;
         background: #f3f4f6;
-        flex: 0 0 72px;
+        flex: 0 0 72px
       }
 
       .amodal__thumb img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        display: block;
+        display: block
       }
 
       .amodal__title {
         font-weight: 800;
-        line-height: 1.3;
+        line-height: 1.3
       }
 
       .amodal__body {
-        margin-top: 8px;
+        margin-top: 8px
       }
 
       .amodal__actions {
         display: flex;
         gap: 8px;
         justify-content: flex-end;
-        margin-top: 12px;
+        margin-top: 12px
+      }
+
+      .amodal__actions .cm-btn {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #fff
+      }
+
+      .amodal__actions .cm-btn.cm-btn--primary {
+        background: #111827;
+        color: #fff;
+        border-color: #111827
       }
 
       /* === 사이드박스/그리드 레이아웃 === */
@@ -301,31 +339,30 @@
         display: grid;
         grid-template-columns: 260px minmax(0, 1fr);
         gap: 24px;
-        align-items: start;
+        align-items: start
       }
 
       .mp-col-left {
         position: sticky;
         top: 24px;
         align-self: start;
-        z-index: 1;
+        z-index: 1
       }
 
       .mp-col-right {
-        min-width: 0;
+        min-width: 0
       }
 
-      /* 사이드박스 내부 스타일 */
       .mp-sidebox__title {
         font-size: 20px;
         font-weight: 800;
-        margin: 0 0 12px;
+        margin: 0 0 12px
       }
 
       .mp-sidebox__nav {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 6px
       }
 
       .mp-sidebox__link {
@@ -334,29 +371,62 @@
         border-radius: 10px;
         text-decoration: none;
         color: #111827;
-        border: 1px solid #e5e7eb;
-        background: #fff;
+        border: 1px solid var(--border);
+        background: #fff
       }
 
       .mp-sidebox__link:hover {
-        background: #f3f7ff;
+        background: #f3f7ff
       }
 
       .mp-sidebox__link.is-active {
         background: #111827;
         color: #fff;
-        border-color: #111827;
+        border-color: #111827
       }
 
-      /* 모바일 대응 */
+      /* 모바일 */
       @media (max-width:860px) {
         .mp-grid {
-          grid-template-columns: 1fr;
+          grid-template-columns: 1fr
         }
 
         .mp-col-left {
-          position: static;
+          position: static
         }
+
+        .card {
+          grid-template-columns: 72px 1fr
+        }
+      }
+
+      /* ======= 평점 막대 공통(UI 통일) ======= */
+      .rating-bars {
+        display: inline-flex;
+        gap: 6px;
+        vertical-align: middle
+      }
+
+      .rating-bars .cell {
+        width: 14px;
+        height: 10px;
+        border-radius: 3px;
+        background: #e5e7eb
+      }
+
+      .rating-bars .cell.filled {
+        background: var(--brand)
+      }
+
+      /* 입력 전용 인터랙션(수정 모달용) */
+      .rating-input .cell {
+        cursor: pointer;
+        outline: 0
+      }
+
+      .rating-input .cell:focus-visible {
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .18);
+        border-radius: 4px
       }
     </style>
 
@@ -369,7 +439,10 @@
         <div class="mp-col-right">
           <section class="mypage-body" role="region" aria-labelledby="pageTitle">
             <h1 id="pageTitle" class="sr-only">마이페이지 - 활동내역</h1>
-            <h2 style="font-size:20px;font-weight:800;margin-bottom:12px">활동내역</h2>
+
+            <div class="page-head">
+              <h2 class="page-title">활동내역</h2>
+            </div>
 
             <!-- 탭 -->
             <div class="pill-tabs" role="tablist" aria-label="활동 분류">
@@ -382,13 +455,12 @@
             <!-- 탭패널: 리뷰 -->
             <div id="panel-reviews" role="tabpanel" tabindex="0" aria-labelledby="tab-reviews">
               <div id="list" class="list-wrap" aria-live="polite"></div>
-              <!-- ★ 상태 텍스트 제거하고 오른쪽 정렬만 -->
               <nav id="pager" class="pager" aria-label="페이지네이션" hidden>
                 <div id="pagerBtns"></div>
               </nav>
             </div>
 
-            <!-- 탭패널: 공감(초기 비표시) -->
+            <!-- 탭패널: 공감 -->
             <div id="panel-likes" role="tabpanel" tabindex="0" aria-labelledby="tab-likes" hidden></div>
           </section>
 
@@ -404,8 +476,17 @@
                 </div>
               </div>
               <div class="amodal__body">
+                <!--  평점 입력 (막대 5칸, 라디오 접근성) -->
+                <div class="rating-edit" style="margin-bottom:10px;">
+                  <label class="rating-label" for="emRating"
+                    style="display:block;font-weight:700;margin-bottom:6px;">평점</label>
+                  <div id="emRating" class="rating-bars rating-input" role="radiogroup" aria-label="평점 선택 (1~5점)">
+                    <!-- JS에서 5칸 렌더 -->
+                  </div>
+                </div>
+
                 <textarea id="emContent" rows="6"
-                  style="width:100%; border:1px solid #e5e7eb; border-radius:10px; padding:10px; resize:none"
+                  style="width:100%; border:1px solid var(--border); border-radius:10px; padding:10px; resize:none"
                   placeholder="리뷰 내용을 입력하세요"></textarea>
               </div>
               <div class="amodal__actions">
@@ -431,7 +512,7 @@
       </div>
     </section>
 
-    <!-- ===== 스크립트: 목록/탭/페이지네이션 (1) ===== -->
+    <!-- ===== 스크립트: 목록/탭/페이지네이션 ===== -->
     <script>
       (function () {
         const listEl = document.getElementById('list');
@@ -441,6 +522,13 @@
 
         // --- 상태
         const state = { tab: 'reviews', page: 0, size: 10, totalPages: 0 };
+
+        //  막대 평점 HTML 생성
+        function renderRatingBars(rating) {
+          const r = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+          const cells = Array.from({ length: 5 }, (_, i) => `<div class="cell${i < r ? ' filled' : ''}"></div>`).join('');
+          return `<span class="rating-bars" aria-label="평점 ${r}점">${cells}</span>`;
+        }
 
         function getInitialTab() {
           const params = new URLSearchParams(location.search);
@@ -511,15 +599,17 @@
               <img class="thumb" src="${esc(img)}" alt="">
               <div>
                 <div class="title"><a href="${href}">${esc(name)}</a></div>
-                <div class="meta">${esc(brand)} <span class="rating">★ ${rating}</span> <span style="margin-left:6px">${esc(date)}</span></div>
+                <div class="meta">
+                  ${esc(brand)} ${renderRatingBars(rating)}
+                  <span style="margin-left:6px">${esc(date)}</span>
+                </div>
                 <div class="content">${content}</div>
               </div>
               <div class="actions">
-                <a class="btn-edit" href="/review/${it.reviewId}/edit">수정</a>
-                <a class="btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
+                <a class="btn btn-edit" href="/review/${it.reviewId}/edit">수정</a>
+                <a class="btn btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
               </div>
-            </article>
-          `;
+            </article>`;
           }).join('');
         }
 
@@ -542,14 +632,16 @@
               <img class="thumb" src="${esc(img)}" alt="">
               <div>
                 <div class="title"><a href="${href}">${esc(name)}</a></div>
-                <div class="meta">${esc(brand)}<span class="rating">★ ${rating}</span><span style="margin-left:6px">${esc(date)}</span></div>
+                <div class="meta">
+                  ${esc(brand)} ${renderRatingBars(rating)}
+                  <span style="margin-left:6px">${esc(date)}</span>
+                </div>
                 <div class="content">${content}</div>
               </div>
               <div class="actions">
-                <button type="button" class="btn-unlike" data-id="${it.reviewId}">공감 취소</button>
+                <button type="button" class="btn btn-primary btn-unlike" data-id="${it.reviewId}">공감 취소</button>
               </div>
-            </article>
-          `;
+            </article>`;
           }).join('');
 
           // 공감 취소 이벤트 바인딩
@@ -560,7 +652,7 @@
                 const res = await fetch(`/mypage/likes/${id}`, { method: 'DELETE', credentials: 'same-origin' });
                 if (!res.ok) throw new Error();
                 fetchAndRender();
-              } catch (e) { alert('공감 취소 중 오류가 발생했습니다.'); }
+              } catch { alert('공감 취소 중 오류가 발생했습니다.'); }
             });
           });
         }
@@ -619,186 +711,6 @@
         setActiveTab(getInitialTab());
         fetchAndRender();
 
-        // 다른 스크립트에서 재호출 가능하도록 공개
-        window.fetchAndRender = fetchAndRender;
-      })();
-    </script>
-
-    <!-- ===== 스크립트: 목록/탭/페이지네이션 (2) ===== -->
-    <script>
-      (function () {
-        const listEl = document.getElementById('list');
-        const pagerEl = document.getElementById('pager');
-        const pagerBtns = document.getElementById('pagerBtns');
-        const tabs = document.querySelectorAll('.pill-tabs button');
-
-        const state = { tab: 'reviews', page: 0, size: 10, totalPages: 0 };
-
-        function getInitialTab() {
-          const params = new URLSearchParams(location.search);
-          const p = (params.get('tab') || '').toLowerCase();
-          return (p === 'likes' || p === 'reviews') ? p : 'reviews';
-        }
-
-        function setActiveTab(tab) {
-          state.tab = (tab === 'likes') ? 'likes' : 'reviews';
-          tabs.forEach(b => {
-            const on = (b.dataset.tab === state.tab);
-            b.classList.toggle('is-active', on);
-            b.setAttribute('aria-selected', on ? 'true' : 'false');
-          });
-          const url = new URL(location.href);
-          url.searchParams.set('tab', state.tab);
-          history.replaceState({}, '', url);
-        }
-
-        function fetchAndRender() {
-          const url = state.tab === 'reviews'
-            ? `/mypage/reviews?page=${state.page}&size=${state.size}`
-            : `/mypage/likes?page=${state.page}&size=${state.size}`;
-
-          fetch(url)
-            .then(r => {
-              const ct = r.headers.get('content-type') || '';
-              if (!ct.includes('application/json')) throw new Error('NOT_JSON');
-              return r.json();
-            })
-            .then(data => {
-              state.totalPages = data.totalPages || 0;
-              if (state.tab === 'reviews') renderReviewCards(data.content || []);
-              else renderLikeCards(data.content || []);
-              renderPager(data);
-            })
-            .catch(err => {
-              console.error(err);
-              listEl.innerHTML = `<div class="empty">목록을 불러오지 못했습니다.</div>`;
-              pagerEl.hidden = true;
-            });
-        }
-
-        tabs.forEach(btn => {
-          btn.addEventListener('click', () => {
-            state.page = 0;
-            setActiveTab(btn.dataset.tab);
-            fetchAndRender();
-          });
-        });
-
-        function renderReviewCards(items) {
-          if (!items.length) {
-            listEl.innerHTML = `<div class="empty">작성한 리뷰가 없습니다.</div>`;
-            return;
-          }
-          listEl.innerHTML = items.map(it => {
-            const href = it.productId ? (`/main/content/${it.productId}`) : '#';
-            const img = it.imageUrl;
-            const name = it.productName || '상품명';
-            const brand = it.brandName || '브랜드';
-            const date = it.createDate || '';
-            const rating = (it.rating ?? 0);
-            const content = esc(it.content || '');
-            return `
-            <article class="card" data-id="${it.reviewId}">
-              <img class="thumb" src="${esc(img)}" alt="">
-              <div>
-                <div class="title"><a href="${href}">${esc(name)}</a></div>
-                <div class="meta">${esc(brand)} <span class="rating">★ ${rating}</span> <span style="margin-left:6px">${esc(date)}</span></div>
-                <div class="content">${content}</div>
-              </div>
-              <div class="actions">
-                <a class="btn-edit" href="/review/${it.reviewId}/edit">수정</a>
-                <a class="btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
-              </div>
-            </article>
-          `;
-          }).join('');
-        }
-
-        function renderLikeCards(items) {
-          if (!items.length) {
-            listEl.innerHTML = `<div class="empty">공감한 리뷰가 없습니다.</div>`;
-            return;
-          }
-          listEl.innerHTML = items.map(it => {
-            const href = it.productId ? (`/main/content/${it.productId}`) : '#';
-            const img = it.imageUrl;
-            const name = it.productName || '상품명';
-            const brand = it.brandName || '브랜드';
-            const rating = (it.rating ?? 0);
-            const date = it.createDate || '';
-            const content = esc(it.content || '');
-            return `
-            <article class="card" data-id="${it.reviewId}">
-              <img class="thumb" src="${esc(img)}" alt="">
-              <div>
-                <div class="title"><a href="${href}">${esc(name)}</a></div>
-                <div class="meta">${esc(brand)}<span class="rating">★ ${rating}</span><span style="margin-left:6px">${esc(date)}</span></div>
-                <div class="content">${content}</div>
-              </div>
-              <div class="actions">
-                <button type="button" class="btn-unlike" data-id="${it.reviewId}">공감 취소</button>
-              </div>
-            </article>
-          `;
-          }).join('');
-
-          listEl.querySelectorAll('.btn-unlike').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              const id = btn.dataset.id;
-              try {
-                const res = await fetch(`/mypage/likes/${id}`, { method: 'DELETE', credentials: 'same-origin' });
-                if (!res.ok) throw new Error();
-                fetchAndRender();
-              } catch (e) { alert('공감 취소 중 오류가 발생했습니다.'); }
-            });
-          });
-        }
-
-        function renderPager(data) {
-          const total = Math.max(0, Number(data.totalPages) || 0);
-          const page = Math.min(Math.max(0, Number(data.page) || 0), Math.max(0, total - 1));
-          if (total <= 1) { pagerEl.hidden = true; return; }
-          pagerEl.hidden = false;
-
-          const isFirst = page === 0;
-          const isLast = page === total - 1;
-
-          const pagesHtml = Array.from({ length: total }, (_, i) => {
-            const currentAttr = i === page ? ' aria-current="page"' : '';
-            return `<button type="button" class="page-btn"${currentAttr} data-page="${i}">${i + 1}</button>`;
-          }).join('');
-
-          pagerBtns.innerHTML = `
-          <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
-          <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
-          ${pagesHtml}
-          <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="다음 페이지">›</button>
-          <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
-        `;
-
-          pagerBtns.querySelectorAll('.page-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              if (btn.disabled) return;
-              const nav = btn.dataset.nav;
-              let next = page;
-              if (nav === 'first') next = 0;
-              else if (nav === 'prev') next = Math.max(0, page - 1);
-              else if (nav === 'next') next = Math.min(total - 1, page + 1);
-              else if (nav === 'last') next = total - 1;
-              else if (btn.dataset.page != null) next = Number(btn.dataset.page);
-              if (next === page) return;
-              state.page = next;
-              fetchAndRender();
-            });
-          });
-        }
-
-        function esc(s) {
-          return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-        }
-
-        setActiveTab(getInitialTab());
-        fetchAndRender();
         window.fetchAndRender = fetchAndRender;
       })();
     </script>
@@ -829,6 +741,46 @@
         const emBrand = document.getElementById('emBrand');
         const emContent = document.getElementById('emContent');
         const emSave = document.getElementById('emSave');
+
+        /*  수정 모달 평점 입력 제어 */
+        const emRating = document.getElementById('emRating');
+        let currentRating = 0;
+
+        function drawEditRating(r) {
+          currentRating = Math.max(0, Math.min(5, Math.round(Number(r) || 0)));
+          emRating.innerHTML = Array.from({ length: 5 }, (_, i) => {
+            const val = i + 1;
+            const filled = val <= currentRating ? ' filled' : '';
+            const checked = val === currentRating ? 'true' : 'false';
+            const tab = val === (currentRating || 1) ? '0' : '-1';
+            return `<div class="cell${filled}" role="radio" aria-checked="${checked}" aria-label="${val}점" tabindex="${tab}" data-val="${val}"></div>`;
+          }).join('');
+        }
+        function bindEditRatingHandlers() {
+          emRating.addEventListener('click', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+            drawEditRating(Number(cell.dataset.val) || 0);
+          });
+          emRating.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End', ' ', 'Enter'].includes(key)) return;
+            e.preventDefault();
+            let next = currentRating || 1;
+            if (key === 'ArrowLeft') next = Math.max(1, next - 1);
+            if (key === 'ArrowRight') next = Math.min(5, next + 1);
+            if (key === 'Home') next = 1;
+            if (key === 'End') next = 5;
+            if (key === ' ' || key === 'Enter') {
+              const focused = document.activeElement?.dataset?.val;
+              if (focused) next = Number(focused);
+            }
+            drawEditRating(next);
+            emRating.querySelector(`.cell[data-val="${next}"]`)?.focus();
+          });
+        }
+        bindEditRatingHandlers();
+
         let currentReviewId = null;
 
         listEl.addEventListener('click', async (e) => {
@@ -861,6 +813,7 @@
             editTitle.textContent = d.productName || '상품명';
             emBrand.textContent = d.brandName || '';
             emContent.value = d.content || '';
+            drawEditRating(d.rating || 0);          /*  평점 초기값 반영 */
             currentReviewId = reviewId;
             openModal(em);
           } catch (err) {
@@ -879,7 +832,7 @@
             const res = await fetch(`/mypage/reviews/${currentReviewId}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', ...(token ? { [header]: token } : {}) },
-              body: JSON.stringify({ content })
+              body: JSON.stringify({ content, rating: currentRating })   /*  평점 포함 저장 */
             });
             const d = await res.json().catch(() => ({}));
             if (!res.ok || !d.ok) { throw new Error(d.message || '수정 실패'); }

@@ -62,7 +62,6 @@
     /* ---- 간단 확인/결과 모달 (cm-modal) ---- */
     .cm-modal__content {
       position: relative;
-      /* X 버튼 공간 */
       width: min(92vw, 720px);
       background: #fff;
       border-radius: 12px;
@@ -405,8 +404,6 @@
       font-size: 12px;
       margin-left: 8px;
     }
-
-    /* ← 추가 */
 
     .order-card.is-canceled {
       opacity: .9;
@@ -845,7 +842,7 @@
                 <a class="more js-order-frag" th:href="@{/mypage/order/{id}(id=${o.orderId})}"
                   th:attr="data-order-id=${o.orderId}">&gt;</a>
 
-                <!-- 환불 모달용 숨김 데이터 (수정: data-img를 @{}로 절대/컨텍스트 경로 구성) -->
+                <!-- 환불 모달용 숨김 데이터 -->
                 <div class="refund-items-src" th:attr="data-order-id=${o.orderId}" hidden>
                   <ul>
                     <li th:each="d : ${o.details}" th:with="imgUrl=${#strings.isEmpty(d.product.imgName)
@@ -990,6 +987,7 @@
       </div>
     </div>
   </section>
+
   <script>
     'use strict';
 
@@ -1003,8 +1001,15 @@
 
     /* =================== scroll lock / modal 시작 =================== */
     function scrollbarWidth() { return window.innerWidth - document.documentElement.clientWidth; }
-    function lockScroll() { const sw = scrollbarWidth(); if (sw > 0) document.documentElement.style.setProperty('--sbw', sw + 'px'); document.body.classList.add('lock-scroll'); }
-    function unlockScroll() { document.body.classList.remove('lock-scroll'); document.documentElement.style.removeProperty('--sbw'); }
+    function lockScroll() {
+      const sw = scrollbarWidth();
+      if (sw > 0) document.documentElement.style.setProperty('--sbw', sw + 'px');
+      document.body.classList.add('lock-scroll');
+    }
+    function unlockScroll() {
+      document.body.classList.remove('lock-scroll');
+      document.documentElement.style.removeProperty('--sbw');
+    }
     function openModal(el) { if (!el) return; el.classList.add('is-open'); lockScroll(); }
     function closeModal(el) {
       if (!el) return;
@@ -1051,7 +1056,6 @@
           const card = s.closest('.order-card'); const del = (card?.dataset.delivery || '').trim().toUpperCase();
           step = (del === 'DELIVERED') ? 3 : (del === 'SHIPPING' ? 2 : 1);
           s.dataset.step = String(step);
-
         }
         renderStepper(s, step);
       });
@@ -1408,12 +1412,20 @@
 
           const payHtml = renderPayments(rf?.payments ?? allPays);
           const footHtml = renderFoot(rf, fallback);
-          const reasonHtml = `
-            <div class="rrm-reasonwrap">
-              <div class="rrm-reasonarea" aria-label="환불 사유" role="textbox">
-                ${esc(rf?.reason || '환불 사유를 입력하세요')}
-              </div>
-            </div>`;
+
+          // 거절 사유 우선순위 추출
+          const rejReason = (rf?.rejectionReason
+            ?? data?.header?.rejectionReason
+            ?? data?.summary?.rejectionReason
+            ?? rf?.reason
+            ?? ''
+          ).toString().trim();
+
+          const reasonHtml = rejReason
+            ? `<div class="rrm-reasonwrap">
+                 <div class="rrm-reasonarea" aria-label="거절 사유" role="textbox">${esc(rejReason)}</div>
+               </div>`
+            : '';
 
           return `
             <section class="rrm-card">
