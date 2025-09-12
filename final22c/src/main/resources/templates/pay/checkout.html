@@ -177,7 +177,7 @@
         <div class="summary-row"><span class="muted">사용 마일리지</span><span id="usedPointLabel">0원</span></div>
         <hr style="border:none;border-top:1px solid #eee;margin:10px 0">
         <div class="summary-row" style="font-weight:800"><span>결제금액</span><span id="payTotalLabel" th:text="${#numbers.formatInteger(summary.grandTotal,0)}+'원'"></span></div>
-        <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(summary.grandTotal*0.05,0)}+'원'"></span></div>
+        <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(summary.subtotal*0.05,0)}+'원'"></span></div>
 
         <input type="hidden" id="mode" value="cart">
         <button id="payBtn" th:disabled="${defaultAddr == null}" th:data-has-addr="${defaultAddr != null}" class="btn" type="button">결제하기</button>
@@ -190,7 +190,7 @@
         <div class="summary-row"><span class="muted">사용 마일리지</span><span id="usedPointLabel">0원</span></div>
         <hr style="border:none;border-top:1px solid #eee;margin:10px 0">
         <div class="summary-row" style="font-weight:800"><span>결제금액</span><span id="payTotalLabel" th:text="${#numbers.formatInteger(payTotalSingle,0)}+'원'"></span></div>
-        <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(payTotalSingle*0.05,0)}+'원'"></span></div>
+        <div class="summary-row" style="font-weight:800"><span>적립마일리지</span><span id="rewardLabel" th:text="${#numbers.formatInteger(lineTotal*0.05,0)}+'원'"></span></div>
 
         <input type="hidden" id="mode" value="single">
         <input type="hidden" id="product_id" th:value="${product.id}">
@@ -376,7 +376,7 @@
         $("#usedPointLabel").text(use.toLocaleString('ko-KR') + '원');
         const pay = Math.max(0, baseSum - use);
         $("#payTotalLabel").text(fmt(pay));
-        $("#rewardLabel").text(fmt(Math.trunc(pay * 0.05)));
+        $("#rewardLabel").text(fmt(Math.trunc(subtotal * 0.05)));
         $("#_usedPoint").val(use);
         $("#_pay").val(pay);
       }
