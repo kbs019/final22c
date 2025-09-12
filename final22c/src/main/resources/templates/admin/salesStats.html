@@ -107,6 +107,21 @@
         .hint-full {
             grid-column: 1 / -1;
         }
+
+        /* 날짜 부분만 작게 */
+        .label-date {
+            font-size: 0.8em;
+            /* 부모 글자보다 작게 */
+            color: #666;
+            /* 옅은 회색 */
+        }
+
+        /* 합계 값 오른쪽 정렬 */
+        #revSum,
+        #cogsSum,
+        #profitSum {
+            text-align: right;
+        }
     </style>
 </th:block>
 
@@ -164,20 +179,20 @@
     <div class="cards mb-3">
         <div class="card">
             <div class="card-body">
-                <div>매출액</div>
-                <div id="revSum" class="h2">0</div>
+                <div id="revLabel">매출액 <span class="label-date">(yyyy-MM-dd)</span></div>
+                <div id="revSum" class="h2 text-end">0</div>
             </div>
         </div>
         <div class="card">
             <div class="card-body">
-                <div>매입액</div>
-                <div id="cogsSum" class="h2">0</div>
+                <div id="cogsLabel">매입액 <span class="label-date">(yyyy-MM-dd)</span></div>
+                <div id="cogsSum" class="h2 text-end">0</div>
             </div>
         </div>
         <div class="card">
             <div class="card-body">
-                <div>순이익</div>
-                <div id="profitSum" class="h2">0</div>
+                <div id="profitLabel">순이익 <span class="label-date">(yyyy-MM-dd)</span></div>
+                <div id="profitSum" class="h2 text-end">0</div>
             </div>
         </div>
         <!-- ▼ 힌트 카드(브랜드 미선택 시만 표시) -->
@@ -247,7 +262,7 @@
         // 상수
         const MAX_DAYS = 30;
 
-        const STATE = { unit: 'DAY', from: null, to: null, scope: 'ALL', _weekYm: null, mode: 'FIXED' };           // 현재 선택된 단위/조회기간 상태(전역 공유)
+        const STATE = { unit: 'DAY', from: null, to: null, scope: 'ALL', _weekYm: null, mode: 'FIXED', pivotDay: null };           // 현재 선택된 단위/조회기간 상태(전역 공유)
 
         // 기간 선택기 DOM 참조(일/월/연)
         const $day = document.getElementById('pick-day-date');          // 일간용 date input
@@ -285,6 +300,7 @@
         }
 
         function renderCardsNA() {
+            updateCardLabels();           // ← 날짜 라벨을 기본값으로 되돌림
             revSum.textContent = '—';
             cogsSum.textContent = '—';
             profitSum.textContent = '—';
@@ -358,6 +374,7 @@
         // 단위별 기간 계산(STATE 업데이트)
         function applyDayRange(d) {                     // 일간: 선택일 기준 -3~+3일
             STATE.unit = 'DAY';
+            STATE.pivotDay = d;                    // ✅ 선택한 ‘그 하루’를 상태에 저장
             STATE.from = addDays(d, -3);
             STATE.to = addDays(d, +3);
         }
@@ -576,9 +593,45 @@
             if (STATE.scope === 'BRAND') $title.textContent = '브랜드 매출 추이';
         }
 
+        // 선택됨 여부 헬퍼
+        function hasSelection() {
+            if (STATE.scope === 'BRAND') return !!selBrand.value;
+            if (STATE.scope === 'PRODUCT') return !!selProd.value;
+            return true; // ALL은 항상 선택된 것으로 간주
+        }
+
+        // 라벨명 정리
+        function updateCardLabels() {
+            const isDayFixed = (STATE.unit === 'DAY' && STATE.mode === 'FIXED' && STATE.pivotDay);
+
+            // 날짜는 "일간+고정" 이면서, ALL이거나(=전체) BRAND/PRODUCT는 실제 선택이 있을 때만 노출
+            const showDate = isDayFixed && hasSelection();
+
+            document.getElementById('revLabel').innerHTML = showDate ? `매출액 <span class="label-date">(${STATE.pivotDay})</span>` : '매출액';
+            document.getElementById('cogsLabel').innerHTML = showDate ? `매입액 <span class="label-date">(${STATE.pivotDay})</span>` : '매입액';
+            document.getElementById('profitLabel').innerHTML = showDate ? `순이익 <span class="label-date">(${STATE.pivotDay})</span>` : '순이익';
+        }
+
         // 합계 카드
         function renderCards(s) {
+            updateCardLabels(); // ← 라벨 먼저 정리
+
             const sum = arr => arr.reduce((acc, v) => acc + (typeof v === 'number' ? v : 0), 0);
+
+            // ✅ 일간(FIXED)일 때는 pivotDay(선택한 하루)만 집계
+            if (STATE.unit === 'DAY' && STATE.mode === 'FIXED' && STATE.pivotDay) {
+                const idx = s.labels.indexOf(STATE.pivotDay);   // normalizeSeries가 만든 라벨 배열에서 해당 날짜 위치
+                const r = idx >= 0 && typeof s.revenue[idx] === 'number' ? s.revenue[idx] : 0;
+                const c = idx >= 0 && typeof s.cogs[idx] === 'number' ? s.cogs[idx] : 0;
+                const p = idx >= 0 && typeof s.profit[idx] === 'number' ? s.profit[idx] : 0;
+
+                revSum.textContent = KRW(r);
+                cogsSum.textContent = KRW(c);
+                profitSum.textContent = KRW(p);
+                return;
+            }
+
+            // 그 외(주간/월간/연간, 혹은 CUSTOM 범위)는 현재처럼 구간 합계
             revSum.textContent = KRW(sum(s.revenue));
             cogsSum.textContent = KRW(sum(s.cogs));
             profitSum.textContent = KRW(sum(s.profit));
