@@ -1,2071 +1,2620 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-  xmlns:sec="https://www.thymeleaf.org/extras/spring-security" layout:decorate="~{layout/layout}">
+	xmlns:sec="https://www.thymeleaf.org/extras/spring-security" layout:decorate="~{layout/layout}">
 
 <head>
-  <title>상품 상세</title>
-  <!-- 개인적으로 넣을 css 부분 추가 시작 -->
-  <th:block layout:fragment="css">
-    <link rel="stylesheet" href="/css/content.css">
+	<title>상품 상세</title>
+	<!-- 개인적으로 넣을 css 부분 추가 시작 -->
+	<th:block layout:fragment="css">
+		<link rel="stylesheet" href="/css/content.css">
 
-    <!-- 필요 클래스만 최소치로 보강(원하시면 content.css로 이동하세요) -->
-    <style>
-      /* ai 쪽 css */
-      .ai-enhanced-description {
-        background: linear-gradient(135deg, #f8f9ff 0%, #fff5f5 100%);
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 20px;
-      }
+		<!-- 필요 클래스만 최소치로 보강(원하시면 content.css로 이동하세요) -->
+		<style>
+			/* ai 쪽 css */
+			.ai-enhanced-description {
+				background: linear-gradient(135deg, #f8f9ff 0%, #fff5f5 100%);
+				border-radius: 12px;
+				padding: 20px;
+				margin-top: 20px;
+			}
 
-      .ai-enhanced-description h3 {
-        color: #2d3748;
-        font-weight: 600;
-      }
+			.ai-enhanced-description h3 {
+				color: #2d3748;
+				font-weight: 600;
+			}
 
-      .ai-content {
-        line-height: 1.6;
-        color: #4a5568;
-        font-size: 14px;
-      }
-            
-	  .desc .desc-title { margin: 1rem 0 .5rem; font-weight: 600; font-size: 1.05rem; }
-	  .desc .desc-list  { margin: 0 0 1rem 1.2rem; line-height: 1.6; }
-	  .desc .desc-list li { margin: .35rem 0; }
-	  .desc .desc-block + .desc-block { margin-top: .5rem; } /* 블록 간 간격 */
+			.ai-content {
+				line-height: 1.6;
+				color: #4a5568;
+				font-size: 14px;
+			}
 
-      /* 우측 날짜/액션 컬럼: 줄바꿈 최소화용 폭 */
-      .review-right {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        min-width: 116px;
-      }
+			.desc .desc-title {
+				margin: 1rem 0 .5rem;
+				font-weight: 600;
+				font-size: 1.05rem;
+			}
 
-      /* 액션 공통(크기/간격) - 요청대로 작게(11px) */
-      .review-actions {
-        line-height: 1;
-      }
+			.desc .desc-list {
+				margin: 0 0 1rem 1.2rem;
+				line-height: 1.6;
+			}
 
-      .review-actions .ra-link,
-      .review-actions .ra-box {
-        font-size: 11px;
-        margin-left: 8px;
-      }
+			.desc .desc-list li {
+				margin: .35rem 0;
+			}
 
-      /* 언더라인 호버형(흑/백/회색만) */
-      .ra-link {
-        appearance: none;
-        background: none;
-        border: 0;
-        padding: 0;
-        color: #666;
-        text-decoration: none;
-        cursor: pointer;
-        background-image: linear-gradient(currentColor, currentColor);
-        background-position: 0 100%;
-        background-size: 0% 1px;
-        background-repeat: no-repeat;
-        transition: background-size .18s ease, color .18s ease;
-      }
+			.desc .desc-block+.desc-block {
+				margin-top: .5rem;
+			}
 
-      .ra-link:hover {
-        color: #111;
-        background-size: 100% 1px;
-      }
+			/* 블록 간 간격 */
 
-      .ra-danger {
-        color: #b55;
-      }
+			/* 우측 날짜/액션 컬럼: 줄바꿈 최소화용 폭 */
+			.review-right {
+				display: flex;
+				flex-direction: column;
+				align-items: flex-end;
+				min-width: 116px;
+			}
 
-      .ra-danger:hover {
-        color: #922;
-        background-size: 100% 1px;
-      }
+			/* 액션 공통(크기/간격) - 요청대로 작게(11px) */
+			.review-actions {
+				line-height: 1;
+			}
 
-      /* 좋아요 UI(무채색) */
-      .like-wrap {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        color: #666;
-      }
+			.review-actions .ra-link,
+			.review-actions .ra-box {
+				font-size: 11px;
+				margin-left: 8px;
+			}
 
-      .like-wrap .btn-like {
-        appearance: none;
-        border: 0;
-        background: none;
-        padding: 0 2px;
-        cursor: pointer;
-        line-height: 1;
-        color: inherit;
-        background-image: linear-gradient(currentColor, currentColor);
-        background-position: 0 100%;
-        background-size: 0% 1px;
-        background-repeat: no-repeat;
-        transition: background-size .18s ease, color .18s ease, transform .06s ease;
-        font-size: 12px;
-      }
+			/* 언더라인 호버형(흑/백/회색만) */
+			.ra-link {
+				appearance: none;
+				background: none;
+				border: 0;
+				padding: 0;
+				color: #666;
+				text-decoration: none;
+				cursor: pointer;
+				background-image: linear-gradient(currentColor, currentColor);
+				background-position: 0 100%;
+				background-size: 0% 1px;
+				background-repeat: no-repeat;
+				transition: background-size .18s ease, color .18s ease;
+			}
 
-      .like-wrap .btn-like:hover {
-        color: #111;
-        background-size: 100% 1px;
-      }
+			.ra-link:hover {
+				color: #111;
+				background-size: 100% 1px;
+			}
 
-      .like-wrap .btn-like:active {
-        transform: scale(0.96);
-      }
+			.ra-danger {
+				color: #b55;
+			}
 
-      .like-wrap .like-count {
-        font-size: 12px;
-        color: #444;
-      }
+			.ra-danger:hover {
+				color: #922;
+				background-size: 100% 1px;
+			}
 
-      .like-wrap.is-liked {
-        color: #111;
-      }
+			/* 좋아요 UI(무채색) */
+			.like-wrap {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				color: #666;
+			}
 
-      .like-wrap.is-liked .btn-like i {
-        font-weight: 900;
-      }
+			.like-wrap .btn-like {
+				appearance: none;
+				border: 0;
+				background: none;
+				padding: 0 2px;
+				cursor: pointer;
+				line-height: 1;
+				color: inherit;
+				background-image: linear-gradient(currentColor, currentColor);
+				background-position: 0 100%;
+				background-size: 0% 1px;
+				background-repeat: no-repeat;
+				transition: background-size .18s ease, color .18s ease, transform .06s ease;
+				font-size: 12px;
+			}
 
-      /* 재고 제한 안내 문구 */
-      .stock-hint {
-        margin-top: 6px;
-        font-size: 12px;
-        color: #922;
-        /* 살짝 경고 톤 */
-      }
+			.like-wrap .btn-like:hover {
+				color: #111;
+				background-size: 100% 1px;
+			}
 
-      .stock-hint[data-pop="1"] {
-        animation: stock-pop .18s ease;
-      }
+			.like-wrap .btn-like:active {
+				transform: scale(0.96);
+			}
 
-      @keyframes stock-pop {
-        from {
-          opacity: 0;
-          transform: translateY(-2px);
-        }
+			.like-wrap .like-count {
+				font-size: 12px;
+				color: #444;
+			}
 
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
+			.like-wrap.is-liked {
+				color: #111;
+			}
 
-      /* 연관 상품 카드 */
-      .rel-card {
-        text-decoration: none;
-        color: inherit;
-      }
+			.like-wrap.is-liked .btn-like i {
+				font-weight: 900;
+			}
 
-      .rel-card:hover .rel-title {
-        text-decoration: underline;
-      }
+			/* 재고 제한 안내 문구 */
+			.stock-hint {
+				margin-top: 6px;
+				font-size: 12px;
+				color: #922;
+				/* 살짝 경고 톤 */
+			}
 
-      .rel-thumb {
-        border-radius: 10px;
-        overflow: hidden;
-        background: #f7f7f7;
-      }
+			.stock-hint[data-pop="1"] {
+				animation: stock-pop .18s ease;
+			}
 
-      .rel-thumb img {
-        object-fit: cover;
-        width: 100%;
-        height: 100%;
-      }
+			@keyframes stock-pop {
+				from {
+					opacity: 0;
+					transform: translateY(-2px);
+				}
 
-      .rel-title {
-        font-size: 0.95rem;
-        line-height: 1.2;
-        min-height: 1.2em;
-      }
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
 
-      .rel-price {
-        font-size: 0.95rem;
-      }
+			/* 연관 상품 카드 */
+			.rel-card {
+				text-decoration: none;
+				color: inherit;
+			}
 
-      .rec-carousel {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
+			.rel-card:hover .rel-title {
+				text-decoration: underline;
+			}
 
-      .rec-carousel .rec-track {
-        flex: 1 1 auto;
-      }
+			.rel-thumb {
+				border-radius: 10px;
+				overflow: hidden;
+				background: #f7f7f7;
+			}
 
-      /* 가운데 캐러셀 영역 */
-      /* 1) 양옆 < / > 버튼: 동그라미/테두리 제거 → 문자만 보이게 */
-      .rec-nav {
-        all: unset;
-        /* 버튼 기본 스타일 싹 제거 */
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 8px;
-        min-width: 24px;
-        /* 터치 영역 확보 */
-        line-height: 1;
-        font-size: 28px;
-        color: #111;
-        cursor: pointer;
-      }
+			.rel-thumb img {
+				object-fit: cover;
+				width: 100%;
+				height: 100%;
+			}
 
-      .rec-nav:hover {
-        color: #000;
-      }
+			.rel-title {
+				font-size: 0.95rem;
+				line-height: 1.2;
+				min-height: 1.2em;
+			}
 
-      .rec-nav:disabled {
-        opacity: .35;
-        cursor: not-allowed;
-      }
+			.rel-price {
+				font-size: 0.95rem;
+			}
 
-      /* 혹시 남아있는 원형/그림자 강제 제거 */
-      .rec-nav,
-      .rec-nav:hover {
-        background: none !important;
-        border: 0 !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        width: auto !important;
-        height: auto !important;
-      }
+			.rel-price .original {
+				font-size: 0.85rem;
+			}
 
-      /* 2) 카드 a:hover 밑줄 제거 (완전 비활성) */
-      a.rel-card {
-        text-decoration: none !important;
-        color: inherit;
-      }
+			.rec-carousel {
+				display: flex;
+				align-items: center;
+				gap: 16px;
+			}
 
-      a.rel-card:hover,
-      a.rel-card:focus {
-        text-decoration: none !important;
-      }
+			.rec-carousel .rec-track {
+				flex: 1 1 auto;
+			}
 
-      .rel-card .rel-title {
-        text-decoration: none !important;
-      }
+			/* 가운데 캐러셀 영역 */
+			/* 1) 양옆 < / > 버튼: 동그라미/테두리 제거 → 문자만 보이게 */
+			.rec-nav {
+				all: unset;
+				/* 버튼 기본 스타일 싹 제거 */
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				padding: 0 8px;
+				min-width: 24px;
+				/* 터치 영역 확보 */
+				line-height: 1;
+				font-size: 28px;
+				color: #111;
+				cursor: pointer;
+			}
 
-      /* 3) 캐러셀 전환 시 이미지 ‘확대’ 효과 제거 */
-      .rec-carousel .carousel-item .rel-thumb img {
-        transform: none !important;
-        transition: none !important;
-        animation: none !important;
-      }
+			.rec-nav:hover {
+				color: #000;
+			}
 
-      .rec-carousel .carousel-item.active .rel-thumb img {
-        transform: none !important;
-      }
+			.rec-nav:disabled {
+				opacity: .35;
+				cursor: not-allowed;
+			}
 
-      /* 캐러셀 좌/우 이동 애니메이션 복구 */
-      .rec-carousel .carousel-item {
-        transition: transform .5s ease-in-out !important;
-      }
+			/* 혹시 남아있는 원형/그림자 강제 제거 */
+			.rec-nav,
+			.rec-nav:hover {
+				background: none !important;
+				border: 0 !important;
+				border-radius: 0 !important;
+				box-shadow: none !important;
+				width: auto !important;
+				height: auto !important;
+			}
 
-      /* 모션 최소화 환경 존중 */
-      @media (prefers-reduced-motion: reduce) {
-        .rec-carousel .carousel-item {
-          transition: none !important;
-        }
-      }
+			/* 2) 카드 a:hover 밑줄 제거 (완전 비활성) */
+			a.rel-card {
+				text-decoration: none !important;
+				color: inherit;
+			}
 
-      /* ── 캐러셀 인디케이터: 아래 작은 점 ─────────────────────────── */
-      .rec-carousel .carousel-indicators {
-        position: static !important;
-        /* 오버레이 말고 아래로 */
-        margin-top: 10px;
-        display: flex;
-        gap: 8px;
-        justify-content: center;
-      }
+			a.rel-card:hover,
+			a.rel-card:focus {
+				text-decoration: none !important;
+			}
 
-      .rec-carousel .carousel-indicators button {
-        width: 8px;
-        height: 8px;
-        border-radius: 9999px;
-        border: 0;
-        background: #d1d5db;
-        /* 회색 점 */
-        opacity: 1;
-        /* 부트스트랩 기본 투명도 제거 */
-      }
+			.rel-card .rel-title {
+				text-decoration: none !important;
+			}
 
-      .rec-carousel .carousel-indicators button.active {
-        background: #111;
-        /* 현재 페이지 점 */
-      }
+			/* 3) 캐러셀 전환 시 이미지 ‘확대’ 효과 제거 */
+			.rec-carousel .carousel-item .rel-thumb img {
+				transform: none !important;
+				transition: none !important;
+				animation: none !important;
+			}
 
-      .rec-carousel .carousel-indicators button:focus-visible {
-        outline: 2px solid #111;
-        outline-offset: 2px;
-      }
+			.rec-carousel .carousel-item.active .rel-thumb img {
+				transform: none !important;
+			}
 
-      /* ── 캐러셀 카드 hover 효과: 위시리스트 카드 느낌 ───────────────── */
-      .rec-carousel .rel-card {
-        display: block;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        /* 기본 테두리 */
-        border-radius: 16px;
-        padding: 12px;
-        transition: border-color .18s ease, background-color .18s ease, transform .18s ease;
-      }
+			/* 캐러셀 좌/우 이동 애니메이션 복구 */
+			.rec-carousel .carousel-item {
+				transition: transform .5s ease-in-out !important;
+			}
 
-      @media (hover:hover) and (pointer:fine) {
-        .rec-carousel .rel-card:hover {
-          border-color: #c7d2fe;
-          /* 살짝 강조 */
-          background: #f8fafc;
-          transform: translateY(-1px);
-          box-shadow: none !important;
-          /* ← 그림자 제거 */
-        }
-      }
+			/* 모션 최소화 환경 존중 */
+			@media (prefers-reduced-motion: reduce) {
+				.rec-carousel .carousel-item {
+					transition: none !important;
+				}
+			}
 
-      .rec-carousel .rel-card:active {
-        transform: translateY(0);
-      }
+			/* ── 캐러셀 인디케이터: 아래 작은 점 ─────────────────────────── */
+			.rec-carousel .carousel-indicators {
+				position: static !important;
+				/* 오버레이 말고 아래로 */
+				margin-top: 10px;
+				display: flex;
+				gap: 8px;
+				justify-content: center;
+			}
 
-      .rec-carousel .rel-card:focus-visible {
+			.rec-carousel .carousel-indicators button {
+				width: 8px;
+				height: 8px;
+				border-radius: 9999px;
+				border: 0;
+				background: #d1d5db;
+				/* 회색 점 */
+				opacity: 1;
+				/* 부트스트랩 기본 투명도 제거 */
+			}
+
+			.rec-carousel .carousel-indicators button.active {
+				background: #111;
+				/* 현재 페이지 점 */
+			}
+
+			.rec-carousel .carousel-indicators button:focus-visible {
+				outline: 2px solid #111;
+				outline-offset: 2px;
+			}
+
+			/* ── 캐러셀 카드 hover 효과: 위시리스트 카드 느낌 ───────────────── */
+			.rec-carousel .rel-card {
+				display: block;
+				background: #fff;
+				border: 1px solid #e5e7eb;
+				/* 기본 테두리 */
+				border-radius: 16px;
+				padding: 12px;
+				transition: border-color .18s ease, background-color .18s ease, transform .18s ease;
+			}
+
+			@media (hover:hover) and (pointer:fine) {
+				.rec-carousel .rel-card:hover {
+					/* border-color: #c7d2fe; */
+					/* 살짝 강조 */
+					background: #f8fafc;
+					/* transform: translateY(-1px); */
+					box-shadow: none !important;
+					/* ← 그림자 제거 */
+				}
+			}
+
+			.rec-carousel .rel-card:active {
+				transform: translateY(0);
+			}
+
+			/* .rec-carousel .rel-card:focus-visible {
         outline: 2px solid #c7d2fe;
         outline-offset: 2px;
-      }
+      } */
 
-      /* 카드 안 썸네일도 모서리 맞춤 */
-      .rec-carousel .rel-thumb {
-        border-radius: 12px;
-        overflow: hidden;
-        background: #f9fafb;
-      }
+			/* 카드 안 썸네일도 모서리 맞춤 */
+			.rec-carousel .rel-thumb {
+				border-radius: 12px;
+				overflow: hidden;
+				background: #f9fafb;
+			}
 
-      /* ── 리뷰 점수 분포 ───────────────────────────────────────── */
-      .rating-dist {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-      }
+			/* 개수: 고정폭 + 우측 정렬 → 1, 12, 123 모두 같은 끝선 */
+			.rating-dist .value .count {
+				display: inline-block;
+				width: 3ch;
+				/* 0의 폭 기준 3글자(0~999 대응). 더 필요하면 4ch/5ch로 */
+				text-align: right;
+			}
 
-      /* label + bar(꽉) / 값은 오버레이 */
-      .rating-dist li {
-        position: relative;
-        /* 값 오버레이 기준점 */
-        display: grid;
-        grid-template-columns: 40px 1fr;
-        /* 라벨 | 막대 */
-        column-gap: 12px;
-        align-items: center;
-        padding-right: var(--valw, 100px);
-        /* 오른쪽 값 영역만 확보(막대는 그대로 100%) */
-      }
+			/* 퍼센트: 가벼운 톤 + 최소폭(선택) */
+			.rating-dist .value .pct {
+				display: inline-block;
+				min-width: 6ch;
+				/* '(100%)'까지 여유. 필요 없으면 삭제 가능 */
+				text-align: left;
+				color: #9aa3af;
+			}
 
-      .rating-dist .label {
-        width: 40px;
-        text-align: right;
-        color: #4b5563;
-      }
+			/* === 리뷰 상단 요약 레이아웃: 중앙 정렬 + 균형 컬럼 === */
+			/* 기존 .review-head 를 이렇게 조정 */
+			.review-head {
+				max-width: 1120px;
+				/* 전체 폭 조금 넓혀 보기 시원하게 */
+				margin: 8px auto 0;
+				display: grid;
+				grid-template-columns: minmax(280px, 1fr) 1px 1.5fr;
+				/* ← 우측 1.5배 */
+				column-gap: 20px;
+				/* 간격 약간만 */
+				align-items: center;
+			}
 
-      .rating-dist .bar {
-        height: 12px;
-        background: #f2f4f7;
-        border-radius: 9999px;
-        overflow: hidden;
-      }
+			/* 좌측 요약 블록을 가운데 쪽으로 붙이되, 내부 텍스트는 좌측 정렬 유지 */
+			.review-head .summary {
+				justify-self: end;
+				/* 그리드 셀 안에서 오른쪽 정렬 → 중앙으로 모임 */
+				text-align: left;
+				min-width: 280px;
+				/* 너무 좁아지지 않게 */
+			}
 
-      /* 0%면 진짜 0 → 최소폭 없음! */
-      .rating-dist .fill {
-        height: 100%;
-        background: #555;
-        /* 막대 색 */
-      }
+			/* 평균 숫자/총개수 보정(보기 좋게 조금 키움) */
+			.review-head .avg-number {
+				font-size: 1.7rem;
+				font-weight: 700;
+				line-height: 1.1;
+				margin-top: 6px;
+			}
 
-      /* 값 칼럼(오른쪽) */
-      .rating-dist .value {
-        position: absolute;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        display: inline-flex;
-        gap: 6px;
-        justify-content: flex-end;
-        min-inline-size: var(--valw, 110px);
-        /* 값 칼럼 폭 고정 */
-        white-space: nowrap;
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-        /* 숫자 등폭 */
-      }
+			.review-head .total {
+				margin-top: 2px;
+				font-size: .9rem;
+				color: #94a3b8;
+			}
 
-      /* 개수: 고정폭 + 우측 정렬 → 1, 12, 123 모두 같은 끝선 */
-      .rating-dist .value .count {
-        display: inline-block;
-        width: 3ch;
-        /* 0의 폭 기준 3글자(0~999 대응). 더 필요하면 4ch/5ch로 */
-        text-align: right;
-      }
+			/* 가운데 세로 구분선 */
+			.review-head .vrule {
+				align-self: stretch;
+				width: 1px;
+				background: #e5e7eb;
+			}
 
-      /* 퍼센트: 가벼운 톤 + 최소폭(선택) */
-      .rating-dist .value .pct {
-        display: inline-block;
-        min-width: 6ch;
-        /* '(100%)'까지 여유. 필요 없으면 삭제 가능 */
-        text-align: left;
-        color: #9aa3af;
-      }
+			/* 우측 분포 막대: 그리드 우측 컬럼 전체를 사용 */
+			.rating-dist {
+				justify-self: start;
+				/* 중앙 쪽에서 시작 */
+				width: 100%;
+				max-width: none;
+				/* 컬럼 폭만큼 꽉 사용 */
+				list-style: none;
+				padding: 0;
+				margin: 0;
+				--max: 1;
+				/* 값 컬럼 폭(오른쪽) */
+				--valw: 96px;
+			}
 
-      /* === 리뷰 상단 요약 레이아웃: 중앙 정렬 + 균형 컬럼 === */
-      /* 기존 .review-head 를 이렇게 조정 */
-      .review-head {
-        max-width: 1120px;
-        /* 전체 폭 조금 넓혀 보기 시원하게 */
-        margin: 8px auto 0;
-        display: grid;
-        grid-template-columns: minmax(280px, 1fr) 1px 1.5fr;
-        /* ← 우측 1.5배 */
-        column-gap: 20px;
-        /* 간격 약간만 */
-        align-items: center;
-      }
+			.rating-dist li {
+				display: grid;
+				grid-template-columns: 32px 1fr var(--valw);
+				align-items: center;
+				gap: 8px;
+				margin: 8px 0;
+			}
 
-      /* 좌측 요약 블록을 가운데 쪽으로 붙이되, 내부 텍스트는 좌측 정렬 유지 */
-      .review-head .summary {
-        justify-self: end;
-        /* 그리드 셀 안에서 오른쪽 정렬 → 중앙으로 모임 */
-        text-align: left;
-        min-width: 280px;
-        /* 너무 좁아지지 않게 */
-      }
+			.rating-dist .label {
+				width: 28px;
+				color: #4b5563;
+				text-align: right;
+			}
 
-      /* 평균 숫자/총개수 보정(보기 좋게 조금 키움) */
-      .review-head .avg-number {
-        font-size: 1.7rem;
-        font-weight: 700;
-        line-height: 1.1;
-        margin-top: 6px;
-      }
+			.rating-dist .bar {
+				flex: 1;
+				height: 12px;
+				background: #f2f4f7;
+				border-radius: 9999px;
+				overflow: hidden;
+			}
 
-      .review-head .total {
-        margin-top: 2px;
-        font-size: .9rem;
-        color: #94a3b8;
-      }
+			.rating-dist .fill {
+				height: 100%;
+				background: #555;
+				width: calc((var(--cnt, 0) / var(--max, 1)) * 100%);
+			}
 
-      /* 가운데 세로 구분선 */
-      .review-head .vrule {
-        align-self: stretch;
-        width: 1px;
-        background: #e5e7eb;
-      }
+			.rating-dist .value {
+				width: auto !important;
+				display: inline-flex;
+				justify-content: flex-end;
+				gap: 6px;
+				white-space: nowrap;
+				font-variant-numeric: tabular-nums;
+			}
 
-      /* 우측 분포 막대: 그리드 우측 컬럼 전체를 사용 */
-      .rating-dist {
-        justify-self: start;
-        /* 중앙 쪽에서 시작 */
-        width: 100%;
-        max-width: none;
-        /* 컬럼 폭만큼 꽉 사용 */
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
+			/* 모바일에서는 수직 스택 */
+			@media (max-width: 768px) {
+				.review-head {
+					grid-template-columns: 1fr;
+					row-gap: 12px;
+				}
 
-      .rating-dist li {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 8px 0;
-      }
+				.review-head .vrule {
+					display: none;
+				}
 
-      .rating-dist .label {
-        width: 32px;
-        color: #4b5563;
-        text-align: right;
-      }
+				.review-head .summary {
+					justify-self: stretch;
+				}
 
-      .rating-dist .bar {
-        flex: 1;
-        height: 12px;
-        background: #f2f4f7;
-        border-radius: 9999px;
-        overflow: hidden;
-      }
+				.rating-dist {
+					--valw: 100px;
+				}
+			}
 
-      .rating-dist .fill {
-        height: 100%;
-        background: #555;
-      }
+			:root {
+				--hair: #eceff1;
+				/* 헤어라인 */
+				--ink: #111;
+				/* 본문색 */
+				--mute: #64748b;
+				/* 보조텍스트 */
+				--accent: #111;
+				/* 포인트(검정 유지) */
+				--cs-radius: 10px;
+				/* form-select와 동일하게 */
+				--cs-gap: 6px;
+				--cs-hover: #f3f4f6;
+				/* 파란 hover 톤 제거 → 중립 회색 */
+			}
 
-      .rating-dist .value {
-        width: 28px;
-        text-align: right;
-        color: #4b5563;
-        font-variant-numeric: tabular-nums;
-      }
+			/* === 커스텀 셀렉트 공통 === */
+			.cs {
+				position: relative;
+				display: inline-block;
+				width: 400px;
+				/* 🔹 원하는 크기로 줄임 */
+				font-size: 14px;
+			}
 
-      /* 모바일에서는 수직 스택 */
-      @media (max-width: 768px) {
-        .review-head {
-          grid-template-columns: 1fr;
-          row-gap: 12px;
-        }
+			/* 버튼 영역 */
+			.cs-btn {
+				width: 100%;
+				padding: 6px 10px;
+				border: 1px solid #ccc;
+				/* 🔹 테두리 추가 */
+				border-radius: 6px;
+				background: #fff;
+				text-align: left;
+				cursor: pointer;
+			}
 
-        .review-head .vrule {
-          display: none;
-        }
+			.cs-btn::after {
+				content: "▾";
+				/* 드롭다운 표시 */
+				float: right;
+				font-size: 12px;
+				color: #666;
+			}
 
-        .review-head .summary {
-          justify-self: stretch;
-        }
-      }
-    </style>
-  </th:block>
+			/* 메뉴 영역 */
+			.cs-menu {
+				position: absolute;
+				top: 100%;
+				left: 0;
+				right: 0;
+				margin: 4px 0 0;
+				padding: 0;
+				list-style: none;
+				background: #fff;
+				border: 1px solid #ccc;
+				/* 🔹 테두리 */
+				border-radius: 6px;
+				max-height: 200px;
+				overflow-y: auto;
+				display: none;
+				/* 기본 닫힘 */
+				z-index: 1000;
+			}
+
+			/* 열렸을 때 */
+			.cs.is-open .cs-menu {
+				display: block;
+			}
+
+			/* 항목 */
+			.cs-item {
+				padding: 6px 10px;
+				cursor: pointer;
+			}
+
+			.cs-item:hover {
+				background: #f5f5f5;
+			}
+
+			.cs-item.is-selected {
+				background: #e9ecef;
+				font-weight: 600;
+			}
+
+			.cs-item.is-disabled {
+				color: #999;
+			}
+
+			/* 모바일: 화면폭에 맞춰 자동 축소 */
+			@media (max-width:768px) {
+				.cs {
+					--cs-menu-w: min(92vw, 520px);
+				}
+			}
+
+			.ai-row .form-label {
+				display: block;
+				margin-bottom: 6px;
+				font-weight: 700;
+				font-size: .95rem;
+				color: #111;
+			}
+
+			.scent-kv {
+				margin: 40px 0
+			}
+
+			.kv-title {
+				font-size: 1.25rem;
+				font-weight: 700;
+				margin-bottom: 14px
+			}
+
+			.scent-kv .kv-item {
+				display: grid;
+				grid-template-columns: 120px 1fr;
+				gap: 16px;
+				padding: 14px 0;
+				border-top: 1px solid var(--hair)
+			}
+
+			.scent-kv .kv-item:last-child {
+				border-bottom: 1px solid var(--hair)
+			}
+
+			.scent-kv dt {
+				color: var(--mute);
+				letter-spacing: .02em
+			}
+
+			.scent-kv dd {
+				margin: 0;
+				color: var(--ink);
+				line-height: 1.7
+			}
+
+			.note-pill {
+				display: inline-block;
+				min-width: 44px;
+				text-align: center;
+				padding: 2px 8px;
+				margin-right: 8px;
+				border: 1px solid var(--hair);
+				border-radius: 999px;
+				font-size: .85rem;
+				color: #333;
+				background: #fafafa
+			}
+
+			.note-rows>div {
+				margin: .2rem 0
+			}
+
+			.desc-clamp {
+				display: -webkit-box;
+				-webkit-line-clamp: 3;
+				-webkit-box-orient: vertical;
+				overflow: hidden;
+				white-space: pre-line
+			}
+
+			.scent-kv .note-rows .note-pill {
+				min-width: 0;
+				/* ← 이 줄이 핵심 */
+				width: 56px;
+				/* 라벨 고정폭 */
+				text-align: center;
+				margin-right: 8px;
+			}
+
+			@media (max-width:768px) {
+				.scent-kv .kv-item {
+					grid-template-columns: 92px 1fr
+				}
+			}
+
+			.productContentsWrap {
+				max-width: 1000px;
+				margin-inline: auto;
+			}
+
+			.productInfoWrap {
+				max-width: 1000px;
+				margin-inline: auto;
+			}
+
+			.productTabWrap {
+				max-width: 1000px;
+				margin-inline: auto;
+			}
+
+			/* ===== 향 소개 A안 (guideHtml 그대로 사용) ===== */
+			.scent-guide {
+				margin: 40px 0;
+			}
+
+			/* 제목 라인 + 얇은 바 */
+			.scent-guide .sg-title {
+				font-size: 1.5rem;
+				font-weight: 700;
+				color: #111;
+				margin: 0 0 5px;
+			}
+
+			.scent-guide .sg-title::after {
+				content: "";
+				display: block;
+				width: 70px;
+				height: 4px;
+				background: #111;
+				margin-top: 10px;
+			}
+
+			/* 첫 문단을 리드로 */
+			.scent-guide .sg-body>p:first-of-type {
+				color: #4a5568;
+				line-height: 1.85;
+				font-size: 1.05rem;
+				margin: 12px 0 18px;
+			}
+
+			/* guideHtml 내부 리스트 공통 꾸미기 */
+			.scent-guide .sg-body ul {
+				list-style: none;
+				padding-left: 10px;
+				margin: 12px 0 0;
+			}
+
+			.scent-guide .sg-body ul>li {
+				position: relative;
+				padding-left: 1.2rem;
+				margin: .45rem 0;
+				line-height: 1.7;
+				color: #2d3748;
+			}
+
+			.scent-guide .sg-body ul>li::before {
+				content: "";
+				position: absolute;
+				left: 0;
+				top: .78em;
+				width: 6px;
+				height: 6px;
+				border-radius: 999px;
+				background: #111;
+			}
+
+			/* ===== AI 추천 - 리본형 (개선) ===== */
+			/* === AI 추천(수직 레이아웃) 정리 === */
+			.ai-vert {
+				margin-top: 18px;
+			}
+
+			/* 타이틀 크기/위계 강화 */
+			.ai-head {
+				display: flex;
+				align-items: baseline;
+				gap: 12px;
+				margin-bottom: 12px;
+			}
+
+			.ai-head .title {
+				font-weight: 800;
+				font-size: 1.5rem;
+				line-height: 1.2;
+			}
+
+			/* ⬅ 크게 */
+			.ai-head .hint {
+				color: #6b7280;
+				font-size: .95rem;
+			}
+
+			.ai-row {
+				display: grid;
+				grid-template-columns: 1fr 1fr auto;
+				gap: 10px;
+				align-items: end;
+			}
+
+			.ai-row .form-label {
+				margin-bottom: 6px;
+				font-weight: 600;
+				font-size: .9rem;
+			}
+
+			.ai-row .form-select {
+				height: 42px;
+				border-radius: 10px;
+			}
+
+			.ai-row .btn-cta {
+				height: 42px;
+				padding-inline: 18px;
+			}
+
+			.ai-summary {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin: 14px 2px 8px;
+			}
+
+			/* 칩 리디자인: [라벨] 값  */
+			.ai-chips {
+				display: flex;
+				gap: 8px;
+				flex-wrap: wrap;
+			}
+
+			.ai-chip {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				padding: 6px 10px;
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #f8fafc;
+				font-size: .88rem;
+			}
+
+			.ai-chip .k {
+				color: #6b7280;
+				font-weight: 700;
+				font-size: .78rem;
+				letter-spacing: .02em;
+			}
+
+			.ai-chip .v {
+				color: #111;
+				font-weight: 700;
+				font-size: 16px;
+			}
+
+			/* 선택칩(성별/나이대)은 살짝 강조 */
+			.ai-chip--sel {
+				background: #eceff1;
+			}
+
+			/* 고정 메타칩(부향률/메인노트)은 담백하게 */
+			.ai-chip--meta {
+				background: #eceff1;
+			}
+
+			/* 모바일 대응(기존 그대로) */
+			@media (max-width:768px) {
+				.ai-head .title {
+					font-size: 1.25rem;
+				}
+			}
+
+			.ai-reset {
+				border: 0;
+				background: none;
+				color: #6b7280;
+				text-decoration: underline;
+				font-size: .9rem;
+			}
+
+			.ai-result {
+				border: 1px solid #e5e7eb;
+				border-radius: 12px;
+				background: #fff;
+				padding: 16px 18px;
+				white-space: pre-line;
+				line-height: 1.85;
+				font-size: 1.02rem;
+			}
+
+			.ai-skel {
+				height: 12px;
+				margin: 6px 0;
+				border-radius: 6px;
+				background: #e5e7eb;
+				overflow: hidden;
+			}
+
+			.ai-skel::after {
+				content: "";
+				display: block;
+				height: 100%;
+				transform: translateX(-100%);
+				background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+				animation: aiSk 1.1s infinite;
+			}
+
+			@keyframes aiSk {
+				to {
+					transform: translateX(100%);
+				}
+			}
+
+			@media (max-width: 768px) {
+				.ai-row {
+					grid-template-columns: 1fr;
+				}
+
+				.ai-row .btn-cta {
+					width: 100%;
+				}
+
+				.ai-summary {
+					align-items: flex-start;
+					gap: 10px;
+				}
+			}
+
+			/* 넓이 변수: 드롭다운 폭 길~게 (원하면 수치만 바꾸면 됨) */
+			.cs {
+				--cs-menu-w: clamp(420px, 56vw, 640px) !important;
+			}
+
+			@media (max-width:768px) {
+				.cs {
+					--cs-menu-w: min(92vw, 520px) !important;
+				}
+			}
+
+			/* AI 행: 적절한 최소폭과 gap */
+			.ai-row {
+				grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+				gap: 12px;
+			}
+
+			/* 버튼은 고정 높이 */
+			.ai-row .btn-cta {
+				height: 42px;
+				padding-inline: 18px;
+			}
+		</style>
+	</th:block>
 </head>
 
 <body>
-  <div layout:fragment="content">
-    <div class="productInfoWrap">
-      <!-- 좌측의 향수 이미지 -->
-      <div class="slideWrap" th:classappend="${product.count == 0} ? ' soldout'">
-        <img th:src="@{|${product.imgPath}${product.imgName}|}" alt="상품 이미지">
-        <div class="overlay" aria-hidden="true"></div>
-      </div>
+	<div layout:fragment="content">
+		<div class="productInfoWrap">
+			<!-- 좌측의 향수 이미지 -->
+			<div class="slideWrap" th:classappend="${product.count == 0} ? ' soldout'">
+				<img th:src="@{|${product.imgPath}${product.imgName}|}" alt="상품 이미지">
+				<div class="overlay" aria-hidden="true"></div>
+			</div>
 
-      <!-- 우측 상품 정보 -->
-      <div class="productInfo">
-        <div id="product-detail">
-          <div class="mb-3 py-3 border-bottom pd-head">
-            <div class="brand-row bm-wrap">
-              <a class="brand-link" th:href="@{|/main/brand/${product.brand.id}|}">
-                <span th:text="${product.brand.brandName}"></span>
-              </a>
-              <button type="button" class="bm-btn" th:attr="aria-pressed=${zzimedByMe} ? 'true' : 'false',
+			<!-- 우측 상품 정보 -->
+			<div class="productInfo">
+				<div id="product-detail">
+					<div class="mb-3 py-3 border-bottom pd-head">
+						<div class="brand-row bm-wrap">
+							<a class="brand-link" th:href="@{|/main/brand/${product.brand.id}|}">
+								<span th:text="${product.brand.brandName}"></span>
+							</a>
+							<button type="button" class="bm-btn" th:attr="aria-pressed=${zzimedByMe} ? 'true' : 'false',
                 data-logged-in=${loggedIn}" th:title="${zzimedByMe} ? '관심 해제' : '관심 등록'">
-                <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
-                  <path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-                </svg>
-              </button>
-            </div>
-            <div>
-              <strong class="title" th:text="${product.name}"></strong>
-            </div>
-
-            <div class="mb-3 pt-3 price-area">
-              <div>
-                <strong class="rate"
-                  th:text="${#numbers.formatDecimal(T(java.lang.Math).floor(product.discount), 0, 0)} + '%'"></strong>
-                <span class="sale" th:text="${#numbers.formatInteger(product.sellPrice, 3,'COMMA')} + '원'"></span>
-              </div>
-              <div>
-                <del class="list" th:if="${product.price > product.sellPrice}"
-                  th:text="${#numbers.formatInteger(product.price, 3,'COMMA')} + '원'"></del>
-              </div>
-            </div>
-          </div>
-
-          <div class="mb-3 py-3 info-area border-bottom">
-            <div>
-              <span>[부향률]</span>
-              <div>- <span th:text="${product.grade.gradeName}"></span></div>
-            </div>
-            <br>
-            <div>
-              <span>[메인 어코드]</span>
-              <div>- <span th:text="${product.mainNote.mainNoteName}"></span></div>
-            </div>
-            <br>
-            <div>
-              <span>[메인 노트]</span>
-              <div th:if="${product.singleNote != null}">
-                - <span>싱글 노트 : </span><span th:text="${product.singleNote}"></span>
-              </div>
-              <div th:if="${product.singleNote == null}">
-                <div>- <span>탑 노트 : </span><span th:text="${product.topNote}"></span></div>
-                <div>- <span>미들 노트 : </span><span th:text="${product.middleNote}"></span></div>
-                <div>- <span>베이스 노트 : </span><span th:text="${product.baseNote}"></span></div>
-              </div>
-            </div>
-            <br>
-            <div>
-              <span>[향 설명]</span>
-              <div>- <span th:text="${product.description}"></span></div>
-            </div>
-          </div>
-
-          <div class="mb-3 pb-3 border-bottom">
-            <div>배송 정보</div>
-            <div>
-              <h5>배송비 3,000 원</h5>
-            </div>
-            <div>
-              <h5>예상 배송일 3 일</h5>
-            </div>
-          </div>
-
-          <div class="my-3 py-3">
-            <div class="mb-3">구매 확정 시, 결제금액의 5% 적립</div>
-            <form id="buy-form" method="post">
-              <input type="hidden" name="id" th:value="${product.id}">
-
-              <!-- 수량 / 합계 영역 -->
-              <div class="d-flex align-items-center gap-2" id="buy-qty-wrap">
-                <button type="button" class="btn btn-outline-secondary btn-sm btn-minus">-</button>
-
-                <!-- 수량 입력: min=1, max=재고 -->
-                <input type="number" class="form-control text-center qty-input" style="width:80px;" name="quantity"
-                  th:attr="max=${product.count}" min="1" value="1">
-
-                <button type="button" class="btn btn-outline-secondary btn-sm btn-plus">+</button>
-
-                <div class="ms-3">
-                  <div class="fw-semibold">합계: <span class="total-amount">0</span> 원</div>
-                  <div class="text-muted small">적립 예정(5%): <span class="reward-amount">0</span> P</div>
-                </div>
-              </div>
-              <!-- 수량 / 합계 끝 -->
-
-              <!-- 재고 제한 안내 -->
-              <p id="stockHint" class="stock-hint" aria-live="polite" aria-atomic="true" hidden></p>
-
-              <div class="my-3 d-flex gap-2">
-                <!-- 장바구니: 품절일 때도 클릭 가능(알림 유도용) -->
-                <button type="button" class="btn btn-outline-secondary" id="btn-add-cart"
-                  th:attr="data-oos=${product.count == 0} ? 'true' : 'false'">
-                  장바구니
-                </button>
-
-                <!-- 재고 있을 때만 바로결제 -->
-                <button type="submit" class="btn btn-secondary" formaction="/checkout/order" formmethod="post"
-                  id="btn-buy-now" th:if="${product.count > 0}">
-                  바로 결제
-                </button>
-
-                <!-- 재고 없을 때 입고 알림 -->
-                <button type="button" class="btn btn-secondary" id="btn-restock" th:if="${product.count == 0}">
-                  입고 알림 신청
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 공용 로그인 모달 -->
-    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="loginModalTitle">로그인 필요</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body" id="loginModalBody">
-            로그인이 필요한 서비스입니다. <br>
-            로그인 하시겠습니까?
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">나중에 하기</button>
-            <a id="loginModalCta" class="btn btn-secondary" href="/user/login">로그인하기</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 장바구니 모달 -->
-    <div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">장바구니 담기</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">
-            <div id="cartModalMsg">장바구니에 제품이 등록되었습니다.</div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
-            <span sec:authorize="isAuthenticated()">
-              <a th:href="@{/cart/list}" class="btn btn-secondary" id="goCartBtn">장바구니로 이동</a>
-            </span>
-            <span sec:authorize="isAnonymous()">
-              <a th:href="@{/user/login}" class="btn btn-secondary" id="goCartBtn">로그인하기</a>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 품절 시 장바구니 클릭 → 알림 유도 모달 -->
-    <div class="modal fade" id="restockPromptModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">입고 알림</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">
-            품절된 상품입니다.<br>
-            이 상품의 입고 알림을 신청하시겠습니까?
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">나중에 하기</button>
-            <button class="btn btn-secondary" id="btn-restock-confirm">입고 알림 신청</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 알림 신청 완료 모달 -->
-    <div class="modal fade" id="restockDoneModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">입고 알림</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">입고 알림이 등록되었습니다.</div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 이미 신청자 안내 모달 -->
-    <div class="modal fade" id="restockAlreadyModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">입고 알림</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">
-            이미 알림 신청을 하신 상품입니다.<br>
-            알림 신청을 취소하시겠습니까?
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">닫기</button>
-            <button class="btn btn-danger" id="btn-restock-cancel">알림 취소</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- [신규] 찜 로그인 안내 모달 -->
-    <div class="modal fade" id="zzimLoginModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">관심등록</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">로그인이 되어있지 않습니다. 로그인하시겠습니까?</div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
-            <a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 찜 등록 완료 모달(문구 정정) -->
-    <div class="modal fade" id="zzimDoneModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">관심등록</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">관심등록이 되었습니다.</div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 찜 해제 확인 모달(기존 문구 유지) -->
-    <div class="modal fade" id="zzimConfirmModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">관심등록 해제</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">
-            이미 관심등록이 된 상품입니다.<br>관심등록을 해제하시겠습니까?
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
-            <button class="btn btn-danger btn-confirm">확인</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 비로그인 전용: 바로결제 로그인 안내 모달 -->
-    <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-hidden="true" sec:authorize="isAnonymous()">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">바로결제</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">로그인이 필요합니다.</div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
-            <a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 여기에 탭 네비게이션을 추가 -->
-    <nav class="productTabWrap">
-      <div class="productTab">
-        <button data-target="#product-desc">상품 상세정보</button>
-        <button data-target="#buyer-stats">구매자 통계</button>
-        <button data-target="#review-section">리뷰 <span th:text="${reviewCount}"></span></button>
-        <button data-target="#similar-products">관련 상품</button>
-      </div>
-    </nav>
-
-    <!-- 하단의 향 소개 -->
-    <div class="productContentsWrap">
-      <section id="product-desc">
-        <div class="my-5">
-          <div class="my-5">
-            <h2>향 소개</h2>
-            <!-- AI 생성 컨텐츠 컬럼에 저장 후, 출력 -->
-			<div class="desc" th:utext="${guideHtml}"></div>
-          </div>
-          <!-- AI 개인화 추천 섹션 -->
-          <div class="ai-persona-recommendation mt-4">
-            <div class="card">
-              <div class="card-header bg-light">
-                <h3 class="mb-0">AI 개인 맞춤 향수 가이드</h3>
-                <small class="text-muted">당신의 정보를 입력하면 더 구체적인 추천을 받을 수 있습니다</small>
-              </div>
-              <div class="card-body">
-                <form id="personaRecommendationForm">
-                  <div class="row g-3">
-                    <!-- 성별 선택 -->
-                    <div class="col-md-6">
-                      <label for="gender" class="form-label">성별</label>
-                      <select id="gender" name="gender" class="form-select" required>
-                        <option value="">선택해주세요</option>
-                        <option value="M">남성</option>
-                        <option value="F">여성</option>
-                      </select>
-                    </div>
-
-                    <!-- 나이대 선택 -->
-                    <div class="col-md-6">
-                      <label for="ageGroup" class="form-label">나이대</label>
-                      <select id="ageGroup" name="ageGroup" class="form-select" required>
-                        <option value="">선택해주세요</option>
-                        <option value="10s">10대</option>
-                        <option value="20s">20대</option>
-                        <option value="30s">30대</option>
-                        <option value="40s">40대</option>
-                        <option value="50plus">50대 이상</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="mt-3 text-center">
-                    <button type="submit" class="btn btn-primary" id="getRecommendationBtn">
-                      <span class="btn-text">AI 추천받기</span>
-                      <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
-                    </button>
-                  </div>
-                </form>
-
-                <!-- AI 추천 결과 표시 영역 -->
-                <div id="aiRecommendationResult" class="mt-4 d-none">
-                  <hr>
-                  <h5 class="text-primary">당신을 위한 AI 분석</h5>
-                  <div id="recommendationContent" class="alert alert-light border" style="white-space:pre-line;">
-                    <!-- AI 생성 내용이 여기에 표시됩니다 -->
-                  </div>
-
-                  <!-- 다시 분석하기 버튼을 여기로 이동 -->
-                  <div class="text-center mt-3">
-                    <button type="button" class="btn btn-outline-primary" id="resetAnalysisBtn" style="display: none;">
-                      다른 조건으로 다시 분석하기
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="buyer-stats">
-        <!-- 구매자 통계 (명수, 인구피라미드) -->
-        <div class="mt-5">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="mb-0">구매자 통계</h2>
-            <div class="text-muted small">구매자 수(명) · 확정 수량 존재 기준</div>
-          </div>
-
-          <div class="card p-3">
-            <div class="d-flex justify-content-between small text-muted mb-1">
-              <span>WOMAN</span>
-              <span>MAN</span>
-            </div>
-            <div style="height:300px;">
-              <canvas id="buyerStatChart" aria-label="나이/성별별 구매자 수 피라미드 차트"></canvas>
-            </div>
-            <div id="buyerStatEmpty" class="text-muted small mt-2" style="display:none;">데이터가 없습니다.</div>
-          </div>
-        </div>
-      </section>
-
-      <section id="review-section">
-        <!-- 리뷰 섹션 -->
-        <div class="mt-5">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="mb-0">Review</h2>
-            <div>
-              <a class="btn btn-outline-dark" th:href="@{|/main/etc/review/new?productId=${product.id}|}"
-                sec:authorize="isAuthenticated()">리뷰 작성</a>
-
-              <button class="btn btn-outline-dark" id="btn-review-need-login" sec:authorize="isAnonymous()">리뷰
-                작성</button>
-            </div>
-          </div>
-
-          <!-- 점수 분포 -->
-          <!-- 리뷰 상단 요약 (좌: 평균/개수, 우: 분포) -->
-          <div class="review-head mb-4" th:if="${reviewCount >= 0}">
-            <!-- 좌측 요약 -->
-            <div class="summary">
-              <!-- ① 평균 평점: 그림(별/사각형) 한 줄 -->
-              <div class="rating-bars" th:with="filled=${T(java.lang.Math).round(reviewAvg)}">
-                <div th:each="i : ${#numbers.sequence(1,5)}" th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
-                </div>
-              </div>
-              <!-- ② 평균 평점: 숫자 한 줄 -->
-              <div class="avg-number" th:text="${#numbers.formatDecimal(reviewAvg,1,1)}">0.0</div>
-              <!-- ③ 후기 개수: 작게 한 줄 -->
-              <div class="total">후기 <span th:text="${reviewCount}">0</span>개</div>
-            </div>
-
-            <!-- 가운데 세로 구분선으로 시각적 결속 -->
-            <div class="vrule"></div>
-
-            <!-- 우측: 5~1점 분포 (퍼센트 제거, 개수만 표시) -->
-            <ul class="rating-dist">
-              <li th:each="i : ${#numbers.sequence(1,5)}" th:with="s=${6 - i}, cnt=${reviewCounts[s]},
-                 pct=${reviewCount > 0 ? (cnt * 100.0 / reviewCount) : 0}">
-                <span class="label" th:text="|${s}점|">5점</span>
-                <div class="bar" aria-hidden="true">
-                  <div class="fill" th:style="|width:${pct}%;|"></div>
-                </div>
-                <span class="value">
-                  <span class="count" th:text="${cnt}">0</span>
-                  <span class="pct" th:text="|(${#numbers.formatDecimal(pct,0,0)}%)|">(0%)</span>
-                </span>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- 리뷰가 0개일 때 안내 (분포 대신 안내문) -->
-        <div class="text-muted small mb-4" th:if="${reviewCount == 0}">
-          아직 리뷰가 없습니다.
-        </div>
-
-        <hr class="my-4">
-
-        <!-- 전체 개수 + 정렬 -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div class="fw-semibold">전체 리뷰 <span th:text="${reviewCount}">0</span>개</div>
-          <form method="get" th:action="@{|/main/content/${product.id}|}">
-            <select class="form-select form-select-sm w-auto d-inline-block" name="sort">
-              <option value="best" th:selected="${sort=='best'}">추천순</option>
-              <option value="recent" th:selected="${sort=='recent'}">최신순</option>
-              <option value="rating" th:selected="${sort=='rating'}">평점순</option>
-            </select>
-          </form>
-        </div>
-
-        <!-- 리스트 -> 정렬을 위해 묶음 -->
-        <div id="reviewList" th:fragment="reviewList(reviews, likedReviewIds, productId, sort)"
-          th:with="productId=${productId} ?: ${product?.id}" class="mt-2">
-
-          <div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">작성된 리뷰가 없습니다.</div>
-
-          <div th:each="rv : ${reviews}" class="py-4 border-top">
-            <div class="d-flex align-items-start justify-content-between">
-              <!-- 좌측: 메타 + 본문 -->
-              <div class="d-flex align-items-start gap-3 flex-grow-1">
-                <div class="review-meta">
-                  <div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
-                    th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
-                    kv**
-                  </div>
-
-                  <div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
-                    <div th:each="i : ${#numbers.sequence(1,5)}"
-                      th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 본문 영역 -->
-                <div class="flex-grow-1">
-                  <!-- 리뷰 -->
-                  <div class="mb-2 text-break" th:if="${rv.status == 'ACTIVE'}" th:text="${rv.content}"
-                    style="white-space:pre-line;">내용</div>
-
-                  <!-- 좋아요 -->
-                  <div class="like-wrap" th:attr="data-id=${rv.reviewId}"
-                    th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
-                    <button type="button" class="btn-like" aria-label="공감" title="공감" sec:authorize="isAuthenticated()"
-                      th:if="${rv.status == 'ACTIVE'}">
-                      <i class="fa-regular fa-thumbs-up"></i>
-                    </button>
-                    <button type="button" class="btn-like need-login" aria-label="로그인 필요" sec:authorize="isAnonymous()"
-                      th:if="${rv.status == 'ACTIVE'}">
-                      <i class="fa-regular fa-thumbs-up"></i>
-                    </button>
-                    <span class="like-count" th:text="${#lists.size(rv.likers)}"
-                      th:if="${rv.status == 'ACTIVE'}">0</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 우측: 날짜 + 액션(날짜 바로 아래) — 날짜 위치는 그대로 유지 -->
-              <div class="review-right ms-3">
-                <div class="review-date text-muted small text-nowrap"
-                  th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
-
-                <!-- 로그인 + (소유자 또는 관리자)만 노출 -->
-                <div class="review-actions mt-1" sec:authorize="isAuthenticated()"
-                  th:with="isOwner=${#authentication.name == rv.userName}">
-                  <div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
-                    <a class="ra-link" th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
-
-                    <form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
-                      onsubmit="return confirm('후기를 삭제하시겠습니까?');">
-                      <input type="hidden" name="productId" th:value="${productId}">
-                      <button type="submit" class="ra-link ra-danger">삭제</button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- 리뷰 끝 -->
-    </div>
-    </section>
-
-    <section id="similar-products" class="mt-5">
-      <h2 class="mb-3">관련 상품</h2>
-
-      <!-- 같은 브랜드의 다른 상품 -->
-      <div class="mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h3 class="h5 mb-0">같은 브랜드의 다른 상품</h3>
-          <span class="small text-muted">판매량 순</span>
-        </div>
-
-        <!-- 데이터 있을 때: 캐러셀 -->
-        <div th:if="${brandRecs != null and !#lists.isEmpty(brandRecs)}" class="rec-carousel">
-          <button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(brandRecs) <= 4}"
-            data-bs-target="#brandRecCarousel" data-bs-slide="prev">&lsaquo;</button>
-
-          <div class="rec-track">
-            <div id="brandRecCarousel" class="carousel slide" data-bs-ride="false" aria-label="같은 브랜드 추천 캐러셀" th:with="size=${#lists.size(brandRecs)},
-              pages=${(size + 3) / 4}">
-
-              <div class="carousel-inner" th:with="size=${#lists.size(brandRecs)}">
-                <div th:each="start : ${#numbers.sequence(0, size - 1, 4)}"
-                  th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
-                  th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
-                  <div class="row g-3">
-                    <div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}"
-                      th:with="r=${brandRecs[i]}, path=${r[3]}, name=${r[4]},
-                              img=${#strings.isEmpty(path) ? name : (path.endsWith('/') ? path + name : path + '/' + name)}">
-                      <a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
-                        <div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
-                        <div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">브랜드명</div>
-                        <div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
-                        <div class="rel-price text-muted">
-                          <strong th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
-                          <del th:if="${r[5] != null && r[5] > r[6]}"
-                            th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
-                        </div>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ▼ 인디케이터: 슬라이드가 2페이지 이상일 때만 노출 -->
-              <div class="carousel-indicators rec-indicators" th:if="${pages > 1}">
-                <button type="button" th:each="p : ${#numbers.sequence(0, pages-1)}"
-                  th:classappend="${p} == 0 ? ' active' : ''"
-                  th:attr="data-bs-target='#brandRecCarousel', data-bs-slide-to=${p}, aria-label='페이지 ' + (${p}+1)">
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(brandRecs) <= 4}"
-            data-bs-target="#brandRecCarousel" data-bs-slide="next">&rsaquo;</button>
-        </div>
-
-        <!-- 데이터 없을 때: 안내 -->
-        <div th:if="${brandRecs == null or #lists.isEmpty(brandRecs)}"
-          class="text-muted small py-3 text-center border rounded-2">
-          같은 브랜드의 추천 상품이 없습니다.
-        </div>
-      </div>
-
-      <!-- 최근/누적 베스트 8 -->
-      <div class="mt-4" th:with="isFallback=${(recentTopIsFallback) ?: false}">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h3 class="h5 mb-0" th:text="${isFallback} ? '누적 BEST 8' : '주간 BEST 8'">주간 BEST 8</h3>
-          <span class="small text-muted" th:text="${isFallback} ? '누적 판매량 기준' : '주간 판매량 기준'">주간 판매량 기준</span>
-        </div>
-
-        <!-- 데이터 있을 때: 캐러셀 -->
-        <div th:if="${recentTop8 != null and !#lists.isEmpty(recentTop8)}" class="rec-carousel">
-          <button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(recentTop8) <= 4}"
-            data-bs-target="#recentTopCarousel" data-bs-slide="prev">&lsaquo;</button>
-
-          <div class="rec-track">
-            <div id="recentTopCarousel" class="carousel slide" data-bs-ride="false" aria-label="이번 주 베스트 캐러셀" th:with="size=${#lists.size(recentTop8)},
-              pages=${(size + 3) / 4}">
-
-              <div class="carousel-inner" th:with="size=${#lists.size(recentTop8)}">
-                <div th:each="start : ${#numbers.sequence(0, size - 1, 4)}"
-                  th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
-                  th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
-                  <div class="row g-3">
-                    <div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}"
-                      th:with="r=${recentTop8[i]}, path=${r[3]}, name=${r[4]},
-                              img=${#strings.isEmpty(path) ? name : (path.endsWith('/') ? path + name : path + '/' + name)}">
-                      <a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
-                        <div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
-                        <div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">브랜드명</div>
-                        <div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
-                        <div class="rel-price text-muted">
-                          <strong th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
-                          <del th:if="${r[5] != null && r[5] > r[6]}"
-                            th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
-                        </div>
-                        <div class="small text-muted" th:if="${r[7] != null}">
-                          <span th:text="${isFallback} ? '(누적) - ' : '(최근 7일) - '">(최근 7일) - </span>
-                          <span th:text="${#numbers.formatInteger(r[7],1,'COMMA')}">0</span>개 판매
-                        </div>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ▼ 인디케이터 -->
-              <div class="carousel-indicators rec-indicators" th:if="${pages > 1}">
-                <button type="button" th:each="p : ${#numbers.sequence(0, pages-1)}"
-                  th:classappend="${p} == 0 ? ' active' : ''"
-                  th:attr="data-bs-target='#recentTopCarousel', data-bs-slide-to=${p}, aria-label='페이지 ' + (${p}+1)">
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(recentTop8) <= 4}"
-            data-bs-target="#recentTopCarousel" data-bs-slide="next">&rsaquo;</button>
-        </div>
-
-        <!-- 데이터 없을 때: 안내 -->
-        <div th:if="${recentTop8 == null or #lists.isEmpty(recentTop8)}"
-          class="text-muted small py-3 text-center border rounded-2">
-          최근 7일 판매 데이터가 없어 표시할 상품이 없습니다.
-        </div>
-      </div>
-    </section>
-  </div> <!-- productContentsWrap 끝 -->
-  </div>
-
-  <!-- 스크립트 -->
-  <th:block layout:fragment="script">
-    <script th:inline="javascript">
-      // === CSRF: 메타 태그 또는 Thymeleaf 인라인 값 둘 다 지원 ===
-      function getCsrfPair() {
-        const metaToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-        const metaHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-        const inlineHeader = /*[[${_csrf?.headerName}]]*/ 'X-CSRF-TOKEN';
-        const inlineToken = /*[[${_csrf?.token}]]*/ '';
-        return {
-          header: metaHeader || inlineHeader || 'X-CSRF-TOKEN',
-          token: metaToken || inlineToken || ''
-        };
-      }
-
-      // 공용 로그인 모달 오픈 헬퍼
-      function showLoginModal({
-        title = '로그인 필요',
-        message = '로그인이 필요한 서비스입니다.',
-        redirectTo = (location.pathname + location.search)
-      } = {}) {
-        const el = document.getElementById('loginModal');
-        // 폴백: 모달이 없거나 bootstrap 미로딩 시 로그인 페이지로
-        if (!el || typeof bootstrap === 'undefined') {
-          const url = new URL('/user/login', location.origin);
-          url.searchParams.set('redirect', redirectTo);
-          location.href = url.pathname + url.search;
-          return;
-        }
-        document.getElementById('loginModalTitle').textContent = title;
-        // 줄바꿈 허용
-        document.getElementById('loginModalBody').innerHTML = message;
-
-        const cta = document.getElementById('loginModalCta');
-        const url = new URL('/user/login', location.origin);
-        url.searchParams.set('redirect', redirectTo);
-        cta.setAttribute('href', url.pathname + url.search);
-
-        new bootstrap.Modal(el).show();
-      }
-
-      // 비로그인자가 '리뷰 작성' 클릭 시
-      document.getElementById('btn-review-need-login')?.addEventListener('click', function () {
-        showLoginModal({
-          title: '리뷰 작성',
-          message: '로그인 후 작성할 수 있어요.'
-        });
-      });
-
-      // Bootstrap Modal 준비
-      const cartModalEl = document.getElementById('cartModal');
-      const cartModal = cartModalEl ? new bootstrap.Modal(cartModalEl) : null;
-
-      // 공통 DOM
-      const btnAddCart = document.getElementById('btn-add-cart');
-      const buyForm = document.getElementById('buy-form');
-      const qtyInput = document.querySelector('.qty-input');
-      const msgBox = document.getElementById('cartModalMsg');
-      const badgeEl = document.getElementById('cart-count');
-
-      // 상품 정보(템플릿 값 주입)
-      const PRODUCT_ID = /*[[${product.id}]]*/ 0;
-      const PRODUCT_NAME = /*[[${product.name}]]*/ '';
-      const MAX_STOCK = parseInt(qtyInput?.getAttribute('max') || '0', 10);
-
-      // 로그인 상태(서버에서 true/false로 렌더됨)
-      const LOGGED_IN = /*[[${#authorization.expression('isAuthenticated()')}]]*/ false;
-
-      // 더블클릭 방지
-      function withButtonLock(btn, fn) {
-        if (!btn || btn.disabled) return;
-        btn.disabled = true;
-        Promise.resolve(fn()).finally(() => setTimeout(() => btn.disabled = false, 800));
-      }
-
-      // 장바구니 추가
-      btnAddCart?.addEventListener('click', () => withButtonLock(btnAddCart, async () => {
-
-        // ⬇️ 추가: 품절이면 /cart/add 호출 대신 알림 유도 모달
-        const isOOS = (MAX_STOCK <= 0) || btnAddCart.getAttribute('data-oos') === 'true';
-        if (isOOS) {
-          if (!LOGGED_IN) {
-            // 공용 로그인 모달 사용
-            showLoginModal({
-              title: '장바구니 담기',
-              message: '장바구니는 로그인 후 사용하실 수 있습니다.'
-            });
-          } else {
-            // 로그인 → 입고 알림 유도 모달 유지
-            const promptEl = document.getElementById('restockPromptModal');
-            if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).show();
-          }
-          return;
-        }
-
-        let qty = parseInt(qtyInput.value, 10);
-        if (isNaN(qty) || qty < 1) qty = 1;
-        if (MAX_STOCK > 0) qty = Math.min(qty, MAX_STOCK);
-
-        // 1) 사전 카운트 체크 (UX)
-        try {
-          const cRes = await fetch('/cart/count', { credentials: 'same-origin' });
-          const cData = await cRes.json().catch(() => ({}));
-          if (Number(cData.count) >= 20) {
-            if (msgBox) msgBox.textContent = '장바구니에 담을 수 있는 최대 수량은 20개 입니다.';
-            cartModal?.show();
-            return;
-          }
-        } catch (_) {
-          // 사전 체크 실패해도 /cart/add 단계에서 다시 막힘
-        }
-
-        try {
-          const res = await fetch('/cart/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ productId: PRODUCT_ID, qty })        // /cart/add 라는 URI 를 요청할 때, product 의 id 값과 선택한 수량(qty)을 POST 방식으로 전송
-          });
-
-          const data = await res.json().catch(() => ({}));
-
-          if (res.ok) {
-            if (badgeEl && typeof data.count === 'number') {
-              badgeEl.textContent = String(data.count);
-            }
-            if (msgBox) msgBox.textContent = `“${PRODUCT_NAME}” ${qty}개가 장바구니에 담겼습니다.`;
-            cartModal?.show();
-          } else {
-            if (msgBox) msgBox.textContent = (data && data.message) ? data.message : '처리 중 오류가 발생했습니다.';
-            cartModal?.show();
-          }
-        } catch (e) {
-          if (msgBox) msgBox.textContent = '네트워크 오류가 발생했습니다.';
-          cartModal?.show();
-        }
-      }));
-
-      // 바로결제 더블클릭 방지
-      document.getElementById('buy-form')?.addEventListener('submit', (e) => {
-        const btn = e.submitter;
-        if (!btn) return;
-        btn.disabled = true;
-        setTimeout(() => btn.disabled = false, 2000);
-      });
-
-      // 비로그인일 때 buy-form 제출 막고 모달 오픈
-    </script>
-
-    <script sec:authorize="isAnonymous()">
-      (function () {
-        const form = document.getElementById('buy-form');
-        const modalEl = document.getElementById('loginRequiredModal');
-        if (!form || !modalEl || typeof bootstrap === 'undefined') return;
-        const modal = new bootstrap.Modal(modalEl);
-
-        form.addEventListener('submit', function (e) {
-          e.preventDefault();
-          const btn = e.submitter;
-          if (btn) { btn.disabled = true; setTimeout(() => btn.disabled = false, 1200); }
-          modal.show();
-        });
-      })();
-    </script>
-
-    <script th:inline="javascript">
-      // 수량/합계 계산
-      document.querySelectorAll('#buy-qty-wrap').forEach(container => {
-        const minusBtn = container.querySelector('.btn-minus');
-        const plusBtn = container.querySelector('.btn-plus');
-        const input = container.querySelector('.qty-input');
-        const totalEl = container.querySelector('.total-amount');
-        const rewardEl = container.querySelector('.reward-amount');
-
-        const MIN = parseInt(input.getAttribute('min')) || 1;
-        const MAX = parseInt(input.getAttribute('max')) || 0;
-        const SELLPRICE = /*[[${product.sellPrice}]]*/ 0;
-        const RATE = 0.05;
-
-        const fmt = n => Number(n || 0).toLocaleString('ko-KR');
-
-        const hintEl = document.getElementById('stockHint');
-        let hintTimer = null;
-        let prevQty = NaN; // 이전 수량
-
-        // 최대 재고 알림 노출
-        function showMaxHint(max) {
-          if (!hintEl) return;
-          const n = Number(max || 0).toLocaleString('ko-KR');
-          hintEl.textContent = `현재 재고가 ${n}개 존재하기 때문에 수량이 ${n}개로 제한됩니다.`;
-          hintEl.hidden = false;
-          hintEl.dataset.pop = '1';
-          clearTimeout(hintTimer);
-          hintTimer = setTimeout(() => {
-            hintEl.hidden = true;
-            delete hintEl.dataset.pop;
-          }, 3000);
-        }
-
-        function clamp(v) {
-          if (isNaN(v)) v = MIN;
-          v = Math.floor(v);
-          if (v < MIN) v = MIN;
-          if (v > MAX) v = MAX;
-          return v;
-        }
-
-        function recalcAndRender(qty) {
-          const total = SELLPRICE * qty;
-          const point = Math.floor(total * RATE);
-          totalEl.textContent = fmt(total);
-          rewardEl.textContent = fmt(point);
-        }
-
-        function updateUI() {
-          const v = parseInt(input.value, 10);
-          if (MAX < 1) {
-            input.value = 0;
-            input.disabled = true;
-            minusBtn.disabled = true;
-            plusBtn.disabled = true;
-
-            // ⬇️ 바로결제만 막고, 장바구니는 활성 유지 (품절 시 알림 유도용)
-            document.getElementById('btn-buy-now')?.setAttribute('disabled', 'true');
-            document.getElementById('btn-add-cart')?.removeAttribute('disabled');
-
-            recalcAndRender(0);
-            prevQty = 0;
-            return;
-          }
-          input.value = clamp(v);
-          minusBtn.disabled = (parseInt(input.value, 10) <= MIN);
-          plusBtn.disabled = (parseInt(input.value, 10) >= MAX);
-          input.max = String(MAX);
-          recalcAndRender(parseInt(input.value, 10));
-
-          // 재고 있을 때는 둘 다 활성
-          document.getElementById('btn-buy-now')?.removeAttribute('disabled');
-          document.getElementById('btn-add-cart')?.removeAttribute('disabled');
-
-          // ⬇️ 여기 추가: “MAX로 도달”했을 때만 1회 노출
-          const now = parseInt(input.value, 10) || 0;
-          if (MAX > 0 && now === MAX && prevQty !== MAX) {
-            showMaxHint(MAX);
-          }
-          prevQty = now;
-        }
-
-        updateUI();
-        minusBtn.addEventListener('click', function () {
-          if (this.disabled) return;
-          input.value = clamp(parseInt(input.value, 10) - 1);
-          updateUI();
-        });
-
-        plusBtn.addEventListener('click', function () {
-          if (this.disabled) return;
-          input.value = clamp(parseInt(input.value, 10) + 1);
-          updateUI();
-        });
-
-        input.addEventListener('input', function () {
-          this.value = this.value.replace(/[^0-9]/g, '');
-          updateUI();
-        });
-
-        input.addEventListener('blur', function () {
-          this.value = clamp(parseInt(this.value, 10));
-          updateUI();
-        });
-      });
-    </script>
-
-    <script th:inline="javascript">
-      (function () {
-        const bmBtn = document.querySelector('.bm-btn');
-        if (!bmBtn) return;
-
-        const PRODUCT_ID = /*[[${product.id}]]*/ 0;
-
-        const zzimLoginModal = document.getElementById('zzimLoginModal');
-        const confirmModalEl = document.getElementById('zzimConfirmModal');
-        const doneModalEl = document.getElementById('zzimDoneModal');
-
-        const loginModal = zzimLoginModal ? new bootstrap.Modal(zzimLoginModal) : null;
-        const confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
-        const doneModal = doneModalEl ? new bootstrap.Modal(doneModalEl) : null;
-
-        function withLock(btn, fn) {
-          if (!btn || btn.disabled) return;
-          btn.disabled = true;
-          return Promise.resolve(fn()).finally(() => setTimeout(() => btn.disabled = false, 600));
-        }
-
-        // 공통 fetch(JSON) + CSRF
-        async function fetchJSON(url, opt = {}) {
-          const { header, token } = getCsrfPair();
-          const base = {
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json', ...(opt.body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { [header]: token } : {}) }
-          };
-          const res = await fetch(url, { ...base, ...opt });
-          if (res.status === 401 || res.status === 403) { throw { auth: true }; }
-          const ct = res.headers.get('content-type') || '';
-          const data = ct.includes('application/json') ? await res.json() : {};
-          if (!res.ok) throw { status: res.status, data };
-          return data;
-        }
-
-        // 서버에서 실시간 상태 확인(= product_zzimers 테이블 조회 반영)
-        const checkState = () => fetchJSON(`/zzim/state?productId=${PRODUCT_ID}`, { method: 'GET' })
-          .then(d => !!d.zzimed);
-
-        const addZzim = () => fetchJSON(`/zzim/add`, { method: 'POST', body: JSON.stringify({ productId: PRODUCT_ID }) });
-        const removeZzim = () => fetchJSON(`/zzim/remove?productId=${PRODUCT_ID}`, { method: 'POST' });
-
-        bmBtn.addEventListener('click', () => withLock(bmBtn, async () => {
-          try {
-            // 서버에 실제 상태 질의 (비로그인 시 401 → catch에서 처리)
-            const already = await checkState();
-
-            if (already) {
-              confirmModal?.show();
-              const okBtn = confirmModalEl?.querySelector('.btn-confirm');
-              const handler = async () => {
-                await withLock(okBtn, async () => {
-                  await removeZzim();
-                  bmBtn.setAttribute('aria-pressed', 'false');
-                  bmBtn.title = '관심 등록';
-                  confirmModal?.hide();
-                });
-              };
-              okBtn?.addEventListener('click', handler, { once: true });
-            } else {
-              await addZzim();
-              bmBtn.setAttribute('aria-pressed', 'true');
-              bmBtn.title = '관심 해제';
-              doneModal?.show();
-            }
-          } catch (e) {
-            if (e && e.auth) { loginModal?.show(); return; }  // 401/403
-            alert('처리 중 오류가 발생했습니다.');
-          }
-        }));
-      })();
-    </script>
-
-    <!-- Chart.js + 구매자 피라미드 렌더 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script th:inline="javascript">
-      (function () {
-        const productId = /*[[${product.id}]]*/ 0;
-        const api = `/main/api/product/${productId}/buyer-stats`;
-        const $canvas = document.getElementById('buyerStatChart');
-        const $empty = document.getElementById('buyerStatEmpty');
-        if (!$canvas) return;
-
-        // 중앙 라벨 + 중앙 여백(막대 잘라내기) 플러그인
-        const centerPlugin = {
-          id: 'pyramidCenter',
-          beforeDatasetsDraw(chart) {
-            const { ctx, chartArea } = chart;
-            const midX = (chartArea.left + chartArea.right) / 2;
-            const gutter = 64; // 중앙 여백(px) — 필요시 조절
-            const leftW = midX - gutter / 2 - chartArea.left;
-            const rightW = chartArea.right - (midX + gutter / 2);
-
-            ctx.save();
-            ctx.beginPath();
-            // 왼쪽 영역
-            ctx.rect(chartArea.left, chartArea.top, Math.max(0, leftW), chartArea.bottom - chartArea.top);
-            // 오른쪽 영역
-            ctx.rect(midX + gutter / 2, chartArea.top, Math.max(0, rightW), chartArea.bottom - chartArea.top);
-            ctx.clip(); // 막대는 중앙여백을 비우고 그려짐
-          },
-          afterDatasetsDraw(chart) {
-            const { ctx, chartArea, scales } = chart;
-            const y = scales.y;
-            const midX = (chartArea.left + chartArea.right) / 2;
-
-            ctx.restore(); // 클리핑 해제
-
-            // (요청) 중앙 세로선 제거: 아무 것도 그리지 않음
-
-            // 가운데 축 라벨(10대/20대 …)
-            const labels = chart.data.labels || [];
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#333';
-            ctx.font = getComputedStyle($canvas).font || '12px system-ui';
-            labels.forEach((lab, i) => {
-              const py = y.getPixelForTick(i);
-              ctx.fillText(lab, midX, py);
-            });
-            ctx.restore();
-          }
-        };
-
-        fetch(api, { credentials: 'same-origin' })
-          .then(r => r.json())
-          .then(data => {
-            const labels = data?.labels || [];
-            const ds = data?.datasets || [];
-            const male = (ds.find(v => v.label === '남성')?.data || []).map(Number);
-            const female = (ds.find(v => v.label === '여성')?.data || []).map(Number);
-
-            const hasData = (male.concat(female)).some(v => v > 0);
-            if (!hasData) { $empty.style.display = 'block'; return; }
-
-            const femaleNeg = female.map(v => -v);
-            const maxAbs = Math.max(...male.map(Math.abs), ...femaleNeg.map(Math.abs), 1);
-
-            new Chart($canvas.getContext('2d'), {
-              type: 'bar',
-              data: {
-                labels,
-                datasets: [
-                  { label: '여성', data: femaleNeg, stack: 'gender' },
-                  { label: '남성', data: male, stack: 'gender' }
-                ]
-              },
-              options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { position: 'top' },
-                  tooltip: {
-                    callbacks: {
-                      label: (ctx) => {
-                        const v = Math.abs(ctx.raw ?? 0);
-                        return `${ctx.dataset.label}: ${v.toLocaleString('ko-KR')}명`;
-                      }
-                    }
-                  }
-                },
-                scales: {
-                  y: {
-                    stacked: true,
-                    ticks: { display: false },
-                    grid: {
-                      display: false,       // 가로선 전부 제거
-                      drawBorder: false     // 왼쪽 세로선 제거
-                    }
-                  },
-                  x: {
-                    stacked: true,
-                    min: -maxAbs,
-                    max: maxAbs,
-                    grid: {
-                      drawBorder: true,         // 맨 아래 축선은 표시
-                      drawOnChartArea: false,   // 차트 안쪽 세로/가로선은 전부 제거
-                      color: '#bbb'             // 아래 축선 색상
-                    },
-                    ticks: {
-                      callback: (v) => Math.abs(v).toLocaleString('ko-KR')
-                    }
-                  }
-                }
-              },
-              plugins: [centerPlugin]
-            });
-          })
-          .catch(() => { if ($empty) $empty.style.display = 'block'; });
-      })();
-    </script>
-
-    <script th:inline="javascript">
-      (function () {
-        const PRODUCT_ID = /*[[${product.id}]]*/ 0;
-
-        // 이미 있는 유틸: getCsrfPair(), showLoginModal(), fetchJSON() 재사용
-        async function fetchJSON(url, opt = {}) {
-          const { header, token } = getCsrfPair();
-          const base = {
-            credentials: 'same-origin',
-            headers: {
-              'Accept': 'application/json',
-              ...(opt.body ? { 'Content-Type': 'application/json' } : {}),
-              ...(token ? { [header]: token } : {})
-            }
-          };
-          const res = await fetch(url, { ...base, ...opt });
-          const ct = res.headers.get('content-type') || '';
-          const data = ct.includes('application/json') ? await res.json() : {};
-          if (!res.ok) throw { status: res.status, data };
-          return data;
-        }
-
-        // 상태 조회: 이미 신청했는지(true/false)
-        async function isSubscribed() {
-          const d = await fetchJSON(`/restockAlert/state?productId=${PRODUCT_ID}`);
-          return !!d.subscribed;
-        }
-
-        // 신청
-        async function subscribeRestock() {
-          return fetchJSON('/restockAlert/subscribe', {
-            method: 'POST',
-            body: JSON.stringify({ productId: PRODUCT_ID })
-          });
-        }
-
-        // 취소
-        async function cancelRestock() {
-          return fetchJSON('/restockAlert/cancel', {
-            method: 'POST',
-            body: JSON.stringify({ productId: PRODUCT_ID })
-          });
-        }
-
-        // 상단 버튼 텍스트/스타일 토글
-        function markSubscribed(btn, on) {
-          if (!btn) return;
-          if (on) {
-            btn.textContent = '알림 신청됨';
-            btn.classList.remove('btn-secondary');
-            btn.classList.add('btn-outline-secondary');
-          } else {
-            btn.textContent = '입고 알림 신청';
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-secondary');
-          }
-        }
-
-        const topBtn = document.getElementById('btn-restock');
-        const alreadyEl = document.getElementById('restockAlreadyModal');
-        const alreadyModal = (alreadyEl && typeof bootstrap !== 'undefined') ? new bootstrap.Modal(alreadyEl) : null;
-
-        // ① 상단 "입고 알림 신청" 버튼 클릭
-        topBtn?.addEventListener('click', async () => {
-          if (!LOGGED_IN) {
-            showLoginModal({ title: '입고 알림', message: '입고 알림 신청은 로그인 후 이용할 수 있어요.' });
-            return;
-          }
-          topBtn.disabled = true;
-          try {
-            if (await isSubscribed()) {
-              // 이미 신청자 → 취소 모달
-              alreadyModal?.show();
-            } else {
-              await subscribeRestock();
-              markSubscribed(topBtn, true);
-              const doneEl = document.getElementById('restockDoneModal');
-              if (doneEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(doneEl).show();
-            }
-          } catch (err) {
-            if (err?.status === 401 || err?.status === 403) {
-              showLoginModal({ title: '입고 알림', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
-            } else {
-              alert(err?.data?.message || '처리 중 오류가 발생했습니다.');
-            }
-          } finally {
-            setTimeout(() => topBtn.disabled = false, 600);
-          }
-        });
-
-        // ② OOS 유도 모달에서 "입고 알림 신청" 클릭 시에도 상태 확인 후 분기
-        document.getElementById('btn-restock-confirm')?.addEventListener('click', async (e) => {
-          const b = e.currentTarget;
-          if (b.disabled) return;
-          b.disabled = true;
-          try {
-            if (await isSubscribed()) {
-              // 유도 모달 닫고 → 이미 신청 모달 열기
-              const promptEl = document.getElementById('restockPromptModal');
-              if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).hide?.();
-              alreadyModal?.show();
-              return;
-            }
-            await subscribeRestock();
-            // 유도 모달 닫고 완료 모달
-            const promptEl = document.getElementById('restockPromptModal');
-            const doneEl = document.getElementById('restockDoneModal');
-            if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).hide?.();
-            if (doneEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(doneEl).show();
-            markSubscribed(topBtn, true);
-          } catch (err) {
-            if (err?.status === 401 || err?.status === 403) {
-              const promptEl = document.getElementById('restockPromptModal');
-              if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).hide?.();
-              showLoginModal({ title: '입고 알림', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
-            } else {
-              alert(err?.data?.message || '처리 중 오류가 발생했습니다.');
-            }
-          } finally {
-            setTimeout(() => b.disabled = false, 600);
-          }
-        });
-
-        // ③ "알림 취소" 버튼 → 취소 호출 후 상태/버튼 반영
-        document.getElementById('btn-restock-cancel')?.addEventListener('click', async (e) => {
-          const b = e.currentTarget;
-          if (b.disabled) return;
-          b.disabled = true;
-          try {
-            await cancelRestock();
-            alreadyModal?.hide();
-            markSubscribed(topBtn, false);
-          } catch (err) {
-            if (err?.status === 401 || err?.status === 403) {
-              alreadyModal?.hide();
-              showLoginModal({ title: '입고 알림', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
-            } else {
-              alert(err?.data?.message || '처리 중 오류가 발생했습니다.');
-            }
-          } finally {
-            setTimeout(() => b.disabled = false, 600);
-          }
-        });
-      })();
-    </script>
-
-    <script th:inline="javascript">
-      (function () {
-        const PRODUCT_ID = /*[[${product.id}]]*/ 0;
-
-        // ✅ 좋아요 바인딩 함수 (disabled 제외)
-        function bindReviewLikeHandlers(root = document) {
-          // 비로그인 → 로그인 모달
-          root.querySelectorAll('.like-wrap .need-login:not([disabled])')?.forEach(b => {
-            b.addEventListener('click', () => {
-              showLoginModal({ title: '리뷰 공감', message: '로그인 후 공감할 수 있어요.' });
-            });
-          });
-
-          // 로그인 → Ajax 토글
-          root.querySelectorAll('.like-wrap .btn-like:not(.need-login):not([disabled])')?.forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-              const wrap = e.currentTarget.closest('.like-wrap');
-              if (!wrap) return;
-              const id = wrap.getAttribute('data-id');
-              const { header, token } = getCsrfPair();
-
-              // 더블클릭 잠금
-              if (btn.dataset.lock === '1') return;
-              btn.dataset.lock = '1';
-
-              try {
-                const res = await fetch(`/main/etc/review/${id}/like`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', ...(token ? { [header]: token } : {}) },
-                  credentials: 'same-origin'
-                });
-
-                const ct = res.headers.get('content-type') || '';
-                if (res.status === 401 || res.status === 403 || !ct.includes('application/json')) {
-                  showLoginModal({ title: '리뷰 공감', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
-                  return;
-                }
-
-                const data = await res.json();
-                wrap.classList.toggle('is-liked', !!data.liked);
-                const cnt = wrap.querySelector('.like-count');
-                if (cnt) cnt.textContent = String(data.count ?? 0);
-              } catch {
-                alert('네트워크 오류가 발생했습니다.');
-              } finally {
-                setTimeout(() => delete btn.dataset.lock, 300);
-              }
-            });
-          });
-        }
-
-        // 최초 SSR DOM에도 한 번 바인딩
-        bindReviewLikeHandlers(document);
-
-        // ✅ 정렬 Ajax
-        const form = document.querySelector('#review-section form');
-        const select = form?.querySelector('select[name="sort"]');
-        let listHost = document.getElementById('reviewList'); // replace 후 재할당 필요하므로 let
-
-        async function loadReviews(sort) {
-          if (select) select.disabled = true;
-          try {
-            const res = await fetch(`/main/content/${PRODUCT_ID}/reviews?sort=${encodeURIComponent(sort)}`, {
-              credentials: 'same-origin',
-              headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            const html = await res.text();
-
-            const temp = document.createElement('div');
-            temp.innerHTML = html.trim();
-            const newFrag = temp.querySelector('#reviewList');
-            if (!newFrag) return;
-
-            // ▶ 리스트 교체
-            listHost.replaceWith(newFrag);
-            listHost = newFrag;
-
-            // ▶ 새 DOM에 좋아요 재바인딩
-            bindReviewLikeHandlers(newFrag);
-
-            // ▶ URL/셀렉트 동기화
-            const u = new URL(location.href);
-            u.searchParams.set('sort', sort);
-            history.replaceState(null, '', u.pathname + u.search);
-            if (select) select.value = sort;
-          } catch {
-            alert('리뷰를 불러오지 못했습니다.');
-          } finally {
-            if (select) select.disabled = false;
-          }
-        }
-
-        // 폼 submit 가로채기 + change 연동
-        form?.addEventListener('submit', (e) => {
-          e.preventDefault();
-          loadReviews(select?.value || 'best');
-        });
-        select?.addEventListener('change', () => form.requestSubmit());
-      })();
-
-      document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('personaRecommendationForm');
-        const resultDiv = document.getElementById('aiRecommendationResult');
-        const contentDiv = document.getElementById('recommendationContent');
-        const submitBtn = document.getElementById('getRecommendationBtn');
-        const resetBtn = document.getElementById('resetAnalysisBtn');
-        const btnText = submitBtn.querySelector('.btn-text');
-        const spinner = submitBtn.querySelector('.spinner-border');
-
-        // 폼 영역과 제목 요소들
-        const formContainer = document.querySelector('.row.g-3');
-        const titleSmall = document.querySelector('.card-header small');
-
-        form.addEventListener('submit', async function (e) {
-          e.preventDefault();
-
-          const gender = document.getElementById('gender').value;
-          const ageGroup = document.getElementById('ageGroup').value;
-
-          // 둘 다 선택했는지 확인
-          if (!gender || !ageGroup) {
-            alert('성별과 나이대를 모두 선택해주세요.');
-            return;
-          }
-
-          // 선택된 값 텍스트 변환
-          const genderText = gender === 'M' ? '남성' : '여성';
-          const ageText = ageGroup === '10s' ? '10대' :
-            ageGroup === '20s' ? '20대' :
-              ageGroup === '30s' ? '30대' :
-                ageGroup === '40s' ? '40대' : '50대 이상';
-
-          // 로딩 상태
-          submitBtn.disabled = true;
-          btnText.textContent = '분석 중...';
-          spinner.classList.remove('d-none');
-
-          // 폼 영역 숨기고 제목 변경
-          formContainer.style.display = 'none';
-          titleSmall.textContent = `${ageText} ${genderText}을 위한 분석 중입니다...`;
-
-          try {
-            const productId = /*[[${product.id}]]*/ 0;
-
-            const response = await fetch('/main/ai/persona-recommendation', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                productId: productId,
-                gender: gender,
-                ageGroup: ageGroup
-              })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-              // 제목 변경 (분석 완료)
-              titleSmall.textContent = `${ageText} ${genderText}을 위한 분석 결과`;
-
-              // 결과 표시
-              contentDiv.innerHTML = `<p>${result.recommendation}</p>`;
-              resultDiv.classList.remove('d-none');
-
-              // 기존 버튼 숨기고 새 버튼 표시
-              submitBtn.style.display = 'none';
-              resetBtn.style.display = 'inline-block';
-
-              // 결과 영역으로 스크롤
-              resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else {
-              alert('분석을 생성하는 중 오류가 발생했습니다: ' + result.message);
-              resetToInitialState();
-            }
-
-          } catch (error) {
-            console.error('Error:', error);
-            alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
-            resetToInitialState();
-          } finally {
-            submitBtn.disabled = false;
-            spinner.classList.add('d-none');
-          }
-        });
-
-        // 리셋 버튼 이벤트
-        resetBtn.addEventListener('click', function () {
-          resetToInitialState();
-        });
-
-        // 초기 상태로 되돌리는 함수
-        function resetToInitialState() {
-          // 폼 다시 보이기
-          formContainer.style.display = '';
-
-          // 제목 원래대로
-          titleSmall.textContent = '당신의 정보를 입력하면 더 구체적인 추천을 받을 수 있습니다';
-
-          // 결과 영역 숨기기
-          resultDiv.classList.add('d-none');
-
-          // 드롭다운 초기화
-          document.getElementById('gender').value = '';
-          document.getElementById('ageGroup').value = '';
-
-          // 버튼 상태 복구
-          submitBtn.style.display = 'inline-block';
-          resetBtn.style.display = 'none';
-          btnText.textContent = 'AI 추천받기';
-        }
-      });
-    </script>
-
-    <!-- 상세 페이지 중간에 있는 네비게이션 바 -->
-    <script>
-      // 고정된 헤더/탭의 실제 높이 합계를 계산
-      function getStickyOffset() {
-        const header = document.querySelector('header');           // 사이트 공통 헤더
-        const tab = document.querySelector('.productTabWrap');  // sticky 탭
-        return (header?.offsetHeight || 0) + (tab?.offsetHeight || 0);
-      }
-
-      // CSS 변수로도 내려서 CSS scroll-padding/scroll-margin에 재사용
-      function setStickyCSSVar() {
-        const v = getStickyOffset();
-        document.documentElement.style.setProperty('--sticky-offset', `${v}px`);
-      }
-      setStickyCSSVar();
-      window.addEventListener('resize', setStickyCSSVar);
-
-      // 탭 클릭 → 해당 섹션으로 부드럽게 스크롤(정확한 보정)
-      document.querySelectorAll('.productTab button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const target = document.querySelector(btn.dataset.target);
-          if (!target) return;
-          const y = target.getBoundingClientRect().top + window.pageYOffset - getStickyOffset() - 8; // 살짝 여유
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        });
-      });
-
-      // 🔧 버그 픽스: 실제 DOM은 section이므로 선택자를 바꿔야 active 갱신이 됨
-      const sections = document.querySelectorAll('section[id]');
-      const navBtns = document.querySelectorAll('.productTab button');
-
-      // 스크롤 위치에 따라 active 탭 토글
-      window.addEventListener('scroll', () => {
-        const offset = getStickyOffset() + 20;
-        let current = '';
-        sections.forEach(sec => {
-          const rect = sec.getBoundingClientRect();
-          if (rect.top <= offset && rect.bottom > offset) current = `#${sec.id}`;
-        });
-        navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === current));
-      });
-    </script>
-  </th:block>
+								<svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
+									<!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
+									<path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+								</svg>
+							</button>
+						</div>
+						<div>
+							<strong class="title" th:text="${product.name}"></strong>
+						</div>
+
+						<div class="mb-3 pt-3 price-area">
+							<div>
+								<strong class="rate"
+									th:text="${#numbers.formatDecimal(T(java.lang.Math).floor(product.discount), 0, 0)} + '%'"></strong>
+								<span class="sale" th:text="${#numbers.formatInteger(product.sellPrice, 3,'COMMA')} + '원'"></span>
+							</div>
+							<div>
+								<del class="list" th:if="${product.price > product.sellPrice}"
+									th:text="${#numbers.formatInteger(product.price, 3,'COMMA')} + '원'"></del>
+							</div>
+						</div>
+					</div>
+
+					<div class="mb-3 pb-3 border-bottom">
+						<div>배송 정보</div>
+						<div>
+							<h5>배송비 3,000 원</h5>
+						</div>
+						<div>
+							<h5>예상 배송일 3 일</h5>
+						</div>
+					</div>
+
+					<div class="my-3 py-3">
+						<div class="mb-3">구매 확정 시, 결제금액의 5% 적립</div>
+						<form id="buy-form" method="post">
+							<input type="hidden" name="id" th:value="${product.id}">
+
+							<!-- 수량 / 합계 영역 -->
+							<div class="d-flex align-items-center gap-2" id="buy-qty-wrap">
+								<button type="button" class="btn btn-outline-secondary btn-sm btn-minus">-</button>
+
+								<!-- 수량 입력: min=1, max=재고 -->
+								<input type="number" class="form-control text-center qty-input" style="width:80px;" name="quantity"
+									th:attr="max=${product.count}" min="1" value="1">
+
+								<button type="button" class="btn btn-outline-secondary btn-sm btn-plus">+</button>
+
+								<div class="ms-3">
+									<div class="fw-semibold">합계: <span class="total-amount">0</span> 원</div>
+									<div class="text-muted small">적립 예정(5%): <span class="reward-amount">0</span> P
+									</div>
+								</div>
+							</div>
+							<!-- 수량 / 합계 끝 -->
+
+							<!-- 재고 제한 안내 -->
+							<p id="stockHint" class="stock-hint" aria-live="polite" aria-atomic="true" hidden></p>
+
+							<div class="my-3 d-flex gap-2">
+								<!-- 장바구니: 품절일 때도 클릭 가능(알림 유도용) -->
+								<button type="button" class="btn btn-outline-secondary" id="btn-add-cart"
+									th:attr="data-oos=${product.count == 0} ? 'true' : 'false'">
+									장바구니
+								</button>
+
+								<!-- 재고 있을 때만 바로결제 -->
+								<button type="submit" class="btn btn-secondary" formaction="/checkout/order" formmethod="post"
+									id="btn-buy-now" th:if="${product.count > 0}">
+									바로 결제
+								</button>
+
+								<!-- 재고 없을 때 입고 알림 -->
+								<button type="button" class="btn btn-secondary" id="btn-restock" th:if="${product.count == 0}">
+									입고 알림 신청
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 공용 로그인 모달 -->
+		<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="loginModalTitle">로그인 필요</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body" id="loginModalBody">
+						로그인이 필요한 서비스입니다. <br>
+						로그인 하시겠습니까?
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-outline-secondary" data-bs-dismiss="modal">나중에 하기</button>
+						<a id="loginModalCta" class="btn btn-secondary" href="/user/login">로그인하기</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 장바구니 모달 -->
+		<div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">장바구니 담기</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body">
+						<div id="cartModalMsg">장바구니에 제품이 등록되었습니다.</div>
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
+						<span sec:authorize="isAuthenticated()">
+							<a th:href="@{/cart/list}" class="btn btn-secondary" id="goCartBtn">장바구니로 이동</a>
+						</span>
+						<span sec:authorize="isAnonymous()">
+							<a th:href="@{/user/login}" class="btn btn-secondary" id="goCartBtn">로그인하기</a>
+						</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 품절 시 장바구니 클릭 → 알림 유도 모달 -->
+		<div class="modal fade" id="restockPromptModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">입고 알림</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body">
+						품절된 상품입니다.<br>
+						이 상품의 입고 알림을 신청하시겠습니까?
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-outline-secondary" data-bs-dismiss="modal">나중에 하기</button>
+						<button class="btn btn-secondary" id="btn-restock-confirm">입고 알림 신청</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 알림 신청 완료 모달 -->
+		<div class="modal fade" id="restockDoneModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">입고 알림</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body">입고 알림이 등록되었습니다.</div>
+					<div class="modal-footer">
+						<button class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 이미 신청자 안내 모달 -->
+		<div class="modal fade" id="restockAlreadyModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">입고 알림</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body">
+						이미 알림 신청을 하신 상품입니다.<br>
+						알림 신청을 취소하시겠습니까?
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-outline-secondary" data-bs-dismiss="modal">닫기</button>
+						<button class="btn btn-danger" id="btn-restock-cancel">알림 취소</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- [신규] 찜 로그인 안내 모달 -->
+		<div class="modal fade" id="zzimLoginModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">관심등록</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body">로그인이 되어있지 않습니다. 로그인하시겠습니까?</div>
+					<div class="modal-footer">
+						<button class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
+						<a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 찜 등록 완료 모달(문구 정정) -->
+		<div class="modal fade" id="zzimDoneModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">관심등록</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body">관심등록이 되었습니다.</div>
+					<div class="modal-footer">
+						<button class="btn btn-secondary" data-bs-dismiss="modal">확인</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 찜 해제 확인 모달(기존 문구 유지) -->
+		<div class="modal fade" id="zzimConfirmModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">관심등록 해제</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body">
+						이미 관심등록이 된 상품입니다.<br>관심등록을 해제하시겠습니까?
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
+						<button class="btn btn-danger btn-confirm">확인</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 비로그인 전용: 바로결제 로그인 안내 모달 -->
+		<div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-hidden="true" sec:authorize="isAnonymous()">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">바로결제</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body">로그인이 필요합니다.</div>
+					<div class="modal-footer">
+						<button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
+						<a th:href="@{/user/login}" class="btn btn-secondary">로그인하기</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 여기에 탭 네비게이션을 추가 -->
+		<nav class="productTabWrap">
+			<div class="productTab">
+				<button data-target="#product-desc">상품 상세정보</button>
+				<button data-target="#buyer-stats">구매자 통계</button>
+				<button data-target="#review-section">리뷰 <span th:text="${reviewCount}"></span></button>
+				<button data-target="#similar-products">관련 상품</button>
+			</div>
+		</nav>
+
+		<!-- 하단의 향 소개 -->
+		<div class="productContentsWrap">
+			<section id="product-desc">
+				<div class="my-5">
+					<div class="my-5">
+						<section class="scent-kv">
+							<h2 class="kv-title">향 정보</h2>
+
+							<div class="kv-item" th:if="${product.grade != null}">
+								<dt>부향률</dt>
+								<dd th:text="${product.grade.gradeName}">오 드 퍼퓸</dd>
+							</div>
+
+							<div class="kv-item" th:if="${product.mainNote != null}">
+								<dt>메인 어코드</dt>
+								<dd th:text="${product.mainNote.mainNoteName}">우디</dd>
+							</div>
+
+							<!-- 싱글/피라미드 자동 분기 -->
+							<div class="kv-item"
+								th:if="${product.singleNote != null or product.topNote != null or product.middleNote != null or product.baseNote != null}">
+								<dt>메인 노트</dt>
+								<dd>
+									<div th:if="${product.singleNote != null}">
+										<span class="note-pill">싱글</span>
+										<span th:text="${product.singleNote}">자스민</span>
+									</div>
+									<div class="note-rows" th:if="${product.singleNote == null}">
+										<div th:if="${product.topNote != null}"><span class="note-pill">탑</span> <span
+												th:text="${product.topNote}"></span></div>
+										<div th:if="${product.middleNote != null}"><span class="note-pill">미들</span>
+											<span th:text="${product.middleNote}"></span>
+										</div>
+										<div th:if="${product.baseNote != null}"><span class="note-pill">베이스</span>
+											<span th:text="${product.baseNote}"></span>
+										</div>
+									</div>
+								</dd>
+							</div>
+
+							<div class="kv-item" th:if="${product.description != null}">
+								<dt>향 설명</dt>
+								<dd>
+									<div id="scentDesc" class="desc-clamp" th:text="${product.description}">설명</div>
+								</dd>
+							</div>
+						</section>
+					</div>
+
+					<div class="scent-guide scent-guide--a">
+						<h2 class="sg-title">향 소개</h2>
+						<div class="desc sg-body" th:utext="${guideHtml}"></div>
+					</div>
+
+					<!-- AI 개인화 추천 - 리본형 -->
+					<div class="card">
+						<div class="card-body ai-vert">
+							<!-- 상단 타이틀 -->
+							<div class="ai-head">
+								<div class="title">AI 가이드</div>
+								<div class="hint">간단히 선택한 뒤 “맞춤 추천 보기”를 누르세요.</div>
+							</div>
+
+							<!-- 선택 행: 드롭다운 2개 + 버튼(우측) -->
+							<form id="personaRecommendationForm">
+								<div class="ai-row">
+									<div>
+										<label class="form-label">성별</label>
+										<div class="cs" id="cs-gender">
+											<button type="button" class="cs-btn" aria-haspopup="listbox" aria-expanded="false">선택</button>
+											<ul class="cs-menu" role="listbox">
+												<!-- <li class="cs-item is-disabled" aria-disabled="true" data-value="">선택</li> -->
+												<li class="cs-item" data-value="M">남성</li>
+												<li class="cs-item" data-value="F">여성</li>
+											</ul>
+											<!-- 폼 제출용 -->
+											<input type="hidden" id="gender" name="gender" value="">
+										</div>
+									</div>
+
+									<div>
+										<label class="form-label">나이대</label>
+										<div class="cs" id="cs-ageGroup">
+											<button type="button" class="cs-btn" aria-haspopup="listbox" aria-expanded="false">선택</button>
+											<ul class="cs-menu" role="listbox">
+												<!-- <li class="cs-item is-disabled" aria-disabled="true" data-value="">선택</li> -->
+												<li class="cs-item" data-value="10s">10대</li>
+												<li class="cs-item" data-value="20s">20대</li>
+												<li class="cs-item" data-value="30s">30대</li>
+												<li class="cs-item" data-value="40s">40대</li>
+												<li class="cs-item" data-value="50plus">50대 이상</li>
+											</ul>
+											<!-- 폼 제출용 -->
+											<input type="hidden" id="ageGroup" name="ageGroup" value="">
+										</div>
+									</div>
+
+									<div class="text-end">
+										<button type="submit" class="btn btn-dark btn-cta" id="getRecommendationBtn">
+											<span class="btn-text">맞춤 추천 보기</span>
+											<span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
+										</button>
+									</div>
+								</div>
+							</form>
+
+							<!-- 선택 요약 + 다시 선택 -->
+							<div class="ai-summary d-none" id="aiSummaryRow">
+								<div class="ai-chips">
+									<!-- ⬇ JS가 채우는 선택칩 컨테이너(성별/나이대) -->
+									<span id="aiChips"></span>
+
+									<!-- ⬇ 고정 메타칩: 제품 정보에서 바로 출력 -->
+									<span class="ai-chip ai-chip--meta" th:if="${product.grade != null}">
+										<span class="k">부향률</span>
+										<span class="v" th:text="${product.grade.gradeName}">오 드 퍼퓸</span>
+									</span>
+
+									<span class="ai-chip ai-chip--meta" th:if="${product.mainNote != null}">
+										<span class="k">메인노트</span>
+										<span class="v" th:text="${product.mainNote.mainNoteName}">플로랄</span>
+									</span>
+
+									<span class="ai-chip ai-chip--meta" th:if="${product.brand != null}">
+										<span class="k">브랜드</span>
+										<span class="v" th:text="${product.brand.brandName}">바이레도</span>
+									</span>
+								</div>
+
+								<!-- <button class="ai-reset" id="resetAnalysisBtn" type="button">다시 선택</button> -->
+							</div>
+
+							<!-- 결과 -->
+							<div id="aiRecommendationResult" class="ai-result d-none"></div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section id="buyer-stats">
+				<!-- 구매자 통계 (명수, 인구피라미드) -->
+				<div class="mt-5">
+					<div class="d-flex justify-content-between align-items-center mb-3">
+						<h2 class="mb-0">구매자 통계</h2>
+						<div class="text-muted small">구매자 수(명) · 확정 수량 존재 기준</div>
+					</div>
+
+					<div class="card p-3">
+						<div class="d-flex justify-content-between small text-muted mb-1">
+							<span>WOMAN</span>
+							<span>MAN</span>
+						</div>
+						<div style="height:300px;">
+							<canvas id="buyerStatChart" aria-label="나이/성별별 구매자 수 피라미드 차트"></canvas>
+						</div>
+						<div id="buyerStatEmpty" class="text-muted small mt-2" style="display:none;">데이터가 없습니다.</div>
+					</div>
+				</div>
+			</section>
+
+			<section id="review-section">
+				<!-- 리뷰 섹션 -->
+				<div class="mt-5">
+					<div class="d-flex justify-content-between align-items-center mb-3">
+						<h2 class="mb-0">Review</h2>
+					</div>
+
+					<!-- 점수 분포 -->
+					<!-- 리뷰 상단 요약 (좌: 평균/개수, 우: 분포) -->
+					<div class="review-head mb-4" th:if="${reviewCount >= 0}">
+						<!-- 좌측 요약 -->
+						<div class="summary">
+							<!-- ① 평균 평점: 그림(별/사각형) 한 줄 -->
+							<div class="rating-bars my-3" th:with="filled=${T(java.lang.Math).round(reviewAvg)}">
+								<div th:each="i : ${#numbers.sequence(1,5)}" th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
+								</div>
+							</div>
+							<!-- ② 평균 평점: 숫자 한 줄 -->
+							<span class="avg-number" th:text="${#numbers.formatDecimal(reviewAvg,1,1)}">0.0</span>
+							<!-- ③ 후기 개수: 작게 한 줄 -->
+							<span class="total"> (후기 <span th:text="${reviewCount}">0</span>개)</span>
+						</div>
+
+						<!-- 가운데 세로 구분선으로 시각적 결속 -->
+						<div class="vrule"></div>
+
+						<!-- 우측: 5~1점 분포 (퍼센트 제거, 개수만 표시) -->
+						<ul id="ratingDist" class="rating-dist">
+							<li th:each="i : ${#numbers.sequence(1,5)}" th:with="s=${6 - i}, cnt=${reviewCounts[s]},
+                 share=${reviewCount > 0 ? (cnt * 100.0 / reviewCount) : 0}" th:style="|--cnt:${cnt};|">
+								<span class="label" th:text="|${s}점|">5점</span>
+								<div class="bar" aria-hidden="true">
+									<div class="fill"></div>
+								</div>
+								<span class="value">
+									<span class="count" th:text="${cnt}">0</span>
+									<span class="pct" th:text="|(${#numbers.formatDecimal(share,0,0)}%)|">(0%)</span>
+								</span>
+							</li>
+						</ul>
+					</div>
+				</div>
+
+				<hr class="my-4">
+
+				<!-- 전체 개수 + 정렬 -->
+				<div class="d-flex justify-content-between align-items-center mb-3">
+					<div class="fw-semibold">전체 리뷰 <span th:text="${reviewCount}">0</span>개</div>
+					<form method="get" th:action="@{|/main/content/${product.id}|}">
+						<select class="form-select form-select-sm w-auto d-inline-block" name="sort">
+							<option value="best" th:selected="${sort=='best'}">추천순</option>
+							<option value="recent" th:selected="${sort=='recent'}">최신순</option>
+							<option value="rating" th:selected="${sort=='rating'}">평점순</option>
+						</select>
+					</form>
+				</div>
+
+				<!-- 리스트 -> 정렬을 위해 묶음 -->
+				<div id="reviewList" th:fragment="reviewList(reviews, likedReviewIds, productId, sort)"
+					th:with="productId=${productId} ?: ${product?.id}" class="mt-2">
+
+					<div th:if="${#lists.isEmpty(reviews)}" class="text-muted py-4">작성된 리뷰가 없습니다.</div>
+
+					<div th:each="rv : ${reviews}" class="py-4 border-top">
+						<div class="d-flex align-items-start justify-content-between">
+							<!-- 좌측: 메타 + 본문 -->
+							<div class="d-flex align-items-start gap-3 flex-grow-1">
+								<div class="review-meta">
+									<div class="user-mask fw-semibold" th:with="len=${#strings.length(rv.userName)}"
+										th:text="${len <= 3} ? ${rv.userName} : ${#strings.substring(rv.userName,0,2)} + ${'*'.repeat(len-2)}">
+										kv**
+									</div>
+
+									<div class="rating-bars rating-bars--item mt-1" th:with="filled=${rv.rating}">
+										<div th:each="i : ${#numbers.sequence(1,5)}"
+											th:class="'cell' + (${i} <= ${filled} ? ' filled' : '')">
+										</div>
+									</div>
+								</div>
+
+								<!-- 본문 영역 -->
+								<div class="flex-grow-1">
+									<!-- 리뷰 -->
+									<div class="mb-2 text-break" th:if="${rv.status == 'ACTIVE'}" th:text="${rv.content}"
+										style="white-space:pre-line;">내용</div>
+
+									<!-- 좋아요 -->
+									<div class="like-wrap" th:attr="data-id=${rv.reviewId}"
+										th:classappend="${likedReviewIds.contains(rv.reviewId)} ? ' is-liked'">
+										<button type="button" class="btn-like" aria-label="공감" title="공감" sec:authorize="isAuthenticated()"
+											th:if="${rv.status == 'ACTIVE'}">
+											<i class="fa-regular fa-thumbs-up"></i>
+										</button>
+										<button type="button" class="btn-like need-login" aria-label="로그인 필요" sec:authorize="isAnonymous()"
+											th:if="${rv.status == 'ACTIVE'}">
+											<i class="fa-regular fa-thumbs-up"></i>
+										</button>
+										<span class="like-count" th:text="${#lists.size(rv.likers)}"
+											th:if="${rv.status == 'ACTIVE'}">0</span>
+									</div>
+								</div>
+							</div>
+
+							<!-- 우측: 날짜 + 액션(날짜 바로 아래) — 날짜 위치는 그대로 유지 -->
+							<div class="review-right ms-3">
+								<div class="review-date text-muted small text-nowrap"
+									th:text="${#temporals.format(rv.createDate, 'yy/MM/dd HH:mm')}">25/08/22 14:00</div>
+
+								<!-- 로그인 + (소유자 또는 관리자)만 노출 -->
+								<div class="review-actions mt-1" sec:authorize="isAuthenticated()"
+									th:with="isOwner=${#authentication.name == rv.userName}">
+									<div th:if="${isOwner or #authorization.expression('hasRole(''ADMIN'')')}">
+										<a class="ra-link" th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
+
+										<form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post" class="d-inline"
+											onsubmit="return confirm('후기를 삭제하시겠습니까?');">
+											<input type="hidden" name="productId" th:value="${productId}">
+											<button type="submit" class="ra-link ra-danger">삭제</button>
+										</form>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section id="similar-products" class="mt-5">
+				<h2 class="mb-3">관련 상품</h2>
+
+				<!-- 같은 브랜드의 다른 상품 -->
+				<div class="mb-5">
+					<div class="d-flex justify-content-between align-items-center mb-2">
+						<h3 class="h5 mb-0">같은 브랜드의 다른 상품</h3>
+						<span class="small text-muted">판매량 순</span>
+					</div>
+
+					<!-- 데이터 있을 때: 캐러셀 -->
+					<div th:if="${brandRecs != null and !#lists.isEmpty(brandRecs)}" class="rec-carousel">
+						<button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(brandRecs) <= 4}"
+							data-bs-target="#brandRecCarousel" data-bs-slide="prev">&lsaquo;</button>
+
+						<div class="rec-track">
+							<div id="brandRecCarousel" class="carousel slide" data-bs-ride="false" aria-label="같은 브랜드 추천 캐러셀" th:with="size=${#lists.size(brandRecs)},
+									pages=${(size + 3) / 4}">
+
+								<div class="carousel-inner" th:with="size=${#lists.size(brandRecs)}">
+									<div th:each="start : ${#numbers.sequence(0, size - 1, 4)}"
+										th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
+										th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
+										<div class="row g-3">
+											<div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}" th:with="r=${brandRecs[i]}, path=${r[3]}, name=${r[4]},
+																	img=${#strings.isEmpty(path) ? name : (path.endsWith('/') ? path + name : path + '/' + name)}">
+												<a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
+													<div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
+													<div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">
+														브랜드명</div>
+													<div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
+													<br>
+													<div class="rel-price text-muted">
+														<strong class="sell" th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
+														<del class="original" th:if="${r[5] != null && r[5] > r[6]}"
+															th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
+													</div>
+												</a>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!-- ▼ 인디케이터: 슬라이드가 2페이지 이상일 때만 노출 -->
+								<div class="carousel-indicators rec-indicators" th:if="${pages > 1}">
+									<button type="button" th:each="p : ${#numbers.sequence(0, pages-1)}"
+										th:classappend="${p} == 0 ? ' active' : ''"
+										th:attr="data-bs-target='#brandRecCarousel', data-bs-slide-to=${p}, aria-label='페이지 ' + (${p}+1)">
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(brandRecs) <= 4}"
+							data-bs-target="#brandRecCarousel" data-bs-slide="next">&rsaquo;</button>
+					</div>
+
+					<!-- 데이터 없을 때: 안내 -->
+					<div th:if="${brandRecs == null or #lists.isEmpty(brandRecs)}"
+						class="text-muted small py-3 text-center border rounded-2">
+						같은 브랜드의 추천 상품이 없습니다.
+					</div>
+				</div>
+
+				<!-- 최근/누적 베스트 8 -->
+				<div class="mt-4" th:with="isFallback=${(recentTopIsFallback) ?: false}">
+					<div class="d-flex justify-content-between align-items-center mb-2">
+						<h3 class="h5 mb-0" th:text="${isFallback} ? '누적 BEST 8' : '주간 BEST 8'">주간 BEST 8</h3>
+						<span class="small text-muted" th:text="${isFallback} ? '누적 판매량 기준' : '주간 판매량 기준'">주간 판매량
+							기준</span>
+					</div>
+
+					<!-- 데이터 있을 때: 캐러셀 -->
+					<div th:if="${recentTop8 != null and !#lists.isEmpty(recentTop8)}" class="rec-carousel">
+						<button class="rec-nav" type="button" aria-label="이전" th:disabled="${#lists.size(recentTop8) <= 4}"
+							data-bs-target="#recentTopCarousel" data-bs-slide="prev">&lsaquo;</button>
+
+						<div class="rec-track">
+							<div id="recentTopCarousel" class="carousel slide" data-bs-ride="false" aria-label="이번 주 베스트 캐러셀" th:with="size=${#lists.size(recentTop8)},
+									pages=${(size + 3) / 4}">
+
+								<div class="carousel-inner" th:with="size=${#lists.size(recentTop8)}">
+									<div th:each="start : ${#numbers.sequence(0, size - 1, 4)}"
+										th:with="endIdx=${T(java.lang.Math).min(start + 3, size - 1)}"
+										th:class="'carousel-item' + (${start} == 0 ? ' active' : '')">
+										<div class="row g-3">
+											<div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(start, endIdx)}" th:with="r=${recentTop8[i]}, path=${r[3]}, name=${r[4]},
+																	img=${#strings.isEmpty(path) ? name : (path.endsWith('/') ? path + name : path + '/' + name)}">
+												<a class="rel-card d-block" th:href="@{|/main/content/${r[0]}|}">
+													<div class="rel-thumb ratio ratio-1x1 mb-2"><img th:src="${img}" alt="" loading="lazy"></div>
+													<div class="rel-brand small text-muted text-truncate" th:text="${r[2]}">
+														브랜드명</div>
+													<div class="rel-title text-truncate" th:text="${r[1]}">상품명</div>
+													<div class="small text-muted" th:if="${r[7] != null}">
+														<span th:text="${isFallback} ? '(누적) - ' : '(최근 7일) - '">(최근 7일)
+															-
+														</span>
+														<span th:text="${#numbers.formatInteger(r[7],1,'COMMA')}">0</span>개
+														판매
+													</div> <br>
+													<div class="rel-price text-muted">
+														<strong class="sell" th:text="${#numbers.formatInteger(r[6],1,'COMMA')} + '원'">0원</strong>
+														<del class="original" th:if="${r[5] != null && r[5] > r[6]}"
+															th:text="${#numbers.formatInteger(r[5],1,'COMMA')} + '원'">0원</del>
+													</div>
+												</a>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!-- ▼ 인디케이터 -->
+								<div class="carousel-indicators rec-indicators" th:if="${pages > 1}">
+									<button type="button" th:each="p : ${#numbers.sequence(0, pages-1)}"
+										th:classappend="${p} == 0 ? ' active' : ''"
+										th:attr="data-bs-target='#recentTopCarousel', data-bs-slide-to=${p}, aria-label='페이지 ' + (${p}+1)">
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<button class="rec-nav" type="button" aria-label="다음" th:disabled="${#lists.size(recentTop8) <= 4}"
+							data-bs-target="#recentTopCarousel" data-bs-slide="next">&rsaquo;</button>
+					</div>
+
+					<!-- 데이터 없을 때: 안내 -->
+					<div th:if="${recentTop8 == null or #lists.isEmpty(recentTop8)}"
+						class="text-muted small py-3 text-center border rounded-2">
+						최근 7일 판매 데이터가 없어 표시할 상품이 없습니다.
+					</div>
+				</div>
+			</section>
+		</div> <!-- productContentsWrap 끝 -->
+	</div>
+
+	<!-- 스크립트 -->
+	<th:block layout:fragment="script">
+		<script th:inline="javascript">
+			// === CSRF: 메타 태그 또는 Thymeleaf 인라인 값 둘 다 지원 ===
+			function getCsrfPair() {
+				const metaToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+				const metaHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+				const inlineHeader = /*[[${_csrf?.headerName}]]*/ 'X-CSRF-TOKEN';
+				const inlineToken = /*[[${_csrf?.token}]]*/ '';
+				return {
+					header: metaHeader || inlineHeader || 'X-CSRF-TOKEN',
+					token: metaToken || inlineToken || ''
+				};
+			}
+
+			// 공용 로그인 모달 오픈 헬퍼
+			function showLoginModal({
+				title = '로그인 필요',
+				message = '로그인이 필요한 서비스입니다.',
+				redirectTo = (location.pathname + location.search)
+			} = {}) {
+				const el = document.getElementById('loginModal');
+				// 폴백: 모달이 없거나 bootstrap 미로딩 시 로그인 페이지로
+				if (!el || typeof bootstrap === 'undefined') {
+					const url = new URL('/user/login', location.origin);
+					url.searchParams.set('redirect', redirectTo);
+					location.href = url.pathname + url.search;
+					return;
+				}
+				document.getElementById('loginModalTitle').textContent = title;
+				// 줄바꿈 허용
+				document.getElementById('loginModalBody').innerHTML = message;
+
+				const cta = document.getElementById('loginModalCta');
+				const url = new URL('/user/login', location.origin);
+				url.searchParams.set('redirect', redirectTo);
+				cta.setAttribute('href', url.pathname + url.search);
+
+				new bootstrap.Modal(el).show();
+			}
+
+			// Bootstrap Modal 준비
+			const cartModalEl = document.getElementById('cartModal');
+			const cartModal = cartModalEl ? new bootstrap.Modal(cartModalEl) : null;
+
+			// 공통 DOM
+			const btnAddCart = document.getElementById('btn-add-cart');
+			const buyForm = document.getElementById('buy-form');
+			const qtyInput = document.querySelector('.qty-input');
+			const msgBox = document.getElementById('cartModalMsg');
+			const badgeEl = document.getElementById('cart-count');
+
+			// 상품 정보(템플릿 값 주입)
+			const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+			const PRODUCT_NAME = /*[[${product.name}]]*/ '';
+			const MAX_STOCK = parseInt(qtyInput?.getAttribute('max') || '0', 10);
+
+			// 로그인 상태(서버에서 true/false로 렌더됨)
+			const LOGGED_IN = /*[[${#authorization.expression('isAuthenticated()')}]]*/ false;
+
+			// 더블클릭 방지
+			function withButtonLock(btn, fn) {
+				if (!btn || btn.disabled) return;
+				btn.disabled = true;
+				Promise.resolve(fn()).finally(() => setTimeout(() => btn.disabled = false, 800));
+			}
+
+			// 장바구니 추가
+			btnAddCart?.addEventListener('click', () => withButtonLock(btnAddCart, async () => {
+
+				// ⬇️ 추가: 품절이면 /cart/add 호출 대신 알림 유도 모달
+				const isOOS = (MAX_STOCK <= 0) || btnAddCart.getAttribute('data-oos') === 'true';
+				if (isOOS) {
+					if (!LOGGED_IN) {
+						// 공용 로그인 모달 사용
+						showLoginModal({
+							title: '장바구니 담기',
+							message: '장바구니는 로그인 후 사용하실 수 있습니다.'
+						});
+					} else {
+						// 로그인 → 입고 알림 유도 모달 유지
+						const promptEl = document.getElementById('restockPromptModal');
+						if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).show();
+					}
+					return;
+				}
+
+				let qty = parseInt(qtyInput.value, 10);
+				if (isNaN(qty) || qty < 1) qty = 1;
+				if (MAX_STOCK > 0) qty = Math.min(qty, MAX_STOCK);
+
+				// 1) 사전 카운트 체크 (UX)
+				try {
+					const cRes = await fetch('/cart/count', { credentials: 'same-origin' });
+					const cData = await cRes.json().catch(() => ({}));
+					if (Number(cData.count) >= 20) {
+						if (msgBox) msgBox.textContent = '장바구니에 담을 수 있는 최대 수량은 20개 입니다.';
+						cartModal?.show();
+						return;
+					}
+				} catch (_) {
+					// 사전 체크 실패해도 /cart/add 단계에서 다시 막힘
+				}
+
+				try {
+					const res = await fetch('/cart/add', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						credentials: 'same-origin',
+						body: JSON.stringify({ productId: PRODUCT_ID, qty })        // /cart/add 라는 URI 를 요청할 때, product 의 id 값과 선택한 수량(qty)을 POST 방식으로 전송
+					});
+
+					const data = await res.json().catch(() => ({}));
+
+					if (res.ok) {
+						if (badgeEl && typeof data.count === 'number') {
+							badgeEl.textContent = String(data.count);
+						}
+						if (msgBox) msgBox.textContent = `“${PRODUCT_NAME}” ${qty}개가 장바구니에 담겼습니다.`;
+						cartModal?.show();
+					} else {
+						if (msgBox) msgBox.textContent = (data && data.message) ? data.message : '처리 중 오류가 발생했습니다.';
+						cartModal?.show();
+					}
+				} catch (e) {
+					if (msgBox) msgBox.textContent = '네트워크 오류가 발생했습니다.';
+					cartModal?.show();
+				}
+			}));
+
+			// 바로결제 더블클릭 방지
+			document.getElementById('buy-form')?.addEventListener('submit', (e) => {
+				const btn = e.submitter;
+				if (!btn) return;
+				btn.disabled = true;
+				setTimeout(() => btn.disabled = false, 2000);
+			});
+
+			// 비로그인일 때 buy-form 제출 막고 모달 오픈
+		</script>
+
+		<script sec:authorize="isAnonymous()">
+			(function () {
+				const form = document.getElementById('buy-form');
+				const modalEl = document.getElementById('loginRequiredModal');
+				if (!form || !modalEl || typeof bootstrap === 'undefined') return;
+				const modal = new bootstrap.Modal(modalEl);
+
+				form.addEventListener('submit', function (e) {
+					e.preventDefault();
+					const btn = e.submitter;
+					if (btn) { btn.disabled = true; setTimeout(() => btn.disabled = false, 1200); }
+					modal.show();
+				});
+			})();
+		</script>
+
+		<script th:inline="javascript">
+			// 수량/합계 계산
+			document.querySelectorAll('#buy-qty-wrap').forEach(container => {
+				const minusBtn = container.querySelector('.btn-minus');
+				const plusBtn = container.querySelector('.btn-plus');
+				const input = container.querySelector('.qty-input');
+				const totalEl = container.querySelector('.total-amount');
+				const rewardEl = container.querySelector('.reward-amount');
+
+				const MIN = parseInt(input.getAttribute('min')) || 1;
+				const MAX = parseInt(input.getAttribute('max')) || 0;
+				const SELLPRICE = /*[[${product.sellPrice}]]*/ 0;
+				const RATE = 0.05;
+
+				const fmt = n => Number(n || 0).toLocaleString('ko-KR');
+
+				const hintEl = document.getElementById('stockHint');
+				let hintTimer = null;
+				let prevQty = NaN; // 이전 수량
+
+				// 최대 재고 알림 노출
+				function showMaxHint(max) {
+					if (!hintEl) return;
+					const n = Number(max || 0).toLocaleString('ko-KR');
+					hintEl.textContent = `현재 재고가 ${n}개 존재하기 때문에 수량이 ${n}개로 제한됩니다.`;
+					hintEl.hidden = false;
+					hintEl.dataset.pop = '1';
+					clearTimeout(hintTimer);
+					hintTimer = setTimeout(() => {
+						hintEl.hidden = true;
+						delete hintEl.dataset.pop;
+					}, 3000);
+				}
+
+				function clamp(v) {
+					if (isNaN(v)) v = MIN;
+					v = Math.floor(v);
+					if (v < MIN) v = MIN;
+					if (v > MAX) v = MAX;
+					return v;
+				}
+
+				function recalcAndRender(qty) {
+					const total = SELLPRICE * qty;
+					const point = Math.floor(total * RATE);
+					totalEl.textContent = fmt(total);
+					rewardEl.textContent = fmt(point);
+				}
+
+				function updateUI() {
+					const v = parseInt(input.value, 10);
+					if (MAX < 1) {
+						input.value = 0;
+						input.disabled = true;
+						minusBtn.disabled = true;
+						plusBtn.disabled = true;
+
+						// ⬇️ 바로결제만 막고, 장바구니는 활성 유지 (품절 시 알림 유도용)
+						document.getElementById('btn-buy-now')?.setAttribute('disabled', 'true');
+						document.getElementById('btn-add-cart')?.removeAttribute('disabled');
+
+						recalcAndRender(0);
+						prevQty = 0;
+						return;
+					}
+					input.value = clamp(v);
+					minusBtn.disabled = (parseInt(input.value, 10) <= MIN);
+					plusBtn.disabled = (parseInt(input.value, 10) >= MAX);
+					input.max = String(MAX);
+					recalcAndRender(parseInt(input.value, 10));
+
+					// 재고 있을 때는 둘 다 활성
+					document.getElementById('btn-buy-now')?.removeAttribute('disabled');
+					document.getElementById('btn-add-cart')?.removeAttribute('disabled');
+
+					// ⬇️ 여기 추가: “MAX로 도달”했을 때만 1회 노출
+					const now = parseInt(input.value, 10) || 0;
+					if (MAX > 0 && now === MAX && prevQty !== MAX) {
+						showMaxHint(MAX);
+					}
+					prevQty = now;
+				}
+
+				updateUI();
+				minusBtn.addEventListener('click', function () {
+					if (this.disabled) return;
+					input.value = clamp(parseInt(input.value, 10) - 1);
+					updateUI();
+				});
+
+				plusBtn.addEventListener('click', function () {
+					if (this.disabled) return;
+					input.value = clamp(parseInt(input.value, 10) + 1);
+					updateUI();
+				});
+
+				input.addEventListener('input', function () {
+					this.value = this.value.replace(/[^0-9]/g, '');
+					updateUI();
+				});
+
+				input.addEventListener('blur', function () {
+					this.value = clamp(parseInt(this.value, 10));
+					updateUI();
+				});
+			});
+		</script>
+
+		<script th:inline="javascript">
+			(function () {
+				const bmBtn = document.querySelector('.bm-btn');
+				if (!bmBtn) return;
+
+				const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+
+				const zzimLoginModal = document.getElementById('zzimLoginModal');
+				const confirmModalEl = document.getElementById('zzimConfirmModal');
+				const doneModalEl = document.getElementById('zzimDoneModal');
+
+				const loginModal = zzimLoginModal ? new bootstrap.Modal(zzimLoginModal) : null;
+				const confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
+				const doneModal = doneModalEl ? new bootstrap.Modal(doneModalEl) : null;
+
+				function withLock(btn, fn) {
+					if (!btn || btn.disabled) return;
+					btn.disabled = true;
+					return Promise.resolve(fn()).finally(() => setTimeout(() => btn.disabled = false, 600));
+				}
+
+				// 공통 fetch(JSON) + CSRF
+				async function fetchJSON(url, opt = {}) {
+					const { header, token } = getCsrfPair();
+					const base = {
+						credentials: 'same-origin',
+						headers: { 'Accept': 'application/json', ...(opt.body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { [header]: token } : {}) }
+					};
+					const res = await fetch(url, { ...base, ...opt });
+					if (res.status === 401 || res.status === 403) { throw { auth: true }; }
+					const ct = res.headers.get('content-type') || '';
+					const data = ct.includes('application/json') ? await res.json() : {};
+					if (!res.ok) throw { status: res.status, data };
+					return data;
+				}
+
+				// 서버에서 실시간 상태 확인(= product_zzimers 테이블 조회 반영)
+				const checkState = () => fetchJSON(`/zzim/state?productId=${PRODUCT_ID}`, { method: 'GET' })
+					.then(d => !!d.zzimed);
+
+				const addZzim = () => fetchJSON(`/zzim/add`, { method: 'POST', body: JSON.stringify({ productId: PRODUCT_ID }) });
+				const removeZzim = () => fetchJSON(`/zzim/remove?productId=${PRODUCT_ID}`, { method: 'POST' });
+
+				bmBtn.addEventListener('click', () => withLock(bmBtn, async () => {
+					try {
+						// 서버에 실제 상태 질의 (비로그인 시 401 → catch에서 처리)
+						const already = await checkState();
+
+						if (already) {
+							confirmModal?.show();
+							const okBtn = confirmModalEl?.querySelector('.btn-confirm');
+							const handler = async () => {
+								await withLock(okBtn, async () => {
+									await removeZzim();
+									bmBtn.setAttribute('aria-pressed', 'false');
+									bmBtn.title = '관심 등록';
+									confirmModal?.hide();
+								});
+							};
+							okBtn?.addEventListener('click', handler, { once: true });
+						} else {
+							await addZzim();
+							bmBtn.setAttribute('aria-pressed', 'true');
+							bmBtn.title = '관심 해제';
+							doneModal?.show();
+						}
+					} catch (e) {
+						if (e && e.auth) { loginModal?.show(); return; }  // 401/403
+						alert('처리 중 오류가 발생했습니다.');
+					}
+				}));
+			})();
+		</script>
+
+		<!-- Chart.js + 구매자 피라미드 렌더 -->
+		<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+		<script th:inline="javascript">
+			(function () {
+				const productId = /*[[${product.id}]]*/ 0;
+				const api = `/main/api/product/${productId}/buyer-stats`;
+				const $canvas = document.getElementById('buyerStatChart');
+				const $empty = document.getElementById('buyerStatEmpty');
+				if (!$canvas) return;
+
+				// 중앙 라벨 + 중앙 여백(막대 잘라내기) 플러그인
+				const centerPlugin = {
+					id: 'pyramidCenter',
+					beforeDatasetsDraw(chart) {
+						const { ctx, chartArea } = chart;
+						const midX = (chartArea.left + chartArea.right) / 2;
+						const gutter = 64; // 중앙 여백(px) — 필요시 조절
+						const leftW = midX - gutter / 2 - chartArea.left;
+						const rightW = chartArea.right - (midX + gutter / 2);
+
+						ctx.save();
+						ctx.beginPath();
+						// 왼쪽 영역
+						ctx.rect(chartArea.left, chartArea.top, Math.max(0, leftW), chartArea.bottom - chartArea.top);
+						// 오른쪽 영역
+						ctx.rect(midX + gutter / 2, chartArea.top, Math.max(0, rightW), chartArea.bottom - chartArea.top);
+						ctx.clip(); // 막대는 중앙여백을 비우고 그려짐
+					},
+					afterDatasetsDraw(chart) {
+						const { ctx, chartArea, scales } = chart;
+						const y = scales.y;
+						const midX = (chartArea.left + chartArea.right) / 2;
+
+						ctx.restore(); // 클리핑 해제
+
+						// (요청) 중앙 세로선 제거: 아무 것도 그리지 않음
+
+						// 가운데 축 라벨(10대/20대 …)
+						const labels = chart.data.labels || [];
+						ctx.save();
+						ctx.textAlign = 'center';
+						ctx.textBaseline = 'middle';
+						ctx.fillStyle = '#333';
+						ctx.font = getComputedStyle($canvas).font || '12px system-ui';
+						labels.forEach((lab, i) => {
+							const py = y.getPixelForTick(i);
+							ctx.fillText(lab, midX, py);
+						});
+						ctx.restore();
+					}
+				};
+
+				fetch(api, { credentials: 'same-origin' })
+					.then(r => r.json())
+					.then(data => {
+						const labels = data?.labels || [];
+						const ds = data?.datasets || [];
+						const male = (ds.find(v => v.label === '남성')?.data || []).map(Number);
+						const female = (ds.find(v => v.label === '여성')?.data || []).map(Number);
+
+						const hasData = (male.concat(female)).some(v => v > 0);
+						if (!hasData) { $empty.style.display = 'block'; return; }
+
+						const femaleNeg = female.map(v => -v);
+						const maxAbs = Math.max(...male.map(Math.abs), ...femaleNeg.map(Math.abs), 1);
+
+						new Chart($canvas.getContext('2d'), {
+							type: 'bar',
+							data: {
+								labels,
+								datasets: [
+									{ label: '여성', data: femaleNeg, stack: 'gender' },
+									{ label: '남성', data: male, stack: 'gender' }
+								]
+							},
+							options: {
+								indexAxis: 'y',
+								responsive: true,
+								maintainAspectRatio: false,
+								plugins: {
+									legend: { position: 'top' },
+									tooltip: {
+										callbacks: {
+											label: (ctx) => {
+												const v = Math.abs(ctx.raw ?? 0);
+												return `${ctx.dataset.label}: ${v.toLocaleString('ko-KR')}명`;
+											}
+										}
+									}
+								},
+								scales: {
+									y: {
+										stacked: true,
+										ticks: { display: false },
+										grid: {
+											display: false,       // 가로선 전부 제거
+											drawBorder: false     // 왼쪽 세로선 제거
+										}
+									},
+									x: {
+										stacked: true,
+										min: -maxAbs,
+										max: maxAbs,
+										grid: {
+											drawBorder: true,         // 맨 아래 축선은 표시
+											drawOnChartArea: false,   // 차트 안쪽 세로/가로선은 전부 제거
+											color: '#bbb'             // 아래 축선 색상
+										},
+										ticks: {
+											callback: (v) => Math.abs(v).toLocaleString('ko-KR')
+										}
+									}
+								}
+							},
+							plugins: [centerPlugin]
+						});
+					})
+					.catch(() => { if ($empty) $empty.style.display = 'block'; });
+			})();
+		</script>
+
+		<script th:inline="javascript">
+			(function () {
+				const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+
+				// 이미 있는 유틸: getCsrfPair(), showLoginModal(), fetchJSON() 재사용
+				async function fetchJSON(url, opt = {}) {
+					const { header, token } = getCsrfPair();
+					const base = {
+						credentials: 'same-origin',
+						headers: {
+							'Accept': 'application/json',
+							...(opt.body ? { 'Content-Type': 'application/json' } : {}),
+							...(token ? { [header]: token } : {})
+						}
+					};
+					const res = await fetch(url, { ...base, ...opt });
+					const ct = res.headers.get('content-type') || '';
+					const data = ct.includes('application/json') ? await res.json() : {};
+					if (!res.ok) throw { status: res.status, data };
+					return data;
+				}
+
+				// 상태 조회: 이미 신청했는지(true/false)
+				async function isSubscribed() {
+					const d = await fetchJSON(`/restockAlert/state?productId=${PRODUCT_ID}`);
+					return !!d.subscribed;
+				}
+
+				// 신청
+				async function subscribeRestock() {
+					return fetchJSON('/restockAlert/subscribe', {
+						method: 'POST',
+						body: JSON.stringify({ productId: PRODUCT_ID })
+					});
+				}
+
+				// 취소
+				async function cancelRestock() {
+					return fetchJSON('/restockAlert/cancel', {
+						method: 'POST',
+						body: JSON.stringify({ productId: PRODUCT_ID })
+					});
+				}
+
+				// 상단 버튼 텍스트/스타일 토글
+				function markSubscribed(btn, on) {
+					if (!btn) return;
+					if (on) {
+						btn.textContent = '알림 신청됨';
+						btn.classList.remove('btn-secondary');
+						btn.classList.add('btn-outline-secondary');
+					} else {
+						btn.textContent = '입고 알림 신청';
+						btn.classList.remove('btn-outline-secondary');
+						btn.classList.add('btn-secondary');
+					}
+				}
+
+				const topBtn = document.getElementById('btn-restock');
+				const alreadyEl = document.getElementById('restockAlreadyModal');
+				const alreadyModal = (alreadyEl && typeof bootstrap !== 'undefined') ? new bootstrap.Modal(alreadyEl) : null;
+
+				// ① 상단 "입고 알림 신청" 버튼 클릭
+				topBtn?.addEventListener('click', async () => {
+					if (!LOGGED_IN) {
+						showLoginModal({ title: '입고 알림', message: '입고 알림 신청은 로그인 후 이용할 수 있어요.' });
+						return;
+					}
+					topBtn.disabled = true;
+					try {
+						if (await isSubscribed()) {
+							// 이미 신청자 → 취소 모달
+							alreadyModal?.show();
+						} else {
+							await subscribeRestock();
+							markSubscribed(topBtn, true);
+							const doneEl = document.getElementById('restockDoneModal');
+							if (doneEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(doneEl).show();
+						}
+					} catch (err) {
+						if (err?.status === 401 || err?.status === 403) {
+							showLoginModal({ title: '입고 알림', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
+						} else {
+							alert(err?.data?.message || '처리 중 오류가 발생했습니다.');
+						}
+					} finally {
+						setTimeout(() => topBtn.disabled = false, 600);
+					}
+				});
+
+				// ② OOS 유도 모달에서 "입고 알림 신청" 클릭 시에도 상태 확인 후 분기
+				document.getElementById('btn-restock-confirm')?.addEventListener('click', async (e) => {
+					const b = e.currentTarget;
+					if (b.disabled) return;
+					b.disabled = true;
+					try {
+						if (await isSubscribed()) {
+							// 유도 모달 닫고 → 이미 신청 모달 열기
+							const promptEl = document.getElementById('restockPromptModal');
+							if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).hide?.();
+							alreadyModal?.show();
+							return;
+						}
+						await subscribeRestock();
+						// 유도 모달 닫고 완료 모달
+						const promptEl = document.getElementById('restockPromptModal');
+						const doneEl = document.getElementById('restockDoneModal');
+						if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).hide?.();
+						if (doneEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(doneEl).show();
+						markSubscribed(topBtn, true);
+					} catch (err) {
+						if (err?.status === 401 || err?.status === 403) {
+							const promptEl = document.getElementById('restockPromptModal');
+							if (promptEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(promptEl).hide?.();
+							showLoginModal({ title: '입고 알림', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
+						} else {
+							alert(err?.data?.message || '처리 중 오류가 발생했습니다.');
+						}
+					} finally {
+						setTimeout(() => b.disabled = false, 600);
+					}
+				});
+
+				// ③ "알림 취소" 버튼 → 취소 호출 후 상태/버튼 반영
+				document.getElementById('btn-restock-cancel')?.addEventListener('click', async (e) => {
+					const b = e.currentTarget;
+					if (b.disabled) return;
+					b.disabled = true;
+					try {
+						await cancelRestock();
+						alreadyModal?.hide();
+						markSubscribed(topBtn, false);
+					} catch (err) {
+						if (err?.status === 401 || err?.status === 403) {
+							alreadyModal?.hide();
+							showLoginModal({ title: '입고 알림', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
+						} else {
+							alert(err?.data?.message || '처리 중 오류가 발생했습니다.');
+						}
+					} finally {
+						setTimeout(() => b.disabled = false, 600);
+					}
+				});
+			})();
+		</script>
+
+		<script th:inline="javascript">
+			(function () {
+				const PRODUCT_ID = /*[[${product.id}]]*/ 0;
+
+				// ✅ 좋아요 바인딩 함수 (disabled 제외)
+				function bindReviewLikeHandlers(root = document) {
+					// 비로그인 → 로그인 모달
+					root.querySelectorAll('.like-wrap .need-login:not([disabled])')?.forEach(b => {
+						b.addEventListener('click', () => {
+							showLoginModal({ title: '리뷰 공감', message: '로그인 후 공감할 수 있어요.' });
+						});
+					});
+
+					// 로그인 → Ajax 토글
+					root.querySelectorAll('.like-wrap .btn-like:not(.need-login):not([disabled])')?.forEach(btn => {
+						btn.addEventListener('click', async (e) => {
+							const wrap = e.currentTarget.closest('.like-wrap');
+							if (!wrap) return;
+							const id = wrap.getAttribute('data-id');
+							const { header, token } = getCsrfPair();
+
+							// 더블클릭 잠금
+							if (btn.dataset.lock === '1') return;
+							btn.dataset.lock = '1';
+
+							try {
+								const res = await fetch(`/main/etc/review/${id}/like`, {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json', ...(token ? { [header]: token } : {}) },
+									credentials: 'same-origin'
+								});
+
+								const ct = res.headers.get('content-type') || '';
+								if (res.status === 401 || res.status === 403 || !ct.includes('application/json')) {
+									showLoginModal({ title: '리뷰 공감', message: '세션이 만료되었거나 로그인이 필요합니다.<br>다시 로그인해 주세요.' });
+									return;
+								}
+
+								const data = await res.json();
+								wrap.classList.toggle('is-liked', !!data.liked);
+								const cnt = wrap.querySelector('.like-count');
+								if (cnt) cnt.textContent = String(data.count ?? 0);
+							} catch {
+								alert('네트워크 오류가 발생했습니다.');
+							} finally {
+								setTimeout(() => delete btn.dataset.lock, 300);
+							}
+						});
+					});
+				}
+
+				// 최초 SSR DOM에도 한 번 바인딩
+				bindReviewLikeHandlers(document);
+
+				// ✅ 정렬 Ajax
+				const form = document.querySelector('#review-section form');
+				const select = form?.querySelector('select[name="sort"]');
+				let listHost = document.getElementById('reviewList'); // replace 후 재할당 필요하므로 let
+
+				async function loadReviews(sort) {
+					if (select) select.disabled = true;
+					try {
+						const res = await fetch(`/main/content/${PRODUCT_ID}/reviews?sort=${encodeURIComponent(sort)}`, {
+							credentials: 'same-origin',
+							headers: { 'X-Requested-With': 'XMLHttpRequest' }
+						});
+						const html = await res.text();
+
+						const temp = document.createElement('div');
+						temp.innerHTML = html.trim();
+						const newFrag = temp.querySelector('#reviewList');
+						if (!newFrag) return;
+
+						// ▶ 리스트 교체
+						listHost.replaceWith(newFrag);
+						listHost = newFrag;
+
+						// ▶ 새 DOM에 좋아요 재바인딩
+						bindReviewLikeHandlers(newFrag);
+
+						// ▶ URL/셀렉트 동기화
+						const u = new URL(location.href);
+						u.searchParams.set('sort', sort);
+						history.replaceState(null, '', u.pathname + u.search);
+						if (select) select.value = sort;
+					} catch {
+						alert('리뷰를 불러오지 못했습니다.');
+					} finally {
+						if (select) select.disabled = false;
+					}
+				}
+
+				// 폼 submit 가로채기 + change 연동
+				form?.addEventListener('submit', (e) => {
+					e.preventDefault();
+					loadReviews(select?.value || 'best');
+				});
+				select?.addEventListener('change', () => form.requestSubmit());
+			})();
+
+			document.addEventListener('DOMContentLoaded', function () {
+				const form = document.getElementById('personaRecommendationForm');
+				const resultDiv = document.getElementById('aiRecommendationResult');
+				const chipsRow = document.getElementById('aiSummaryRow');
+				const chips = document.getElementById('aiChips');
+				const submitBtn = document.getElementById('getRecommendationBtn');
+				// const resetBtn = document.getElementById('resetAnalysisBtn');
+				const btnText = submitBtn.querySelector('.btn-text');
+				const spinner = submitBtn.querySelector('.spinner-border');
+
+				const productId = /*[[${product.id}]]*/ 0;
+
+				function renderChips(g, a) {
+					const gMap = { M: '남성', F: '여성' };
+					const aMap = { '10s': '10대', '20s': '20대', '30s': '30대', '40s': '40대', '50plus': '50대 이상' };
+
+					// 선택칩 2개를 '라벨/값' 구조로 명확히
+					document.getElementById('aiChips').innerHTML = `
+      <span class="ai-chip ai-chip--sel">
+        <span class="k">성별</span><span class="v">${gMap[g] || ''}</span>
+      </span>
+      <span class="ai-chip ai-chip--sel">
+        <span class="k">나이대</span><span class="v">${aMap[a] || ''}</span>
+      </span>
+    `;
+					document.getElementById('aiSummaryRow').classList.remove('d-none');
+				}
+
+				function showSkeleton() {
+					resultDiv.classList.remove('d-none');
+					resultDiv.innerHTML = `
+      <div class="ai-skel" style="width:82%"></div>
+      <div class="ai-skel" style="width:96%"></div>
+      <div class="ai-skel" style="width:88%"></div>
+      <div class="ai-skel" style="width:72%"></div>
+    `;
+				}
+
+				function resetAll() {
+					document.getElementById('gender').value = '';
+					document.getElementById('ageGroup').value = '';
+					chipsRow.classList.add('d-none');
+					resultDiv.classList.add('d-none');
+					resultDiv.innerHTML = '';
+					form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+				}
+
+				form.addEventListener('submit', async function (e) {
+					e.preventDefault();
+					const gender = document.getElementById('gender').value;
+					const ageGroup = document.getElementById('ageGroup').value;
+					if (!gender || !ageGroup) { alert('성별과 나이대를 모두 선택해주세요.'); return; }
+
+					submitBtn.disabled = true;
+					btnText.textContent = '분석 중...';
+					spinner.classList.remove('d-none');
+
+					renderChips(gender, ageGroup);
+					showSkeleton();
+
+					try {
+						const res = await fetch('/main/ai/persona-recommendation', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ productId, gender, ageGroup })
+						});
+						const data = await res.json();
+						if (data.success) {
+							resultDiv.textContent = data.recommendation || '';
+						} else {
+							alert('분석 생성에 실패했습니다.');
+							resetAll();
+						}
+						// resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					} catch (err) {
+						alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+						resetAll();
+					} finally {
+						submitBtn.disabled = false;
+						btnText.textContent = '맞춤 추천 보기';
+						spinner.classList.add('d-none');
+					}
+				});
+
+				// resetBtn.addEventListener('click', resetAll);
+			});
+
+			/* ---- 커스텀 셀렉트: 단일 버전(지연 로드/동적 삽입 대응 + 방어/정리 포함) ---- */
+			(function () {
+				// 전역 가드: 파일이 두 번 포함돼도 한 번만 부팅
+				if (window.__CS_BOOTED__) return;
+				window.__CS_BOOTED__ = true;
+
+				function unwrapIfWrapped(sel) {
+					const p = sel.parentElement;
+					if (p && p.classList.contains('cs')) {
+						p.before(sel);
+						p.remove();
+					}
+					sel.classList.remove('cs-hidden');
+					delete sel.dataset.csInit;
+				}
+
+				function enhanceSelect(sel) {
+					if (!sel || sel.dataset.csInit === '1') return;
+					sel.dataset.csInit = '1';
+
+					const wrap = document.createElement('div'); wrap.className = 'cs';
+					const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cs-btn';
+					const menu = document.createElement('ul'); menu.className = 'cs-menu'; menu.setAttribute('role', 'listbox');
+
+					const textOf = o => (o && (o.textContent || o.label)) || '';
+					btn.textContent = textOf(sel.selectedOptions?.[0] || sel.options?.[0]);
+
+					[...sel.options].forEach(opt => {
+						const li = document.createElement('li');
+						const disabled = opt.disabled || opt.value === "";
+						li.className = 'cs-item' + (opt.selected ? ' is-selected' : '') + (disabled ? ' is-disabled' : '');
+						if (disabled) li.setAttribute('aria-disabled', 'true');
+						li.dataset.value = opt.value;
+						li.textContent = opt.textContent || opt.label || '';
+						menu.appendChild(li);
+					});
+
+					sel.after(wrap); wrap.appendChild(sel); wrap.appendChild(btn); wrap.appendChild(menu);
+					sel.classList.add('cs-hidden');
+
+					function open() { wrap.classList.add('is-open'); }
+					function close() { wrap.classList.remove('is-open'); }
+					btn.addEventListener('click', () => wrap.classList.toggle('is-open'));
+					document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+
+					menu.addEventListener('click', e => {
+						const li = e.target.closest('.cs-item');
+						if (!li || li.classList.contains('is-disabled')) return;
+						menu.querySelectorAll('.cs-item').forEach(n => n.classList.remove('is-selected'));
+						li.classList.add('is-selected');
+						btn.textContent = li.textContent;
+						sel.value = li.dataset.value;
+						sel.dispatchEvent(new Event('change', { bubbles: true }));
+						close();
+					});
+
+					btn.addEventListener('keydown', e => {
+						if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+						if (e.key === 'Escape') close();
+					});
+				}
+
+				function scan(root) {
+					if (!root || typeof root.querySelectorAll !== 'function') root = document;
+					root.querySelectorAll('select[data-cs].cs-hidden').forEach(unwrapIfWrapped);
+					const targets = root.querySelectorAll('select[data-cs]:not(.cs-hidden):not([data-cs-init="1"])');
+					targets.forEach(enhanceSelect);
+					if (targets.length) console.log('[CS] mounted:', targets.length); // ← 한 번만 로그
+				}
+
+				// 최초 1회만 정확히 실행
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', () => requestAnimationFrame(() => scan()), { once: true });
+				} else {
+					requestAnimationFrame(() => scan());
+				}
+
+				// 동적 삽입 대응
+				const mo = new MutationObserver(muts => {
+					for (const m of muts) for (const n of m.addedNodes) {
+						if (!(n instanceof Element)) continue;
+						if (n.matches?.('select[data-cs]')) { unwrapIfWrapped(n); scan(n); }
+						n.querySelectorAll?.('select[data-cs]')?.forEach(el => { unwrapIfWrapped(el); enhanceSelect(el); });
+					}
+				});
+				mo.observe(document.body, { childList: true, subtree: true });
+
+				// 수동 재스캔 디버그
+				window.csScan = scan;
+			})();
+		</script>
+
+		<!-- 상세 페이지 중간에 있는 네비게이션 바 -->
+		<script>
+			// 고정된 헤더/탭의 실제 높이 합계를 계산
+			function getStickyOffset() {
+				const header = document.querySelector('header');           // 사이트 공통 헤더
+				const tab = document.querySelector('.productTabWrap');  // sticky 탭
+				return (header?.offsetHeight || 0) + (tab?.offsetHeight || 0);
+			}
+
+			// CSS 변수로도 내려서 CSS scroll-padding/scroll-margin에 재사용
+			function setStickyCSSVar() {
+				const v = getStickyOffset();
+				document.documentElement.style.setProperty('--sticky-offset', `${v}px`);
+			}
+			setStickyCSSVar();
+			window.addEventListener('resize', setStickyCSSVar);
+
+			// 탭 클릭 → 해당 섹션으로 부드럽게 스크롤(정확한 보정)
+			document.querySelectorAll('.productTab button').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const target = document.querySelector(btn.dataset.target);
+					if (!target) return;
+					const y = target.getBoundingClientRect().top + window.pageYOffset - getStickyOffset() - 8; // 살짝 여유
+					window.scrollTo({ top: y, behavior: 'smooth' });
+				});
+			});
+
+			// 🔧 버그 픽스: 실제 DOM은 section이므로 선택자를 바꿔야 active 갱신이 됨
+			const sections = document.querySelectorAll('section[id]');
+			const navBtns = document.querySelectorAll('.productTab button');
+
+			// 스크롤 위치에 따라 active 탭 토글
+			window.addEventListener('scroll', () => {
+				const offset = getStickyOffset() + 20;
+				let current = '';
+				sections.forEach(sec => {
+					const rect = sec.getBoundingClientRect();
+					if (rect.top <= offset && rect.bottom > offset) current = `#${sec.id}`;
+				});
+				navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === current));
+			});
+		</script>
+
+		<script>
+			(function () {
+				const list = document.getElementById('ratingDist');
+				if (!list) return;
+				let max = 0;
+				list.querySelectorAll('li').forEach(li => {
+					const n = Number(li.style.getPropertyValue('--cnt') || 0);
+					if (n > max) max = n;
+				});
+				list.style.setProperty('--max', Math.max(max, 1));
+			})();
+		</script>
+
+		<script>
+			(function () {
+				function mountCS(rootId) {
+					const root = document.getElementById(rootId);
+					if (!root) return;
+					const btn = root.querySelector('.cs-btn');
+					const menu = root.querySelector('.cs-menu');
+					const input = root.querySelector('input[type="hidden"]');
+
+					// 열고/닫기
+					const open = () => root.classList.add('is-open');
+					const close = () => root.classList.remove('is-open');
+
+					btn.addEventListener('click', () => {
+						root.classList.toggle('is-open');
+						btn.setAttribute('aria-expanded', root.classList.contains('is-open') ? 'true' : 'false');
+					});
+					document.addEventListener('click', (e) => {
+						if (!root.contains(e.target)) close();
+					});
+
+					// 항목 선택
+					menu.addEventListener('click', (e) => {
+						const li = e.target.closest('.cs-item');
+						if (!li || li.classList.contains('is-disabled')) return;
+
+						// 선택 표시 갱신
+						menu.querySelectorAll('.cs-item').forEach(n => n.classList.remove('is-selected'));
+						li.classList.add('is-selected');
+
+						// 값/라벨 반영
+						input.value = li.dataset.value || '';
+						btn.textContent = li.textContent || '선택';
+
+						// change 이벤트 (폼 바깥 JS가 듣고 있으면)
+						input.dispatchEvent(new Event('change', { bubbles: true }));
+						close();
+					});
+				}
+
+				mountCS('cs-gender');
+				mountCS('cs-ageGroup');
+			})();
+		</script>
+	</th:block>
 </body>
 
 </html>
