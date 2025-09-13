@@ -651,10 +651,17 @@
             // === 렌더러 ===
             function renderResultHeader(h) {
                 setText('resUserName', h.userName);
-                setText('resOrderId', h.orderId);
+                setText('resOrderId',  h.orderId);
                 setText('resCreatedAt', h.createdAt);
-                document.getElementById('resUserReason').textContent = h.userReason ?? '';
-            }
+
+                // userReason / refundReason / reason 중 먼저 오는 값 사용
+                const userReason =
+                    (h.userReason != null && String(h.userReason).trim() !== '') ? h.userReason :
+                    (h.refundReason != null && String(h.refundReason).trim() !== '') ? h.refundReason :
+                    (h.reason != null && String(h.reason).trim() !== '') ? h.reason : '';
+
+                document.getElementById('resUserReason').textContent = userReason;
+                }
 
             function renderResultSummary(s, h = {}) {
                 const num = (v, d = 0) => (v == null || v === '' || isNaN(Number(v))) ? d : Number(v);
@@ -743,20 +750,34 @@
                 const sec = document.getElementById('resGlobalRejectionSec');
                 const box = document.getElementById('resGlobalRejection');
 
-                const partial =
-                    (data.flags && typeof data.flags.partialRejected === 'boolean')
-                        ? data.flags.partialRejected
-                        : items.some(it => (it.approvedQty ?? 0) < (it.requestedQty ?? 0));
+                // 부분/전체 거절 판단: summary가 있으면 우선 사용, 없으면 items 비교
+                const s = data.summary || {};
+                const requested = Number(s.requestedQty ?? 0);
+                const approved  = Number(s.approvedQty ?? 0);
 
+                let partialRejected;
+                if (typeof data?.flags?.partialRejected === 'boolean') {
+                    partialRejected = data.flags.partialRejected;
+                } else if (requested || approved) {
+                    partialRejected = approved < requested;     // 전체 또는 부분 거절 포함
+                } else {
+                    // summary가 없으면 라인별 비교
+                    partialRejected = Array.isArray(items)
+                    ? items.some(it => Number(it.approvedQty ?? 0) < Number(it.requestedQty ?? 0))
+                    : false;
+                }
+
+                // 다양한 키에 대응: header/summary에 있는 rejection 필드들 중 첫 유효값
                 const reason =
-                    (data.header && data.header.rejectionReason) ||
-                    (data.summary && data.summary.rejectionReason) ||
-                    '';
+                    (data.header?.rejectionReason ?? data.summary?.rejectionReason ??
+                    data.header?.rejectReason    ?? data.summary?.rejectReason    ??
+                    data.header?.adminReason     ?? data.summary?.adminReason     ??
+                    data.header?.denyReason      ?? data.summary?.denyReason      ?? '');
 
-                const show = partial && String(reason).trim().length > 0;
+                const show = partialRejected && String(reason).trim().length > 0;
                 sec.classList.toggle('d-none', !show);
                 if (show) box.textContent = reason;
-            }
+                }
 
             function renderResultFooter(s, items, h) {
                 // 1) 항목 소계 합산 (단가×승인수량, lineAmount 없을 때도 안전)

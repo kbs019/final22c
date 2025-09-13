@@ -347,7 +347,6 @@ import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
 import com.ex.final22c.data.user.MileageRowWithBalance;
-import com.ex.final22c.repository.mypage.MileageReadRepository;
 import com.ex.final22c.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -356,7 +355,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MyMileageService {
 
-        private final MileageReadRepository mileageReadRepository;
         private final UserRepository userRepository;
 
         /** 칩/러닝 시작값: DB 보유치 그대로 */
@@ -365,158 +363,5 @@ public class MyMileageService {
                 return userRepository.findById(userNo)
                                 .map(u -> Optional.ofNullable(u.getMileage()).orElse(0))
                                 .orElse(0);
-        }
-
-        @Transactional(readOnly = true)
-        public Page<MileageRowWithBalance> getMileageHistory(Long userNo, int page, int size) {
-                List<Order> orders = mileageReadRepository.findOrdersForMileage(userNo);
-                if (orders.isEmpty()) {
-                        return Page.empty(PageRequest.of(Math.max(page - 1, 0), Math.max(size, 1)));
-                }
-
-                Map<Long, Order> orderById = new HashMap<>();
-                for (Order o : orders)
-                        orderById.put(o.getOrderId(), o);
-
-                List<MileageRowWithBalance> rows = new ArrayList<>();
-
-                // (A) 결제 차감
-                for (Order o : orders) {
-                        long used = mileageReadRepository.sumUsedMileageOfOrder(o.getOrderId());
-                        if (used > 0) {
-                                LocalDateTime paidAt = mileageReadRepository.findPaidAt(o.getOrderId());
-                                rows.add(MileageRowWithBalance.builder()
-                                                .orderId(o.getOrderId())
-                                                .processedAt(paidAt != null ? paidAt : o.getRegDate())
-                                                .usedPointRaw((int) used) // 양수 = 차감
-                                                .earnPointVisible(0)
-                                                .balanceAt(0)
-                                                .status("PAID")
-                                                .build());
-                        }
-                }
-
-                // (B) 구매확정 적립(스냅샷)
-                for (Order o : orders) {
-                        Integer snap = o.getConfirmMileage();
-                        if (snap != null && snap > 0) {
-                                rows.add(MileageRowWithBalance.builder()
-                                                .orderId(o.getOrderId())
-                                                .processedAt(o.getRegDate()) // confirm 시각 없으면 regDate
-                                                .usedPointRaw(0)
-                                                .earnPointVisible(snap) // 양수 = 적립
-                                                .balanceAt(0)
-                                                .status("CONFIRMED")
-                                                .build());
-                        }
-                }
-
-                // (C) 환불 → 적립 회수(비율), 포인트 복구 없음
-                List<Refund> refunds = mileageReadRepository.findRefundedByUser(userNo);
-                Map<Long, Integer> refundedItemsSumByOrder = new HashMap<>();
-                Map<Long, LocalDateTime> lastRefundedAtByOrder = new HashMap<>();
-
-                for (Refund r : refunds) {
-                        Long oid = (r.getOrder() != null) ? r.getOrder().getOrderId() : null;
-                        if (oid == null)
-                                continue;
-
-                        int itemSubtotal = 0;
-                        if (r.getDetails() != null) {
-                                for (var d : r.getDetails()) {
-                                        int qty = Math.max(0, Optional.ofNullable(d.getRefundQty()).orElse(0));
-                                        int unit = Math.max(0, Optional.ofNullable(d.getUnitRefundAmount()).orElse(0));
-                                        itemSubtotal += qty * unit; // 승인수량 × 단가 스냅샷
-                                }
-                        }
-                        if (itemSubtotal > 0) {
-                                refundedItemsSumByOrder.merge(oid, itemSubtotal, Integer::sum);
-                        }
-                        LocalDateTime when = (r.getUpdateDate() != null) ? r.getUpdateDate() : r.getCreateDate();
-                        lastRefundedAtByOrder.merge(oid, when, (a, b) -> a.isAfter(b) ? a : b);
-                }
-
-                for (var e : refundedItemsSumByOrder.entrySet()) {
-                        Long orderId = e.getKey();
-                        int refundedItems = Math.max(0, e.getValue());
-                        Order o = orderById.get(orderId);
-                        if (o == null)
-                                continue;
-
-                        int itemsTotal = (o.getDetails() == null) ? 0
-                                        : o.getDetails().stream()
-                                                        .mapToInt(d -> Optional.ofNullable(d.getTotalPrice()).orElse(0))
-                                                        .sum();
-                        if (itemsTotal <= 0)
-                                continue;
-
-                        int confirmSnap = Math.max(0, Optional.ofNullable(o.getConfirmMileage()).orElse(0));
-                        if (confirmSnap <= 0)
-                                continue;
-
-                        int recall = (int) Math.floor(confirmSnap * (refundedItems / (double) itemsTotal));
-                        if (recall <= 0)
-                                continue;
-
-                        rows.add(MileageRowWithBalance.builder()
-                                        .orderId(orderId)
-                                        .processedAt(lastRefundedAtByOrder.get(orderId))
-                                        .usedPointRaw(0) // 복구 없음
-                                        .earnPointVisible(-recall) // 회수(음수)
-                                        .balanceAt(0)
-                                        .status("REFUNDED")
-                                        .build());
-                }
-
-                if (rows.isEmpty()) {
-                        return Page.empty(PageRequest.of(Math.max(page - 1, 0), Math.max(size, 1)));
-                }
-
-                // 1) 누적 계산용 정렬(과거→현재)
-                rows.sort(Comparator
-                                .comparing(MileageRowWithBalance::getProcessedAt,
-                                                Comparator.nullsFirst(LocalDateTime::compareTo))
-                                .thenComparing(r -> Optional.ofNullable(r.getOrderId()).orElse(Long.MIN_VALUE))
-                                .thenComparingInt(r -> switch (String.valueOf(r.getStatus())) {
-                                        case "PAID" -> 1;
-                                        case "REFUNDED" -> 2;
-                                        case "CONFIRMED" -> 3;
-                                        default -> 99;
-                                }));
-
-                // 🔴 러닝 시작값 = DB 보유치(칩과 같아짐)
-                int start = getAdjustedCurrentMileage(userNo);
-                int delta = rows.stream().mapToInt(r -> r.getEarnPointVisible() - r.getUsedPointRaw()).sum();
-                int running = start - delta;
-
-                for (var r : rows) {
-                        running += (r.getEarnPointVisible() - r.getUsedPointRaw());
-                        r.setBalanceAt(running);
-                }
-
-                // 2) 화면 정렬(최신순)
-                rows.sort(Comparator
-                                .comparing(MileageRowWithBalance::getProcessedAt,
-                                                Comparator.nullsLast(LocalDateTime::compareTo))
-                                .reversed()
-                                .thenComparing((MileageRowWithBalance r) -> Optional.ofNullable(r.getOrderId())
-                                                .orElse(Long.MIN_VALUE),
-                                                Comparator.reverseOrder())
-                                .thenComparingInt(r -> {
-                                        int rank = switch (String.valueOf(r.getStatus())) {
-                                                case "CONFIRMED" -> 3;
-                                                case "REFUNDED" -> 2;
-                                                case "PAID" -> 1;
-                                                default -> 0;
-                                        };
-                                        return -rank;
-                                }));
-
-                int pageIndex = Math.max(page - 1, 0);
-                int pageSize = Math.max(size, 1);
-                int from = Math.min(pageIndex * pageSize, rows.size());
-                int to = Math.min(from + pageSize, rows.size());
-
-                return new PageImpl<>(rows.subList(from, to), PageRequest.of(pageIndex, pageSize), rows.size());
         }
 }

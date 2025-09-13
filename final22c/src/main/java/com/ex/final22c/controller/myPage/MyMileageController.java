@@ -22,29 +22,5 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/mypage")
 public class MyMileageController {
 
-    private final UserRepository usersRepository;
-    private final MyMileageService myMileageService;
 
-    @GetMapping("/mileage")
-    public String mileage(
-            @RequestParam(name = "page", defaultValue = "1") int page,
-            @RequestParam(name = "size", defaultValue = "10") int size,
-            Principal principal,
-            Model model) {
-
-        Users me = usersRepository.findByUserName(principal.getName())
-                .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
-
-        Page<MileageRowWithBalance> rows = myMileageService.getMileageHistory(me.getUserNo(), page, size);
-
-        // 칩 = DB 보유치 그대로
-        int chip = Optional.ofNullable(me.getMileage()).orElse(0);
-
-        model.addAttribute("section", "mileage");
-        model.addAttribute("me", me);
-        model.addAttribute("rows", rows);
-        model.addAttribute("adjustedMileage", chip);
-
-        return "mypage/mileage";
-    }
 }

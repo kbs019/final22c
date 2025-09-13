@@ -85,4 +85,8 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
 
     // REQUESTED, REFUNDED 등 상태별 카운트
     long countByStatus(String status);
+
+    Optional<Refund> findTopByOrder_OrderIdOrderByCreateDateDesc(Long orderId);
+    
+    List<Refund> findByOrder_OrderIdOrderByCreateDateDesc(Long orderId);
 }

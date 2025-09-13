@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import com.ex.final22c.data.refund.ApproveRefundRequest;
 import com.ex.final22c.data.refund.ApproveRefundResult;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
+import com.ex.final22c.data.refund.dto.RefundResultDtoV2;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.repository.orderDetail.OrderDetailRepository;
@@ -28,6 +30,7 @@ import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.refundDetail.RefundDetailRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.KakaoApiService;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -483,10 +486,181 @@ public class RefundService {
             rm.put("reason", r.getRequestedReason());
             rm.put("details", detailMaps);
             rm.put("totalRefundAmount", total); // 참고용(없어도 됨)
+            rm.put("rejectedReason", r.getRejectedReason());
 
             refundMaps.add(rm);
         }
 
         return Map.of("refunds", refundMaps);
+    }
+
+    private boolean isPartialRefund(Refund refund) {
+        return Optional.ofNullable(refund.getDetails())    // ✅ getDetails() 로 수정
+                .orElseGet(List::of)
+                .stream()
+                .anyMatch(d -> {
+                    int requested = Optional.ofNullable(d.getQuantity()).orElse(0);
+                    int approved  = Optional.ofNullable(d.getRefundQty()).orElse(0);
+                    return approved < requested;
+                });
+    }
+
+    /** pgPayloadJson에서 관리자 메타 거절사유 보조 추출 (없으면 null) */
+    private String extractAdminMetaRejectedReason(String pgPayloadJson) {
+        if (pgPayloadJson == null || pgPayloadJson.isBlank()) return null;
+        try {
+            ObjectMapper om = new ObjectMapper();
+            JsonNode root = om.readTree(pgPayloadJson);
+            JsonNode adminMeta = root.path("adminMeta");
+            if (!adminMeta.isMissingNode()) {
+                String r = adminMeta.path("rejectedReason").asText(null);
+                return (r != null && !r.isBlank()) ? r : null;
+            }
+        } catch (Exception ignore) {}
+        return null;
+        // (기존 승인/취소 로직은 손대지 않고 읽기만 함)
+    }
+
+    private RefundResultDtoV2 toV2(Refund r) {
+        // 상세 -> DTO
+        List<RefundResultDtoV2.RefundResultItemDto> items =
+            Optional.ofNullable(r.getDetails()).orElseGet(List::of)
+                .stream()
+                .map(this::toItemDto)
+                .collect(Collectors.toList());  // ← 수정
+
+        // 승인 수량/소계
+        int approvedQtyTotal = items.stream()
+            .mapToInt(i -> Optional.ofNullable(i.getApprovedQty()).orElse(0))
+            .sum();
+        int itemsSubtotal = items.stream()
+            .mapToInt(i -> Optional.ofNullable(i.getDetailRefundAmount()).orElse(0))
+            .sum();
+
+        // 배송비 환급(저장 필드 없으면 승인수량>0 기준으로 3,000원)
+        int shippingRefund = (approvedQtyTotal > 0) ? FIXED_SHIPPING_REFUND : 0;
+
+        // 마일리지
+        int refundMileage  = Optional.ofNullable(r.getRefundMileage()).orElse(0);
+        int confirmMileage = Optional.ofNullable(r.getConfirmMileage()).orElse(0);
+
+        // 결제 총액/결제 내역
+        Long orderId = getOrderId(r.getOrder());
+        List<Payment> pays = paymentRepository.findByOrder_OrderId(orderId);
+        int paymentTotal = pays.stream()
+            .mapToInt(p -> Optional.ofNullable(p.getAmount()).orElse(0))
+            .sum();
+
+        List<RefundResultDtoV2.PaymentDto> paymentDtos = pays.stream()
+            .map(p -> RefundResultDtoV2.PaymentDto.builder()
+                .paymentId(p.getPaymentId())
+                .methodName(methodNameOf(p))        // ← 수정
+                .tid(p.getTid())
+                .amount(Optional.ofNullable(p.getAmount()).orElse(0))
+                .build())
+            .collect(Collectors.toList());          // ← 수정
+
+        // 부분환불/배지
+        boolean partial = isPartialRefund(r);
+        String badge = determineBadge(r.getStatus(), partial);
+
+        // 최종 환급 금액(저장값 없으면 계산값 사용)
+        int totalRefundAmount = Optional.ofNullable(r.getTotalRefundAmount())
+            .orElse(itemsSubtotal + shippingRefund);
+
+        return RefundResultDtoV2.builder()
+            .refundId(r.getRefundId())
+            .status(r.getStatus())
+            .createdAt(r.getCreateDate())
+            .requestedReason(r.getRequestedReason())
+            .rejectedReason(r.getRejectedReason())
+            .adminMetaRejectedReason(extractAdminMetaRejectedReason(r.getPgPayloadJson()))
+            .partial(partial)
+            .badge(badge)
+            .details(items)
+            // 이미지 2 영역 값들
+            .refundMileage(refundMileage)
+            .confirmMileage(confirmMileage)
+            .shippingRefundAmount(shippingRefund)
+            .payments(paymentDtos.isEmpty() ? null : paymentDtos)    // 있으면 리스트
+            .paymentTotal(paymentDtos.isEmpty() ? paymentTotal : null) // 없을 때 총액만
+            .totalRefundAmount(totalRefundAmount)
+            .build();
+    }
+
+/** 결제 수단명 안전 추출 (프로젝트 실제 게터명에 맞게 1~2개만 남겨도 됨) */
+private String methodNameOf(Payment p) {
+    if (p == null) return null;
+    try { return (String) Payment.class.getMethod("getMethodName").invoke(p); } catch (Exception ignore) {}
+    try { return String.valueOf(Payment.class.getMethod("getMethod").invoke(p)); } catch (Exception ignore) {}
+    try { return String.valueOf(Payment.class.getMethod("getPaymentMethod").invoke(p)); } catch (Exception ignore) {}
+    try { return String.valueOf(Payment.class.getMethod("getPayMethod").invoke(p)); } catch (Exception ignore) {}
+    if ((p.getTid() == null || p.getTid().isBlank())
+        && (p.getAmount() == null || p.getAmount() == 0)) {
+        return "마일리지 전액 결제";
+    }
+    return "결제";
+}
+
+    /** 상세 DTO 변환 */
+    private RefundResultDtoV2.RefundResultItemDto toItemDto(RefundDetail d) {
+        return RefundResultDtoV2.RefundResultItemDto.builder()
+                .orderDetailId(d.getOrderDetail().getOrderDetailId())
+                .productName(Optional.ofNullable(d.getOrderDetail().getProduct())
+                        .map(p -> p.getName()).orElse(null))
+                .requestedQty(Optional.ofNullable(d.getQuantity()).orElse(0))
+                .approvedQty(Optional.ofNullable(d.getRefundQty()).orElse(0))
+                .unitRefundAmount(Optional.ofNullable(d.getUnitRefundAmount()).orElse(0))
+                .detailRefundAmount(Optional.ofNullable(d.getDetailRefundAmount()).orElse(0))
+                .build();
+    }
+
+    /** 배지 텍스트 생성 */
+    private String determineBadge(String status, boolean partial) {
+        if ("REFUNDED".equalsIgnoreCase(status)) {
+            return partial ? "부분환불" : "전체승인";
+        }
+        if ("REJECTED".equalsIgnoreCase(status)) {
+            return "전체거절";
+        }
+        return "처리됨";
+    }
+
+    @Transactional(readOnly = true)
+    public RefundResultDtoV2 getLatestRefundResultV2(Long orderId) {
+        List<Refund> list = Optional.ofNullable(
+                refundRepository.findRefundedWithDetails(orderId, "REFUNDED"))
+                .orElseGet(List::of);
+
+        Refund r = list.stream()
+                .max(Comparator.comparing(Refund::getRefundId))
+                .orElseThrow(() -> new IllegalArgumentException("환불결과 없음: orderId=" + orderId));
+
+        return toV2(r);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RefundResultDtoV2> getRefundResultsV2(Long orderId) {
+        List<Refund> list = Optional.ofNullable(
+                refundRepository.findRefundedWithDetails(orderId, "REFUNDED"))
+                .orElseGet(List::of);
+
+        return list.stream()
+                .sorted(Comparator.comparing(Refund::getRefundId).reversed())
+                .map(this::toV2)
+                .collect(Collectors.toList());   // ← 수정
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasPartialRefund(Long orderId) {
+        List<Refund> list = Optional.ofNullable(
+                refundRepository.findRefundedWithDetails(orderId, "REFUNDED"))
+            .orElseGet(List::of);
+
+        Refund latest = list.stream()
+                .max(Comparator.comparing(Refund::getRefundId))
+                .orElse(null);
+
+        return latest != null && isPartialRefund(latest); // 기존 isPartialRefund 활용
     }
 }
