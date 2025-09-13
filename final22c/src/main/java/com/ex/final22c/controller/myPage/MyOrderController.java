@@ -115,15 +115,9 @@ public class MyOrderController {
 
     /** 주문 상세 전체 페이지 */
     @GetMapping("/order/{id}")
-    public String orderDetailPage(@PathVariable("id") Long id,
-                                  Principal principal,
-                                  Model model) {
-        if (principal == null)
-            return "redirect:/user/login";
-
+    public String orderDetailPage(@PathVariable Long id, Principal principal, Model model) {
         Order order = myOrderService.findMyOrderWithDetails(principal.getName(), id);
         List<Payment> payments = myOrderService.findPaymentsofOrder(id);
-
         model.addAttribute("order", order);
         model.addAttribute("payments", payments);
         model.addAttribute("section", "orders");
