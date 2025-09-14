@@ -1286,6 +1286,25 @@
 			</div>
 		</div>
 
+		<!-- 리뷰 삭제 확인 모달 (공용) -->
+		<div class="modal fade" id="reviewDeleteModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">리뷰 삭제</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+					</div>
+					<div class="modal-body">
+						선택하신 후기를 삭제하시겠습니까?<br>삭제 후에는 되돌릴 수 없습니다.
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
+						<button type="button" class="btn btn-danger" id="reviewDeleteConfirmBtn">삭제</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<!-- 여기에 탭 네비게이션을 추가 -->
 		<nav class="productTabWrap">
 			<div class="productTab">
@@ -1588,9 +1607,10 @@
 											th:href="@{|/main/etc/review/${rv.reviewId}/edit?productId=${productId}|}">수정</a>
 
 										<form th:action="@{|/main/etc/review/${rv.reviewId}/delete|}" method="post"
-											class="d-inline" onsubmit="return confirm('후기를 삭제하시겠습니까?');">
+											class="d-inline js-review-delete-form">
 											<input type="hidden" name="productId" th:value="${productId}">
-											<button type="submit" class="ra-link ra-danger">삭제</button>
+											<button type="button"
+												class="ra-link ra-danger js-review-delete-open">삭제</button>
 										</form>
 									</div>
 								</div>
@@ -2595,6 +2615,11 @@
 						// ▶ 새 DOM에 좋아요 재바인딩
 						bindReviewLikeHandlers(newFrag);
 
+						// ▶ 새 DOM에 삭제 모달 재바인딩  ⬅⬅ 추가
+						if (typeof window.bindReviewDeleteHandlers === 'function') {
+							window.bindReviewDeleteHandlers(newFrag);
+						}
+
 						// ▶ URL/셀렉트 동기화
 						const u = new URL(location.href);
 						u.searchParams.set('sort', sort);
@@ -2919,6 +2944,49 @@
 					mountSimpleCS('cs-ageGroup');
 					mountSimpleCS('cs-reviewSort'); // ← 리뷰 정렬 드롭다운도 같이 초기화
 				});
+			})();
+		</script>
+
+		<script>
+			(function () {
+				// 공용 모달 객체 캐시
+				const deleteModalEl = document.getElementById('reviewDeleteModal');
+				const deleteModal = (deleteModalEl && typeof bootstrap !== 'undefined')
+					? new bootstrap.Modal(deleteModalEl)
+					: null;
+				const confirmBtn = document.getElementById('reviewDeleteConfirmBtn');
+
+				// 현재 열려있는 폼을 보관
+				let pendingDeleteForm = null;
+
+				// ▶ 리뷰 삭제 바인딩
+				function bindReviewDeleteHandlers(root = document) {
+					// 트리거 버튼 클릭 → 모달 오픈
+					root.querySelectorAll('.js-review-delete-open')?.forEach(btn => {
+						btn.addEventListener('click', (e) => {
+							const form = e.currentTarget.closest('.js-review-delete-form');
+							if (!form) return;
+
+							pendingDeleteForm = form;          // 어떤 폼을 삭제할지 기억
+							confirmBtn.disabled = false;
+							deleteModal?.show();
+						});
+					});
+				}
+
+				// 모달에서 [삭제] 눌렀을 때 실제 submit
+				confirmBtn?.addEventListener('click', () => {
+					if (!pendingDeleteForm) return;
+					confirmBtn.disabled = true;
+					// 자연스러운 UX: 모달 닫고 제출
+					deleteModal?.hide();
+					// 약간의 지연 후 제출(모달 애니메이션 겹침 방지)
+					setTimeout(() => pendingDeleteForm.requestSubmit(), 120);
+				});
+
+				// 최초 DOM에 바인딩
+				window.bindReviewDeleteHandlers = bindReviewDeleteHandlers;
+				bindReviewDeleteHandlers(document);
 			})();
 		</script>
 	</th:block>
