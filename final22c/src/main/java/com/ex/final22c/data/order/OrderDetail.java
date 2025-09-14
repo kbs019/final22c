@@ -15,6 +15,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -58,6 +59,9 @@ public class OrderDetail {
     @Column(name = "confirmQuantity", nullable = false)
     private Integer confirmQuantity;    // 확정 수량
 
+    @Column(name="reviewWritten",  length = 1)
+    private String reviewWritten;
+    
     @OneToOne(mappedBy = "orderDetail", fetch = FetchType.LAZY)
     private RefundDetail refundDetail;
     
@@ -71,6 +75,8 @@ public class OrderDetail {
             totalPrice = quantity * sellPrice;
         if (confirmQuantity == null)
             confirmQuantity = 0;
+        if(reviewWritten==null)
+        	reviewWritten = "N";
     }
 
     // 편의 생성자 (가격 계산 포함)

@@ -1,3 +1,37 @@
+<style>
+  .mp-sidebox__title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0 0 12px
+  }
+
+  .mp-sidebox__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px
+  }
+
+  .mp-sidebox__link {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #111827;
+    border: 1px solid #e5e7eb;
+    background: #fff
+  }
+
+  .mp-sidebox__link:hover {
+    background: #f3f7ff
+  }
+
+  .mp-sidebox__link.is-active {
+    background: #111827;
+    color: #fff;
+    border-color: #111827
+  }
+</style>
+
 <th:block th:fragment="mypageSidebox(section)">
   <aside class="mp-sidebox" role="navigation" aria-label="마이페이지 메뉴">
     <h2 class="mp-sidebox__title">마이페이지</h2>
@@ -16,15 +50,28 @@
 
       <a th:href="@{/mypage/mileage}" class="mp-sidebox__link"
         th:classappend="${section}=='mileage' ? ' is-active' : ''"
-        th:attr="aria-current=(${section}=='mileage') ? 'page' : null">마일리지 내역</a>
+        th:attr="aria-current=(${section}=='mileage') ? 'page' : null">
+        <span>마일리지 내역</span>
+      </a>
+      
+      <a th:href="@{/mypage/zzimList}" class="mp-sidebox__link"
+        th:classappend="${section}=='wishlist' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='wishlist') ? 'page' : null">
+        위시리스트
+      </a>
 
       <a th:href="@{/mypage/profile}" class="mp-sidebox__link"
         th:classappend="${section}=='profile' ? ' is-active' : ''"
-        th:attr="aria-current=(${section}=='profile') ? 'page' : null">개인정보</a>
+        th:attr="aria-current=(${section}=='profile') ? 'page' : null">
+        개인정보
+      </a>
 
-      <a th:href="@{/mypage/zzimList}" class="mp-sidebox__link"
-        th:classappend="${section}=='wishlist' ? ' is-active' : ''"
-        th:attr="aria-current=(${section}=='wishlist') ? 'page' : null">위시리스트</a>
+      <!-- '내 문의' 메뉴 항목 추가 -->
+      <a th:href="@{/mypage/myQuestion}" class="mp-sidebox__link"
+        th:classappend="${section}=='myQuestion' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='myQuestion') ? 'page' : null">
+        내 문의
+      </a>
     </nav>
   </aside>
 </th:block>

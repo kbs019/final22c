@@ -1,6 +1,7 @@
 package com.ex.final22c.controller.myPage;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.service.order.MyOrderService;
+import com.ex.final22c.service.product.ReviewService;
 import com.ex.final22c.service.refund.RefundService;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +29,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/mypage")
 public class MyOrderController {
-    private final MyOrderService myOrderService;
+	private final MyOrderService myOrderService;
+	private final ReviewService reviewService;
     private final OrderRepository orderRepository;
     private final RefundService refundService;
 

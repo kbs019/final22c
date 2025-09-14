@@ -307,6 +307,10 @@ public class OrderService {
                 .filter(detail -> "CONFIRMED".equals(detail.getOrder().getStatus()))
                 .collect(Collectors.toList());
     }
+    
+    public boolean hasPurchasedProduct(String username, long productId) {
+        return orderRepository.existsByUserAndProduct(username, productId);
+    }
 
     // 구매확정 처리: 적립 스냅샷 기록 + 사용자 마일리지 적립 + 상태전이
     @Transactional
