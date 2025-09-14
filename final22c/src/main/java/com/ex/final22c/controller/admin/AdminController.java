@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.ex.final22c.controller.product.ProductController;
+
 import com.ex.final22c.data.order.Order;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.data.product.Brand;
@@ -34,7 +34,6 @@ import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.product.Review;
 import com.ex.final22c.data.purchase.Purchase;
 import com.ex.final22c.data.purchase.PurchaseRequest;
-import com.ex.final22c.data.qna.Answer;
 import com.ex.final22c.data.qna.Question;
 import com.ex.final22c.data.refund.Refund;
 import com.ex.final22c.data.refund.RefundDetail;
@@ -197,20 +196,21 @@ public class AdminController {
 	// 상품 등록/수정
 	@PostMapping("productForm")
 	public String newProduct(@ModelAttribute ProductForm productForm) {
-	    // 1. 먼저 상품 등록
+	    boolean isNewProduct = (productForm.getId() == null);
+	    
 	    Product savedProduct = this.adminService.register(productForm, productForm.getImgName());
 	    
-	    // 2. AI 설명문 생성 및 업데이트
-	    try {
-	        String aiDescription = productDescriptionService.generateEnhancedDescription(savedProduct);
-	        if (aiDescription != null) {
-	            // 3. aiGuide 컬럼 업데이트
-	            this.adminService.updateAiGuide(savedProduct.getId(), aiDescription);
-	            log.info("AI 설명문 생성 완료: productId={}", savedProduct.getId());
+	    // 신규 등록이거나 관리자가 AI 재생성을 체크한 경우
+	    if (isNewProduct || productForm.isRegenerateAI()) {
+	        try {
+	            String aiDescription = productDescriptionService.generateEnhancedDescription(savedProduct);
+	            if (aiDescription != null) {
+	                this.adminService.updateAiGuide(savedProduct.getId(), aiDescription);
+	                log.info("AI 설명문 생성 완료: productId={}", savedProduct.getId());
+	            }
+	        } catch (Exception e) {
+	            log.warn("AI 설명문 생성 실패: productId={}, error={}", savedProduct.getId(), e.getMessage());
 	        }
-	    } catch (Exception e) {
-	        log.warn("AI 설명문 생성 실패: productId={}, error={}", savedProduct.getId(), e.getMessage());
-	        // 실패해도 상품 등록은 완료된 상태
 	    }
 	    
 	    return "redirect:/admin/productList";
@@ -550,10 +550,6 @@ public class AdminController {
 	}
 	// =========================================================== 매출 통계 끝 =======================================================
 
-    @GetMapping("reviews/badwords")
-    public List<Review> badWordReviews() {
-        return adminService.getFilteredReviews();
-    }
     
     // 회원 정지
     @PostMapping("/sanction")

@@ -1,6 +1,7 @@
 package com.ex.final22c.controller.myPage;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,10 +16,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.ex.final22c.data.order.Order;
+import com.ex.final22c.data.order.OrderDetail;
 import com.ex.final22c.data.payment.Payment;
 import com.ex.final22c.repository.order.OrderRepository;
 import com.ex.final22c.service.order.MyOrderService;
+
 import com.ex.final22c.service.refund.RefundService;
+
+import com.ex.final22c.service.product.ReviewService;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,9 +32,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/mypage")
 public class MyOrderController {
-    private final MyOrderService myOrderService;
+
     private final OrderRepository orderRepository;
     private final RefundService refundService;
+	private final MyOrderService myOrderService;
+	private final ReviewService reviewService;
+
 
     /** 전체 페이지(레이아웃 포함) */
     @GetMapping("/order")
@@ -73,7 +82,6 @@ public class MyOrderController {
 
         Page<Order> orders = findOrders(principal.getName(), page, size, statuses);
         model.addAttribute("orders", orders);
-
         Map<Long, Boolean> partialRefundMap = orders.getContent().stream()
                 .filter(o -> "REFUNDED".equalsIgnoreCase(o.getStatus()))
                 .collect(Collectors.toMap(
@@ -113,17 +121,6 @@ public class MyOrderController {
         return "mypage/orderDetail :: items";
     }
 
-    /** 주문 상세 전체 페이지 */
-    @GetMapping("/order/{id}")
-    public String orderDetailPage(@PathVariable Long id, Principal principal, Model model) {
-        Order order = myOrderService.findMyOrderWithDetails(principal.getName(), id);
-        List<Payment> payments = myOrderService.findPaymentsofOrder(id);
-        model.addAttribute("order", order);
-        model.addAttribute("payments", payments);
-        model.addAttribute("section", "orders");
-        return "mypage/orderDetail";
-    }
-
     @GetMapping("/orders/{orderId}/mileage")
     @ResponseBody
     public int getConfirmMileage(@PathVariable("orderId") Long orderId) {
@@ -155,4 +152,32 @@ public class MyOrderController {
         }
         return refundService.getRefundResultsV2(orderId);
     }
+    
+	/** 주문 상세 전체 페이지 */
+	@GetMapping("/order/{id}")
+	public String orderDetailPage(@PathVariable("id") Long id,
+	                              Principal principal,
+	                              Model model) {
+	    if (principal == null) {
+	        return "redirect:/user/login";
+	    }
+
+	    String username = principal.getName();
+
+	    // 주문 + 상세 정보 조회
+	    Order order = myOrderService.findMyOrderWithDetails(username, id);
+	    List<Payment> payments = myOrderService.findPaymentsofOrder(id);
+
+	    // ✅ 각 상품별 리뷰 작성 여부 세팅 (String 'Y'/'N')
+	    for (OrderDetail d : order.getDetails()) {
+	        boolean exists = reviewService.existsReview(username, d.getProduct().getId());
+	        d.setReviewWritten(exists ? "Y" : "N"); // Boolean → 'Y'/'N'
+	    }
+
+	    model.addAttribute("order", order);
+	    model.addAttribute("payments", payments);
+	    model.addAttribute("section", "orders");
+
+	    return "mypage/orderDetail";
+	}
 }

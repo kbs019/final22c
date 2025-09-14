@@ -436,4 +436,45 @@ section .sort-wrap::after{
   overflow:hidden !important; clip:rect(0 0 0 0) !important; white-space:nowrap !important; border:0 !important;
 }
 
+/* lg(≥992px)에서 사이드바만 살짝 넓히기 (우선순위 강제) */
+@media (min-width: 992px){
+  .list-shell > aside.col-12.col-md-3.col-lg-2{
+    flex: 0 0 21.5% !important;
+    max-width: 21.5% !important;
+  }
+  .list-shell > section.col-12.col-md-9.col-lg-10{
+    flex: 0 0 78.5% !important;
+    max-width: 78.5% !important;
+  }
+}
 
+/* =========================
+   🔧 정렬 드롭다운 caret 중복 제거 (최종패치)
+   ========================= */
+
+/* 1) 기본값: fallback caret 끔 (중복 방지) */
+.sort-wrap::after { content: none !important; }
+
+/* 2) 네이티브 select가 '보일 때만' caret 보이게 (fallback 전용) */
+.sort-wrap:has(> select#sort-select:not(.visually-hidden))::after{
+  content: "▾" !important;
+  position: absolute;
+  right: .15rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: .9rem;
+  line-height: 1;
+  color: #6c757d;
+  pointer-events: none;
+}
+
+/* 3) 커스텀 드롭다운(.sort-custom) 쓰는 경우는 반드시 caret 제거 */
+.sort-wrap:has(.sort-custom)::after { content: none !important; }
+
+/* 4) 혹시 남아있는 브라우저 기본 caret 완전 제거(안전망) */
+.sort-wrap select#sort-select{
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: none !important;
+}

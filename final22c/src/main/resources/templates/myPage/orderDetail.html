@@ -30,7 +30,26 @@
         <img class="rounded me-3" th:src="${d.product.imgPath+d.product.imgName}" alt=""
           style="width:56px;height:56px;object-fit:cover">
         <div class="flex-grow-1">
-          <div class="fw-semibold name">[[${d.product.name}]]</div>
+		        <div class="fw-semibold name">
+		            [[${d.product.name}]]
+		
+					<span th:if="${order.status == 'CONFIRMED'}">
+					    <!-- 리뷰 작성 여부 -->
+					    <span th:if="${d.reviewWritten == 'Y'}" class="badge bg-success ms-2">
+					        리뷰작성완료
+					    </span>
+					
+					    <!-- 미작성 시 리뷰 작성 버튼 -->
+						<a th:if="${d.reviewWritten != 'Y' 
+						           and order.status == 'CONFIRMED' 
+						           and order.regDate.plusDays(7).isAfter(T(java.time.LocalDateTime).now())
+                      }"
+						   th:href="@{/main/etc/review/new(productId=${d.product.id}, orderDetailId=${d.orderDetailId})}"
+						   class="btn btn-sm btn-outline-primary ms-2">
+						   리뷰작성
+						</a>
+					</span>
+		        </div>
           <div class="small text-muted">
             개당 <span class="unit">[[${#numbers.formatInteger(d.sellPrice, 3, 'COMMA')}]]</span>
             <span th:if="${order.status=='REQUESTED' and d.refundDetail != null}"
@@ -80,3 +99,4 @@
         </li>
       </ul>
     </div>
+    

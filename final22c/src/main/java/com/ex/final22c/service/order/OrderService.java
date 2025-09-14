@@ -348,4 +348,9 @@ public class OrderService {
         orderRepository.saveAndFlush(o);
     }
 
+
+    public boolean hasPurchasedProduct(String username, long productId) {
+        return orderRepository.existsByUserAndProduct(username, productId);
+    }
+
 }

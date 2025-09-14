@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -284,7 +282,7 @@ public class ProductService {
                 productRepository.findBuyerStatsByProduct(productId);
 
         // UI 스케치(상단이 고연령) 기준 버킷 순서
-        List<String> ageBuckets = Arrays.asList("50대","40대","30대","20대","10대","기타");
+        List<String> ageBuckets = Arrays.asList("50대+","40대","30대","20대","10대");
 
         Map<String, long[]> byGender = new LinkedHashMap<>();
         byGender.put("M", new long[ageBuckets.size()]);

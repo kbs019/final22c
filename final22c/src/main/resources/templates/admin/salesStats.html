@@ -107,6 +107,21 @@
         .hint-full {
             grid-column: 1 / -1;
         }
+
+        /* 날짜 부분만 작게 */
+        .label-date {
+            font-size: 0.8em;
+            /* 부모 글자보다 작게 */
+            color: #666;
+            /* 옅은 회색 */
+        }
+
+        /* 합계 값 오른쪽 정렬 */
+        #revSum,
+        #cogsSum,
+        #profitSum {
+            text-align: right;
+        }
     </style>
 </th:block>
 
@@ -137,7 +152,6 @@
                 <input id="rangeStart" type="date" class="form-control form-control-sm" style="width:160px;">
                 <span>~</span>
                 <input id="rangeEnd" type="date" class="form-control form-control-sm" style="width:160px;">
-                <small id="rangeHint" class="text-muted">최대 30일</small>
                 <button id="btnRangeApply" class="btn btn-primary btn-sm" disabled>적용</button>
             </div>
 
@@ -164,20 +178,20 @@
     <div class="cards mb-3">
         <div class="card">
             <div class="card-body">
-                <div>매출액</div>
-                <div id="revSum" class="h2">0</div>
+                <div id="revLabel">매출액 <span class="label-date">(yyyy-MM-dd)</span></div>
+                <div id="revSum" class="h2 text-end">0</div>
             </div>
         </div>
         <div class="card">
             <div class="card-body">
-                <div>매입액</div>
-                <div id="cogsSum" class="h2">0</div>
+                <div id="cogsLabel">매입액 <span class="label-date">(yyyy-MM-dd)</span></div>
+                <div id="cogsSum" class="h2 text-end">0</div>
             </div>
         </div>
         <div class="card">
             <div class="card-body">
-                <div>순이익</div>
-                <div id="profitSum" class="h2">0</div>
+                <div id="profitLabel">순이익 <span class="label-date">(yyyy-MM-dd)</span></div>
+                <div id="profitSum" class="h2 text-end">0</div>
             </div>
         </div>
         <!-- ▼ 힌트 카드(브랜드 미선택 시만 표시) -->
@@ -244,10 +258,7 @@
         const KR = new Intl.NumberFormat('ko-KR'),      // 숫자 포매터(3자리 콤마 등)
             KRW = n => `${KR.format(n ?? 0)}원`;        // 원 단위로 문자열 포맷팅하는 헬퍼
 
-        // 상수
-        const MAX_DAYS = 30;
-
-        const STATE = { unit: 'DAY', from: null, to: null, scope: 'ALL', _weekYm: null, mode: 'FIXED' };           // 현재 선택된 단위/조회기간 상태(전역 공유)
+        const STATE = { unit: 'DAY', from: null, to: null, scope: 'ALL', _weekYm: null, mode: 'FIXED', pivotDay: null };           // 현재 선택된 단위/조회기간 상태(전역 공유)
 
         // 기간 선택기 DOM 참조(일/월/연)
         const $day = document.getElementById('pick-day-date');          // 일간용 date input
@@ -285,6 +296,7 @@
         }
 
         function renderCardsNA() {
+            updateCardLabels();           // ← 날짜 라벨을 기본값으로 되돌림
             revSum.textContent = '—';
             cogsSum.textContent = '—';
             profitSum.textContent = '—';
@@ -358,6 +370,7 @@
         // 단위별 기간 계산(STATE 업데이트)
         function applyDayRange(d) {                     // 일간: 선택일 기준 -3~+3일
             STATE.unit = 'DAY';
+            STATE.pivotDay = d;                    // ✅ 선택한 ‘그 하루’를 상태에 저장
             STATE.from = addDays(d, -3);
             STATE.to = addDays(d, +3);
         }
@@ -386,56 +399,50 @@
 
         // 문자열 -> Date
         function toDate(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
-        // 일수 차(양끝 포함 계산은 validate에서 +1)
-        function diffDays(a, b) { return Math.floor((toDate(b) - toDate(a)) / (1000 * 60 * 60 * 24)); }
-        // 종료일 바뀔 때 시작일의 선택 가능 구간을 [to-29, to]로 제한
-        function updateStartWindow() {
-            const to = $re.value; if (!to) return;
-            const startMin = addDays(to, -(MAX_DAYS - 1)); // 30일 윈도우 => to-29 ~ to
-            $rs.min = startMin;
-            $rs.max = to;         // 시작일이 종료일을 넘을 수 없도록
-            // 현재 값이 범위 밖이면 자동 보정
-            if (!$rs.value || cmpDate($rs.value, startMin) < 0) $rs.value = startMin;
-            if (cmpDate($rs.value, to) > 0) $rs.value = to;
-        }
 
         // 커스텀 범위 초기화
         (function initRange() {
-            $rs.max = TODAY;
-            $re.max = TODAY;
+            $rs.removeAttribute('min');     // 시작일 하한 제한 없음
+            $rs.removeAttribute('max');     // 시작일 상한 제한 없음
+
+            $re.max = TODAY;                // 종료일은 미래 방지
             $re.value = TODAY;
             // 기본: 최근 7일
             const d7 = addDays(TODAY, -6);
             $rs.value = d7;
-            updateStartWindow();
+
             validateRange();
         })();
 
         // 검증(버튼 활성/비활성 + 힌트)
         function validateRange() {
             const s = $rs.value, e = $re.value;
-            if (!s || !e) { $ra.disabled = true; return; }
-            if (cmpDate(e, s) < 0) {
+            if (!s || !e) {
                 $ra.disabled = true;
-                $rh.textContent = '종료일이 시작일보다 빠릅니다.';
-                $rh.classList.add('text-danger'); $rh.classList.remove('text-muted');
+                if ($rh){ $rh.textContent = '기간을 선택하세요.'; $rh.classList.remove('text-danger'); $rh.classList.add('text-muted'); }
                 return;
             }
-            const days = diffDays(s, e) + 1; // 양끝 포함
-            if (days > MAX_DAYS) {
-                $ra.disabled = true;
-                $rh.textContent = `범위 ${days}일(최대 ${MAX_DAYS}일)`;
-                $rh.classList.add('text-danger'); $rh.classList.remove('text-muted');
-            } else {
-                $ra.disabled = false;
-                $rh.textContent = `최대 ${MAX_DAYS}일`;
-                $rh.classList.remove('text-danger'); $rh.classList.add('text-muted');
+
+            // 미래 방지: 종료일이 오늘을 넘으면 오늘로 보정
+            if (cmpDate(e, TODAY) > 0) {
+                $re.value = TODAY;
             }
+
+            // 시작 > 종료 방지
+            if (cmpDate($re.value, s) < 0) {
+                $ra.disabled = true;
+                if ($rh){ $rh.textContent = '종료일이 시작일보다 빠릅니다.'; $rh.classList.add('text-danger'); $rh.classList.remove('text-muted'); }
+                return;
+            }
+
+            // 제한 해제: 일수 제한 없음
+            $ra.disabled = false;
+            if ($rh){ $rh.textContent = '종료일은 오늘을 넘을 수 없습니다.'; $rh.classList.remove('text-danger'); $rh.classList.add('text-muted'); }
         }
 
         // 이벤트
         $rs.addEventListener('change', validateRange);
-        $re.addEventListener('change', () => { updateStartWindow(); validateRange(); });
+        $re.addEventListener('change', validateRange);
 
         // 적용
         $ra.addEventListener('click', async () => {
@@ -576,9 +583,45 @@
             if (STATE.scope === 'BRAND') $title.textContent = '브랜드 매출 추이';
         }
 
+        // 선택됨 여부 헬퍼
+        function hasSelection() {
+            if (STATE.scope === 'BRAND') return !!selBrand.value;
+            if (STATE.scope === 'PRODUCT') return !!selProd.value;
+            return true; // ALL은 항상 선택된 것으로 간주
+        }
+
+        // 라벨명 정리
+        function updateCardLabels() {
+            const isDayFixed = (STATE.unit === 'DAY' && STATE.mode === 'FIXED' && STATE.pivotDay);
+
+            // 날짜는 "일간+고정" 이면서, ALL이거나(=전체) BRAND/PRODUCT는 실제 선택이 있을 때만 노출
+            const showDate = isDayFixed && hasSelection();
+
+            document.getElementById('revLabel').innerHTML = showDate ? `매출액 <span class="label-date">(${STATE.pivotDay})</span>` : '매출액';
+            document.getElementById('cogsLabel').innerHTML = showDate ? `매입액 <span class="label-date">(${STATE.pivotDay})</span>` : '매입액';
+            document.getElementById('profitLabel').innerHTML = showDate ? `순이익 <span class="label-date">(${STATE.pivotDay})</span>` : '순이익';
+        }
+
         // 합계 카드
         function renderCards(s) {
+            updateCardLabels(); // ← 라벨 먼저 정리
+
             const sum = arr => arr.reduce((acc, v) => acc + (typeof v === 'number' ? v : 0), 0);
+
+            // ✅ 일간(FIXED)일 때는 pivotDay(선택한 하루)만 집계
+            if (STATE.unit === 'DAY' && STATE.mode === 'FIXED' && STATE.pivotDay) {
+                const idx = s.labels.indexOf(STATE.pivotDay);   // normalizeSeries가 만든 라벨 배열에서 해당 날짜 위치
+                const r = idx >= 0 && typeof s.revenue[idx] === 'number' ? s.revenue[idx] : 0;
+                const c = idx >= 0 && typeof s.cogs[idx] === 'number' ? s.cogs[idx] : 0;
+                const p = idx >= 0 && typeof s.profit[idx] === 'number' ? s.profit[idx] : 0;
+
+                revSum.textContent = KRW(r);
+                cogsSum.textContent = KRW(c);
+                profitSum.textContent = KRW(p);
+                return;
+            }
+
+            // 그 외(주간/월간/연간, 혹은 CUSTOM 범위)는 현재처럼 구간 합계
             revSum.textContent = KRW(sum(s.revenue));
             cogsSum.textContent = KRW(sum(s.cogs));
             profitSum.textContent = KRW(sum(s.profit));
@@ -716,7 +759,6 @@
                 if (u === 'CUSTOM') {
                     STATE.mode = 'CUSTOM';
                     STATE.unit = 'DAY';      // 일간 집계 사용
-                    updateStartWindow();   // ← 종료일 기준으로 시작일 min/max 재계산
                     validateRange();       // ← 버튼 상태/힌트 반영
                     return;                  // 여기서 종료(자동 조회 금지)
                 }

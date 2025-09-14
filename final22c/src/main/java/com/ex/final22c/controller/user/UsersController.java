@@ -91,9 +91,11 @@ public class UsersController {
             bindingResult.rejectValue("birth", "birth.minAge", "만 8세 이상만 가입할 수 있습니다.");
             return "user/signupForm";
         }
+        
+        usersForm.setEmail(emailNorm);
+        usersService.create(usersForm);
+        return "redirect:/user/login?joined=1";
 
-        usersService.create(usersForm); // create() 내부에서 PhoneCodeService.isVerified(...)로 최종 인증 확인 + 중복 재검증
-        return "redirect:/user/login";
     }
 
     @GetMapping(value = "/check/password", produces = "application/json")

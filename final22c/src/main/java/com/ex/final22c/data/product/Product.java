@@ -105,7 +105,7 @@ public class Product {
         if (this.isPicked == null) { this.isPicked = "N"; } // DB DEFAULT 대신 자바에서 보장
         if ( this.imgPath == null ) { this.imgPath = "/img/"; }
         if (this.status == null) {this.status = "wait";}
-        if ( this.costPrice == 0 ) { this.costPrice = (int) Math.floor(this.price * 0.05); }
+        if ( this.costPrice == 0 ) { this.costPrice = (int) Math.floor(this.price * 0.5); }
 
         recalcPrices();
     }
@@ -119,7 +119,7 @@ public class Product {
     // price 변수에 대한 set() 를 수정
     public void setPrice(int price) {
         this.price = price;
-        this.costPrice = (int) Math.floor(this.price * 0.05);
+        this.costPrice = (int) Math.floor(this.price * 0.5);
         recalcPrices();
     }
 
