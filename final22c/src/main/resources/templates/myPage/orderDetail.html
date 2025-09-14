@@ -74,23 +74,9 @@
     <!-- 결제내역이 있다면 -->
     <div th:if="${payments != null and !payments.isEmpty()}">
       <ul style="list-style:none; padding:0; margin:0; display:grid; gap:6px">
-        <!-- stat를 같이 받아서 첫 아이템에서만 적립 라인을 한 번 출력 -->
-        <li th:each="p, stat : ${payments}" th:with="isPointOnly=${p.amount == 0 or p.tid == null}">
+        <li th:each="p : ${payments}">
           결제번호 [[${p.paymentId}]]<br>
-
-          <!-- 결제 수단 -->
-          <span th:if="${isPointOnly}">결제 수단 : 마일리지 전액 결제</span>
-          <span th:unless="${isPointOnly}">결제 수단 : 카카오페이</span><br>
-
-          총 결제 금액 : [[${#numbers.formatInteger(p.amount, 1, 'COMMA')}]]원
-
-          <!-- 적립된 마일리지 (확정 주문일 때만, 한 번만 표시) -->
-          <div th:if="${order.status=='CONFIRMED' and stat.index == 0}" style="margin-top:4px">
-            적립 마일리지 :
-            <strong>
-              [[${#numbers.formatInteger((order.totalAmount * 5) / 100, 1, 'COMMA')}]]P
-            </strong>
-          </div>
+          결제 금액 : [[${#numbers.formatInteger(p.amount, 1, 'COMMA')}]]원
         </li>
       </ul>
     </div>

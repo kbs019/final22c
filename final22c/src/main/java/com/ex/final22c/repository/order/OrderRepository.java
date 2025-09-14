@@ -16,7 +16,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ex.final22c.data.order.Order;
-import com.ex.final22c.data.user.Row;
 
 import jakarta.persistence.LockModeType;
 

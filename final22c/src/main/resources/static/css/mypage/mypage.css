@@ -1,0 +1,379 @@
+/* =========================
+   MYPAGE COMMON STYLES
+   (공통: 레이아웃/타이포/버튼/모달/유틸/페이징)
+   ========================= */
+
+/* ---- 타이포/리듬(공통) ---- */
+:root {
+  scrollbar-gutter: stable;
+  --font-sans: system-ui, -apple-system, "Noto Sans KR", "Malgun Gothic",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple SD Gothic Neo",
+    "Apple Color Emoji", "Segoe UI Emoji";
+  --brand: #111827;
+  --border: #e5e7eb;
+}
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+/* 마이페이지 전반 & 모달 공통 기본 폰트 */
+.mypage-wrap,
+.cm-modal,
+.m-modal,
+.amodal {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 유틸 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+.muted { color:#6b7280; }
+.to-top { display: none !important; } /* 페이지 내 떠있는 top 버튼 숨김(공통) */
+
+/* ---- 레이아웃(사이드박스/그리드) ---- */
+.mypage-body {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.mp-grid {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.mp-col-left {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  z-index: 1;
+}
+.mp-col-right { min-width: 0; }
+
+/* 사이드박스 */
+.mp-sidebox__title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 12px;
+}
+.mp-sidebox__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mp-sidebox__link {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #111827;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.mp-sidebox__link:hover { background: #f3f7ff; }
+.mp-sidebox__link.is-active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+/* 페이지 헤더/타이틀 */
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 800 !important;
+  margin: 0;
+  color: #111827;
+  font-family: var(--font-sans);
+}
+
+/* ---- 버튼(공통 토큰) ---- */
+.btn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+  line-height: 1;
+  font-weight: 600;
+  transition: background .15s ease, border-color .15s ease, opacity .15s ease, box-shadow .15s ease;
+  min-height: 36px;
+  white-space: nowrap;
+}
+.btn:hover { background:#f3f4f6; }
+.btn:active { opacity:.95; }
+.btn:focus-visible { outline:0; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
+.btn[disabled] { opacity:.6; cursor:not-allowed; }
+.btn.primary,
+.cm-btn--primary {
+  background:#111827; color:#fff; border-color:#111827;
+}
+.btn.primary:hover { opacity:.92; }
+.btn.primary:active { opacity:.88; }
+
+/* 링크형 버튼(텍스트 버튼처럼 쓰는 경우) */
+.btn--link {
+  background: #fff;
+  border: 1px solid var(--border);
+}
+
+/* 모듈화된 공통 버튼(모달 등에서 사용) */
+.cm-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: #111827;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, opacity .15s ease, box-shadow .15s ease;
+}
+.cm-btn:hover { background:#f3f4f6; }
+.cm-btn:focus-visible { outline:0; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
+.cm-btn[disabled] { opacity:.6; cursor:not-allowed; }
+
+/* ---- 모달(공통 3종) ---- */
+/* 1) 간단 확인/결과 모달 (cm-modal) */
+.cm-modal {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10000;
+}
+.cm-modal.is-open { display:flex; }
+.cm-modal__content {
+  position: relative;
+  width: min(92vw, 720px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.25);
+  padding: 20px;
+  text-align: center;
+  max-height: min(80vh, 720px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.cm-modal__x {
+  position:absolute; top:8px; right:8px;
+  appearance:none; border:0; background:transparent; font-size:22px; line-height:1; cursor:pointer;
+  padding:4px 8px; border-radius:8px;
+}
+.cm-modal__x:hover { background:#f2f2f2; }
+.cm-modal__actions { display:flex; justify-content:center; gap:8px; margin-top:16px; }
+
+/* 2) 백드롭+헤더/바디/푸터 모달 (m-modal) */
+.m-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10000; }
+.m-modal.is-open { display:flex; }
+.m-modal__backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
+.m-modal__box {
+  position:relative; max-width:880px; width:calc(100% - 32px); max-height:88vh; overflow:auto;
+  background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.2); overscroll-behavior:contain;
+}
+.m-modal__header {
+  position:sticky; top:0; display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px; background:#fff; border-bottom:1px solid var(--border); z-index:1;
+}
+.m-modal__title { font-weight:800; font-size:18px; margin:0; }
+.m-modal__close {
+  appearance:none; border:0; background:transparent; font-size:22px; line-height:1; cursor:pointer;
+  padding:4px 8px; border-radius:8px;
+}
+.m-modal__close:hover { background:#f2f2f2; }
+.m-modal__body { padding:16px; }
+.m-modal__footer {
+  position:sticky; bottom:0; background:#fff; border-top:1px solid var(--border); padding:12px 16px;
+  display:flex; justify-content:flex-end; gap:8px;
+}
+
+/* 3) 심플 레이어 모달(주소/활동내역에서 사용) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  display: none;
+  z-index: 9998;
+}
+.modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border-radius: 14px;
+  min-width: 420px;
+  max-width: 580px;
+  padding: 28px 20px 20px;
+  display: none;
+  z-index: 9999;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+.modal.open, .modal-backdrop.open { display: block; }
+
+/* 액티비티 전용 모달의 공통 컨테이너(박스만 공통으로 유지) */
+.amodal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 2000; }
+.amodal.is-open { display: flex; }
+.amodal__backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, .45); }
+.amodal__box {
+  position: relative;
+  width: min(92vw, 520px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+  padding: 16px;
+  z-index: 1;
+}
+
+/* ---- 폼/입력 필드(공통) ---- */
+.field { margin: 10px 0; }
+.field > label { display:block; margin-bottom:6px; font-weight:600; }
+.field > input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0;
+}
+.field-row > label { font-weight: 700; color: #374151; white-space: nowrap; }
+.field-row input {
+  width: 100%;
+  min-height: 38px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  box-sizing: border-box;
+}
+.field-row input[readonly] { background:#f9fafb; cursor: default; }
+.field-row input::placeholder { color:#9ca3af; }
+.field-row input:focus { outline:0; border-color:#cfd5dd; box-shadow:none; }
+
+/* 우편번호 버튼/라인(주소/수정 공통) */
+.zipline {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: center;
+}
+#btnFindZip, #e_btnFindZip {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* 닫기 X 버튼 (동그란 상단 우측) */
+.x-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+/* ---- 페이징(두 가지 패턴 공통 지원) ---- */
+/* 1) 부트스트랩 유사 .pagination (주문내역) */
+.pagination {
+  display:flex; gap:6px; flex-wrap:wrap; padding-left:0; list-style:none; margin:16px 0;
+}
+.page-item .page-link {
+  display:inline-block; border:1px solid var(--border); background:#fff; padding:6px 10px; border-radius:8px; text-decoration:none; color:#111827; cursor:pointer;
+}
+.page-item .page-link:hover { background:#f3f7ff; }
+.page-item.active .page-link, .page-link[aria-current="page"] {
+  background:#2563eb; color:#fff; border-color:#2563eb;
+}
+.page-item.disabled .page-link { opacity:.5; pointer-events:none; cursor:default; }
+
+/* 2) 심플 .pager 버튼들 (활동내역) */
+.pager {
+  display:flex; gap:6px; align-items:center; justify-content:center; margin:16px 0;
+}
+.pager .page-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.pager .page-btn[aria-current="page"] {
+  background:#2563eb; color:#fff;
+}
+
+/* ---- 배지(공통 토큰만) ---- */
+.badge {
+  display:inline-block; padding:4px 10px; border-radius:9999px;
+  font-weight:700; font-size:12px; border:1px solid var(--border);
+}
+.badge--ok { background:#dcfce7; color:#166534; border-color:#bbf7d0; }
+.badge--reject { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
+.badge--partial { background:#fef9c3; color:#854d0e; border-color:#fde68a; }
+
+/* ---- 평점 막대(공통) ---- */
+.rating-bars {
+  display: inline-flex;
+  gap: 6px;
+  vertical-align: middle;
+}
+.rating-bars .cell {
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+  background: #e5e7eb;
+}
+.rating-bars .cell.filled { background: var(--brand); }
+
+/* 입력형(키보드 접근성 포함) — 필요 페이지에서만 활성화 */
+.rating-input .cell { cursor: pointer; outline: 0; }
+.rating-input .cell:focus-visible {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .18);
+  border-radius: 4px;
+}
+
+/* ---- 반응형 ---- */
+@media (max-width: 860px) {
+  .mp-grid { grid-template-columns: 1fr; }
+  .mp-col-left { position: static; }
+}
+
+.form-help.error{
+    margin-top:6px;
+    color:#ef4444;          /* 빨간색 */
+    font-size:12px;
+}

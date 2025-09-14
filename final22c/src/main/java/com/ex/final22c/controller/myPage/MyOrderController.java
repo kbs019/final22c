@@ -44,7 +44,7 @@ public class MyOrderController {
         Page<Order> orders = findOrders(principal.getName(), page, size, statuses);
         model.addAttribute("orders", orders);
 
-        // ▼ 환불완료 주문들에 대해 '부분환불 여부' 맵 계산
+        // 환불완료 주문들의 부분환불 여부 맵
         Map<Long, Boolean> partialRefundMap = orders.getContent().stream()
                 .filter(o -> "REFUNDED".equalsIgnoreCase(o.getStatus()))
                 .collect(Collectors.toMap(
@@ -74,7 +74,6 @@ public class MyOrderController {
         Page<Order> orders = findOrders(principal.getName(), page, size, statuses);
         model.addAttribute("orders", orders);
 
-        // ▼ AJAX로도 동일하게 내려줘야 페이징 후에도 배지가 정확함
         Map<Long, Boolean> partialRefundMap = orders.getContent().stream()
                 .filter(o -> "REFUNDED".equalsIgnoreCase(o.getStatus()))
                 .collect(Collectors.toMap(
@@ -94,15 +93,15 @@ public class MyOrderController {
     /** 공통 조회 로직 */
     private Page<Order> findOrders(String username, int page, int size, List<String> statuses) {
         if (statuses == null || statuses.isEmpty()) {
-            // 기본: PENDING 제외(서비스에 이미 구현되어 있다고 가정)
+            // 기본: PENDING 제외(서비스에서 처리한다고 가정)
             return myOrderService.listMyOrders(username, page, size);
         } else {
-            // 상태 필터링이 서비스에 따로 있다면 여기서 호출하도록 변경
+            // 필요 시 상태 필터 서비스로 분기
             return myOrderService.listMyOrders(username, page, size);
         }
     }
 
-    /** 주문 상세 프래그먼트 (모달) */
+    /** 주문 상세 프래그먼트 (모달에서 불러감) */
     @GetMapping("/order/{id}/fragment")
     public String orderItemsFragment(@PathVariable("id") Long id,
                                      Principal principal, Model model) {
@@ -110,20 +109,15 @@ public class MyOrderController {
         List<Payment> payments = myOrderService.findPaymentsofOrder(id);
         model.addAttribute("order", order);
         model.addAttribute("payments", payments);
+        // ✔ orderDetail.html 안의 th:fragment="items" 반환
         return "mypage/orderDetail :: items";
     }
 
     /** 주문 상세 전체 페이지 */
     @GetMapping("/order/{id}")
-    public String orderDetailPage(@PathVariable("id") Long id,
-                                  Principal principal,
-                                  Model model) {
-        if (principal == null)
-            return "redirect:/user/login";
-
+    public String orderDetailPage(@PathVariable Long id, Principal principal, Model model) {
         Order order = myOrderService.findMyOrderWithDetails(principal.getName(), id);
         List<Payment> payments = myOrderService.findPaymentsofOrder(id);
-
         model.addAttribute("order", order);
         model.addAttribute("payments", payments);
         model.addAttribute("section", "orders");
@@ -144,7 +138,6 @@ public class MyOrderController {
             @PathVariable(name = "orderId") Long orderId,
             Principal principal) {
 
-        // (선택) 접근권한/본인주문 검증 — 기존 서비스로 한번 로딩만 해도 충분
         if (principal != null) {
             myOrderService.findMyOrderWithDetails(principal.getName(), orderId);
         }

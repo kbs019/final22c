@@ -1,153 +1,54 @@
 <!DOCTYPE html>
 <html layout:decorate="~{layout/layout}">
-  <link rel="icon" href="data:," />
-  <meta name="context-path" th:content="${#httpServletRequest.getContextPath()}" />
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="context-path" th:content="@{/}" />
+    <!-- _csrf 메타는 없을 수도 있으니 조건부로 -->
+    <meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
+    <title>마이페이지 - 주문내역</title>
 
-  <div layout:fragment="content">
+    <!-- 공통 CSS -->
+    <link rel="stylesheet" href="/css/mypage/mypage.css" th:href="@{/css/mypage/mypage.css}" />
+
+    <!-- 페이지 전용 CSS(최소) : 스텝퍼/배지/환불 전용 레이아웃 -->
     <style>
-      /* =================== 타이포그래피(공통) - 통일 =================== */
-      :root {
-        scrollbar-gutter: stable;
-        --font-sans: system-ui, -apple-system, "Noto Sans KR", "Malgun Gothic",
-          "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple SD Gothic Neo",
-          "Apple Color Emoji", "Segoe UI Emoji";
-      }
-
-      html { overflow-y: scroll; }
-
-      .mypage-wrap, .cm-modal, .m-modal {
-        font-family: var(--font-sans);
-        font-size: 14px;
-        line-height: 1.6;
-        color: #111827;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
+      /* 페이지 타이포/유틸(공통 토큰은 mypage.css 사용) */
       .muted { color:#6b7280; font-size:12px; }
       .order-title { font-weight:700; letter-spacing:-0.01em; }
       .order-amount { font-weight:800; font-variant-numeric:tabular-nums; }
+      body.lock-scroll { overflow: hidden; }
 
-      /* =================== 스타일: 모달(공통) 시작 =================== */
-      .cm-modal, .m-modal {
-        position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10000;
-      }
-      .cm-modal.is-open, .m-modal.is-open { display:flex; }
-
-      /* ---- 간단 확인/결과 모달 (cm-modal) ---- */
-      .cm-modal__content {
-        position: relative;
-        width: min(92vw, 720px);
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 12px 30px rgba(0,0,0,.25);
-        padding: 20px;
-        text-align: center;
-        max-height: min(80vh, 720px);
-        overflow: auto;
-        overscroll-behavior: contain;
-      }
-      .cm-modal__x {
-        position:absolute; top:8px; right:8px;
-        appearance:none; border:0; background:transparent; font-size:22px; line-height:1; cursor:pointer;
-        padding:4px 8px; border-radius:8px;
-      }
-      .cm-modal__x:hover { background:#f2f2f2; }
-
-      /* ---- 백드롭 + 구성요소 (m-modal) ---- */
-      .m-modal__backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
-      .m-modal__box {
-        position:relative; max-width:880px; width:calc(100% - 32px); max-height:88vh; overflow:auto;
-        background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.2); overscroll-behavior:contain;
-      }
-      .m-modal__header {
-        position:sticky; top:0; display:flex; align-items:center; justify-content:space-between;
-        padding:14px 16px; background:#fff; border-bottom:1px solid #eee; z-index:1;
-      }
-      .m-modal__title { font-weight:800; font-size:18px; margin:0; }
-      .m-modal__close {
-        appearance:none; border:0; background:transparent; font-size:22px; line-height:1; cursor:pointer;
-        padding:4px 8px; border-radius:8px;
-      }
-      .m-modal__close:hover { background:#f2f2f2; }
-      .m-modal__body { padding:16px; }
-      .m-modal__footer {
-        position:sticky; bottom:0; background:#fff; border-top:1px solid #eee; padding:12px 16px;
-        display:flex; justify-content:flex-end; gap:8px;
-      }
-      #refundRequestsModal .m-modal__box { max-width:720px; }
-      #refundResultModal .m-modal__box { max-width:720px; }
-
-      body.lock-scroll { overflow:hidden; padding-right: var(--sbw, 0px); }
-      /* =================== 스타일: 모달(공통) 끝 =================== */
-
-      /* =================== 스타일: 공통 버튼(통일) 시작 =================== */
-      .cm-modal__actions { display:flex; justify-content:center; gap:8px; margin-top:16px; }
-      .cm-btn, .order-btn, .refund-btn, .cancel-btn {
-        appearance:none; border:1px solid #e5e7eb; background:#fff; color:#111827;
-        padding:8px 14px; border-radius:12px; font-weight:600; line-height:1; cursor:pointer;
-        transition: background .15s ease, border-color .15s ease, opacity .15s ease, box-shadow .15s ease;
-        min-height:36px; min-width:84px; white-space:nowrap;
-      }
-      .cm-btn:hover, .order-btn:hover, .refund-btn:hover, .cancel-btn:hover { background:#f3f4f6; }
-      .cm-btn:active, .order-btn:active, .refund-btn:active, .cancel-btn:active { opacity:.95; }
-      .cm-btn:focus-visible, .order-btn:focus-visible, .refund-btn:focus-visible, .cancel-btn:focus-visible {
-        outline:0; box-shadow:0 0 0 3px rgba(37,99,235,.15);
-      }
-      .cm-btn[disabled], .order-btn[disabled], .refund-btn[disabled], .cancel-btn[disabled] {
-        opacity:.6; cursor:not-allowed;
-      }
-      /* Primary */
-      .cm-btn--primary, .order-btn { background:#111827; color:#fff; border-color:#111827; }
-      .cm-btn--primary:hover, .order-btn:hover { opacity:.92; }
-      .cm-btn--primary:active, .order-btn:active { opacity:.88; }
-      /* Danger */
-      .cm-btn--danger, .cancel-btn { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
-      .cm-btn--danger:hover, .cancel-btn:hover { background:#fecaca; }
-      /* Neutral */
-      .refund-btn { background:#f3f4f6; color:#111827; }
-      .refund-btn:hover { background:#e5e7eb; }
-      /* =================== 스타일: 공통 버튼(통일) 끝 =================== */
-
-      /* =================== 스타일: 마이페이지/카드/스텝퍼 시작 =================== */
-      .mp-grid { display:grid; grid-template-columns:260px minmax(0,1fr); gap:24px; align-items:start; }
-      .mp-col-left { position:sticky; top:24px; align-self:start; z-index:1; }
-      .mp-sidebox__title { font-size:20px; font-weight:800; margin:0 0 12px; }
-      .mp-sidebox__nav { display:flex; flex-direction:column; gap:6px; }
-      .mp-sidebox__link {
-        display:block; padding:8px 10px; border-radius:10px; text-decoration:none; color:#111827;
-        border:1px solid #e5e7eb; background:#fff;
-      }
-      .mp-sidebox__link:hover { background:#f3f7ff; }
-      .mp-sidebox__link.is-active { background:#111827; color:#fff; border-color:#111827; }
-
+      /* 카드/레이아웃 */
       .order-card {
         position:relative;
         display:grid; grid-template-columns:1fr auto; grid-template-rows:auto 52px;
         grid-template-areas:"info actions" "stepper stepper";
         column-gap:24px; align-items:start; padding:16px 56px 16px 16px;
-        border:1px solid #e5e7eb; border-radius:12px; background:#fff;
+        border:1px solid var(--border); border-radius:12px; background:#fff;
       }
       .order-info { grid-area:info; }
-      .order-actions { grid-area:actions; align-self:start; display:flex; gap:8px; }
+      .order-actions { grid-area:actions; display:flex; gap:8px; flex-wrap:wrap; align-self:start; }
+      .order-head { display:flex; gap:12px; align-items:center; }
+      .order-thumb { width:88px; height:88px; border-radius:10px; overflow:hidden; flex:0 0 88px; }
+      .order-thumb img { width:100%; height:100%; object-fit:cover; display:block; background:#f3f4f6; }
       .more {
         position:absolute; right:16px; top:50%; transform:translateY(-50%);
         width:28px; height:28px; display:inline-flex; justify-content:center; align-items:center;
         font-size:20px; font-weight:700; color:#111827; text-decoration:none;
       }
       .more:hover { opacity:.8; }
+
+      /* 배지(주문 상태) */
       .badge-canceled { background:#fee2e2; color:#991b1b; padding:4px 8px; border-radius:8px; font-weight:600; font-size:12px; margin-left:8px; }
       .badge-confirmed { background:#dcfce7; color:#166534; padding:4px 8px; border-radius:8px; font-weight:600; font-size:12px; margin-left:8px; }
       .badge-requested { background:#fef9c3; color:#854d0e; padding:4px 8px; border-radius:8px; font-weight:600; font-size:12px; margin-left:8px; }
       .badge-refunded { background:#e0e7ff; color:#3730a3; padding:4px 8px; border-radius:8px; font-weight:600; font-size:12px; margin-left:8px; }
       .order-card.is-canceled { opacity:.9; }
 
-      .order-head { display:flex; gap:12px; align-items:center; }
-      .order-thumb { width:88px; height:88px; border-radius:10px; overflow:hidden; flex:0 0 88px; }
-      .order-thumb img { width:100%; height:100%; object-fit:cover; display:block; background:#f3f4f6; }
-
-      .sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); border:0; }
-
+      /* 스텝퍼 */
       .stepper { grid-area:stepper; position:relative; display:flex; justify-content:space-between; margin:20px 0; text-align:center; padding-right:40px; }
       .step { flex:1; position:relative; }
       .step .dot { width:14px; height:14px; border-radius:50%; background:#e5e7eb; margin:0 auto 6px; position:relative; z-index:2; }
@@ -157,1383 +58,1102 @@
       .stepper-line-active { background:#111827; }
       .step.active .dot { background:#111827; }
       .step.active span { color:#111827; font-weight:600; }
-      /* =================== 스타일: 마이페이지/카드/스텝퍼 끝 =================== */
 
-      /* =================== 스타일: 환불요청/결과 테이블 + 페이징 시작 =================== */
-      #refundRequestsModal .m-modal__header { padding:18px 20px; }
-      #refundRequestsModal .m-modal__title { font-size:24px; font-weight:800; }
-
-      .rrm-card { border:1px solid #e5e7eb; border-radius:12px; background:#fff; overflow:hidden; margin-top:12px; }
-      .rrm-card__head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px; background:#f9fafb; border-bottom:1px solid #e5e7eb; }
-      .rrm-head-left .rrm-head-title { font-weight:700; }
-      .rrm-meta { color:#6b7280; font-size:12px; margin-top:4px; }
-      .rrm-badge { display:inline-block; padding:6px 10px; border-radius:9999px; background:#f3f4f6; border:1px solid #e5e7eb; font-weight:600; font-size:12px; }
-      .rrm-reason { margin-left:8px; color:#6b7280; font-size:14px; }
-
-      .rrm-table { width:100%; border-collapse:collapse; }
-      .rrm-table th { text-align:left; padding:12px 14px; background:#f3f4f6; border-bottom:1px solid #e5e7eb; font-weight:700; }
-      .rrm-table td { padding:12px 14px; border-bottom:1px solid #e5e7eb; }
-      .rrm-table tfoot td { background:#f9fafb; font-weight:700; }
-      .t-right { text-align:right; }
-
-      .pagination { display:flex; gap:6px; flex-wrap:wrap; padding-left:0; list-style:none; margin:16px 0; }
+      /* 페이지네이션(공통 .pagination 토큰 활용) */
       .pagination.justify-content-center { justify-content:center; }
-      .page-item .page-link { display:inline-block; border:1px solid #e5e7eb; background:#fff; padding:6px 10px; border-radius:8px; text-decoration:none; color:#111827; cursor:pointer; }
-      .page-item .page-link:hover { background:#f3f7ff; }
-      .page-item.active .page-link, .page-link[aria-current="page"] { background:#2563eb; color:#fff; border-color:#2563eb; }
-      .page-item.disabled .page-link { opacity:.5; pointer-events:none; cursor:default; }
 
-      .paylist { list-style:none; padding:0; margin:12px 0 0; display:grid; gap:6px; }
-      .payitem { padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; }
-      .payitem .muted { color:#6b7280; font-size:12px; }
-
-      .rrm-foot { margin-top:12px; background:#f5f6f8; border-radius:10px; padding:12px; }
-      .rrm-foot .foot-row { display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
-      .rrm-foot .foot-row.foot-total { font-weight:800; border-bottom:1px solid #e5e7eb; padding-bottom:6px; margin-bottom:6px; }
-      .rrm-foot .foot-ts { margin-top:6px; text-align:right; font-size:12px; color:#6b7280; }
-      /* =================== 스타일: 환불요청/결과 테이블 + 페이징 끝 =================== */
-
-      /* =================== 스타일: 결과 모달 사유 표시 박스 시작 =================== */
-      .rrm-reasonwrap { margin-top:12px; text-align:left; }
-      .rrm-reasonarea {
-        display:block; width:100%; min-height:120px; box-sizing:border-box; padding:10px 12px;
-        border:1px solid #e5e7eb; border-radius:8px; background:#fff; resize:none; font:inherit; line-height:1.5;
-        letter-spacing:normal; word-break:break-word; text-align:left;
-      }
-      .rrm-reasonarea::placeholder { color:#9ca3af; }
-      /* =================== 스타일: 결과 모달 사유 표시 박스 끝 =================== */
-
-      /* 4열(상품/수량/단가/합계) 정렬 공용 */
-      .rrm-table--refund { table-layout:fixed; width:100%; }
-      .rrm-table--refund th, .rrm-table--refund td { font-variant-numeric:tabular-nums; box-sizing:border-box; }
-      .rrm-table--refund th:nth-child(n + 2), .rrm-table--refund td:nth-child(n + 2) {
-        text-align:right; white-space:nowrap; padding-right:14px;
-      }
-      .rrm-table--refund th:first-child, .rrm-table--refund td:first-child { text-align:left; }
-      .rrm-table--refund col.c-name { width:auto; }
-      .rrm-table--refund col.c-qty { width:96px; }
-      .rrm-table--refund col.c-unit { width:120px; }
-      .rrm-table--refund col.c-sub { width:140px; }
-
-      /* ===== 관리자 스타일 요약/배지 ===== */
-      .rr-admin__head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
+      /* 환불요청/결과 모달 내부 레이아웃 */
+      .rrm-card { border:1px solid var(--border); border-radius:12px; background:#fff; overflow:hidden; margin-top:12px; }
+      .rrm-card__head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px; background:#f9fafb; border-bottom:1px solid var(--border); }
+      .rr-admin__head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
       .rr-admin__title { font-weight:800; font-size:18px; }
-      .badge { display:inline-block; padding:4px 10px; border-radius:9999px; font-weight:700; font-size:12px; border:1px solid #e5e7eb; }
+      .badge { display:inline-block; padding:4px 10px; border-radius:9999px; font-weight:700; font-size:12px; border:1px solid var(--border); }
       .badge--ok { background:#dcfce7; color:#166534; border-color:#bbf7d0; }
       .badge--reject { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
       .badge--partial { background:#fef9c3; color:#854d0e; border-color:#fde68a; }
-
+      .rr-admin__block { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff; margin-top:12px; }
+      .rr-admin__block > header { background:#f9fafb; padding:10px 12px; font-weight:700; border-bottom:1px solid var(--border); }
+      .rr-admin__block > .body { padding:12px; }
+      .rr-admin__reason { white-space:pre-wrap; border:1px solid var(--border); border-radius:8px; padding:10px; background:#fff; min-height:80px; }
       .rr-admin__summary { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px; margin:8px 0 12px; }
-      .rr-admin__sumcard { border:1px solid #e5e7eb; border-radius:10px; background:#fff; padding:10px 12px; }
+      .rr-admin__sumcard { border:1px solid var(--border); border-radius:10px; background:#fff; padding:10px 12px; }
       .rr-admin__sumcard .k { color:#6b7280; font-size:12px; }
       .rr-admin__sumcard .v { font-weight:800; font-variant-numeric: tabular-nums; }
-
-      .rr-admin__block { border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; background:#fff; margin-top:12px; }
-      .rr-admin__block > header { background:#f9fafb; padding:10px 12px; font-weight:700; border-bottom:1px solid #e5e7eb; }
-      .rr-admin__block > .body { padding:12px; }
-
-      .rr-admin__timeline { display:grid; gap:6px; font-size:13px; color:#374151; }
-      .rr-admin__timeline .row { display:flex; justify-content:space-between; gap:10px; }
-      .rr-admin__reason { white-space:pre-wrap; border:1px solid #e5e7eb; border-radius:8px; padding:10px; background:#fff; min-height:80px; }
-
       .rr-right { text-align:right; }
 
-      @media (max-width: 640px) {
-        .rr-admin__summary { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .rrm-table { width:100%; border-collapse:collapse; }
+      .rrm-table th { text-align:left; padding:12px 14px; background:#f3f4f6; border-bottom:1px solid var(--border); font-weight:700; }
+      .rrm-table td { padding:12px 14px; border-bottom:1px solid var(--border); }
+      .rrm-table tfoot td { background:#f9fafb; font-weight:700; }
+      .t-right { text-align:right; }
+
+      .rrm-table--refund { table-layout:fixed; width:100%; }
+      .rrm-table--refund th, .rrm-table--refund td { font-variant-numeric:tabular-nums; box-sizing:border-box; }
+      .rrm-table--refund th:nth-child(n + 2), .rrm-table--refund td:nth-child(n + 2) { text-align:right; white-space:nowrap; padding-right:14px; }
+      .rrm-table--refund col.c-name { width:auto; } .rrm-table--refund col.c-qty { width:96px; }
+      .rrm-table--refund col.c-unit { width:120px; } .rrm-table--refund col.c-sub { width:140px; }
+
+      /* 버튼(공통 토큰 확장) */
+      .order-btn, .refund-btn, .cancel-btn {
+        appearance:none; border:1px solid var(--border); background:#fff; color:#111827;
+        padding:8px 14px; border-radius:12px; font-weight:600; line-height:1; cursor:pointer;
+        transition: background .15s ease, border-color .15s ease, opacity .15s ease, box-shadow .15s ease;
+        min-height:36px; min-width:84px; white-space:nowrap;
       }
+      .order-btn { background:#111827; color:#fff; border-color:#111827; }
+      .order-btn:hover { opacity:.92; }
+      .cancel-btn { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
+      .cancel-btn:hover { background:#fecaca; }
+      .refund-btn { background:#f3f4f6; color:#111827; }
+      .refund-btn:hover { background:#e5e7eb; }
+
+      /* 모달 너비 튜닝 */
+      #refundRequestsModal .m-modal__box,
+      #refundResultModal   .m-modal__box { max-width:720px; }
+
+      .badge.badge--partial {
+        background: #fef9c3;   /* 밝은 노랑 */
+        color: #713f12 !important;   /* 더 짙은 텍스트 */
+        border-color: #fde68a;
+      }
+
+
     </style>
+  </head>
 
-    <section class="mypage-wrap">
-      <div class="mp-grid">
-        <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+  <body>
+    <div layout:fragment="content">
+      <section class="mypage-wrap">
+        <div class="mp-grid">
+          <!-- 좌측: 사이드박스 (공통 파셜) -->
+          <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
 
-        <div class="mp-col-right">
-          <section class="mypage-body" role="region" aria-labelledby="pageTitle">
-            <h1 id="pageTitle" class="sr-only">마이페이지 - 주문내역</h1>
-            <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 12px">주문내역</h2>
+          <!-- 우측: 본문 -->
+          <div class="mp-col-right">
+            <section class="mypage-body" role="region" aria-labelledby="pageTitle">
+              <h1 id="pageTitle" class="sr-only">마이페이지 - 주문내역</h1>
+              <h2 class="page-title" style="margin-bottom:12px">주문내역</h2>
 
-            <!-- =================== 주문 리스트 시작 =================== -->
-            <section>
-              <div id="ordersSection" th:fragment="ordersSection">
-                <h2 class="sr-only">주문 리스트</h2>
+              <!-- =================== 주문 리스트 시작 =================== -->
+              <section>
+                <div id="ordersSection" th:fragment="ordersSection">
+                  <h2 class="sr-only">주문 리스트</h2>
 
-                <div th:if="${orders.content.isEmpty()}">주문 내역이 없습니다.</div>
+                  <div th:if="${orders.content.isEmpty()}">주문 내역이 없습니다.</div>
 
-                <div
-                  th:each="o : ${orders.content}"
-                  class="order-card"
-                  th:classappend="${o.status=='CANCELED'} ? ' is-canceled'"
-                  th:attr="data-order-id=${o.orderId}"
-                  th:with="first=${#lists.isEmpty(o.details) ? null : o.details[0]},
-                         restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1}"
-                >
-                  <div class="order-info">
-                    <div class="order-head">
-                      <div class="order-thumb">
-                        <a th:if="${first != null}" class="order-thumb" th:href="@{|/main/content/${first.product.id}|}">
-                          <img th:if="${not #strings.isEmpty(first.product.imgName)}"
-                               th:src="@{|${ #strings.endsWith(first.product.imgPath,'/') ? first.product.imgPath : first.product.imgPath + '/' }${first.product.imgName}|}" alt="" />
-                          <img th:if="${#strings.isEmpty(first.product.imgName)}" th:src="@{/img/noimage.png}" alt="" />
-                        </a>
-                        <div th:if="${first == null}" class="order-thumb"><img th:src="@{/img/noimage.png}" alt="" /></div>
-                      </div>
-
-                      <div>
-                        <div class="muted" th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}"></div>
-                        <div class="order-title">
-                          <a th:if="${first != null}" th:href="@{|/main/content/${first.product.id}|}" th:text="${first.product.name}">상품명</a>
-                          <span th:if="${first == null}">상품</span>
-                          <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
-
-                          <span th:if="${o.status=='REQUESTED'}" class="badge-requested">환불요청</span>
-                          <span th:if="${o.status=='CONFIRMED' and o.status!='REQUESTED'}" class="badge-confirmed">주문확정</span>
-                          <span th:if="${o.status=='CANCELED'  and o.status!='REQUESTED'}" class="badge-canceled">주문취소</span>
-                          <span th:if="${o.status=='REFUNDED'}"
-                                class="badge-refunded"
-                                th:text="${#maps.containsKey(partialRefundMap, o.orderId) and partialRefundMap[o.orderId] ? '부분환불' : '환불완료'}">
-                            환불완료
-                          </span>
+                  <div
+                    th:each="o : ${orders.content}"
+                    class="order-card"
+                    th:classappend="${o.status=='CANCELED'} ? ' is-canceled'"
+                    th:attr="data-order-id=${o.orderId}"
+                    th:with="first=${#lists.isEmpty(o.details) ? null : o.details[0]},
+                             restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1}"
+                  >
+                    <div class="order-info">
+                      <div class="order-head">
+                        <div class="order-thumb">
+                          <a th:if="${first != null}" class="order-thumb" th:href="@{|/main/content/${first.product.id}|}">
+                            <img th:if="${not #strings.isEmpty(first.product.imgName)}"
+                                 th:src="@{|${ #strings.endsWith(first.product.imgPath,'/') ? first.product.imgPath : first.product.imgPath + '/' }${first.product.imgName}|}" alt="" />
+                            <img th:if="${#strings.isEmpty(first.product.imgName)}" th:src="@{/img/noimage.png}" alt="" />
+                          </a>
+                          <div th:if="${first == null}" class="order-thumb"><img th:src="@{/img/noimage.png}" alt="" /></div>
                         </div>
-                        <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount, 1, 'COMMA')} + '원'">0원</div>
+
+                        <div>
+                          <div class="muted" th:text="${#temporals.format(o.regDate,'yyyy.MM.dd')}"></div>
+                          <div class="order-title">
+                            <a th:if="${first != null}" th:href="@{|/main/content/${first.product.id}|}" th:text="${first.product.name}">상품명</a>
+                            <span th:if="${first == null}">상품</span>
+                            <span th:if="${restCnt>0}" th:text="${' 외 ' + restCnt + '건'}"></span>
+
+                            <span th:if="${o.status=='REQUESTED'}" class="badge-requested">환불요청</span>
+                            <span th:if="${o.status=='CONFIRMED' and o.status!='REQUESTED'}" class="badge-confirmed">주문확정</span>
+                            <span th:if="${o.status=='CANCELED'  and o.status!='REQUESTED'}" class="badge-canceled">주문취소</span>
+                            <span th:if="${o.status=='REFUNDED'}"
+                                  class="badge-refunded"
+                                  th:text="${#maps.containsKey(partialRefundMap, o.orderId) and partialRefundMap[o.orderId] ? '부분환불' : '환불완료'}">
+                              환불완료
+                            </span>
+                          </div>
+                          <div class="order-amount" th:text="${#numbers.formatInteger(o.totalAmount, 1, 'COMMA')} + '원'">0원</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <!-- 스텝퍼 -->
-                  <th:block th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.status!='CONFIRMED' and o.status!='REQUESTED' and o.status != 'REFUNDED'}">
-                    <div
-                      class="stepper"
-                      th:with="d=${#strings.trim(o.deliveryStatus)},
-                                step=${#strings.equalsIgnoreCase(d,'DELIVERED') ? 3 :
-                                       (#strings.equalsIgnoreCase(d,'SHIPPING')  ? 2 : 1)}"
-                      th:attr="data-step=${step}, data-max=3, data-autoplay='false'"
-                    >
-                      <div class="step"><div class="dot"></div><span>주문접수</span></div>
-                      <div class="step"><div class="dot"></div><span>배송 중</span></div>
-                      <div class="step"><div class="dot"></div><span>배송완료</span></div>
-                      <div class="stepper-line"></div>
-                      <div class="stepper-line-active"></div>
+                    <!-- 스텝퍼 (취소/실패/확정/요청/환불 제외 시 표시) -->
+                    <th:block th:if="${o.status!='CANCELED' and o.status!='FAILED' and o.status!='CONFIRMED' and o.status!='REQUESTED' and o.status != 'REFUNDED'}">
+                      <div
+                        class="stepper"
+                        th:with="d=${#strings.trim(o.deliveryStatus)},
+                                  step=${#strings.equalsIgnoreCase(d,'DELIVERED') ? 3 :
+                                         (#strings.equalsIgnoreCase(d,'SHIPPING')  ? 2 : 1)}"
+                        th:attr="data-step=${step}, data-max=3"
+                      >
+                        <div class="step"><div class="dot"></div><span>주문접수</span></div>
+                        <div class="step"><div class="dot"></div><span>배송 중</span></div>
+                        <div class="step"><div class="dot"></div><span>배송완료</span></div>
+                        <div class="stepper-line"></div>
+                        <div class="stepper-line-active"></div>
+                      </div>
+                    </th:block>
+
+                    <div class="order-actions">
+                      <!-- 취소: 결제완료 & 배송전 -->
+                      <button th:if="${o.status=='PAID' and o.status!='FAILED' and #strings.equalsIgnoreCase(#strings.trim(o.deliveryStatus),'ORDERED')}"
+                              class="cancel-btn btn-cancel" type="button">주문취소</button>
+                      <!-- 확정/환불요청: 배송완료 & 결제완료 -->
+                      <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}" class="order-btn btn-confirm" type="button">주문확정</button>
+                      <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}" class="refund-btn btn-refund" type="button">환불요청</button>
+                      <!-- 요청/결과 보기 -->
+                      <button th:if="${o.status=='REQUESTED' and o.deliveryStatus=='DELIVERED'}"
+                              class="refund-btn btn-refund-requests" th:attr="data-order-id=${o.orderId}" type="button">환불요청내역</button>
+                      <button th:if="${o.status=='REFUNDED'}" class="refund-btn btn-refund-result" th:attr="data-order-id=${o.orderId}" type="button">환불결과</button>
                     </div>
-                  </th:block>
 
-                  <div class="order-actions">
-                    <button
-                      th:if="${o.status=='PAID' and o.status!='FAILED' and #strings.equalsIgnoreCase(#strings.trim(o.deliveryStatus),'ORDERED')}"
-                      class="cancel-btn btn-cancel" type="button">주문취소</button>
+                    <!-- 상세보기 -->
+                    <a class="more js-order-frag" th:href="@{/mypage/order/{id}(id=${o.orderId})}" th:attr="data-order-id=${o.orderId}" aria-label="주문 상세 보기">&gt;</a>
 
-                    <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}" class="order-btn btn-confirm" type="button">주문확정</button>
-
-                    <button th:if="${o.status=='PAID' and o.deliveryStatus=='DELIVERED'}" class="refund-btn btn-refund" type="button">환불요청</button>
-
-                    <button th:if="${o.status=='REQUESTED' and o.deliveryStatus=='DELIVERED'}"
-                            class="refund-btn btn-refund-requests" th:attr="data-order-id=${o.orderId}" type="button">환불요청내역</button>
-
-                    <button th:if="${o.status=='REFUNDED'}" class="refund-btn btn-refund-result" th:attr="data-order-id=${o.orderId}" type="button">환불결과</button>
+                    <!-- 환불 모달용 숨김 데이터 -->
+                    <div class="refund-items-src" th:attr="data-order-id=${o.orderId}" hidden>
+                      <ul>
+                        <li th:each="d : ${o.details}"
+                            th:with="imgUrl=${#strings.isEmpty(d.product.imgName)
+                                           ? '/img/noimage.png'
+                                           : ((#strings.endsWith(d.product.imgPath,'/')
+                                                ? d.product.imgPath
+                                                : d.product.imgPath + '/' ) + d.product.imgName)}"
+                            th:attr="
+                            data-od-id=${d.orderDetailId},
+                            data-name=${d.product.name},
+                            data-max=${d.quantity},
+                            data-total=${d.totalPrice},
+                            data-unit=${d.totalPrice / d.quantity},
+                            data-img=@{${imgUrl}}"></li>
+                      </ul>
+                    </div>
                   </div>
 
-                  <!-- 상세보기 -->
-                  <a class="more js-order-frag" th:href="@{/mypage/order/{id}(id=${o.orderId})}" th:attr="data-order-id=${o.orderId}">&gt;</a>
-
-                  <!-- 환불 모달용 숨김 데이터 -->
-                  <div class="refund-items-src" th:attr="data-order-id=${o.orderId}" hidden>
-                    <ul>
-                      <li th:each="d : ${o.details}"
-                          th:with="imgUrl=${#strings.isEmpty(d.product.imgName)
-                                         ? '/img/noimage.png'
-                                         : ((#strings.endsWith(d.product.imgPath,'/')
-                                              ? d.product.imgPath
-                                              : d.product.imgPath + '/' ) + d.product.imgName)}"
-                          th:attr="
-                          data-od-id=${d.orderDetailId},
-                          data-name=${d.product.name},
-                          data-max=${d.quantity},
-                          data-total=${d.totalPrice},
-                          data-unit=${d.totalPrice / d.quantity},
-                          data-img=@{${imgUrl}}"></li>
+                  <!-- 페이징 (서버 렌더 + AJAX 대체) -->
+                  <div id="ordersPager" th:if="${!orders.empty}" th:attr="data-total-pages=${orders.totalPages}, data-size=${orders.size}">
+                    <ul class="pagination justify-content-center" role="navigation" aria-label="페이지네이션">
+                      <li class="page-item" th:classappend="${!orders.hasPrevious} ? ' disabled'">
+                        <a class="page-link" href="javascript:void(0);" th:attr="data-page=${orders.number - 1}" aria-label="이전 페이지"><span>이전</span></a>
+                      </li>
+                      <li class="page-item"
+                          th:each="page : ${#numbers.sequence(0, orders.totalPages - 1)}"
+                          th:if="${page >= orders.number - 5 and page <= orders.number + 5}"
+                          th:classappend="${page == orders.number} ? ' active'">
+                        <a class="page-link" href="javascript:void(0);" th:text="${page + 1}"
+                           th:attr="data-page=${page}, aria-current=${page == orders.number} ? 'page' : null"></a>
+                      </li>
+                      <li class="page-item" th:classappend="${!orders.hasNext} ? ' disabled'">
+                        <a class="page-link" href="javascript:void(0);" th:attr="data-page=${orders.number + 1}" aria-label="다음 페이지"><span>다음</span></a>
+                      </li>
                     </ul>
                   </div>
                 </div>
+              </section>
+              <!-- =================== 주문 리스트 끝 =================== -->
 
-                <!-- 페이징 -->
-                <div id="ordersPager" th:if="${!orders.empty}" th:attr="data-total-pages=${orders.totalPages}, data-size=${orders.size}">
-                  <ul class="pagination justify-content-center" role="navigation" aria-label="페이지네이션">
-                    <li class="page-item" th:classappend="${!orders.hasPrevious} ? ' disabled'">
-                      <a class="page-link" href="javascript:void(0);" th:attr="data-page=${orders.number - 1}" aria-label="이전 페이지"><span>이전</span></a>
-                    </li>
-                    <li class="page-item"
-                        th:each="page : ${#numbers.sequence(0, orders.totalPages - 1)}"
-                        th:if="${page >= orders.number - 5 and page <= orders.number + 5}"
-                        th:classappend="${page == orders.number} ? ' active'">
-                      <a class="page-link" href="javascript:void(0);" th:text="${page + 1}"
-                         th:attr="data-page=${page}, aria-current=${page == orders.number} ? 'page' : null"></a>
-                    </li>
-                    <li class="page-item" th:classappend="${!orders.hasNext} ? ' disabled'">
-                      <a class="page-link" href="javascript:void(0);" th:attr="data-page=${orders.number + 1}" aria-label="다음 페이지"><span>다음</span></a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </section>
-            <!-- =================== 주문 리스트 끝 =================== -->
-
-            <!-- =================== 모달들 시작 =================== -->
-            <!-- 확인 모달 -->
-            <div id="confirmModal" class="cm-modal" aria-hidden="true">
-              <div class="cm-modal__content" role="dialog" aria-modal="true" aria-labelledby="confirmText">
-                <button type="button" class="cm-modal__x" data-close aria-label="닫기">×</button>
-                <p id="confirmText">확인하시겠습니까?</p>
-                <div class="cm-modal__actions">
-                  <button id="confirmYes" class="cm-btn cm-btn--primary">예</button>
-                  <button id="confirmNo" class="cm-btn">아니요</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 결과 모달 -->
-            <div id="resultModal" class="cm-modal" aria-hidden="true">
-              <div class="cm-modal__content" role="dialog" aria-modal="true" aria-labelledby="resultText">
-                <button type="button" class="cm-modal__x" data-close aria-label="닫기">×</button>
-                <p id="resultText">처리가 완료되었습니다.</p>
-                <div class="cm-modal__actions">
-                  <button id="resultOk" class="cm-btn cm-btn--primary">확인</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 주문상품 모달 -->
-            <div id="orderItemsModal" class="m-modal" aria-hidden="true">
-              <div class="m-modal__backdrop" data-close></div>
-              <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="oi-title">
-                <div class="m-modal__header">
-                  <h3 id="oi-title" class="m-modal__title">주문 상품</h3>
-                  <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
-                </div>
-                <div class="m-modal__body" id="orderItemsBody">불러오는 중…</div>
-              </div>
-            </div>
-
-            <!-- 환불요청 모달 -->
-            <div id="refundModal" class="m-modal" aria-hidden="true">
-              <div class="m-modal__backdrop" data-close></div>
-              <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="rf-title">
-                <div class="m-modal__header">
-                  <h3 id="rf-title" class="m-modal__title">환불 요청</h3>
-                  <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
-                </div>
-                <div class="m-modal__body">
-                  <div id="refundTbodyWrap">
-                    <table style="width: 100%">
-                      <tbody id="refundTbody">
-                        <tr><td>불러오는 중…</td></tr>
-                      </tbody>
-                    </table>
+              <!-- =================== 모달들 시작 =================== -->
+              <!-- 확인 모달 (공통 .cm-modal) -->
+              <div id="confirmModal" class="cm-modal" aria-hidden="true">
+                <div class="cm-modal__content" role="dialog" aria-modal="true" aria-labelledby="confirmText">
+                  <button type="button" class="cm-modal__x" data-close aria-label="닫기">×</button>
+                  <p id="confirmText">확인하시겠습니까?</p>
+                  <div class="cm-modal__actions">
+                    <button id="confirmYes" class="cm-btn cm-btn--primary">예</button>
+                    <button id="confirmNo" class="cm-btn">아니요</button>
                   </div>
-                  <div id="refundGrand" style="text-align: right; font-weight: 800; margin-top: 6px">0원</div>
-                  <textarea id="refundReason" rows="4" placeholder="환불 사유를 입력하세요" style="width: 100%; resize: none"></textarea>
-                </div>
-                <div class="m-modal__footer">
-                  <button id="refundSubmit" class="cm-btn cm-btn--primary">요청하기</button>
-                  <button id="refundCancel" class="cm-btn" data-close>닫기</button>
                 </div>
               </div>
-            </div>
 
-            <!-- 환불요청내역 모달 -->
-            <div id="refundRequestsModal" class="m-modal" aria-hidden="true">
-              <div class="m-modal__backdrop" data-close></div>
-              <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="rrm-title">
-                <div class="m-modal__header">
-                  <h3 id="rrm-title" class="m-modal__title">환불요청 내역</h3>
-                  <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
-                </div>
-                <div class="m-modal__body" id="rrm-body">
-                  <div class="py-10 text-center text-gray-500">로딩 중…</div>
-                </div>
-                <div class="m-modal__footer">
-                  <button class="cm-btn cm-btn--primary" data-close>닫기</button>
+              <!-- 결과 모달 -->
+              <div id="resultModal" class="cm-modal" aria-hidden="true">
+                <div class="cm-modal__content" role="dialog" aria-modal="true" aria-labelledby="resultText">
+                  <button type="button" class="cm-modal__x" data-close aria-label="닫기">×</button>
+                  <p id="resultText">처리가 완료되었습니다.</p>
+                  <div class="cm-modal__actions">
+                    <button id="resultOk" class="cm-btn cm-btn--primary">확인</button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- 환불결과 모달 (관리자 스타일로 사용자 표시) — 중복 제거하여 하나만 유지 -->
-            <div id="refundResultModal" class="m-modal" aria-hidden="true">
-              <div class="m-modal__backdrop" data-close></div>
-              <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="rr-title">
-                <div class="m-modal__header">
-                  <h3 id="rr-title" class="m-modal__title">환불결과</h3>
-                  <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
-                </div>
-                <div class="m-modal__body" id="rr-body">
-                  <div class="py-10 text-center text-gray-500">로딩 중…</div>
-                </div>
-                <div class="m-modal__footer">
-                  <button class="cm-btn cm-btn--primary" data-close>닫기</button>
+              <!-- 주문상품 모달 (상세 프래그먼트) -->
+              <div id="orderItemsModal" class="m-modal" aria-hidden="true">
+                <div class="m-modal__backdrop" data-close></div>
+                <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="oi-title">
+                  <div class="m-modal__header">
+                    <h3 id="oi-title" class="m-modal__title">주문 상품</h3>
+                    <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
+                  </div>
+                  <div class="m-modal__body" id="orderItemsBody">불러오는 중…</div>
                 </div>
               </div>
-            </div>
-            <!-- =================== 모달들 끝 =================== -->
-          </section>
+
+              <!-- 환불요청 모달 -->
+              <div id="refundModal" class="m-modal" aria-hidden="true">
+                <div class="m-modal__backdrop" data-close></div>
+                <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="rf-title">
+                  <div class="m-modal__header">
+                    <h3 id="rf-title" class="m-modal__title">환불 요청</h3>
+                    <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
+                  </div>
+                  <div class="m-modal__body">
+                    <div id="refundTbodyWrap">
+                      <table style="width: 100%">
+                        <tbody id="refundTbody">
+                          <tr><td>불러오는 중…</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div id="refundGrand" style="text-align: right; font-weight: 800; margin-top: 6px">0원</div>
+                    <textarea id="refundReason" rows="4" placeholder="환불 사유를 입력하세요"
+                      style="width:100%; resize:none"></textarea>
+                    <div id="refundReasonErr" class="form-help error" aria-live="polite"></div>
+                  </div>
+                  <div class="m-modal__footer">
+                    <button id="refundSubmit" class="cm-btn cm-btn--primary">요청하기</button>
+                    <button id="refundCancel" class="cm-btn" data-close>닫기</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 환불요청내역 모달 -->
+              <div id="refundRequestsModal" class="m-modal" aria-hidden="true">
+                <div class="m-modal__backdrop" data-close></div>
+                <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="rrm-title">
+                  <div class="m-modal__header">
+                    <h3 id="rrm-title" class="m-modal__title">환불요청 내역</h3>
+                    <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
+                  </div>
+                  <div class="m-modal__body" id="rrm-body">
+                    <div class="py-10 text-center muted">로딩 중…</div>
+                  </div>
+                  <div class="m-modal__footer">
+                    <button class="cm-btn cm-btn--primary" data-close>닫기</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 환불결과 모달 -->
+              <div id="refundResultModal" class="m-modal" aria-hidden="true">
+                <div class="m-modal__backdrop" data-close></div>
+                <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="rr-title">
+                  <div class="m-modal__header">
+                    <h3 id="rr-title" class="m-modal__title">환불결과</h3>
+                    <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
+                  </div>
+                  <div class="m-modal__body" id="rr-body">
+                    <div class="py-10 text-center muted">로딩 중…</div>
+                  </div>
+                  <div class="m-modal__footer">
+                    <button class="cm-btn cm-btn--primary" data-close>닫기</button>
+                  </div>
+                </div>
+              </div>
+              <!-- =================== 모달들 끝 =================== -->
+            </section>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <script>
-      "use strict";
+      <!-- =================== 스크립트 =================== -->
+      <script>
+        "use strict";
 
-      /* =================== CTX / api 시작 =================== */
-      const CTX = (() => {
-        const meta = document.querySelector('meta[name="context-path"]')?.getAttribute("content") || "";
-        return meta.replace(/\/+$/, "");
-      })();
-      function api(p) {
-        const t = p.startsWith("/") ? p : "/" + p;
-        return CTX ? CTX + t : t;
-      }
-      /* =================== CTX / api 끝 =================== */
+        /* ===== CTX / api ===== */
+        const CTX = (() => {
+          const meta = document.querySelector('meta[name="context-path"]')?.getAttribute("content") || "";
+          return meta.replace(/\/+$/, "");
+        })();
+        const api = (p) => (CTX ? CTX + (p.startsWith("/")? p : "/"+p) : (p.startsWith("/")? p : "/"+p));
 
-      /* =================== scroll lock / modal 시작 =================== */
-      function scrollbarWidth() { return window.innerWidth - document.documentElement.clientWidth; }
-      function lockScroll() {
-        const sw = scrollbarWidth();
-        if (sw > 0) document.documentElement.style.setProperty("--sbw", sw + "px");
-        document.body.classList.add("lock-scroll");
-      }
-      function unlockScroll() {
-        document.body.classList.remove("lock-scroll");
-        document.documentElement.style.removeProperty("--sbw");
-      }
-      function openModal(el) { if (!el) return; el.classList.add("is-open"); lockScroll(); }
-      function closeModal(el) {
-        if (!el) return;
-        const root = el.classList.contains("m-modal") || el.classList.contains("cm-modal") ? el : el.closest(".m-modal, .cm-modal");
-        if (!root) return;
-        root.classList.remove("is-open");
-        if (document.querySelectorAll(".cm-modal.is-open,.m-modal.is-open").length === 0) unlockScroll();
-      }
-      // 클릭으로 닫기
-      document.addEventListener("click", (e) => {
-        if (e.target.matches(".m-modal [data-close], .m-modal__backdrop[data-close]")) closeModal(e.target.closest(".m-modal"));
-        if (e.target.closest(".cm-modal") && !e.target.closest(".cm-modal__content")) closeModal(e.target.closest(".cm-modal"));
-        if (e.target.matches(".cm-modal [data-close]")) closeModal(e.target.closest(".cm-modal"));
-      });
-      // ESC로 닫기
-      document.addEventListener("keydown", (e) => {
-        if (e.key !== "Escape") return;
-        const opens = Array.from(document.querySelectorAll(".m-modal.is-open, .cm-modal.is-open"));
-        const top = opens[opens.length - 1];
-        if (top) { e.preventDefault(); closeModal(top); }
-      });
-      /* =================== scroll lock / modal 끝 =================== */
-
-      /* =================== 스텝퍼 시작 =================== */
-      function renderStepper(stepper, step) {
-        const steps = stepper.querySelectorAll(".step");
-        const lineBase = stepper.querySelector(".stepper-line");
-        const lineActive = stepper.querySelector(".stepper-line-active");
-        steps.forEach((s, i) => (i < step ? s.classList.add("active") : s.classList.remove("active")));
-        const firstDot = steps[0].querySelector(".dot");
-        const lastDot = steps[steps.length - 1].querySelector(".dot");
-        const contRect = stepper.getBoundingClientRect();
-        const firstCenter = firstDot.getBoundingClientRect().left + firstDot.offsetWidth / 2;
-        const lastCenter = lastDot.getBoundingClientRect().left + lastDot.offsetWidth / 2;
-        const start = firstCenter - contRect.left;
-        const total = Math.max(0, lastCenter - firstCenter);
-        lineBase.style.left = start + "px";
-        lineBase.style.width = total + "px";
-        const maxIdx = steps.length - 1;
-        const ratio = Math.min(1, Math.max(0, (step - 1) / maxIdx));
-        lineActive.style.left = start + "px";
-        lineActive.style.width = total * ratio + "px";
-      }
-      document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll(".stepper").forEach((s) => {
-          let step = parseInt(s.dataset.step, 10);
-          if (!Number.isFinite(step)) {
-            const card = s.closest(".order-card");
-            const del = (card?.dataset.delivery || "").trim().toUpperCase();
-            step = del === "DELIVERED" ? 3 : del === "SHIPPING" ? 2 : 1;
-            s.dataset.step = String(step);
-          }
-          renderStepper(s, step);
+        /* ===== 모달 공통 ===== */
+        function lockScroll(){ document.body.classList.add("lock-scroll"); }
+        function unlockScroll(){ document.body.classList.remove("lock-scroll"); }
+        function openModal(el){ if(!el) return; el.classList.add("is-open"); lockScroll(); }
+        function closeModal(el){
+          if(!el) return;
+          const root = el.classList.contains("m-modal") || el.classList.contains("cm-modal") ? el : el.closest(".m-modal, .cm-modal");
+          if(!root) return;
+          root.classList.remove("is-open");
+          if (document.querySelectorAll(".cm-modal.is-open,.m-modal.is-open").length === 0) unlockScroll();
+        }
+        document.addEventListener("click", (e) => {
+          if (e.target.matches(".m-modal [data-close], .m-modal__backdrop")) closeModal(e.target.closest(".m-modal"));
+          if (e.target.closest(".cm-modal") && !e.target.closest(".cm-modal__content")) closeModal(e.target.closest(".cm-modal"));
+          if (e.target.matches(".cm-modal [data-close]")) closeModal(e.target.closest(".cm-modal"));
         });
-      });
-      window.addEventListener("resize", () => {
-        document.querySelectorAll(".stepper").forEach((s) => renderStepper(s, parseInt(s.dataset.step || "1", 10)));
-      });
-      /* =================== 스텝퍼 끝 =================== */
-
-      /* =================== CSRF 시작 =================== */
-      function csrfHeaders(init = {}) {
-        const token = document.querySelector('meta[name="_csrf"]')?.getAttribute("content");
-        const headerName = document.querySelector('meta[name="_csrf_header"]')?.getAttribute("content") || "X-CSRF-TOKEN";
-        const h = new Headers(init);
-        if (token) h.set(headerName, token);
-        return h;
-      }
-      /* =================== CSRF 끝 =================== */
-
-      /* =================== 공통 모달 핸들러 & 상태 시작 =================== */
-      const $confirm = document.getElementById("confirmModal");
-      const $confirmText = document.getElementById("confirmText");
-      const $result = document.getElementById("resultModal");
-      const $resultText = document.getElementById("resultText");
-      const $resultOk = document.getElementById("resultOk");
-      let targetOrderId = null, pendingAction = null;
-      function openConfirm(id, action, msg) { targetOrderId = id; pendingAction = action; $confirmText.textContent = msg; openModal($confirm); }
-      function closeConfirm() { closeModal($confirm); }
-      function openResult(msg) { $resultText.textContent = msg; openModal($result); }
-      function closeResult() { closeModal($result); }
-      document.getElementById("confirmNo")?.addEventListener("click", closeConfirm);
-      $resultOk?.addEventListener("click", closeResult);
-      /* =================== 공통 모달 핸들러 & 상태 끝 =================== */
-
-      /* =================== util 시작 =================== */
-      function money(n) { const v = Number(n) || 0; return v.toLocaleString() + "원"; }
-      /* =================== util 끝 =================== */
-
-      /* =================== 카드 UI 업데이트 시작 =================== */
-      window.updateCardToConfirmed = function (card) {
-        if (!card) return;
-        card.querySelector(".order-actions")?.remove();
-        card.querySelector(".stepper")?.remove();
-        const title = card.querySelector(".order-title");
-        if (title && !title.querySelector(".badge-confirmed")) {
-          const b = document.createElement("span");
-          b.className = "badge-confirmed";
-          b.textContent = "주문확정";
-          title.appendChild(b);
-        }
-      };
-      window.updateCardToRequested = function (card) {
-        if (!card) return;
-        const orderId = card.dataset.orderId;
-        card.querySelector(".stepper")?.remove();
-        const title = card.querySelector(".order-title");
-        if (title) {
-          title.querySelector(".badge-confirmed")?.remove();
-          title.querySelector(".badge-canceled")?.remove();
-          if (!title.querySelector(".badge-requested")) {
-            const b = document.createElement("span");
-            b.className = "badge-requested";
-            b.textContent = "환불요청";
-            title.appendChild(b);
-          }
-        }
-        let actions = card.querySelector(".order-actions");
-        if (!actions) { actions = document.createElement("div"); actions.className = "order-actions"; card.appendChild(actions); }
-        actions.innerHTML = `<button type="button" class="refund-btn btn-refund-requests" data-order-id="${orderId}">환불요청내역</button>`;
-        card.dataset.status = "REQUESTED";
-      };
-      /* =================== 카드 UI 업데이트 끝 =================== */
-
-      /* =================== 주문상품 모달 시작 =================== */
-      const $orderItemsModal = document.getElementById("orderItemsModal");
-      const $orderItemsBody = document.getElementById("orderItemsBody");
-      /* =================== 주문상품 모달 끝 =================== */
-
-      /* =================== 환불요청 모달 시작 =================== */
-      (function () {
-        const modal = document.getElementById("refundModal");
-        const tbody = document.getElementById("refundTbody");
-        const grand = document.getElementById("refundGrand");
-        const reason = document.getElementById("refundReason");
-        const btnOk = document.getElementById("refundSubmit");
-
-        function makeRow({ odId, name, max, unit, img }) {
-          const tr = document.createElement("tr");
-          tr.dataset.odId = odId;
-          tr.dataset.max = String(max);
-          tr.dataset.unit = String(unit);
-          tr.innerHTML = `
-            <td style="padding:10px 12px;">
-              <div style="display:flex; gap:10px; align-items:center;">
-                <div style="width:48px; height:48px; border-radius:8px; overflow:hidden; flex:0 0 48px;">
-                  <img src="${img || "/img/noimage.png"}" alt="" style="width:100%; height:100%; object-fit:cover;">
-                </div>
-                <div>
-                  <div style="font-weight:600; line-height:1.3">${name}</div>
-                  <div class="muted">주문수량: ${max}</div>
-                </div>
-              </div>
-            </td>
-            <td style="padding:10px 12px; text-align:center;">
-              <div style="display:inline-flex; align-items:center; gap:6px;">
-                <button type="button" class="qminus cm-btn" style="min-width:32px; height:32px; padding:0;">-</button>
-                <input type="number" class="qinput" value="0" min="0" max="${max}"
-                      style="width:64px; text-align:center; border:1px solid #e5e7eb; border-radius:8px; height:32px;">
-                <button type="button" class="qplus cm-btn"  style="min-width:32px; height:32px; padding:0;">+</button>
-              </div>
-            </td>
-            <td style="padding:10px 12px; text-align:right;"><span class="lineTotal">0원</span></td>`;
-          return tr;
-        }
-        function recalcRow(tr) {
-          const max = parseInt(tr.dataset.max, 10);
-          const unit = parseInt(tr.dataset.unit, 10);
-          const input = tr.querySelector(".qinput");
-          let val = parseInt(input.value || "0", 10);
-          if (isNaN(val)) val = 0;
-          val = Math.max(0, Math.min(max, val));
-          input.value = val;
-          tr.querySelector(".lineTotal").textContent = money(val * unit);
-        }
-        function recalcGrand() {
-          let sum = 0;
-          tbody.querySelectorAll("tr").forEach((tr) => {
-            const unit = parseInt(tr.dataset.unit, 10);
-            const val = parseInt(tr.querySelector(".qinput").value || "0", 10);
-            if (!isNaN(unit) && !isNaN(val)) sum += unit * val;
-          });
-          grand.textContent = money(sum);
-          return sum;
-        }
-
-        window.openRefundModalFromCard = function (card) {
-          const orderId = card?.dataset.orderId;
-          if (!orderId) return;
-          const src = card.querySelector(".refund-items-src ul");
-          const items = [...src.querySelectorAll("li")].map((li) => {
-            const odId = li.dataset.odId;
-            const name = li.dataset.name;
-            const max = parseInt(li.dataset.max, 10);
-            const total = parseInt(li.dataset.total, 10);
-            const unit = Math.floor(total / (max || 1));
-            const img = li.dataset.img || "/img/noimage.png";
-            return { odId, name, max, unit, img };
-          });
-          tbody.innerHTML = "";
-          items.forEach((item) => {
-            const tr = makeRow(item);
-            tbody.appendChild(tr);
-            const input = tr.querySelector(".qinput");
-            tr.querySelector(".qminus").addEventListener("click", () => {
-              input.value = Math.max(0, parseInt(input.value || "0", 10) - 1);
-              recalcRow(tr); recalcGrand();
-            });
-            tr.querySelector(".qplus").addEventListener("click", () => {
-              input.value = Math.min(item.max, parseInt(input.value || "0", 10) + 1);
-              recalcRow(tr); recalcGrand();
-            });
-            input.addEventListener("input", () => { recalcRow(tr); recalcGrand(); });
-            recalcRow(tr);
-          });
-          recalcGrand();
-          reason.value = "";
-          tbody.dataset.orderId = orderId;
-          openModal(modal);
-        };
-
-        document.getElementById("refundCancel")?.addEventListener("click", (e) => {
-          e.preventDefault(); closeModal(modal);
+        document.addEventListener("keydown", (e) => {
+          if (e.key !== "Escape") return;
+          const opens = Array.from(document.querySelectorAll(".m-modal.is-open, .cm-modal.is-open"));
+          const top = opens[opens.length - 1];
+          if (top) { e.preventDefault(); closeModal(top); }
         });
-        btnOk?.addEventListener("click", async () => {
-          const orderId = tbody.dataset.orderId;
-          const text = reason.value.trim();
-          const items = [...tbody.querySelectorAll("tr")]
-            .map((tr) => {
-              const qty = parseInt(tr.querySelector(".qinput").value || "0", 10);
-              return { orderDetailId: tr.dataset.odId, quantity: Math.max(0, qty) };
-            })
-            .filter((it) => it.quantity > 0);
-          if (items.length === 0) { alert("환불 수량을 1개 이상 선택하세요."); return; }
-          if (!text) { alert("환불 사유를 입력해주세요."); reason.focus(); return; }
-          try {
-            const res = await fetch(api(`/pay/${orderId}/refund`), {
-              method: "POST",
-              headers: csrfHeaders({ "Content-Type": "application/json" }),
-              body: JSON.stringify({ reason: text, items }),
-            });
-            let data = {}; try { data = await res.json(); } catch {}
-            if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
-            const card = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
-            if (card) window.updateCardToRequested(card);
-            closeModal(modal);
-            openResult(data.message || "환불 요청이 접수되었습니다.");
-          } catch (e) {
-            console.error(e); closeModal(modal); openResult("환불 요청 처리 중 오류가 발생했습니다.");
-          }
-        });
-      })();
-      /* =================== 환불요청 모달 끝 =================== */
 
-      /* =================== 환불요청내역 모달 시작 =================== */
-      (function () {
-        const modal = document.getElementById("refundRequestsModal");
-        const body = document.getElementById("rrm-body");
-        const title = document.getElementById("rrm-title");
-
-        const esc = (s) => (s ?? "").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-        const num = (n) => { const v = Number(n); return Number.isFinite(v) ? v.toLocaleString() : n ?? "-"; };
-        const fmtYMDHM = (v) => {
-          const toDate = (x) => {
-            if (!x) return null;
-            if (x instanceof Date) return x;
-            if (typeof x === "number") return new Date(x > 1e12 ? x : x * 1000);
-            if (typeof x === "string") {
-              let s = x.trim().replace(" ", "T"); s = s.replace(/\.\d+/, "");
-              const d = new Date(s); if (!isNaN(d)) return d;
-            }
-            return null;
-          };
-          const d = toDate(v); if (!d || isNaN(d)) return v ?? "";
-          const p2 = (n) => String(n).padStart(2, "0");
-          return `${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
-        };
-
-        function renderRefundRequests(data) {
-          const requests = Array.isArray(data?.requests) ? data.requests : [];
-          if (requests.length === 0) { body.innerHTML = '<div class="rrm-empty">표시할 환불요청이 없습니다.</div>'; return; }
-
-          const sections = requests.map((req, idx) => {
-            const details = Array.isArray(req.details) ? req.details : [];
-            const total = details.reduce((s, d) => s + (Number(d?.subtotal) || 0), 0);
-            const rows = details.map((d) => `
-              <tr>
-                <td>${esc(d?.productName ?? "-")}</td>
-                <td class="t-right">${esc(d?.refundQty ?? "-")}</td>
-                <td class="t-right">${num(d?.unitRefundAmount ?? 0)}</td>
-                <td class="t-right"><strong>${num(d?.subtotal ?? 0)}</strong></td>
-              </tr>`).join("");
-
-            return `
-            <section class="rrm-card">
-              <header class="rrm-card__head">
-                <div class="rrm-head-left">
-                  <div class="rrm-head-title">요청 #${esc(req?.refundId ?? idx + 1)}</div>
-                  <div class="rrm-meta">${esc(fmtYMDHM(req?.createdAt))}</div>
-                </div>
-              </header>
-              <div>
-                <table class="rrm-table rrm-table--refund">
-                  <colgroup><col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub"></colgroup>
-                  <thead><tr><th>상품</th><th>수량</th><th>단가</th><th>합계</th></tr></thead>
-                  <tbody>${rows}</tbody>
-                  <tfoot><tr><td colspan="3" class="t-right">환불요청 총액</td><td class="t-right"><strong>${num(total)}</strong></td></tr></tfoot>
-                </table>
-              </div>
-            </section>`;
-          }).join("");
-          body.innerHTML = sections;
+        /* ===== 스텝퍼 ===== */
+        function renderStepper(stepper, step) {
+          const steps = stepper.querySelectorAll(".step");
+          const lineBase = stepper.querySelector(".stepper-line");
+          const lineActive = stepper.querySelector(".stepper-line-active");
+          steps.forEach((s, i) => (i < step ? s.classList.add("active") : s.classList.remove("active")));
+          const firstDot = steps[0].querySelector(".dot");
+          const lastDot = steps[steps.length - 1].querySelector(".dot");
+          const contRect = stepper.getBoundingClientRect();
+          const firstCenter = firstDot.getBoundingClientRect().left + firstDot.offsetWidth / 2;
+          const lastCenter = lastDot.getBoundingClientRect().left + lastDot.offsetWidth / 2;
+          const start = firstCenter - contRect.left;
+          const total = Math.max(0, lastCenter - firstCenter);
+          lineBase.style.left = start + "px";
+          lineBase.style.width = total + "px";
+          const maxIdx = steps.length - 1;
+          const ratio = Math.min(1, Math.max(0, (step - 1) / maxIdx));
+          lineActive.style.left = start + "px";
+          lineActive.style.width = total * ratio + "px";
         }
-
-        document.addEventListener("click", async (ev) => {
-          const btn = ev.target.closest(".btn-refund-requests"); if (!btn) return;
-          const orderId = btn.getAttribute("data-order-id"); if (!orderId) return;
-          title.textContent = `주문번호 #${orderId} 의 환불요청 내역`;
-          body.innerHTML = `<div class="py-10 text-center text-gray-500">로딩 중…</div>`;
-          openModal(modal);
-          try {
-            const res = await fetch(api(`/pay/order/${orderId}/refund-requests`), {
-              method: "GET", headers: csrfHeaders({ Accept: "application/json" }), credentials: "same-origin",
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            renderRefundRequests(data);
-          } catch (err) {
-            console.error(err);
-            body.innerHTML = `<div class="py-10 text-center" style="color:#ef4444">환불요청 내역을 불러오지 못했습니다.</div>`;
-          }
-        });
-      })();
-      /* =================== 환불요청내역 모달 끝 =================== */
-
-      /* =================== 환불결과 모달 시작 (관리자 스타일 + 요청사유 보강) =================== */
-      (function () {
-        const modal = document.getElementById("refundResultModal");
-        const body  = document.getElementById("rr-body");
-        const title = document.getElementById("rr-title");
-
-        const esc = (s) => (s ?? "").toString()
-          .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-          .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-        const num = (n) => { const v = Number(n); return Number.isFinite(v) ? v.toLocaleString() : (n ?? "-"); };
-        const p2 = (n) => String(n).padStart(2, "0");
-        const toDate = (x) => {
-          if (!x) return null;
-          if (x instanceof Date) return x;
-          if (typeof x === "number") return new Date(x > 1e12 ? x : x * 1000);
-          if (typeof x === "string") {
-            let s = x.trim().replace(" ", "T").replace(/\.\d+/, "");
-            const d = new Date(s); if (!isNaN(d)) return d;
-            const m = s.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})[ T](\d{2}):(\d{2})/);
-            if (m) return new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00`);
-          }
-          return null;
-        };
-        const fmt = (v) => { const d = toDate(v); if (!d || isNaN(d)) return v ?? ""; return `${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; };
-
-        /* -------- 공용 헬퍼 -------- */
-        const n = (v) => (v == null ? 0 : Number(v) || 0);
-        const sumBy = (arr, pick) => (Array.isArray(arr) ? arr.reduce((s, x) => s + n(pick(x)), 0) : 0);
-        const pickFirst = (obj, keys) => {
-          for (const k of keys) {
-            const v = k.split('.').reduce((o, p) => (o && o[p] != null ? o[p] : undefined), obj);
-            if (v != null) return v;
-          }
-          return undefined;
-        };
-
-        function statusBadge(statusRaw) {
-          const s = (statusRaw || "").toString().toUpperCase();
-          if (["APPROVED","COMPLETED","DONE","REFUNDED"].includes(s)) return ['승인/완료', 'badge--ok'];
-          if (["REJECTED","DENIED","CANCELED"].includes(s))            return ['거절/취소', 'badge--reject'];
-          if (["PARTIAL","PARTIALLY_APPROVED"].includes(s))            return ['부분환불', 'badge--partial'];
-          return [s || '상태미상', ''];
-        }
-
-        // 헤더: 제목(왼쪽) / 오른쪽에 "요청일시" + 배지
-        function renderRRHead(refundId, badgeLabel, badgeCls, createdAtText) {
-          const esc = (s) => (s ?? "").toString()
-            .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-            .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-          return `
-            <div class="rr-admin__head" style="align-items:center;">
-              <div class="rr-admin__title">환불 #${esc(refundId ?? "")}</div>
-              <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
-                <span class="muted" style="font-size:12px;">요청일시&nbsp;${esc(createdAtText || "-")}</span>
-                <span class="badge ${badgeCls}">${esc(badgeLabel)}</span>
-              </div>
-            </div>`;
-        }
-
-        function renderRequestReason(reqReason) {
-          if (!reqReason) return "";
-          return `
-            <div class="rr-admin__block">
-              <header>환불 사유</header>
-              <div class="body">
-                <div class="rr-admin__reason">${esc(reqReason)}</div>
-              </div>
-            </div>`;
-        }
-
-        function renderReason(rejReason) {
-          if (!rejReason) return "";
-          return `
-            <div class="rr-admin__block">
-              <header>거절 사유</header>
-              <div class="body">
-                <div class="rr-admin__reason">${esc(rejReason)}</div>
-              </div>
-            </div>`;
-        }
-
-        function renderPayments(payments) {
-          if (!Array.isArray(payments) || payments.length === 0) return "";
-          return `
-            <div class="rr-admin__block">
-              <header>결제 내역</header>
-              <div class="body">
-                <ul class="paylist">
-                  ${payments.map((p) => {
-                    const isPointOnly = Number(p?.amount) === 0 || !p?.tid;
-                    const method = isPointOnly ? "마일리지 전액 결제" : (p?.methodName || "카카오페이");
-                    return `
-                      <li class="payitem">
-                        <div>결제번호 ${esc(p?.paymentId ?? "-")}</div>
-                        <div class="muted">결제 수단 : ${esc(method)}</div>
-                        <div>총 결제 금액 : ${num(p?.amount || 0)}원</div>
-                      </li>`;
-                  }).join("")}
-                </ul>
-              </div>
-            </div>`;
-        }
-
-        function renderItems(details) {
-          const rows = (details || []).map((d) => `
-            <tr>
-              <td>${esc(d?.productName ?? "-")}</td>
-              <td class="t-right">${esc(d?.refundQty ?? "-")}</td>
-              <td class="t-right">${num(d?.unitRefundAmount ?? 0)}</td>
-              <td class="t-right"><strong>${num(d?.subtotal ?? 0)}</strong></td>
-            </tr>`).join("");
-
-          const total = (details || []).reduce((s, d) => s + (Number(d?.subtotal) || 0), 0);
-
-          return `
-            <div class="rr-admin__block">
-              <header>환불 품목</header>
-              <div class="body">
-                <table class="rrm-table rrm-table--refund" style="width:100%;">
-                  <colgroup><col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub"></colgroup>
-                  <thead><tr><th>상품</th><th>환불수량</th><th>단가</th><th>합계</th></tr></thead>
-                  <tbody>${rows}</tbody>
-                  <tfoot>
-                    <tr>
-                      <td colspan="3" class="t-right">환불 총액</td>
-                      <td class="t-right"><strong>${num(total)}</strong></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>`;
-        }
-
-        function renderQuickStats(rf, fallback) {
-          const details = Array.isArray(rf?.details) ? rf.details : [];
-
-          const reqQty = n(pickFirst(rf, ['requestedQty','requestQty','header.requestQty']))
-                      || sumBy(details, d => pickFirst(d, ['requestedQty','requestQty','refundQty']));
-          const apprQty = sumBy(details, d => n(pickFirst(d, ['approvedQty','refundQty'])));
-          const rejQty  = Math.max(0, reqQty - apprQty);
-
-          const productSubtotal = sumBy(details, d => n(pickFirst(d, ['subtotal','refundAmount'])));
-          const shipRefund = n(pickFirst(rf, ['shippingRefundAmount','refundShippingAmount','shippingAmount']))
-                          || n(pickFirst(fallback, ['shippingRefundAmount','refundShippingAmount']));
-          const refundMileage = n(pickFirst(rf, ['refundMileage'])) || n(pickFirst(fallback, ['refundMileage']));
-
-          return `
-          <div class="rr-admin__block">
-            <header>환불 사유</header>
-            <div class="body">
-              <div class="rr-admin__reason">${esc((rf?.rejectionReason ?? rf?.reason ?? '').toString().trim() || ' ')}</div>
-              <div class="rr-quickstats" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:12px">
-                ${[
-                  ['요청수량', reqQty.toLocaleString()],
-                  ['승인수량', apprQty.toLocaleString()],
-                  ['상품 소계', num(productSubtotal)+'원'],
-                  ['배송비 환급', num(shipRefund)+'원'],
-                  ['거절수량', rejQty.toLocaleString()],
-                  ['환급 마일리지', num(refundMileage)+'P'],
-                ].map(([k,v]) => `
-                  <div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#fff">
-                    <div class="muted" style="font-size:12px;color:#6b7280">${k}</div>
-                    <div style="font-weight:800">${v}</div>
-                  </div>`).join('')}
-              </div>
-            </div>
-          </div>`;
-        }
-
-        function renderSummary(rf, fallback, allPays) {
-          const n = (v) => (v == null ? 0 : Number(v) || 0);
-          const sumBy = (arr, pick) => (Array.isArray(arr) ? arr.reduce((s, x) => s + n(pick(x)), 0) : 0);
-          const pickFirst = (obj, keys) => { for (const k of keys) { const v = k.split('.').reduce((o, p) => (o && o[p] != null ? o[p] : undefined), obj); if (v != null) return v; } };
-
-          const details = Array.isArray(rf?.details) ? rf.details : [];
-          const totalRefundAmount = n(pickFirst(rf, ['totalRefundAmount'])) || n(pickFirst(fallback, ['totalRefundAmount']));
-          const refundMileage     = n(pickFirst(rf, ['refundMileage']))     || n(pickFirst(fallback, ['refundMileage']));
-          const confirmMileage    = n(pickFirst(rf, ['confirmMileage']))    || n(pickFirst(fallback, ['confirmMileage']));
-          const productSubtotal   = sumBy(details, d => n(pickFirst(d, ['subtotal','refundAmount'])));
-          const shipRefund        = n(pickFirst(rf, ['shippingRefundAmount','refundShippingAmount','shippingAmount']))
-                                  || n(pickFirst(fallback, ['shippingRefundAmount','refundShippingAmount']));
-          const payList           = Array.isArray(rf?.payments) ? rf.payments : (Array.isArray(allPays) ? allPays : []);
-          const payAmount         = sumBy(payList, p => p?.amount);
-          const num = (x) => { const v = Number(x); return Number.isFinite(v) ? v.toLocaleString() : (x ?? "-"); };
-
-          return `
-            <div class="rr-admin__summary">
-              <div class="rr-admin__sumcard"><div class="k">환불 총액</div><div class="v">${num(totalRefundAmount)}원</div></div>
-              <div class="rr-admin__sumcard"><div class="k">결제 총액</div><div class="v">${num(payAmount)}원</div></div>
-              <div class="rr-admin__sumcard"><div class="k">환급 마일리지</div><div class="v">${num(refundMileage)}점</div></div>
-              <div class="rr-admin__sumcard"><div class="k">적립 마일리지</div><div class="v">${num(confirmMileage)}점</div></div>
-            </div>
-
-            <div class="rr-admin__block">
-              <div class="body">
-                <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
-                  <div class="muted">상품 환불 합계</div><div class="rr-right"><strong>${num(productSubtotal)}원</strong></div>
-                  <div class="muted">배송비 환급</div><div class="rr-right"><strong>${num(shipRefund)}원</strong></div>
-                  <div style="grid-column:1/-1;height:1px;background:#eee;margin:4px 0"></div>
-                  <div style="font-weight:800">최종 환급 금액</div><div class="rr-right" style="font-weight:800">${num(totalRefundAmount)}원</div>
-                  <div class="muted">환급 마일리지</div><div class="rr-right">${num(refundMileage)}P</div>
-                  <div class="muted">적립 마일리지</div><div class="rr-right">${num(confirmMileage)}P</div>
-                </div>
-              </div>
-            </div>`;
-        }
-
-        function renderOneRefund(rf, idx, fallback, allPays) {
-        // 상태 계산
-        const status = (rf?.status || rf?.state || rf?.result || "").toString().toUpperCase();
-
-        // 고객 요청/관리자 거절 사유
-        const reqReason = (
-          rf?.requestReason ?? rf?.customerReason ?? rf?.refundReason ??
-          rf?.reason ?? fallback?.requestReason ?? fallback?.refundReason ?? fallback?.reason ?? ""
-        ).toString().trim();
-
-        const rejReason = (
-          rf?.rejectionReason ?? rf?.rejectReason ?? rf?.adminReason ?? rf?.denyReason ??
-          rf?.rejectMsg ?? rf?.rejectedReason ?? fallback?.rejectionReason ?? ""
-        ).toString().trim();
-
-        // 배지
-        let label = "상태미상", cls = "";
-        if (["APPROVED","COMPLETED","DONE","REFUNDED"].includes(status)) { label = "승인/완료"; cls = "badge--ok"; }
-        else if (["REJECTED","DENIED","CANCELED"].includes(status))       { label = "거절/취소"; cls = "badge--reject"; }
-        else if (["PARTIAL","PARTIALLY_APPROVED"].includes(status))        { label = "부분환불"; cls = "badge--partial"; }
-
-        const isRejected = ["REJECTED","DENIED","CANCELED"].includes(status);
-        const isPartial  = ["PARTIAL","PARTIALLY_APPROVED"].includes(status) || (!!rejReason && status === "REFUNDED");
-
-        // 헤더: 오른쪽에 요청일시(작게) + 배지
-        const head = renderRRHead(
-          rf?.refundId ?? (idx + 1),
-          isPartial ? "부분환불" : label,
-          isPartial ? "badge--partial" : cls,
-          fmt( (rf && (rf.createdAt || rf.requestedAt)) || (fallback && fallback.createdAt) )
-        );
-
-        // 요약/합계용 계산
-        const n = (v) => (v == null ? 0 : Number(v) || 0);
-        const sumBy = (arr, pick) => (Array.isArray(arr) ? arr.reduce((s, x) => s + n(pick(x)), 0) : 0);
-        const details = Array.isArray(rf?.details) ? rf.details : [];
-
-        const itemsSubtotal = sumBy(details, d => n((d && (d.subtotal ?? d.refundAmount)) ));
-        const shipRefund    = n(
-          (rf && (rf.shippingRefundAmount ?? rf.refundShippingAmount ?? rf.shippingAmount)) ??
-          (fallback && (fallback.shippingRefundAmount ?? fallback.refundShippingAmount))
-        );
-        const totalRefundAmount = n( (rf && rf.totalRefundAmount) ?? (fallback && fallback.totalRefundAmount) ) || (itemsSubtotal + shipRefund);
-        const refundMileage     = n( (rf && rf.refundMileage)  ?? (fallback && fallback.refundMileage) );
-        const confirmMileage    = n( (rf && rf.confirmMileage) ?? (fallback && fallback.confirmMileage) );
-
-        const payList   = Array.isArray(rf?.payments) ? rf.payments : (Array.isArray(allPays) ? allPays : []);
-        const payAmount = sumBy(payList, p => p?.amount);
-        const _num = (x) => { const v = Number(x); return Number.isFinite(v) ? v.toLocaleString() : (x ?? "-"); };
-
-        // 화면 구성: 사유 → 품목 → (거절사유) → 요약카드 → 합계/배송비 → 최종 환급
-        return `
-          <section class="rrm-card" style="border:none; padding:0;">
-            ${head}
-            ${renderRequestReason(reqReason)}
-            ${renderItems(rf?.details)}
-            ${(isRejected || isPartial) ? renderReason(rejReason) : ""}
-
-            <div class="rr-admin__summary" style="margin-top:12px;">
-              <div class="rr-admin__sumcard"><div class="k">환불 총액</div><div class="v">${_num(totalRefundAmount)}원</div></div>
-              <div class="rr-admin__sumcard"><div class="k">결제 총액</div><div class="v">${_num(payAmount)}원</div></div>
-              <div class="rr-admin__sumcard"><div class="k">환급 마일리지</div><div class="v">${_num(refundMileage)}점</div></div>
-              <div class="rr-admin__sumcard"><div class="k">적립 마일리지</div><div class="v">${_num(confirmMileage)}점</div></div>
-            </div>
-
-            <div class="rr-admin__block">
-              <div class="body">
-                <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
-                  <div class="muted">상품 환불 합계</div><div class="rr-right"><strong>${_num(itemsSubtotal)}원</strong></div>
-                  <div class="muted">배송비 환급</div><div class="rr-right"><strong>${_num(shipRefund)}원</strong></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="rr-admin__block">
-              <header>최종 환급 금액</header>
-              <div class="body">
-                <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
-                  <div style="font-weight:800">최종 환급 금액</div><div class="rr-right" style="font-weight:800">${_num(totalRefundAmount)}원</div>
-                  <div class="muted">환급 마일리지</div><div class="rr-right">${_num(refundMileage)}P</div>
-                  <div class="muted">적립 마일리지</div><div class="rr-right">${_num(confirmMileage)}P</div>
-                </div>
-              </div>
-            </div>
-          </section>`;
-      }
-
-        function renderRefundResults(data) {
-          const refunds = Array.isArray(data?.refunds) ? data.refunds : [];
-          const allPays = Array.isArray(data?.payments) ? data.payments : null;
-          const fallback = {
-            totalRefundAmount: data?.totalRefundAmount,
-            refundMileage:     data?.refundMileage,
-            confirmMileage:    data?.confirmMileage,
-            createdAt:         data?.createdAt,
-            updateDate:        data?.updateDate,
-            requestReason:     data?.requestReason ?? data?.refundReason ?? data?.reason,
-            rejectionReason:   data?.rejectionReason ?? data?.rejectReason ?? data?.adminReason,
-          };
-
-          if (refunds.length === 0) {
-            body.innerHTML = '<div class="rrm-empty">표시할 환불결과가 없습니다.</div>';
-            return;
-          }
-          body.innerHTML = refunds.map((rf, i) => renderOneRefund(rf, i, fallback, allPays)).join("");
-        }
-
-        // === V2 전용 렌더: RefundResultDtoV2 → 화면 HTML ===
-        function renderRefundResultV2(rf) {
-          const _esc = (s) => (s ?? "").toString()
-            .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-            .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-          const _num = (n) => { const v = Number(n); return Number.isFinite(v) ? v.toLocaleString() : (n ?? "-"); };
-          const p2 = (n) => String(n).padStart(2,"0");
-          const fmtDT = (v) => {
-            if (!v) return "";
-            if (v instanceof Date) return v;
-            const s = (v+"").trim().replace(" ","T").replace(/\.\d+/,"");
-            const d = new Date(s); if (isNaN(d)) return "";
-            return `${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
-          };
-
-          // --- DTO 값 읽기 ---
-          const refundMileage  = Number(rf?.refundMileage)  || 0;
-          const confirmMileage = Number(rf?.confirmMileage) || 0;
-          const shippingRefund = Number(rf?.shippingRefundAmount) || 0;
-          const payAmount =
-            (Array.isArray(rf?.payments)
-              ? rf.payments.reduce((s, p) => s + (Number(p?.amount) || 0), 0)
-              : Number(rf?.paymentTotal) || 0);
-
-          const details = Array.isArray(rf?.details) ? rf.details : [];
-          const itemsSubtotal = details.reduce((s, d) => s + (Number(d?.detailRefundAmount) || 0), 0);
-          const totalRefundAmount = Number(rf?.totalRefundAmount) || itemsSubtotal + shippingRefund;
-
-          // --- 상태/배지 ---
-          const status = (rf?.status || "").toUpperCase();
-          const isPartial = !!rf?.partial;
-          const isRejected = status === "REJECTED";
-          let label = rf?.badge || (isRejected ? "거절/취소" : (isPartial ? "부분환불" : (status === "REFUNDED" ? "전체승인" : status || "상태미상")));
-          let cls   = isRejected ? "badge--reject" : (isPartial ? "badge--partial" : (status === "REFUNDED" ? "badge--ok" : ""));
-
-          // --- 헤더 (오른쪽에 요청일시) ---
-          const head = `
-            <div class="rr-admin__head" style="align-items:center;">
-              <div class="rr-admin__title">환불 #${_esc(rf?.refundId ?? "")}</div>
-              <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
-                <span class="muted" style="font-size:12px;">요청일시&nbsp;${_esc(fmtDT(rf?.createdAt) || "-")}</span>
-                <span class="badge ${cls}">${_esc(label)}</span>
-              </div>
-            </div>`;
-
-          // --- 사유 ---
-          const requestedReason = (rf?.requestedReason || "").toString().trim();
-          const rejectedReason  = (rf?.rejectedReason || rf?.adminMetaRejectedReason || "").toString().trim();
-
-          const reqBlock = requestedReason ? `
-            <div class="rr-admin__block">
-              <header>환불 사유</header>
-              <div class="body"><div class="rr-admin__reason">${_esc(requestedReason)}</div></div>
-            </div>` : "";
-
-          const rejBlock = (isRejected || (isPartial && rejectedReason)) ? `
-            <div class="rr-admin__block">
-              <header>거절 사유</header>
-              <div class="body"><div class="rr-admin__reason">${_esc(rejectedReason || "(사유 없음)")}</div></div>
-            </div>` : "";
-
-          // --- 환불 품목 ---
-          const rows = details.map((d) => `
-            <tr>
-              <td>${_esc(d?.productName ?? "-")}</td>
-              <td class="t-right">${_esc(d?.approvedQty ?? 0)}</td>
-              <td class="t-right">${_num(d?.unitRefundAmount ?? 0)}</td>
-              <td class="t-right"><strong>${_num(d?.detailRefundAmount ?? 0)}</strong></td>
-            </tr>`).join("");
-          const itemsBlock = `
-            <div class="rr-admin__block">
-              <header>환불 품목</header>
-              <div class="body">
-                <table class="rrm-table rrm-table--refund" style="width:100%;">
-                  <colgroup><col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub"></colgroup>
-                  <thead><tr><th>상품</th><th>환불수량</th><th>단가</th><th>합계</th></tr></thead>
-                  <tbody>${rows}</tbody>
-                  <tfoot><tr><td colspan="3" class="t-right">환불 총액</td><td class="t-right"><strong>${_num(itemsSubtotal)}</strong></td></tr></tfoot>
-                </table>
-              </div>
-            </div>`;
-
-          // --- 요약 카드 4개 ---
-          const metrics = `
-            <div class="rr-admin__summary" style="margin-top:12px;">
-              <div class="rr-admin__sumcard"><div class="k">환불 총액</div><div class="v">${_num(totalRefundAmount)}원</div></div>
-              <div class="rr-admin__sumcard"><div class="k">결제 총액</div><div class="v">${_num(payAmount)}원</div></div>
-              <div class="rr-admin__sumcard"><div class="k">환급 마일리지</div><div class="v">${_num(refundMileage)}점</div></div>
-              <div class="rr-admin__sumcard"><div class="k">적립 마일리지</div><div class="v">${_num(confirmMileage)}점</div></div>
-            </div>`;
-
-          // --- 상품/배송비 합계 ---
-          const sumBlock = `
-            <div class="rr-admin__block">
-              <div class="body">
-                <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
-                  <div class="muted">상품 환불 합계</div><div class="rr-right"><strong>${_num(itemsSubtotal)}원</strong></div>
-                  <div class="muted">배송비 환급</div><div class="rr-right"><strong>${_num(shippingRefund)}원</strong></div>
-                </div>
-              </div>
-            </div>`;
-
-          // --- 최종 환급 금액 ---
-          const finalBlock = `
-            <div class="rr-admin__block">
-              <header>최종 환급 금액</header>
-              <div class="body">
-                <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
-                  <div style="font-weight:800">최종 환급 금액</div><div class="rr-right" style="font-weight:800">${_num(totalRefundAmount)}원</div>
-                  <div class="muted">환급 마일리지</div><div class="rr-right">${_num(refundMileage)}P</div>
-                  <div class="muted">적립 마일리지</div><div class="rr-right">${_num(confirmMileage)}P</div>
-                </div>
-              </div>
-            </div>`;
-
-          return `
-            <section class="rrm-card" style="border:none; padding:0;">
-              ${head}
-              ${reqBlock}
-              ${itemsBlock}
-              ${rejBlock}
-              ${metrics}
-              ${sumBlock}
-              ${finalBlock}
-            </section>`;
-        }
-
-
-        // ---- 추가: 환불요청 사유를 refund-requests에서 보강 가져오기 ----
-        async function getRequestReason(orderId) {
-          try {
-            const r = await fetch(api(`/pay/order/${orderId}/refund-requests`), {
-              method: "GET",
-              headers: csrfHeaders({ Accept: "application/json" }),
-              credentials: "same-origin",
-            });
-            if (!r.ok) return "";
-            const j = await r.json();
-            const list = Array.isArray(j?.requests) ? j.requests : [];
-            const last = list[list.length - 1]; // 가장 최근 요청
-            return (
-              last?.reason ??
-              last?.requestReason ??
-              last?.customerReason ??
-              last?.memo ?? ""
-            );
-          } catch { return ""; }
-        }
-
-        // 버튼 클릭 → 모달 열고 API 호출(경로 3종 시도) + 사유 보강
-        document.addEventListener("click", async (ev) => {
-          const btn = ev.target.closest(".btn-refund-result");
-          if (!btn) return;
-          const orderId = btn.getAttribute("data-order-id"); if (!orderId) return;
-
-          title.textContent = `주문번호 #${orderId} 의 환불결과`;
-          body.innerHTML = `<div class="py-10 text-center text-gray-500">로딩 중…</div>`;
-          openModal(modal);
-
-          try {
-            // 1) V2 먼저 시도
-            const v2res = await fetch(api(`/mypage/order/${orderId}/refund-results-v2`), {
-              method: "GET",
-              headers: csrfHeaders({ Accept: "application/json" }),
-              credentials: "same-origin",
-            });
-            if (v2res.ok) {
-              const rfV2 = await v2res.json();
-              // 요청사유가 비면 요청내역에서 보강
-              if (!rfV2?.requestedReason) {
-                try { rfV2.requestedReason = await getRequestReason(orderId); } catch {}
-              }
-              // V2 렌더
-              body.innerHTML = renderRefundResultV2(rfV2);
-              return;
-            }
-
-            // 2) 구형 API 폴백 (기존 로직 유지)
-            const paths = [
-              `/refund/pay/order/${orderId}/refund-results`,
-              `/pay/order/${orderId}/refund-results`,
-              `/refund/order/${orderId}/refund-results`,
-            ];
-            let data = null, lastErr = null, lastStatus = 0, lastUrl = "";
-            for (const p of paths) {
-              const url = api(p); lastUrl = url;
-              try {
-                const res = await fetch(url, {
-                  method: "GET", headers: csrfHeaders({ Accept: "application/json" }), credentials: "same-origin",
-                });
-                const raw = await res.text();
-                if (!res.ok) { lastStatus = res.status; lastErr = new Error(`HTTP ${res.status}`); continue; }
-                data = raw ? JSON.parse(raw) : {};
-                break;
-              } catch (e) { lastErr = e; }
-            }
-            if (!data) {
-              console.error("[refund-results] all paths failed. last:", lastStatus, lastUrl, lastErr);
-              throw lastErr || new Error("no data");
-            }
-            try {
-              if (!data.requestReason && !data.refundReason && !data.reason) {
-                const rr = await getRequestReason(orderId);
-                if (rr) {
-                  data.requestReason = rr;
-                  if (Array.isArray(data.refunds)) {
-                    data.refunds = data.refunds.map(rf =>
-                      rf?.requestReason ? rf : { ...rf, requestReason: rr }
-                    );
-                  }
-                }
-              }
-            } catch {}
-            renderRefundResults(data);
-          } catch (err) {
-            console.error("refund-results failed:", err);
-            body.innerHTML = `<div class="py-10 text-center" style="color:#ef4444">환불결과를 불러오지 못했습니다.</div>`;
-          }
-        });
-      })();
-      /* =================== 환불결과 모달 끝 =================== */
-
-      /* =================== 카드 내 버튼 클릭 위임 시작 =================== */
-      document.addEventListener("click", (e) => {
-        const cancelBtn = e.target.closest(".btn-cancel");
-        const confirmBtn = e.target.closest(".btn-confirm");
-        const refundBtn = e.target.closest(".btn-refund");
-        const moreLink = e.target.closest(".order-card .more");
-
-        if (cancelBtn) {
-          const card = cancelBtn.closest(".order-card");
-          if (card) openConfirm(card.dataset.orderId, "cancel", "주문을 취소하시겠습니까?");
-          e.preventDefault(); return;
-        }
-        if (confirmBtn) {
-          const card = confirmBtn.closest(".order-card");
-          if (card) openConfirm(card.dataset.orderId, "confirm", "주문을 확정하시겠습니까?");
-          e.preventDefault(); return;
-        }
-        if (refundBtn) {
-          const card = refundBtn.closest(".order-card");
-          if (card) window.openRefundModalFromCard(card);
-          e.preventDefault(); return;
-        }
-        if (moreLink) {
-          e.preventDefault();
-          const card = moreLink.closest(".order-card");
-          const orderId = card?.dataset.orderId; if (!orderId) return;
-          $orderItemsBody.innerHTML = "불러오는 중…";
-          openModal($orderItemsModal);
-          fetch(api(`/mypage/order/${orderId}/fragment`), {
-            method: "GET",
-            headers: csrfHeaders({ Accept: "text/html", "X-Requested-With": "XMLHttpRequest" }),
-            credentials: "same-origin",
-          })
-          .then(async (res) => {
-            const text = await res.text();
-            if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}\n${text}`);
-            if (/<!doctype html/i.test(text)) { console.warn("Fragment가 아니라 전체 페이지가 반환됨"); }
-            $orderItemsBody.innerHTML = text;
-          })
-          .catch((err) => {
-            $orderItemsBody.innerHTML = '<div style="color:#ef4444">상세를 불러오지 못했습니다.</div>';
-            console.error("[order fragment error]", err);
-          });
-        }
-      });
-      /* =================== 카드 내 버튼 클릭 위임 끝 =================== */
-
-      /* =================== 확인 모달 '예' 처리 시작 =================== */
-      document.getElementById("confirmYes")?.addEventListener("click", async () => {
-        closeConfirm();
-        try {
-          let url;
-          if (pendingAction === "cancel") url = api(`/pay/cancel-paid/${targetOrderId}`);
-          if (pendingAction === "confirm") url = api(`/pay/${targetOrderId}/confirm`);
-
-          const res = await fetch(url, { method: "POST", headers: csrfHeaders({ "Content-Type": "application/json" }), body: "{}" });
-          let data = {}; try { data = await res.json(); } catch {}
-          if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
-
-          const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
-
-          if (pendingAction === "cancel") {
-            card?.classList.add("is-canceled");
-            card?.querySelector(".order-actions")?.remove();
-            card?.querySelector(".stepper")?.remove();
-            const title = card?.querySelector(".order-title");
-            if (title && !title.querySelector(".badge-canceled")) {
-              const b = document.createElement("span");
-              b.className = "badge-canceled"; b.textContent = "주문취소"; title.appendChild(b);
-            }
-            openResult(data.message || "주문이 취소되었습니다.");
-          } else if (pendingAction === "confirm") {
-            window.updateCardToConfirmed(card);
-            // 확정 후 적립 마일리지 조회
-            try {
-              const mRes = await fetch(api(`/mypage/orders/${targetOrderId}/mileage`), {
-                method: "GET", headers: csrfHeaders({ Accept: "application/json" }), credentials: "same-origin",
-              });
-              if (mRes.ok) {
-                const mileage = await mRes.json();
-                openResult(`주문이 확정되었습니다.\n적립 마일리지: ${mileage.toLocaleString()}P`);
-                return;
-              }
-            } catch (err) { console.warn("[mileage fetch failed]", err); }
-            openResult(data.message || "주문이 확정되었습니다.");
-          }
-        } catch (e) {
-          console.error(e); openResult("처리 중 오류가 발생했습니다.");
-        }
-      });
-      /* =================== 확인 모달 '예' 처리 끝 =================== */
-
-      /* =================== AJAX 페이지네이션 시작 =================== */
-      async function loadOrdersPage(page, size, { push = true } = {}) {
-        const urlQ = new URL(location.href);
-        urlQ.searchParams.set("page", page);
-        urlQ.searchParams.set("size", size);
-
-        const reqUrl = api(`/mypage/order/fragment?page=${page}&size=${size}`);
-
-        try {
-          const res = await fetch(reqUrl, {
-            method: "GET",
-            headers: csrfHeaders({ Accept: "text/html", "X-Requested-With": "XMLHttpRequest" }),
-            credentials: "same-origin",
-          });
-          const html = await res.text();
-          if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-          const container = document.getElementById("ordersSection");
-          if (!container) throw new Error("#ordersSection not found");
-          container.outerHTML = html;
+        document.addEventListener("DOMContentLoaded", () => {
           document.querySelectorAll(".stepper").forEach((s) => {
             const step = parseInt(s.dataset.step || "1", 10);
             renderStepper(s, step);
           });
+        });
+        window.addEventListener("resize", () => {
+          document.querySelectorAll(".stepper").forEach((s) => renderStepper(s, parseInt(s.dataset.step || "1", 10)));
+        });
 
-          if (push) history.pushState({ page, size }, "", urlQ.toString());
-
-          const current = document.querySelector("#ordersPager .page-item.active .page-link");
-          current?.focus();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        } catch (err) {
-          console.error("[orders ajax]", err);
-          location.href = urlQ.toString();
+        /* ===== CSRF ===== */
+        function csrfHeaders(init = {}) {
+          const token = document.querySelector('meta[name="_csrf"]')?.getAttribute("content");
+          const headerName = document.querySelector('meta[name="_csrf_header"]')?.getAttribute("content") || "X-CSRF-TOKEN";
+          const h = new Headers(init);
+          if (token) h.set(headerName, token);
+          return h;
         }
-      }
 
-      document.addEventListener("click", (e) => {
-        const a = e.target.closest("#ordersPager .page-link");
-        if (!a) return;
-        const li = a.closest(".page-item");
-        if (li?.classList.contains("disabled")) return;
+        /* ===== 확인/결과 모달 상태 ===== */
+        const $confirm = document.getElementById("confirmModal");
+        const $confirmText = document.getElementById("confirmText");
+        const $result = document.getElementById("resultModal");
+        const $resultText = document.getElementById("resultText");
+        const $resultOk = document.getElementById("resultOk");
+        let targetOrderId = null, pendingAction = null;
+        function openConfirm(id, action, msg) { targetOrderId = id; pendingAction = action; $confirmText.textContent = msg; openModal($confirm); }
+        function closeConfirm() { closeModal($confirm); }
+        function openResult(msg) { $resultText.textContent = msg; openModal($result); }
+        function closeResult() { closeModal($result); }
+        document.getElementById("confirmNo")?.addEventListener("click", closeConfirm);
+        $resultOk?.addEventListener("click", closeResult);
 
-        const wrap = document.getElementById("ordersPager");
-        const total = parseInt(wrap?.dataset.totalPages || "0", 10);
-        const size = parseInt(wrap?.dataset.size || "10", 10);
-        let page = parseInt(a.dataset.page, 10);
-        if (!Number.isFinite(page)) return;
+        /* ===== 유틸 ===== */
+        const money = (n) => (Number(n)||0).toLocaleString() + "원";
+        const esc = (s) => (s ?? "").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 
-        page = Math.max(0, Math.min(total - 1, page));
-        e.preventDefault();
-        loadOrdersPage(page, size, { push: true });
-      });
+        /* ===== 카드 UI 업데이트 ===== */
+        window.updateCardToConfirmed = function (card) {
+          if (!card) return;
+          card.querySelector(".order-actions")?.remove();
+          card.querySelector(".stepper")?.remove();
+          const title = card.querySelector(".order-title");
+          if (title && !title.querySelector(".badge-confirmed")) {
+            const b = document.createElement("span");
+            b.className = "badge-confirmed";
+            b.textContent = "주문확정";
+            title.appendChild(b);
+          }
+        };
+        window.updateCardToRequested = function (card) {
+          if (!card) return;
+          const orderId = card.dataset.orderId;
+          card.querySelector(".stepper")?.remove();
+          const title = card.querySelector(".order-title");
+          if (title) {
+            title.querySelector(".badge-confirmed")?.remove();
+            title.querySelector(".badge-canceled")?.remove();
+            if (!title.querySelector(".badge-requested")) {
+              const b = document.createElement("span");
+              b.className = "badge-requested";
+              b.textContent = "환불요청";
+              title.appendChild(b);
+            }
+          }
+          let actions = card.querySelector(".order-actions");
+          if (!actions) { actions = document.createElement("div"); actions.className = "order-actions"; card.appendChild(actions); }
+          actions.innerHTML = `<button type="button" class="refund-btn btn-refund-requests" data-order-id="${orderId}">환불요청내역</button>`;
+          card.dataset.status = "REQUESTED";
+        };
 
-      window.addEventListener("popstate", () => {
-        const url = new URL(location.href);
-        const page = parseInt(url.searchParams.get("page") || "0", 10);
-        const size = parseInt(url.searchParams.get("size")
-          || document.getElementById("ordersPager")?.dataset.size || "10", 10);
-        if (!Number.isFinite(page)) return;
-        loadOrdersPage(page, size, { push: false });
-      });
+        /* ===== 주문상품 모달: 프래그먼트 로드 ===== */
+        const $orderItemsModal = document.getElementById("orderItemsModal");
+        const $orderItemsBody = document.getElementById("orderItemsBody");
 
-      (function initHistoryState() {
-        const url = new URL(location.href);
-        const page = parseInt(url.searchParams.get("page") || "0", 10);
-        const size = parseInt(url.searchParams.get("size")
-          || document.getElementById("ordersPager")?.dataset.size || "10", 10);
-        history.replaceState({ page, size }, "", url.toString());
-      })();
-      /* =================== AJAX 페이지네이션 끝 =================== */
-    </script>
-  </div>
+        /* ===== 환불요청 모달 ===== */
+        (function () {
+          const modal  = document.getElementById("refundModal");
+          const tbody  = document.getElementById("refundTbody");
+          const grand  = document.getElementById("refundGrand");
+          const reason = document.getElementById("refundReason");
+          const reasonErr = document.getElementById("refundReasonErr");
+          const btnOk  = document.getElementById("refundSubmit");
+
+          // 테이블 한 행 생성
+          function makeRow({ odId, name, max, unit, img }) {
+            const tr = document.createElement("tr");
+            tr.dataset.odId = odId;
+            tr.dataset.max  = String(max);
+            tr.dataset.unit = String(unit);
+            tr.innerHTML = `
+              <td style="padding:10px 12px;">
+                <div style="display:flex; gap:10px; align-items:center;">
+                  <div style="width:48px; height:48px; border-radius:8px; overflow:hidden; flex:0 0 48px;">
+                    <img src="${img || "/img/noimage.png"}" alt="" style="width:100%; height:100%; object-fit:cover;">
+                  </div>
+                  <div>
+                    <div style="font-weight:600; line-height:1.3">${esc(name)}</div>
+                    <div class="muted">주문수량: ${max}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="padding:10px 12px; text-align:center;">
+                <div style="display:inline-flex; align-items:center; gap:6px;">
+                  <button type="button" class="qminus cm-btn" style="min-width:32px; height:32px; padding:0;">-</button>
+                  <input type="number" class="qinput" value="0" min="0" max="${max}"
+                        style="width:64px; text-align:center; border:1px solid var(--border); border-radius:8px; height:32px;">
+                  <button type="button" class="qplus cm-btn"  style="min-width:32px; height:32px; padding:0;">+</button>
+                </div>
+              </td>
+              <td style="padding:10px 12px; text-align:right;"><span class="lineTotal">0원</span></td>`;
+            return tr;
+          }
+
+          // 행/총합 재계산
+          function recalcRow(tr) {
+            const max   = parseInt(tr.dataset.max, 10);
+            const unit  = parseInt(tr.dataset.unit, 10);
+            const input = tr.querySelector(".qinput");
+            let val = parseInt(input.value || "0", 10);
+            if (isNaN(val)) val = 0;
+            val = Math.max(0, Math.min(max, val));
+            input.value = val;
+            tr.querySelector(".lineTotal").textContent = money(val * unit);
+          }
+          function recalcGrand() {
+            let sum = 0;
+            tbody.querySelectorAll("tr").forEach((tr) => {
+              const unit = parseInt(tr.dataset.unit, 10);
+              const val  = parseInt(tr.querySelector(".qinput").value || "0", 10);
+              if (!isNaN(unit) && !isNaN(val)) sum += unit * val;
+            });
+            grand.textContent = money(sum);
+            return sum;
+          }
+
+          // 모달 열기: 카드에서 품목 복사, 사유/오류 초기화
+          window.openRefundModalFromCard = function (card) {
+            const orderId = card?.dataset.orderId;
+            if (!orderId) return;
+
+            // 테이블 구성
+            const src   = card.querySelector(".refund-items-src ul");
+            const items = [...src.querySelectorAll("li")].map((li) => {
+              const max   = parseInt(li.dataset.max, 10);
+              const total = parseInt(li.dataset.total, 10);
+              const unit  = Math.floor(total / (max || 1));
+              return {
+                odId: li.dataset.odId,
+                name: li.dataset.name,
+                max,
+                unit,
+                img: li.dataset.img || "/img/noimage.png",
+              };
+            });
+
+            tbody.innerHTML = "";
+            items.forEach((item) => {
+              const tr = makeRow(item);
+              tbody.appendChild(tr);
+
+              const input = tr.querySelector(".qinput");
+              tr.querySelector(".qminus").addEventListener("click", () => {
+                input.value = Math.max(0, parseInt(input.value || "0", 10) - 1);
+                recalcRow(tr); recalcGrand();
+                if (reasonErr) reasonErr.textContent = "";
+                reason?.setAttribute("aria-invalid", "false");
+              });
+              tr.querySelector(".qplus").addEventListener("click", () => {
+                input.value = Math.min(item.max, parseInt(input.value || "0", 10) + 1);
+                recalcRow(tr); recalcGrand();
+                if (reasonErr) reasonErr.textContent = "";
+                reason?.setAttribute("aria-invalid", "false");
+              });
+              input.addEventListener("input", () => { recalcRow(tr); recalcGrand(); });
+              recalcRow(tr); recalcGrand();
+              if (reasonErr) reasonErr.textContent = "";
+              reason?.setAttribute("aria-invalid", "false");
+            });
+
+            // 사유/에러 초기화
+            if (reason) {
+              reason.value = "";
+              reason.setAttribute("aria-invalid", "false");
+            }
+            if (reasonErr) reasonErr.textContent = "";
+
+            tbody.dataset.orderId = orderId;
+            openModal(modal);
+          };
+
+          // 사유 입력 시 에러 해제(중복 바인딩 방지)
+          let boundInputHandler = false;
+          if (!boundInputHandler && reason) {
+            reason.addEventListener("input", () => {
+              if (reason.value.trim().length > 0) {
+                reason.setAttribute("aria-invalid", "false");
+                if (reasonErr) reasonErr.textContent = "";
+              }
+            });
+            boundInputHandler = true;
+          }
+
+          // 취소 버튼
+          document.getElementById("refundCancel")?.addEventListener("click", (e) => {
+            e.preventDefault(); closeModal(modal);
+          });
+
+          // 제출(검증 + 요청)
+          btnOk?.addEventListener("click", async () => {
+            const orderId = tbody.dataset.orderId;
+            const text = (reason?.value || "").trim();
+
+            const items = [...tbody.querySelectorAll("tr")]
+              .map((tr) => {
+                const qty = parseInt(tr.querySelector(".qinput").value || "0", 10);
+                return { orderDetailId: tr.dataset.odId, quantity: Math.max(0, qty) };
+              })
+              .filter((it) => it.quantity > 0);
+
+            if (items.length === 0) {
+              if (reasonErr) reasonErr.textContent = "환불 수량을 1개 이상 선택하세요.";
+              // 사용자가 바로 수정할 수 있도록 textarea에 포커스/에러 표시
+              reason?.setAttribute("aria-invalid", "true");
+              reason?.focus();
+              return;
+            }
+            if (!text) {
+              if (reasonErr) reasonErr.textContent = "환불 사유를 입력해주세요.";
+              reason?.setAttribute("aria-invalid", "true");
+              reason?.focus();
+              return;
+            }
+
+            try {
+              const res = await fetch(api(`/pay/${orderId}/refund`), {
+                method: "POST",
+                headers: csrfHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({ reason: text, items }),
+              });
+              let data = {}; try { data = await res.json(); } catch {}
+
+              if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+
+              // 성공 시 에러 표시 초기화
+              if (reasonErr) reasonErr.textContent = "";
+              reason?.setAttribute("aria-invalid", "false");
+
+              // 카드 UI 업데이트 및 모달 닫기
+              const card = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
+              if (card) window.updateCardToRequested(card);
+              closeModal(modal);
+              openResult(data.message || "환불 요청이 접수되었습니다.");
+            } catch (e) {
+              console.error(e);
+              // 실패 시에도 에러 텍스트는 초기화(서버 오류와 입력 오류를 구분)
+              if (reasonErr) reasonErr.textContent = "";
+              reason?.setAttribute("aria-invalid", "false");
+              closeModal(modal);
+              openResult("환불 요청 처리 중 오류가 발생했습니다.");
+            }
+          });
+        })();
+        /* ===== 환불요청내역 모달 ===== */
+        (function () {
+          const modal = document.getElementById("refundRequestsModal");
+          const body = document.getElementById("rrm-body");
+          const title = document.getElementById("rrm-title");
+
+          const num = (n) => { const v = Number(n); return Number.isFinite(v) ? v.toLocaleString() : (n ?? "-"); };
+
+          function renderRefundRequests(data) {
+            const escL = (s) => (s ?? "").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+            const requests = Array.isArray(data?.requests) ? data.requests : [];
+            if (requests.length === 0) { body.innerHTML = '<div class="rrm-empty">표시할 환불요청이 없습니다.</div>'; return; }
+
+            const sections = requests.map((req, idx) => {
+              const details = Array.isArray(req.details) ? req.details : [];
+              const total = details.reduce((s, d) => s + (Number(d?.subtotal) || 0), 0);
+              const rows = details.map((d) => `
+                <tr>
+                  <td>${escL(d?.productName ?? "-")}</td>
+                  <td class="t-right">${escL(d?.refundQty ?? "-")}</td>
+                  <td class="t-right">${num(d?.unitRefundAmount ?? 0)}</td>
+                  <td class="t-right"><strong>${num(d?.subtotal ?? 0)}</strong></td>
+                </tr>`).join("");
+
+              return `
+              <section class="rrm-card">
+                <header class="rrm-card__head">
+                  <div class="rrm-head-left">
+                    <div class="rrm-head-title">요청 #${escL(req?.refundId ?? idx + 1)}</div>
+                    <div class="muted">${escL(req?.createdAt ?? "")}</div>
+                  </div>
+                </header>
+                <div>
+                  <table class="rrm-table rrm-table--refund">
+                    <colgroup><col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub"></colgroup>
+                    <thead><tr><th>상품</th><th>수량</th><th>단가</th><th>합계</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr><td colspan="3" class="t-right">환불요청 총액</td><td class="t-right"><strong>${num(total)}</strong></td></tr></tfoot>
+                  </table>
+                </div>
+              </section>`;
+            }).join("");
+            body.innerHTML = sections;
+          }
+
+          document.addEventListener("click", async (ev) => {
+            const btn = ev.target.closest(".btn-refund-requests"); if (!btn) return;
+            const orderId = btn.getAttribute("data-order-id"); if (!orderId) return;
+            title.textContent = `주문번호 #${orderId} 의 환불요청 내역`;
+            body.innerHTML = `<div class="py-10 text-center muted">로딩 중…</div>`;
+            openModal(modal);
+            try {
+              const res = await fetch(api(`/pay/order/${orderId}/refund-requests`), {
+                method: "GET", headers: csrfHeaders({ Accept: "application/json" }), credentials: "same-origin",
+              });
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const data = await res.json();
+              renderRefundRequests(data);
+            } catch (err) {
+              console.error(err);
+              body.innerHTML = `<div class="py-10 text-center" style="color:#ef4444">환불요청 내역을 불러오지 못했습니다.</div>`;
+            }
+          });
+        })();
+
+        /* ===== 환불결과 모달 (V2 우선, 구형 폴백) ===== */
+        (function () {
+          const modal = document.getElementById("refundResultModal");
+          const body  = document.getElementById("rr-body");
+          const title = document.getElementById("rr-title");
+          const escL = (s) => (s ?? "").toString()
+            .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+            .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+          const num = (n) => { const v = Number(n); return Number.isFinite(v) ? v.toLocaleString() : (n ?? "-"); };
+
+          function renderOneRefund(rf, idx, fallback, allPays) {
+            const status = (rf?.status || rf?.state || rf?.result || "").toString().toUpperCase();
+            const isRejected = ["REJECTED","DENIED","CANCELED"].includes(status);
+            const isPartial  = ["PARTIAL","PARTIALLY_APPROVED"].includes(status);
+
+            let label = "상태미상", cls = "";
+            if (["APPROVED","COMPLETED","DONE","REFUNDED"].includes(status)) { label = "승인/완료"; cls = "badge--ok"; }
+            else if (isRejected) { label = "거절/취소"; cls = "badge--reject"; }
+            else if (isPartial)  { label = "부분환불"; cls = "badge--partial"; }
+
+            const head = `
+              <div class="rr-admin__head">
+                <div class="rr-admin__title">환불 #${escL(rf?.refundId ?? (idx+1))}</div>
+                <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+                  <span class="muted" style="font-size:12px;">요청일시&nbsp;${escL(rf?.createdAt || fallback?.createdAt || "-")}</span>
+                  <span class="badge ${cls}">${label}</span>
+                </div>
+              </div>`;
+
+            const reqReason = (rf?.requestReason || rf?.reason || fallback?.requestReason || "").toString().trim();
+            const rejReason = (rf?.rejectionReason || rf?.rejectReason || fallback?.rejectionReason || "").toString().trim();
+
+            const reqBlock = reqReason ? `
+              <div class="rr-admin__block"><header>환불 사유</header><div class="body"><div class="rr-admin__reason">${escL(reqReason)}</div></div></div>` : "";
+
+            const rows = (rf?.details || []).map((d) => `
+              <tr>
+                <td>${escL(d?.productName ?? "-")}</td>
+                <td class="t-right">${escL(d?.refundQty ?? d?.approvedQty ?? "-")}</td>
+                <td class="t-right">${num(d?.unitRefundAmount ?? 0)}</td>
+                <td class="t-right"><strong>${num(d?.subtotal ?? d?.detailRefundAmount ?? 0)}</strong></td>
+              </tr>`).join("");
+
+            const itemsSubtotal = (rf?.details || []).reduce((s, d) => s + (Number(d?.subtotal ?? d?.detailRefundAmount) || 0), 0);
+            const shipRefund = Number(rf?.shippingRefundAmount ?? rf?.refundShippingAmount ?? fallback?.shippingRefundAmount ?? fallback?.refundShippingAmount) || 0;
+            const totalRefundAmount = Number(rf?.totalRefundAmount ?? fallback?.totalRefundAmount) || (itemsSubtotal + shipRefund);
+            const refundMileage = Number(rf?.refundMileage ?? fallback?.refundMileage) || 0;
+            const confirmMileage = Number(rf?.confirmMileage ?? fallback?.confirmMileage) || 0;
+
+            const payList = Array.isArray(rf?.payments) ? rf.payments : (Array.isArray(allPays) ? allPays : []);
+            const payAmount = payList.reduce((s, p) => s + (Number(p?.amount)||0), 0);
+
+            return `
+              <section class="rrm-card" style="border:none; padding:0;">
+                ${head}
+                ${reqBlock}
+                <div class="rr-admin__block">
+                  <header>환불 품목</header>
+                  <div class="body">
+                    <table class="rrm-table rrm-table--refund" style="width:100%;">
+                      <colgroup><col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub"></colgroup>
+                      <thead><tr><th>상품</th><th>환불수량</th><th>단가</th><th>합계</th></tr></thead>
+                      <tbody>${rows}</tbody>
+                      <tfoot>
+                        <tr><td colspan="3" class="t-right">환불 총액</td><td class="t-right"><strong>${num(itemsSubtotal)}</strong></td></tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+
+                ${ (isRejected || isPartial) && rejReason ? `
+                  <div class="rr-admin__block"><header>거절 사유</header><div class="body"><div class="rr-admin__reason">${escL(rejReason)}</div></div></div>` : "" }
+
+                <div class="rr-admin__summary" style="margin-top:12px;">
+                  <div class="rr-admin__sumcard"><div class="k">환불 총액</div><div class="v">${num(totalRefundAmount)}원</div></div>
+                  <div class="rr-admin__sumcard"><div class="k">결제 총액</div><div class="v">${num(payAmount)}원</div></div>
+                  <div class="rr-admin__sumcard"><div class="k">환급 마일리지</div><div class="v">${num(refundMileage)}점</div></div>
+                  <div class="rr-admin__sumcard"><div class="k">적립 마일리지</div><div class="v">${num(confirmMileage)}점</div></div>
+                </div>
+
+                <div class="rr-admin__block"><div class="body">
+                  <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+                    <div class="muted">상품 환불 합계</div><div class="rr-right"><strong>${num(itemsSubtotal)}원</strong></div>
+                    <div class="muted">배송비 환급</div><div class="rr-right"><strong>${num(shipRefund)}원</strong></div>
+                  </div>
+                </div></div>
+
+                <div class="rr-admin__block">
+                  <header>최종 환급 금액</header>
+                  <div class="body">
+                    <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+                      <div style="font-weight:800">최종 환급 금액</div><div class="rr-right" style="font-weight:800">${num(totalRefundAmount)}원</div>
+                      <div class="muted">환급 마일리지</div><div class="rr-right">${num(refundMileage)}P</div>
+                      <div class="muted">적립 마일리지</div><div class="rr-right">${num(confirmMileage)}P</div>
+                    </div>
+                  </div>
+                </div>
+              </section>`;
+          }
+
+          function renderRefundResults(data) {
+            const refunds = Array.isArray(data?.refunds) ? data.refunds : [];
+            const allPays = Array.isArray(data?.payments) ? data.payments : null;
+
+            // 구형 응답 호환용 보조 값
+            const fallback = {
+              totalRefundAmount: data?.totalRefundAmount,
+              refundMileage:     data?.refundMileage,
+              confirmMileage:    data?.confirmMileage,
+              createdAt:         data?.createdAt,
+              updateDate:        data?.updateDate,
+              requestReason:     data?.requestReason ?? data?.refundReason ?? data?.reason,
+              rejectionReason:   data?.rejectionReason ?? data?.rejectReason ?? data?.adminReason,
+            };
+
+            if (refunds.length === 0) {
+              body.innerHTML = '<div class="rrm-empty">표시할 환불결과가 없습니다.</div>';
+            } else {
+              body.innerHTML = refunds
+                .map((rf, i) => renderOneRefund(rf, i, fallback, allPays))
+                .join("");
+            }
+          }
+
+          // 요청사유 보강
+          async function getRequestReason(orderId) {
+            try {
+              const r = await fetch(api(`/pay/order/${orderId}/refund-requests`), {
+                method: "GET", headers: csrfHeaders({ Accept: "application/json" }), credentials: "same-origin",
+              });
+              if (!r.ok) return "";
+              const j = await r.json();
+              const list = Array.isArray(j?.requests) ? j.requests : [];
+              const last = list[list.length - 1];
+              return (last?.reason || last?.requestReason || last?.customerReason || last?.memo || "");
+            } catch { return ""; }
+          }
+
+          document.addEventListener("click", async (ev) => {
+            const btn = ev.target.closest(".btn-refund-result");
+            if (!btn) return;
+            const orderId = btn.getAttribute("data-order-id"); if (!orderId) return;
+
+            title.textContent = `주문번호 #${orderId} 의 환불결과`;
+            body.innerHTML = `<div class="py-10 text-center muted">로딩 중…</div>`;
+            openModal(modal);
+
+            try {
+              // V2 먼저
+              const v2res = await fetch(api(`/mypage/order/${orderId}/refund-results-v2`), {
+                method: "GET", headers: csrfHeaders({ Accept: "application/json" }), credentials: "same-origin",
+              });
+              if (v2res.ok) {
+                const rfV2 = await v2res.json();
+                if (!rfV2?.requestedReason) {
+                  try { rfV2.requestedReason = await getRequestReason(orderId); } catch {}
+                }
+                // 간단 V2 렌더(핵심만 표시)—프로젝트 V2 DTO와 맞추려면 여기서 커스텀 가능
+                body.innerHTML = `
+                  <div class="rr-admin__head">
+                    <div class="rr-admin__title">환불 #${escL(rfV2?.refundId ?? "")}</div>
+                    <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+                      <span class="muted" style="font-size:12px;">요청일시&nbsp;${escL(rfV2?.createdAt || "-")}</span>
+                      <span class="badge ${rfV2?.partial ? 'badge--partial' : (String(rfV2?.status).toUpperCase()==='REJECTED'?'badge--reject':'badge--ok')}">
+                        ${rfV2?.partial ? '부분환불' : (String(rfV2?.status).toUpperCase()==='REJECTED'?'거절/취소':'승인/완료')}
+                      </span>
+                    </div>
+                  </div>
+                  ${rfV2?.requestedReason ? `
+                    <div class="rr-admin__block"><header>환불 사유</header><div class="body"><div class="rr-admin__reason">${escL(rfV2.requestedReason)}</div></div></div>` : ''}
+                  <div class="rr-admin__block"><header>환불 품목</header><div class="body">
+                    <table class="rrm-table rrm-table--refund" style="width:100%;">
+                      <colgroup><col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub"></colgroup>
+                      <thead><tr><th>상품</th><th>환불수량</th><th>단가</th><th>합계</th></tr></thead>
+                      <tbody>
+                        ${(rfV2?.details||[]).map(d=>`
+                          <tr>
+                            <td>${escL(d?.productName ?? '-')}</td>
+                            <td class="t-right">${escL(d?.approvedQty ?? 0)}</td>
+                            <td class="t-right">${num(d?.unitRefundAmount ?? 0)}</td>
+                            <td class="t-right"><strong>${num(d?.detailRefundAmount ?? 0)}</strong></td>
+                          </tr>`).join('')}
+                      </tbody>
+                      <tfoot><tr><td colspan="3" class="t-right">환불 총액</td><td class="t-right"><strong>${num((rfV2?.details||[]).reduce((s,d)=>s+(Number(d?.detailRefundAmount)||0),0))}</strong></td></tr></tfoot>
+                    </table>
+                  </div></div>
+                  <div class="rr-admin__summary" style="margin-top:12px;">
+                    <div class="rr-admin__sumcard"><div class="k">환불 총액</div><div class="v">${num(rfV2?.totalRefundAmount ?? 0)}원</div></div>
+                    <div class="rr-admin__sumcard"><div class="k">결제 총액</div><div class="v">${num((rfV2?.payments||[]).reduce((s,p)=>s+(Number(p?.amount)||0),0))}원</div></div>
+                    <div class="rr-admin__sumcard"><div class="k">환급 마일리지</div><div class="v">${num(rfV2?.refundMileage ?? 0)}점</div></div>
+                    <div class="rr-admin__sumcard"><div class="k">적립 마일리지</div><div class="v">${num(rfV2?.confirmMileage ?? 0)}점</div></div>
+                  </div>
+                  <div class="rr-admin__block"><div class="body">
+                    <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+                      <div class="muted">상품 환불 합계</div><div class="rr-right"><strong>${num((rfV2?.details||[]).reduce((s,d)=>s+(Number(d?.detailRefundAmount)||0),0))}원</strong></div>
+                      <div class="muted">배송비 환급</div><div class="rr-right"><strong>${num(rfV2?.shippingRefundAmount ?? 0)}원</strong></div>
+                    </div>
+                  </div></div>
+                  <div class="rr-admin__block"><header>최종 환급 금액</header><div class="body">
+                    <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+                      <div style="font-weight:800">최종 환급 금액</div><div class="rr-right" style="font-weight:800">${num(rfV2?.totalRefundAmount ?? 0)}원</div>
+                      <div class="muted">환급 마일리지</div><div class="rr-right">${num(rfV2?.refundMileage ?? 0)}P</div>
+                      <div class="muted">적립 마일리지</div><div class="rr-right">${num(rfV2?.confirmMileage ?? 0)}P</div>
+                    </div>
+                  </div></div>`;
+                return;
+              }
+
+              // 구형 API 폴백
+              const paths = [
+                `/refund/pay/order/${orderId}/refund-results`,
+                `/pay/order/${orderId}/refund-results`,
+                `/refund/order/${orderId}/refund-results`,
+              ];
+              let data = null, lastErr = null;
+              for (const p of paths) {
+                try {
+                  const res = await fetch(api(p), {
+                    method: "GET", headers: csrfHeaders({ Accept: "application/json" }), credentials: "same-origin",
+                  });
+                  const raw = await res.text();
+                  if (!res.ok) continue;
+                  data = raw ? JSON.parse(raw) : {};
+                  break;
+                } catch (e) { lastErr = e; }
+              }
+              if (!data) throw (lastErr || new Error("no data"));
+              // 요청사유 보강
+              if (!data.requestReason && !data.refundReason && !data.reason) {
+                try {
+                  const rr = await (await fetch(api(`/pay/order/${orderId}/refund-requests`), { headers: csrfHeaders({Accept:"application/json"}), credentials:"same-origin"})).json();
+                  const list = Array.isArray(rr?.requests) ? rr.requests : [];
+                  const last = list[list.length - 1];
+                  if (last) data.requestReason = (last.reason || last.requestReason || last.customerReason || last.memo || "");
+                  if (Array.isArray(data.refunds)) {
+                    data.refunds = data.refunds.map(rf => rf?.requestReason ? rf : ({...rf, requestReason: data.requestReason}));
+                  }
+                } catch {}
+              }
+              // 렌더
+              body.innerHTML = "";
+              (function renderRefundResults(data) {
+                const refunds = Array.isArray(data?.refunds) ? data.refunds : [];
+                const allPays = Array.isArray(data?.payments) ? data.payments : null;
+                const fallback = {
+                  totalRefundAmount: data?.totalRefundAmount,
+                  refundMileage:     data?.refundMileage,
+                  confirmMileage:    data?.confirmMileage,
+                  createdAt:         data?.createdAt,
+                  requestReason:     data?.requestReason ?? data?.refundReason ?? data?.reason,
+                  rejectionReason:   data?.rejectionReason ?? data?.rejectReason ?? data?.adminReason,
+                  shippingRefundAmount: data?.shippingRefundAmount ?? data?.refundShippingAmount,
+                };
+                if (refunds.length === 0) { body.innerHTML = '<div class="rrm-empty">표시할 환불결과가 없습니다.</div>'; return; }
+                body.innerHTML = refunds
+                  .map((rf, i) => renderOneRefund(rf, i, fallback, allPays))
+                  .join(""); // 자리채움(위 V2 렌더를 쓰는 경우엔 여기 안옴)
+              })(data);
+            } catch (err) {
+              console.error("refund-results failed:", err);
+              body.innerHTML = `<div class="py-10 text-center" style="color:#ef4444">환불결과를 불러오지 못했습니다.</div>`;
+            }
+          });
+        })();
+
+        /* ===== 카드 내 버튼 위임 ===== */
+        document.addEventListener("click", (e) => {
+          const cancelBtn = e.target.closest(".btn-cancel");
+          const confirmBtn = e.target.closest(".btn-confirm");
+          const refundBtn = e.target.closest(".btn-refund");
+          const moreLink = e.target.closest(".order-card .more");
+
+          if (cancelBtn) {
+            const card = cancelBtn.closest(".order-card");
+            if (card) openConfirm(card.dataset.orderId, "cancel", "주문을 취소하시겠습니까?");
+            e.preventDefault(); return;
+          }
+          if (confirmBtn) {
+            const card = confirmBtn.closest(".order-card");
+            if (card) openConfirm(card.dataset.orderId, "confirm", "주문을 확정하시겠습니까?");
+            e.preventDefault(); return;
+          }
+          if (refundBtn) {
+            const card = refundBtn.closest(".order-card");
+            if (card) window.openRefundModalFromCard(card);
+            e.preventDefault(); return;
+          }
+          if (moreLink) {
+            e.preventDefault();
+            const card = moreLink.closest(".order-card");
+            const orderId = card?.dataset.orderId; if (!orderId) return;
+            $orderItemsBody.innerHTML = "불러오는 중…";
+            openModal($orderItemsModal);
+            fetch(api(`/mypage/order/${orderId}/fragment`), {
+              method: "GET",
+              headers: csrfHeaders({ Accept: "text/html", "X-Requested-With": "XMLHttpRequest" }),
+              credentials: "same-origin",
+            })
+            .then(async (res) => {
+              const text = await res.text();
+              if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}\n${text}`);
+              $orderItemsBody.innerHTML = text;
+            })
+            .catch((err) => {
+              $orderItemsBody.innerHTML = '<div style="color:#ef4444">상세를 불러오지 못했습니다.</div>';
+              console.error("[order fragment error]", err);
+            });
+          }
+        });
+
+        /* ===== 확인 모달 '예' 처리 ===== */
+        document.getElementById("confirmYes")?.addEventListener("click", async () => {
+          closeConfirm();
+          try {
+            let url;
+            if (pendingAction === "cancel") url = api(`/pay/cancel-paid/${targetOrderId}`);
+            if (pendingAction === "confirm") url = api(`/pay/${targetOrderId}/confirm`);
+
+            const res = await fetch(url, { method: "POST", headers: csrfHeaders({ "Content-Type": "application/json" }), body: "{}" });
+            let data = {}; try { data = await res.json(); } catch {}
+            if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+
+            const card = document.querySelector(`.order-card[data-order-id="${targetOrderId}"]`);
+            if (pendingAction === "cancel") {
+              card?.classList.add("is-canceled");
+              card?.querySelector(".order-actions")?.remove();
+              card?.querySelector(".stepper")?.remove();
+              const title = card?.querySelector(".order-title");
+              if (title && !title.querySelector(".badge-canceled")) {
+                const b = document.createElement("span");
+                b.className = "badge-canceled"; b.textContent = "주문취소"; title.appendChild(b);
+              }
+              openResult(data.message || "주문이 취소되었습니다.");
+            } else if (pendingAction === "confirm") {
+              window.updateCardToConfirmed(card);
+              // 확정 후 적립 마일리지 조회(선택)
+              try {
+                const mRes = await fetch(api(`/mypage/orders/${targetOrderId}/mileage`), {
+                  method: "GET", headers: csrfHeaders({ Accept: "application/json" }), credentials: "same-origin",
+                });
+                if (mRes.ok) {
+                  const mileage = await mRes.json();
+                  openResult(`주문이 확정되었습니다.\n적립 마일리지: ${Number(mileage||0).toLocaleString()}P`);
+                  return;
+                }
+              } catch (err) { console.warn("[mileage fetch failed]", err); }
+              openResult(data.message || "주문이 확정되었습니다.");
+            }
+          } catch (e) {
+            console.error(e); openResult("처리 중 오류가 발생했습니다.");
+          }
+        });
+
+        /* ===== AJAX 페이지네이션 ===== */
+        async function loadOrdersPage(page, size, { push = true } = {}) {
+          const urlQ = new URL(location.href);
+          urlQ.searchParams.set("page", page);
+          urlQ.searchParams.set("size", size);
+          const reqUrl = api(`/mypage/order/fragment?page=${page}&size=${size}`);
+
+          try {
+            const res = await fetch(reqUrl, {
+              method: "GET",
+              headers: csrfHeaders({ Accept: "text/html", "X-Requested-With": "XMLHttpRequest" }),
+              credentials: "same-origin",
+            });
+            const html = await res.text();
+            if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+            const container = document.getElementById("ordersSection");
+            if (!container) throw new Error("#ordersSection not found");
+            container.outerHTML = html;
+            document.querySelectorAll(".stepper").forEach((s) => {
+              const step = parseInt(s.dataset.step || "1", 10);
+              renderStepper(s, step);
+            });
+            if (push) history.pushState({ page, size }, "", urlQ.toString());
+            document.querySelector("#ordersPager .page-item.active .page-link")?.focus();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } catch (err) {
+            console.error("[orders ajax]", err);
+            location.href = urlQ.toString(); // 폴백: 전체 페이지 이동
+          }
+        }
+        document.addEventListener("click", (e) => {
+          const a = e.target.closest("#ordersPager .page-link");
+          if (!a) return;
+          const li = a.closest(".page-item");
+          if (li?.classList.contains("disabled")) return;
+          const wrap = document.getElementById("ordersPager");
+          const total = parseInt(wrap?.dataset.totalPages || "0", 10);
+          const size = parseInt(wrap?.dataset.size || "10", 10);
+          let page = parseInt(a.dataset.page, 10);
+          if (!Number.isFinite(page)) return;
+          page = Math.max(0, Math.min(total - 1, page));
+          e.preventDefault();
+          loadOrdersPage(page, size, { push: true });
+        });
+        window.addEventListener("popstate", () => {
+          const url = new URL(location.href);
+          const page = parseInt(url.searchParams.get("page") || "0", 10);
+          const size = parseInt(url.searchParams.get("size")
+            || document.getElementById("ordersPager")?.dataset.size || "10", 10);
+          if (!Number.isFinite(page)) return;
+          loadOrdersPage(page, size, { push: false });
+        });
+        (function initHistoryState() {
+          const url = new URL(location.href);
+          const page = parseInt(url.searchParams.get("page") || "0", 10);
+          const size = parseInt(url.searchParams.get("size")
+            || document.getElementById("ordersPager")?.dataset.size || "10", 10);
+          history.replaceState({ page, size }, "", url.toString());
+        })();
+      </script>
+    </div>
+  </body>
 </html>
