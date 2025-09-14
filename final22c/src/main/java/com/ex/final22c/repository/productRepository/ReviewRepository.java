@@ -120,16 +120,4 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     AND (r.status IS NULL OR r.status = 'ACTIVE')
   """)
   Object[] avgAndTotal(@Param("productId") Long productId);
-  
-  // 리뷰작성
-  boolean existsByWriterUserNameAndProductId(String username, Long productId);
-  
-  @Query("""
-	        SELECT COUNT(r) > 0
-	        FROM Review r
-	        WHERE r.writer.userName = :username
-	          AND r.product.id = :productId
-	    """)
-	    boolean existsByWriterAndProduct(@Param("username") String username,
-	                                   @Param("productId") Long productId);
 }

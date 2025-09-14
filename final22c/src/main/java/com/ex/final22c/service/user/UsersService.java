@@ -1,8 +1,6 @@
 package com.ex.final22c.service.user;
 
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -12,13 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ex.final22c.DataNotFoundException;
-import com.ex.final22c.data.qna.Answer;
-import com.ex.final22c.data.qna.Question;
-import com.ex.final22c.data.qna.QuestionDto;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersForm;
 import com.ex.final22c.repository.user.UserRepository;
-import com.ex.final22c.repository.qna.QuestionRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 public class UsersService {
 
     private final UserRepository userRepository;
-    private final QuestionRepository questionRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerifier emailVerifier;
     private final EmailService emailService;
@@ -279,30 +272,6 @@ public class UsersService {
         Random random = new Random();
         return String.valueOf(100000 + random.nextInt(900000));
     }
-    public List<QuestionDto> getUserQuestions(String userName) {
-        List<Question> questions = questionRepository.findByWriterUserName(userName);
-        List<QuestionDto> questionDtos = new ArrayList<>();
-        
-        for (Question question : questions) {
-            QuestionDto dto = new QuestionDto();
-            dto.setQId(question.getQId());
-            dto.setStatus(question.getStatus());
-            dto.setTitle(question.getTitle());
-            dto.setContent(question.getContent());
-            dto.setQcId(question.getQc().getQcId());
-            dto.setCreateDate(question.getCreateDate());
-            
-            // 답변 추가
-            Answer answer = question.getAnswer();
-            if (answer != null) {
-                dto.setAnswer(answer.getContent());
-                dto.setAnswerCreateDate(answer.getCreateDate());
-            }
-            questionDtos.add(dto);
-        }
-        return questionDtos;
-    }
-}
 
     /** 계정 비활성화 */
     @Transactional

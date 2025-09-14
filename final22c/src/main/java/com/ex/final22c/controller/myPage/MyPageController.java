@@ -1,8 +1,6 @@
 package com.ex.final22c.controller.myPage;
 
 import java.security.Principal;
-import java.time.LocalDate;
-import java.time.Period;
 import java.util.List;
 import java.util.Map;
 
@@ -24,13 +22,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ex.final22c.data.product.Product;
-import com.ex.final22c.data.qna.Answer;
-import com.ex.final22c.data.qna.Question;
-import com.ex.final22c.data.qna.QuestionDto;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersAddressForm;
 import com.ex.final22c.repository.mypage.UserAddressRepository;
-import com.ex.final22c.repository.qna.QuestionRepository;
 import com.ex.final22c.service.cart.CartService;
 import com.ex.final22c.service.mypage.UserAddressService;
 import com.ex.final22c.service.product.ZzimService;
@@ -46,7 +40,6 @@ public class MyPageController {
 
     private final UsersService usersService;
     private final UserAddressRepository userAddressRepository;
-    private final QuestionRepository questionRepository;
     private final UserAddressService userAddressService;
     private final ZzimService zzimService;
     private final CartService cartService;
@@ -253,39 +246,5 @@ public class MyPageController {
                 "message", "주소 등록에 실패했습니다: " + e.getMessage()
             ));
         }
-    }
-
-    // ====== 내 문의 ======
-    @GetMapping("/myQuestion")
-    public String myQuestions(Model model, Principal principal) {
-        if (principal == null)
-            return "redirect:/user/login";
-        String userName = principal.getName();
-        List<QuestionDto> questions = usersService.getUserQuestions(userName);
-        model.addAttribute("questions", questions);
-        model.addAttribute("section", "myQuestion");
-        return "mypage/myQuestion"; // 내 문의 목록 페이지
-    }
-
-    @GetMapping("/questionDetail/{questionId}")
-    @ResponseBody
-    public QuestionDto getQuestionDetail(@PathVariable("questionId") Long questionId) {
-        Question question = questionRepository.findByIdWithAnswer(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid question ID"));
-        
-        QuestionDto dto = new QuestionDto();
-        dto.setQId(question.getQId());
-        dto.setStatus(question.getStatus());
-        dto.setTitle(question.getTitle());
-        dto.setContent(question.getContent());
-        dto.setQcId(question.getQc().getQcId());
-        dto.setCreateDate(question.getCreateDate());
-
-        Answer answer = question.getAnswer();
-        if (answer != null) {
-            dto.setAnswer(answer.getContent());
-            dto.setAnswerCreateDate(answer.getCreateDate());
-        }
-        return dto;  // JSON 형태로 반환
     }
 }

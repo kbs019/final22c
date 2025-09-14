@@ -179,9 +179,10 @@ public final class PeriodResolver {
             return ofDateRange(start, start.plusMonths(1), labelMonth(start));
         }
 
-        // ✅ 수정: 기본값을 "이번 달"에서 "최근 30일"로 변경
-        LocalDate end = now.toLocalDate().plusDays(1);
-        return ofDateRange(end.minusDays(30), end, "최근 30일");
+        // 기본: 이번 달
+        LocalDate start = now.withDayOfMonth(1).toLocalDate();
+        LocalDate end   = start.plusMonths(1);
+        return ofDateRange(start, end, labelMonth(start));
     }
 
     /* ===== Helpers ===== */

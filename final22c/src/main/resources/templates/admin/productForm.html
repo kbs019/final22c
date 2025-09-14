@@ -8,14 +8,6 @@
 
                 <!-- 상품 ID (수정용, hidden) -->
                 <input type="hidden" name="id" th:value="${product != null ? product.id : ''}"/>
-                <div class="mb-3" th:if="${product != null}">
-				    <div class="form-check">
-				        <input class="form-check-input" type="checkbox" name="regenerateAI" id="regenerateAI">
-				        <label class="form-check-label" for="regenerateAI">
-				            AI 가이드 재생성 
-				        </label>
-				    </div>
-				</div>
 
                 <!-- 브랜드 -->
                 <div class="mb-3">

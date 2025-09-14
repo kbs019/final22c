@@ -1,5 +1,13 @@
-
+<!DOCTYPE html>
 <html layout:decorate="~{layout/layout}">
+  <link rel="icon" href="data:," />
+  <meta
+    name="context-path"
+    th:content="${#httpServletRequest.getContextPath()}"
+  />
+  <meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}" />
+  <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
+
   <div layout:fragment="content">
     <style>
       :root {
@@ -200,16 +208,17 @@
         <div class="mp-col-right">
           <header class="m-header" role="region" aria-labelledby="pageTitle">
             <h1 id="pageTitle" class="m-title">마일리지 내역</h1>
-			<div
-			  class="m-chip"
-			  aria-label="보유 마일리지"
-			  th:attr="data-now-balance=${mileage ?: 0}"
-			>
-			  <span class="muted" style="color: #e5e7ff">보유 마일리지</span>
-			  <b>
-			    <span th:text="${#numbers.formatInteger(mileage ?: 0, 1, 'COMMA')}">0</span>P
-			  </b>
-			</div>
+            <div
+              class="m-chip"
+              aria-label="보유 마일리지"
+              th:attr="data-now-balance=${adjustedMileage?:me?.mileage?:0}"
+            >
+              <span class="muted" style="color: #e5e7ff">보유 마일리지</span>
+              <b
+                th:text="${#numbers.formatInteger(adjustedMileage?:me?.mileage?:0,1,'COMMA')} + 'P'"
+                >0P</b
+              >
+            </div>
           </header>
 
           <hr
@@ -221,13 +230,13 @@
           />
 
           <!-- 비어있을 때 -->
-          <div th:if="${mileagePage.empty}" class="m-empty">
+          <div th:if="${rows.content.empty}" class="m-empty">
             마일리지 사용/적립 내역이 없습니다.
           </div>
 
           <!-- 목록 -->
           <table
-            th:if="${!mileagePage.empty}"
+            th:if="${!rows.content.empty}"
             class="m-table"
             aria-describedby="pageTitle"
           >
@@ -249,93 +258,135 @@
               <tr>
                 <th scope="col">주문번호</th>
                 <th scope="col">처리일시</th>
-                <th scope="col">사용포인트</th>
-                <th scope="col">적립포인트</th>
-                <th scope="col">환급포인트</th>
-                <th scope="col">보유마일리지</th>
+                <th scope="col" class="num">사용포인트</th>
+                <th scope="col" class="num">적립포인트</th>
+                <th scope="col" class="num">마일리지</th>
+                <th scope="col">주문상태</th>
               </tr>
             </thead>
             <tbody>
-              <tr th:each="r : ${mileagePage}">
-            <td>
-                <a class="m-link" th:href="@{|/mypage/order/${r.description}|}" 
-                   th:text="'#' + ${r.description}">#0</a>
-            </td>
+              <tr th:each="r : ${rows.content}">
+                <td>
+                  <a
+                    class="m-link"
+                    th:href="@{|/mypage/order/${r.orderId}|}"
+                    th:text="'#' + ${r.orderId}"
+                    >#0</a
+                  >
+                </td>
 
-            <td th:text="${#dates.format(r.regDate,'yyyy-MM-dd HH:mm')}">
-                2025-01-01 12:00
-            </td>
+                <!-- 처리 일시 (null-safe) -->
+                <td
+                  th:text="${r.processedAt != null ? #temporals.format(r.processedAt,'yyyy-MM-dd HH:mm') : '-'}"
+                >
+                  -
+                </td>
 
                 <!-- 사용 포인트 (raw) -->
-            <td>
-                <span th:if="${r.usedPoint > 0}" class="pt-use" 
-                      th:text="${'-' + #numbers.formatInteger(r.usedPoint,1,'COMMA') + 'P'}">-0P</span>
-                <span th:if="${r.usedPoint == 0}" class="muted">-</span>
-            </td>
+                <td class="num">
+                  <span
+                    th:if="${(r.usedPointRaw?:0) > 0}"
+                    class="pt-use"
+                    th:text="${'-' + #numbers.formatInteger(r.usedPointRaw,1,'COMMA')} + 'P (차감)'"
+                    >-0P (차감)</span
+                  >
+                  <span
+                    th:if="${(r.usedPointRaw?:0) < 0}"
+                    class="pt-earn"
+                    th:text="${'+' + #numbers.formatInteger(T(java.lang.Math).abs(r.usedPointRaw),1,'COMMA')} + 'P (복구)'"
+                    >+0P (복구)</span
+                  >
+                  <span th:if="${(r.usedPointRaw?:0) == 0}" class="muted"
+                    >-</span
+                  >
+                </td>
 
-                <!-- 적립 포인트 (환불완료에서도 +로 표시) -->
-            <!-- 적립 포인트 (구매확정) -->
-<td>
-    <!-- refundMileage > 0이면 refundMileage 노출 -->
-    <span th:if="${r.refundMileage > 0}" class="pt-earn"
-          th:text="${'+' + #numbers.formatInteger(r.refundMileage,1,'COMMA') + 'P'}">+0P</span>
+                <!-- 적립 포인트 (양수=적립, 음수=회수) -->
+                <td class="num">
+                  <span
+                    th:if="${(r.earnPointVisible?:0) > 0}"
+                    class="pt-earn"
+                    th:text="${'+' + #numbers.formatInteger(r.earnPointVisible,1,'COMMA')} + 'P'"
+                    >+0P</span
+                  >
 
-    <!-- refundMileage == 0 && confirmedMileage > 0이면 confirmedMileage 노출 -->
-    <span th:if="${r.refundMileage == 0 and r.confirmedMileage > 0}" class="pt-earn"
-          th:text="${'+' + #numbers.formatInteger(r.confirmedMileage,1,'COMMA') + 'P'}">+0P</span>
+                  <span
+                    th:if="${(r.earnPointVisible?:0) < 0}"
+                    class="pt-use"
+                    th:text="${#numbers.formatInteger(r.earnPointVisible,1,'COMMA')} + 'P (회수)'"
+                    >-0P (회수)</span
+                  >
 
-    <!-- 둘 다 없으면 '-' -->
-    <span th:if="${r.refundMileage == 0 and r.confirmedMileage == 0}" class="muted">-</span>
-</td>
+                  <span th:if="${(r.earnPointVisible?:0) == 0}" class="muted"
+                    >-</span
+                  >
+                </td>
 
-<!-- 환급 포인트 (refundRebate만 표시) -->
-<td>
-    <span th:if="${r.refundRebate > 0}" class="pt-earn"
-          th:text="${'+' + #numbers.formatInteger(r.refundRebate,1,'COMMA') + 'P'}">+0P</span>
-    <span th:if="${r.refundRebate == 0}" class="muted">-</span>
-</td>
+                <!-- 잔액 스냅샷 -->
+                <td
+                  class="num"
+                  th:text="${#numbers.formatInteger(r.balanceAt?:0,1,'COMMA')} + 'P'"
+                >
+                  0P
+                </td>
 
-<!-- 마일리지 잔액 -->
-<td>
-    <span th:text="${#numbers.formatInteger(r.balance,1,'COMMA') + 'P'}">0P</span>
-</td>
+                <!-- 상태 -->
+                <td th:switch="${#strings.toUpperCase(r.status)}">
+                  <span th:case="'CONFIRMED'">구매확정</span>
+                  <span th:case="'PAID'">결제완료</span>
+                  <span th:case="'REFUNDED'">환불완료</span>
+                  <span th:case="*" th:text="${r.status}">-</span>
+                </td>
               </tr>
             </tbody>
           </table>
 
-<!-- 페이저 -->
-<nav class="pager" aria-label="페이지네이션" th:if="${mileagePage.totalPages > 1}">
-    <!-- 처음 페이지 -->
-    <a class="page-btn" 
-       th:classappend="${mileagePage.first} ? ' disabled'" 
-       th:attr="aria-disabled=${mileagePage.first}" 
-       th:href="@{|/mypage/mileage?page=1&size=${mileagePage.size}|}">«</a>
+          <!-- 페이저 -->
+          <nav
+            class="pager"
+            aria-label="페이지네이션"
+            th:if="${rows.totalPages > 1}"
+          >
+            <a
+              class="page-btn"
+              th:classappend="${rows.first} ? ' disabled'"
+              th:attr="aria-disabled=${rows.first}"
+              th:href="@{|/mypage/mileage?page=1&size=${rows.size}|}"
+              >«</a
+            >
 
-    <!-- 이전 페이지 -->
-    <a class="page-btn" 
-       th:classappend="${!mileagePage.hasPrevious} ? ' disabled'" 
-       th:attr="aria-disabled=${!mileagePage.hasPrevious}" 
-       th:href="@{|/mypage/mileage?page=${mileagePage.number}&size=${mileagePage.size}|}">‹</a>
+            <a
+              class="page-btn"
+              th:classappend="${!rows.hasPrevious} ? ' disabled'"
+              th:attr="aria-disabled=${!rows.hasPrevious}"
+              th:href="@{|/mypage/mileage?page=${rows.number}&size=${rows.size}|}"
+              >‹</a
+            >
 
-    <!-- 페이지 번호 -->
-    <a class="page-btn" 
-       th:each="i : ${#numbers.sequence(1, mileagePage.totalPages)}"
-       th:text="${i}" 
-       th:href="@{|/mypage/mileage?page=${i}&size=${mileagePage.size}|}" 
-       th:attr="aria-current=${i == mileagePage.number + 1} ? 'page' : null"></a>
+            <a
+              class="page-btn"
+              th:each="i : ${#numbers.sequence(1, rows.totalPages)}"
+              th:text="${i}"
+              th:href="@{|/mypage/mileage?page=${i}&size=${rows.size}|}"
+              th:attr="aria-current=${i == rows.number + 1} ? 'page' : null"
+            ></a>
 
-    <!-- 다음 페이지 -->
-    <a class="page-btn" 
-       th:classappend="${!mileagePage.hasNext} ? ' disabled'" 
-       th:attr="aria-disabled=${!mileagePage.hasNext}" 
-       th:href="@{|/mypage/mileage?page=${mileagePage.number + 2}&size=${mileagePage.size}|}">›</a>
+            <a
+              class="page-btn"
+              th:classappend="${!rows.hasNext} ? ' disabled'"
+              th:attr="aria-disabled=${!rows.hasNext}"
+              th:href="@{|/mypage/mileage?page=${rows.number + 2}&size=${rows.size}|}"
+              >›</a
+            >
 
-    <!-- 마지막 페이지 -->
-    <a class="page-btn" 
-       th:classappend="${mileagePage.last} ? ' disabled'" 
-       th:attr="aria-disabled=${mileagePage.last}" 
-       th:href="@{|/mypage/mileage?page=${mileagePage.totalPages}&size=${mileagePage.size}|}">»</a>
-</nav>
+            <a
+              class="page-btn"
+              th:classappend="${rows.last} ? ' disabled'"
+              th:attr="aria-disabled=${rows.last}"
+              th:href="@{|/mypage/mileage?page=${rows.totalPages}&size=${rows.size}|}"
+              >»</a
+            >
+          </nav>
         </div>
       </div>
     </section>

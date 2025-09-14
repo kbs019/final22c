@@ -70,6 +70,7 @@ import com.ex.final22c.repository.qna.QuestionRepository;
 import com.ex.final22c.repository.refund.RefundRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.RestockNotifyService;
+import com.ex.final22c.service.product.ReviewFilterService;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -96,6 +97,7 @@ public class AdminService {
     private final PaymentRepository paymentRepository;
     private final ReviewRepository reviewRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final ReviewFilterService reviewFilterService;
     private final RestockNotifyService restockNotifyService;
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
@@ -977,6 +979,12 @@ public class AdminService {
 
     }
 
+    public List<Review> getFilteredReviews() {
+        List<Review> all = reviewRepository.findAll();
+        return all.stream()
+                .filter(r -> reviewFilterService.containsBadWord(r.getContent()))
+                .toList();
+    }
 
     public boolean applySanction(String username, String sanction) {
         Optional<Users> optionalUser = userRepository.findByUserName(username);

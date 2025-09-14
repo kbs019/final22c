@@ -15,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.recommendation.RecommendedProduct;
 import com.ex.final22c.data.recommendation.SituationalRecommendation;
+import com.ex.final22c.data.user.UserPreference;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.productMapper.ProductMapper;
+import com.ex.final22c.repository.user.UserPreferenceRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,10 +35,16 @@ public class HybridRecommendationService {
     private final ProductMapper productMapper;
     private final ProductService productService;
     private final ObjectMapper objectMapper;
+    private final UserPreferenceRepository userPreferenceRepository;
     private final UserRepository userRepository;
 
+    /** 사용자명으로 선호도 1건 조회 */
+    public UserPreference getUserPreference(String userName) {
+        return userPreferenceRepository.findByUser_UserName(userName).orElse(null);
+    }
 
     // ===================== 내부 유틸 =====================
+ // ===================== 내부 유틸 =====================
     /** 설문 기반 후보 선별 (성별/강도/메인노트/가격은 DB에서 필터) + 후보 상한 */
     private List<Map<String, Object>> getFilteredCandidates(Map<String, String> survey) {
         final String gender     = survey.get("gender");       // male/female/null
@@ -106,7 +114,76 @@ public class HybridRecommendationService {
         return aiJson;
     }
 
-   
+    /** 회원 분석: 유저 1명당 1행 upsert(있으면 update, 없으면 insert) */
+    @Transactional
+    public UserPreference analyzeUserWithAI(String userName, Map<String, String> surveyAnswers) {
+        final Map<String, String> answersSafe =
+            (surveyAnswers == null) ? Collections.emptyMap() : surveyAnswers;
+
+        // 1) 후보 선별
+        List<Map<String, Object>> candidates = getFilteredCandidates(answersSafe);
+
+        // 2) AI 호출 (실패/빈값이면 fallback JSON)
+        String aiResult;
+        boolean usedFallback = false; // ★ 진단
+        try {
+            aiResult = callAiAnalysis(answersSafe, candidates);
+        } catch (Exception e) {
+            log.warn("AI 호출 실패. fallback JSON으로 대체합니다.", e);
+            aiResult = null;
+        }
+        if (aiResult == null || aiResult.isBlank()) {
+            usedFallback = true;
+            aiResult = buildFallbackJson(answersSafe, candidates);
+        } else {
+            aiResult = normalizeJson(aiResult);
+            if (!isValidJson(aiResult)) {
+                log.warn("AI JSON invalid. fallback JSON으로 대체");
+                usedFallback = true;
+                aiResult = buildFallbackJson(answersSafe, candidates);
+            }
+        }
+
+        // 3) 회원 조회 (필수)
+        Users user = userRepository.findByUserName(userName)
+            .orElseThrow(() -> new RuntimeException("회원 정보가 없습니다: " + userName));
+
+        // 4) Upsert (유저 1명당 1행)
+        UserPreference pref = userPreferenceRepository.findByUser_UserNo(user.getUserNo())
+            .orElseGet(() -> UserPreference.builder()
+                .user(user)          // ★ userNo NOT NULL/UNIQUE 대응
+                .userName(userName)  // 부가정보
+                .build());
+
+        // 5) 필드 갱신
+        try {
+            pref.setSurveyAnswers(objectMapper.writeValueAsString(answersSafe));
+        } catch (Exception e) {
+            log.warn("설문 JSON 직렬화 실패, 빈 객체로 저장합니다.", e);
+            pref.setSurveyAnswers("{}");
+        }
+        pref.setAiAnalysis(aiResult);
+        pref.setRecommendedProducts(extractProductIds(aiResult)); // "1,2,3"
+
+        // 6) 저장
+        UserPreference saved = userPreferenceRepository.save(pref);
+
+        log.info("AI 분석 저장: user={}, usedFallback={}, candidateSize={}, ids={}",
+            userName, usedFallback, candidates.size(), saved.getRecommendedProducts());
+
+        return saved;
+    }
+
+    /** 회원 결과 리셋(행 삭제) */
+    @Transactional
+    public void resetByUserName(String userName) {
+        try {
+            userPreferenceRepository.deleteByUser_UserName(userName);
+        } catch (Exception e) {
+            log.warn("resetByUserName 실패 userName={}", userName, e);
+        }
+    }
+
     /**
      * 개선된 AI 프롬프트 구성 및 호출 (응답은 JSON 문자열, situationalRecommendations 고정)
      */

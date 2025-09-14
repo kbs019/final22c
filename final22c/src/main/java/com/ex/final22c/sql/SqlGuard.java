@@ -10,8 +10,7 @@ public final class SqlGuard {
     private static final Set<String> ALLOWED_TABLES = Set.of(
         "USERS","ORDERS","ORDERDETAIL","PAYMENT","PRODUCT",
         "BRAND","GRADE","MAINNOTE","VOLUME","REFUND","REFUNDDETAIL",
-        "CART","CARTDETAIL","REVIEW","PURCHASE","PURCHASEDETAIL",
-        "DUAL"
+        "CART","CARTDETAIL","REVIEW","PURCHASE","PURCHASEDETAIL"
     );
 
     private static final Pattern FROM_JOIN_TBL =

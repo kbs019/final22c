@@ -23,7 +23,7 @@
         html, body { height:100%; }
         .survey-body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background:white;
+            background: linear-gradient(135deg, var(--bg-grad-a) 0%, var(--bg-grad-b) 100%);
             min-height: 100vh;
             color: var(--text);
         }
@@ -39,13 +39,13 @@
             justify-content: center;
         }
 
-		.card {
-		    background: white;
-		    border-radius: 24px;
-		    padding: 3rem 2.25rem;
-		    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
-		    border: none;
-		}
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 3rem 2.25rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--line);
+        }
 
         /* ====== Header ====== */
         .header {
@@ -85,7 +85,7 @@
             background: linear-gradient(90deg, var(--brand), var(--brand-dark));
             border-radius: 9999px;
             transition: width 0.28s ease;
-            width: 0%;
+            width: 20%;
         }
 
         /* ====== Questions ====== */
@@ -316,12 +316,12 @@
                                 <div class="option-card" data-value="low">
                                     <div class="option-icon"><i class="fas fa-dollar-sign"></i></div>
                                     <div class="option-title">저가형</div>
-                                    <div class="option-desc">15만원 이하</div>
+                                    <div class="option-desc">10만원 이하</div>
                                 </div>
                                 <div class="option-card" data-value="medium">
                                     <div class="option-icon"><i class="fas fa-coins"></i></div>
                                     <div class="option-title">중가형</div>
-                                    <div class="option-desc">15~30만원</div>
+                                    <div class="option-desc">10~30만원</div>
                                 </div>
                                 <div class="option-card" data-value="high">
                                     <div class="option-icon"><i class="fas fa-gem"></i></div>
@@ -549,7 +549,7 @@ function safeJsonParse(raw) {
 // ============ 메인 클래스 ============
 class SimplePerfumeSurvey {
   constructor() {
-    this.currentStep = 0;
+    this.currentStep = 1;
     this.totalSteps  = 5;
     this.answers     = {};
     this.result      = null;
@@ -557,13 +557,13 @@ class SimplePerfumeSurvey {
   }
 
   async init() {
-      document.getElementById('survey-section').style.display  = 'block';
-      document.getElementById('results-section').style.display = 'none';
-      document.querySelectorAll('.option-card').forEach(card => {
-        card.addEventListener('click', () => this.selectOption(card));
-      });
-      this.updateProgress(); 
-    }
+    document.getElementById('survey-section').style.display  = 'block';
+    document.getElementById('results-section').style.display = 'none';
+    document.querySelectorAll('.option-card').forEach(card => {
+      card.addEventListener('click', () => this.selectOption(card));
+    });
+    this.updateProgress();
+  }
 
   selectOption(card) {
     const grid     = card.closest('.options-grid');
@@ -572,30 +572,26 @@ class SimplePerfumeSurvey {
     grid.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
     this.answers[dataName] = value;
-	
-	this.currentStep++;
     this.updateProgress();
-	setTimeout(() => {
-	      if (this.currentStep < this.totalSteps) {
-	        this.nextStep();
-	      } else {
-	        this.submitSurvey();
-	      }
-	    }, 450);
-	  }
+    setTimeout(() => {
+      if (this.currentStep < this.totalSteps) this.nextStep();
+      else this.submitSurvey();
+    }, 450);
+  }
 
-    nextStep() {
-      // currentStep은 이미 selectOption에서 증가했으므로 여기서는 증가하지 않음
-      document.querySelectorAll('.question-card').forEach(c => c.classList.remove('active'));
-      const cur = document.querySelector(`[data-question="${this.currentStep + 1}"]`);
-      if (cur) cur.classList.add('active');
-    }
+  nextStep() {
+    this.currentStep++;
+    document.querySelectorAll('.question-card').forEach(c => c.classList.remove('active'));
+    const cur = document.querySelector(`[data-question="${this.currentStep}"]`);
+    if (cur) cur.classList.add('active');
+    this.updateProgress();
+  }
 
-	updateProgress() {
-	    const progress = (this.currentStep / this.totalSteps) * 100;
-	    document.getElementById('progress-fill').style.width = progress + '%';
-	    document.getElementById('current-step').textContent = this.currentStep || 1;
-	}
+  updateProgress() {
+    const progress = (this.currentStep / this.totalSteps) * 100;
+    document.getElementById('progress-fill').style.width = progress + '%';
+    document.getElementById('current-step').textContent = this.currentStep;
+  }
 
   getUserName() {
     const bodyUser = document.body.dataset.user;

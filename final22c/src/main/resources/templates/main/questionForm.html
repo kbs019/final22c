@@ -46,10 +46,14 @@
             tabsize: 2,
             height: 500,
             toolbar: [
-                ['insert', ['picture']]   // ✅ 사진만 업로드 가능
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['fontsize', 'color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['picture', 'link', 'video']],
+                ['view', ['fullscreen', 'codeview', 'help']]
             ],
-            disableDragAndDrop: true     // ✅ 드래그 앤 드롭 업로드 막기 (선택)
         });
+
     });
 </script>
 </body>

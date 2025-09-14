@@ -1,6 +1,5 @@
 package com.ex.final22c.controller.product;
 
-import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,15 +32,12 @@ import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.productRepository.ReviewRepository;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.chat.ChatService;
-import com.ex.final22c.service.order.OrderService;
-import com.ex.final22c.service.product.ProductDescriptionService;
 import com.ex.final22c.service.product.ProductDescriptionService;
 import com.ex.final22c.service.product.ProductService;
 import com.ex.final22c.service.product.ReviewService;
 import com.ex.final22c.service.product.ZzimService;
-
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Slf4j
 @Controller
@@ -54,9 +51,6 @@ public class ProductController {
     private final ReviewService reviewService;
     private final UserRepository userRepository;
     private final ChatService chatService;
-    private final ProductDescriptionService productDescriptionService;
-    private final OrderService orderService;
-
 
     @GetMapping("/faq")
     public String faq() {
@@ -91,8 +85,7 @@ public class ProductController {
             Model model) {
 
         Product product = productService.getProduct(id);
-        String guideHtml = productDescriptionService.formatForDisplay(product.getAiGuide(), product);
-        
+
         long reviewCount = reviewService.count(product);
         double avg = reviewService.avg(product);
         List<ReviewDto> reviews = reviewService.getReviews(product, sort);
@@ -154,7 +147,6 @@ public class ProductController {
 
         model.addAttribute("loggedIn", loggedIn);
         model.addAttribute("zzimedByMe", zzimedByMe);
-        model.addAttribute("guideHtml", guideHtml);
 
         return "main/content2";
     }
@@ -172,24 +164,13 @@ public class ProductController {
         return Map.of("liked", liked, "count", count);
     }
 
+    // 리뷰 작성 폼 (비로그인 접근 차단)
     @GetMapping("/etc/review/new")
     @PreAuthorize("isAuthenticated()")
     public String reviewNew(@RequestParam("productId") long productId,
-                            @RequestParam("orderDetailId") long orderDetailId, // ✅ 추가
-                            Principal principal,
-                            Model model) {
-
-        String username = principal.getName();
+            Model model) {
         Product product = productService.getProduct(productId);
-
-        // 구매 이력 확인
-        boolean purchased = orderService.hasPurchasedProduct(username, productId);
-        if (!purchased) {
-        	return "redirect:/main/content/" + product.getId();
-        }
-
         model.addAttribute("product", product);
-        model.addAttribute("orderDetailId", orderDetailId); // ✅ 폼으로 전달
         return "main/etc/review-form";
     }
 
@@ -198,28 +179,26 @@ public class ProductController {
     @PreAuthorize("isAuthenticated()")
     public String reviewCreate(
             @RequestParam("productId") long productId,
-            @RequestParam("orderDetailId") long orderDetailId, // ✅ 추가
             @RequestParam("rating") int rating,
             @RequestParam("content") String content,
             @AuthenticationPrincipal UserDetails principal,
             RedirectAttributes ra) {
 
+        // 혹시 모를 널 방지 (필요 시 로그인으로 유도)
         if (principal == null) {
             return "redirect:/login?required&redirect=/main/content/" + productId;
         }
 
         Product product = productService.getProduct(productId);
 
+        // 로그인 사용자 → Users 매핑
         Users writer = userRepository.findByUserName(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
 
-        // ✅ 리뷰 작성 + OrderDetail.reviewWritten 업데이트
-        reviewService.write(product, writer, rating, content, orderDetailId);
+        Review saved = reviewService.write(product, writer, rating, content);
 
         ra.addFlashAttribute("msg", "후기가 등록되었습니다.");
-
-        // ✅ 주문 상세 페이지로 이동
-        return "redirect:/mypage/order";
+        return "redirect:/main/content/" + product.getId();
     }
 
     // 리뷰 수정 폼

@@ -445,8 +445,9 @@
               <div class="mp-field">
                 <label for="gender_display">성별</label>
                 <select id="gender_display" class="mp-select mp-input--readonly" disabled>
-                  <option value="남" th:selected="${me.gender=='M'}">남자</option>
-                  <option value="여" th:selected="${me.gender=='F'}">여자</option>
+                  <option value="남" th:selected="${me.gender=='남'}">남자</option>
+                  <option value="여" th:selected="${me.gender=='여'}">여자</option>
+                  <option value="기타" th:selected="${me.gender=='기타'}">기타</option>
                 </select>
                 <input type="hidden" id="gender" name="gender" th:value="${me.gender}" />
               </div>

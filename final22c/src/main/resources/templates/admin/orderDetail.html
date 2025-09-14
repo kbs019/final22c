@@ -70,13 +70,10 @@
 		      <!-- 결제 수단 -->
 		      <span th:if="${isPointOnly}">결제 수단 : 마일리지 전액 결제</span>
 		      <span th:unless="${isPointOnly}">
-		        결제 수단 : 카카오페이<br>
-		        사용 마일리지 : [[${#numbers.formatInteger(order.usedPoint, 1, 'COMMA')}]]원
+		        결제 수단 : 카카오페이
 		      </span>
 		      <br>
-		      결제 금액 : [[${#numbers.formatInteger(p.amount, 1, 'COMMA')}]]원
-		      <br>
-		      총 금액 : [[${#numbers.formatInteger(order.totalAmount+order.usedPoint, 1, 'COMMA')}]]원
+		      총 결제 금액 : [[${#numbers.formatInteger(p.amount, 1, 'COMMA')}]]원
 		    </li>
 		  </ul>
 		</div>

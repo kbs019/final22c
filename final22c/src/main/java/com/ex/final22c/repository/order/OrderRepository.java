@@ -312,35 +312,23 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     String getStatus();
   }
 
-    @Query("""
-        select
-            o.orderId                            as orderId,
-            o.regDate                            as processedAt,
-            coalesce(o.usedPoint, 0)             as usedPoint,
-            case
-                when o.status = 'REFUNDED' then 0
-                else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
-            end                                   as earnedPoint,
-            o.status                             as status
-        from Order o
-        where o.user.userNo = :userNo
-          and o.status in :statuses
-        order by o.regDate desc
-        """)
-    Page<MileageRow> findMileageByUserAndStatuses(
-        @Param("userNo") Long userNo,
-        @Param("statuses") Collection<String> statuses,
-        Pageable pageable);
-  }
-  
   @Query("""
-	        SELECT COUNT(d) > 0
-	        FROM Order o 
-	        JOIN o.details d
-	        WHERE o.user.userName = :username
-	          AND d.product.id = :productId
-	          AND o.status = 'CONFIRMED'
-	    """)
-	    boolean existsByUserAndProduct(@Param("username") String username,
-	                                   @Param("productId") Long productId);
+      select
+          o.orderId                            as orderId,
+          o.regDate                            as processedAt,
+          coalesce(o.usedPoint, 0)             as usedPoint,
+          case
+              when o.status = 'REFUNDED' then 0
+              else cast(function('trunc', coalesce(o.totalAmount, 0) * 0.05) as long)
+          end                                   as earnedPoint,
+          o.status                             as status
+      from Order o
+      where o.user.userNo = :userNo
+        and o.status in :statuses
+      order by o.regDate desc
+      """)
+  Page<MileageRow> findMileageByUserAndStatuses(
+      @Param("userNo") Long userNo,
+      @Param("statuses") Collection<String> statuses,
+      Pageable pageable);
 }
