@@ -25,6 +25,5 @@ public class ProductForm {
     private String description;
     private MultipartFile imgName;
     
-    // AI 재생성 옵션 추가
-    private boolean regenerateAI = false;
+    private String aiGuide;
 }

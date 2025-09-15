@@ -11,78 +11,175 @@
   <meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}" />
   <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
 
-  <!-- 페이지 전용 CSS (반드시 head 프래그먼트 내부) -->
-  <th:block layout:fragment="css">
-    <style>
-      :root { scrollbar-gutter: stable both-edges; }
-      html  { overflow-y: scroll; }
+<th:block layout:fragment="css">
+  <style>
+    /* === 사이드박스 공통 레이아웃 === */
+    .mp-grid {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
 
-      /* ===== 공통 레이아웃 ===== */
-      .mp-grid{
-        display:grid;
-        grid-template-columns:260px minmax(0,1fr);
-        gap:28px;             /* 사이드-본문 여백 살짝 넓힘 */
-        align-items:start;
+    .mp-col-left {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      z-index: 1;
+    }
+
+    .mp-col-right {
+      min-width: 0;
+    }
+
+    .mp-sidebox__title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+
+    .mp-sidebox__nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mp-sidebox__link {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #111827;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+    }
+
+    .mp-sidebox__link:hover {
+      background: #f3f7ff;
+    }
+
+    .mp-sidebox__link.is-active {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    @media (max-width:860px) {
+      .mp-grid {
+        grid-template-columns: 1fr;
       }
-      .mp-col-left{position:sticky; top:24px; align-self:start; z-index:1;}
-      .mp-col-right{min-width:0; padding-left:12px;}
-      @media (max-width:860px){
-        .mp-grid{grid-template-columns:1fr;}
-        .mp-col-left{position:static;}
-        .mp-col-right{padding-left:0;}
+
+      .mp-col-left {
+        position: static;
       }
+    }
 
-      .mp-sidebox__title{font-size:20px;font-weight:800;margin:0 0 12px;}
-      .mp-sidebox__nav{display:flex;flex-direction:column;gap:6px;}
-      .mp-sidebox__link{
-        display:block;padding:8px 10px;border-radius:10px;text-decoration:none;
-        color:#111827;border:1px solid #e5e7eb;background:#fff;
-      }
-      .mp-sidebox__link:hover{background:#f3f7ff;}
-      .mp-sidebox__link.is-active{background:#111827;color:#fff;border-color:#111827;}
+    /* === 위시리스트 카드 === */
+    .wl-wrap {
+      max-width: 1100px;
+    }
 
-      /* 본문 컨테이너(폭/패딩 통일) */
-      .mypage-body{max-width:1100px;margin:0 auto;padding:0 12px;}
-      @media (max-width:860px){.mypage-body{padding:0;}}
+    .wl-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
 
-      /* ===== 위시리스트 ===== */
-      .wl-wrap{max-width:1100px;}
-      .wl-controls{padding-left:12px; margin-bottom:12px;}
+    .wl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
 
-      .wl-grid{
-        display:grid;
-        grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
-        gap:14px;
-      }
-      .wl-card{
-        display:flex;flex-direction:column;background:#fff;
-        border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;
-        color:#111827;text-decoration:none;
-        transition:background .15s,border-color .15s,transform .06s;
-      }
-      .wl-card:hover{background:#f9fbff;border-color:#dbe3ff;transform:translateY(-1px);}
-      .wl-thumb{width:100%;aspect-ratio:1/1;object-fit:cover;background:#f3f4f6;}
-      .wl-body{padding:12px;}
-      .wl-brand{font-size:12px;color:#6b7280;margin-bottom:2px;}
-      .wl-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-      .wl-price{margin-top:6px;font-weight:800;}
+    .wl-card {
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      text-decoration: none;
+      color: #111827;
+      transition: background .15s, border-color .15s, transform .06s;
+    }
 
-      /* 카드형 삭제 버튼 */
-      .zzim-remove-btn{
-        position:absolute;top:8px;right:8px;border:none;
-        background:rgba(255,255,255,.9);border-radius:50%;padding:6px;
-        display:flex;align-items:center;justify-content:center;cursor:pointer;
-        transition:background .2s ease;
-      }
-      .zzim-remove-btn:hover{background:rgba(229,231,235,.95);}
-      .zzim-remove-btn svg{width:20px;height:20px;fill:#555;transition:fill .2s ease;}
-      .zzim-remove-btn:hover svg{fill:#111;}
+    .wl-card:hover {
+      background: #f9fbff;
+      border-color: #dbe3ff;
+      transform: translateY(-1px);
+    }
 
-      /* 리스트형 삭제 버튼 */
-      .zzim-remove-btn-list{position:static;border-radius:6px;padding:4px 10px;font-size:14px;}
-    </style>
-  </th:block>
-</head>
+    .wl-thumb {
+      width: 100%;
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      background: #f3f4f6;
+    }
+
+    .wl-body {
+      padding: 12px;
+    }
+
+    .wl-brand {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
+
+    .wl-name {
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wl-price {
+      margin-top: 6px;
+      font-weight: 800;
+    }
+/* 찜 취소 버튼 (카드 오른쪽 상단 고정) */
+.zzim-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.zzim-remove-btn:hover {
+  background: rgba(229, 231, 235, 0.95); /* hover 시 약간 진하게 */
+}
+
+.zzim-remove-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: #555;
+  transition: fill 0.2s ease;
+}
+
+.zzim-remove-btn:hover svg {
+  fill: #111;
+}
+/* 리스트형 삭제 버튼 */
+.zzim-remove-btn-list {
+  position: static;  /* 카드형처럼 absolute 제거 */
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 14px;
+}
+
+body.modal-open {
+  padding-right: 0 !important;
+}
+  </style>
+</th:block>
 
 <body>
 <th:block layout:fragment="content">
@@ -94,26 +191,26 @@
 
       <!-- 우측 본문 -->
       <div class="mp-col-right">
-        <section class="mypage-body wl-wrap">
-
-          <!-- 보기 전환/액션 -->
-          <div class="wl-controls d-flex justify-content-between">
-            <div>
-              <button class="btn btn-outline-dark me-2" id="viewCardBtn">카드형 보기</button>
-              <button class="btn btn-outline-dark" id="viewListBtn">리스트형 보기</button>
-            </div>
-            <div>
-              <button class="btn btn-primary" id="addToCartBtn" style="display:none">장바구니 담기</button>
-            </div>
-          </div>
-
-          <!-- 카드형 -->
-          <div class="wl-grid" id="wishlistCardView">
-            <div class="wl-card position-relative" th:each="p : ${paging}">
-              <button type="button" class="btn btn-sm btn-light zzim-remove-btn"
-                      th:attr="data-productid=${p.id}">
-                <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z"/>
+		<div class="d-flex justify-content-between mb-3">
+		  <!-- 왼쪽 버튼 그룹 -->
+		  <div>
+		    <button class="btn btn-outline-dark me-2" id="viewCardBtn">카드형 보기</button>
+		    <button class="btn btn-outline-dark" id="viewListBtn">리스트형 보기</button>
+		  </div>
+		
+		  <!-- 오른쪽 버튼 (리스트형 보기일 때만 보이도록 initially hidden) -->
+		  <div>
+		    <button class="btn btn-secondary" id="addToCartBtn" style="display: none;">장바구니 담기</button>
+		  </div>
+		</div>
+		 <div class="wl-grid"  id="wishlistCardView" >
+		  <div class="wl-card position-relative" th:each="p : ${paging}">
+		    <!-- 찜 취소 버튼 -->
+		    <button type="button" class="btn btn-sm btn-light zzim-remove-btn"
+		            th:attr="data-productid=${p.id}">
+		                      <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
+                  <path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
                 </svg>
               </button>
 
@@ -181,118 +278,171 @@
         </section>
       </div>
     </div>
+    
+   <!-- === 알림 모달 === -->
+	<div class="modal fade" id="zzimRemoveModal" tabindex="-1" aria-hidden="true">
+	  <div class="modal-dialog modal-dialog-centered">
+	    <div class="modal-content">
+	      
+	      <div class="modal-header">
+	        <h5 class="modal-title">관심상품 삭제</h5>
+	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+	      </div>
+	      
+	      <div class="modal-body">
+	        이 상품을 관심목록에서 삭제하시겠습니까?
+	      </div>
+	      
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+	        <button type="button" class="btn btn-danger" id="zzimRemoveConfirmBtn">삭제</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	
+	<!-- 페이지 하단 알림 Toast -->
+	<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
+	  <div id="cartToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+	    <div class="d-flex">
+	      <div class="toast-body">
+	        선택한 상품이 장바구니에 담겼습니다.
+	      </div>
+	      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="닫기"></button>
+	    </div>
+	  </div>
+	</div>
 
-    <!-- 모달: 관심상품 삭제 -->
-    <div class="modal fade" id="zzimRemoveModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">관심상품 삭제</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">이 상품을 관심목록에서 삭제하시겠습니까?</div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-            <button type="button" class="btn btn-danger" id="zzimRemoveConfirmBtn">삭제</button>
-          </div>
-        </div>
+<!-- === 공통 알림 모달 === -->
+<div class="modal fade" id="appAlertModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h5 class="modal-title" id="appAlertTitle">알림</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      <div class="modal-body" id="appAlertBody">
+        <!-- 메시지가 동적으로 들어옵니다 -->
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="appAlertOkBtn">확인</button>
       </div>
     </div>
-
-    <!-- Toast -->
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:1055">
-      <div id="cartToast" class="toast align-items-center text-white bg-success border-0"
-           role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-          <div class="toast-body">선택한 상품이 장바구니에 담겼습니다.</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                  data-bs-dismiss="toast" aria-label="닫기"></button>
-        </div>
-      </div>
-    </div>
+  </div>
+</div>
   </section>
 </th:block>
 
 <!-- 페이지 전용 스크립트 -->
 <script layout:fragment="script">
-  // CSRF 메타에서 읽기
-  function getCsrf() {
-    const token  = document.querySelector('meta[name="_csrf"]')?.content || "";
-    const header = document.querySelector('meta[name="_csrf_header"]')?.content || "X-CSRF-TOKEN";
-    return { header, token };
+// 버튼 카드 <-> 리스트
+document.getElementById("viewCardBtn").addEventListener("click", function(){
+	  document.getElementById("wishlistCardView").style.display = "grid";
+	  document.getElementById("wishlistListView").style.display = "none";
+	});
+
+	document.getElementById("viewListBtn").addEventListener("click", function(){
+	  document.getElementById("wishlistCardView").style.display = "none";
+	  document.getElementById("wishlistListView").style.display = "block";
+	});
+	// 장바구니 담기버튼
+	const viewCardBtn = document.getElementById('viewCardBtn');
+	const viewListBtn = document.getElementById('viewListBtn');
+	const addToCartBtn = document.getElementById('addToCartBtn');
+	
+	viewListBtn.addEventListener('click', () => {
+	  addToCartBtn.style.display = 'inline-block';
+	});
+	
+	viewCardBtn.addEventListener('click', () => {
+	  addToCartBtn.style.display = 'none';
+	});
+	
+// 체크박스
+	document.addEventListener("DOMContentLoaded", function() {
+		  const checkAll = document.getElementById("checkAll");
+		  const checkboxes = document.querySelectorAll("input[name='chk']");
+
+		  // 전체선택 클릭 시
+		  checkAll.addEventListener("change", function() {
+		    checkboxes.forEach(cb => cb.checked = checkAll.checked);
+		  });
+
+		  // 개별 체크박스 상태에 따라 전체선택 해제/체크
+		  checkboxes.forEach(cb => {
+		    cb.addEventListener("change", function() {
+		      const allChecked = Array.from(checkboxes).every(c => c.checked);
+		      checkAll.checked = allChecked;
+		    });
+		  });
+		});
+	
+	document.addEventListener("click", function(e) {
+		  // 증가 버튼
+		  if (e.target.closest(".qty-plus")) {
+		    let row = e.target.closest("tr");
+		    let input = row.querySelector(".qty-input");
+		    let max = parseInt(input.getAttribute("data-maxcount")) || 1;
+		    let current = parseInt(input.value) || 1;
+
+		    if (current < max) {
+		      input.value = current + 1;
+		    } else {
+		      AppAlert("최대 " + max + "개까지 담을 수 있습니다.");
+		    }
+		  }
+
+		  // 감소 버튼
+		  if (e.target.closest(".qty-minus")) {
+		    let row = e.target.closest("tr");
+		    let input = row.querySelector(".qty-input");
+		    let current = parseInt(input.value) || 1;
+
+		    if (current > 1) {
+		      input.value = current - 1;
+		    }
+		  }
+		});
+
+		// ✅ 직접 입력했을 때 제한
+		document.addEventListener("input", function(e) {
+		  if (e.target.classList.contains("qty-input")) {
+		    let input = e.target;
+		    let max = parseInt(input.getAttribute("data-maxcount")) || 1;
+		    let value = parseInt(input.value);
+
+		    if (isNaN(value) || value < 1) {
+		      input.value = 1; // 최소 1
+		    } else if (value > max) {
+		      input.value = max; // 최대 count
+		      AppAlert("최대 " + max + "개까지 담을 수 있습니다.");
+		    }
+		  }
+		});
+	
+let targetProductId = null;
+let targetCard = null;
+
+document.addEventListener("click", function(e) {
+  if (e.target.closest(".zzim-remove-btn")) {
+    let btn = e.target.closest(".zzim-remove-btn");
+    targetProductId = btn.getAttribute("data-productid");
+    targetCard = btn.closest(".wl-card");
+
+    // 모달 열기
+    let modal = new bootstrap.Modal(document.getElementById("zzimRemoveModal"));
+    modal.show();
   }
-  // 부트스트랩 가드
-  const hasBS = typeof bootstrap !== "undefined";
-
-  // 보기 전환
-  document.getElementById("viewCardBtn").addEventListener("click", () => {
-    document.getElementById("wishlistCardView").style.display = "grid";
-    document.getElementById("wishlistListView").style.display = "none";
-    document.getElementById("addToCartBtn").style.display = "none";
-  });
-  document.getElementById("viewListBtn").addEventListener("click", () => {
-    document.getElementById("wishlistCardView").style.display = "none";
-    document.getElementById("wishlistListView").style.display = "block";
-    document.getElementById("addToCartBtn").style.display = "inline-block";
-  });
-
-  // 체크박스 전체선택
-  document.addEventListener("DOMContentLoaded", () => {
-    const checkAll = document.getElementById("checkAll");
-    const checkboxes = document.querySelectorAll("input[name='chk']");
-    checkAll?.addEventListener("change", () =>
-      checkboxes.forEach(cb => cb.checked = checkAll.checked)
-    );
-    checkboxes.forEach(cb => cb.addEventListener("change", () => {
-      const allChecked = Array.from(checkboxes).every(c => c.checked);
-      if (checkAll) checkAll.checked = allChecked;
-    }));
-  });
-
-  // 수량 조절
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".qty-plus")) {
-      const row = e.target.closest("tr");
-      const input = row.querySelector(".qty-input");
-      const max = parseInt(input.getAttribute("data-maxcount")) || 1;
-      const cur = parseInt(input.value) || 1;
-      if (cur < max) input.value = cur + 1;
-      else alert("최대 " + max + "개까지 담을 수 있습니다.");
-    }
-    if (e.target.closest(".qty-minus")) {
-      const row = e.target.closest("tr");
-      const input = row.querySelector(".qty-input");
-      const cur = parseInt(input.value) || 1;
-      if (cur > 1) input.value = cur - 1;
-    }
-  });
-  document.addEventListener("input", (e) => {
-    if (!e.target.classList.contains("qty-input")) return;
-    const input = e.target;
-    const max = parseInt(input.getAttribute("data-maxcount")) || 1;
-    let v = parseInt(input.value);
-    if (isNaN(v) || v < 1) input.value = 1;
-    else if (v > max) { input.value = max; alert("최대 " + max + "개까지 담을 수 있습니다."); }
-  });
-
-  // 찜 삭제 (모달→확정)
-  let targetProductId = null, targetCard = null;
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".zzim-remove-btn")) {
-      const btn = e.target.closest(".zzim-remove-btn");
-      targetProductId = btn.getAttribute("data-productid");
-      targetCard = btn.closest(".wl-card");
-      if (hasBS) new bootstrap.Modal(document.getElementById("zzimRemoveModal")).show();
-      else if (confirm("해당 상품을 관심목록에서 삭제할까요?")) triggerZzimRemove();
-    }
-    if (e.target.closest(".zzim-remove-btn-list")) {
-      const btn = e.target.closest(".zzim-remove-btn-list");
-      targetProductId = btn.getAttribute("data-productid");
-      targetCard = btn.closest("tr");
-      if (hasBS) new bootstrap.Modal(document.getElementById("zzimRemoveModal")).show();
-      else if (confirm("해당 상품을 관심목록에서 삭제할까요?")) triggerZzimRemove();
-    }
-  });
+  
+  // 리스트형 버튼
+  if (e.target.closest(".zzim-remove-btn-list")) {
+    let btn = e.target.closest(".zzim-remove-btn-list");
+    targetProductId = btn.getAttribute("data-productid");
+    targetCard = btn.closest("tr");  // 리스트는 행 단위 삭제
+    let modal = new bootstrap.Modal(document.getElementById("zzimRemoveModal"));
+    modal.show();
+  }
+});
 
   document.getElementById("zzimRemoveConfirmBtn").addEventListener("click", triggerZzimRemove);
 
@@ -311,11 +461,9 @@
       });
       if (!res.ok) throw new Error();
       if (targetCard) targetCard.remove();
-      if (hasBS) bootstrap.Modal.getInstance(document.getElementById("zzimRemoveModal"))?.hide();
-    } catch {
-      alert("삭제 처리 중 오류가 발생했습니다.");
-    } finally {
-      targetProductId = null; targetCard = null;
+      bootstrap.Modal.getInstance(document.getElementById("zzimRemoveModal")).hide();
+    } else {
+      AppAlert("삭제 처리 중 오류가 발생했습니다.", { title: "오류" });
     }
   }
 
@@ -332,30 +480,81 @@
         });
       }
     });
-    if (items.length === 0){ alert("장바구니에 담을 상품을 선택해주세요."); return; }
 
-    const { header, token } = getCsrf();
-    try {
-      const res = await fetch("/mypage/addBatch", {
-        method:"POST",
-        headers:{ 
-          "Content-Type":"application/json",
-          ...(token ? { [header]: token } : {})
-        },
-        credentials: "same-origin",
-        body:JSON.stringify(items)
-      });
-      if (!res.ok) throw new Error();
-      if (hasBS) {
-        new bootstrap.Toast(document.getElementById("cartToast"), { delay:2000 }).show();
-      } else {
-        alert("선택한 상품이 장바구니에 담겼습니다.");
-      }
-      rows.forEach(r => { const c = r.querySelector("input[name='chk']"); if (c) c.checked = false; });
-    } catch {
-      alert("장바구니 담기 중 오류가 발생했습니다.");
+    if (itemsToAdd.length === 0) {
+        AppAlert("장바구니에 담을 상품을 선택해주세요.");
+        return;
     }
+
+    // 서버로 전송
+    fetch("/mypage/addBatch", {  // 서버 URL은 상황에 맞게 변경
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(itemsToAdd)
+    })
+    .then(res => {
+        if (res.ok) {
+            // 기존 alert() 대신 Toast 표시
+            const toastEl = document.getElementById('cartToast');
+            const toast = new bootstrap.Toast(toastEl, { delay: 2000 }); // 2초 후 자동 사라짐
+            toast.show();
+            // 체크박스 초기화
+            rows.forEach(row => row.querySelector("input[name='chk']").checked = false);
+        } else {
+            AppAlert("장바구니 담기 중 오류가 발생했습니다.", { title: "오류" });
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        AppAlert("장바구니 담기 중 오류가 발생했습니다.", { title: "오류" });
+    });
+});
+
+/**
+ * AppAlert(message, options?)
+ * options: { title?: string, delay?: number(ms), onHide?: Function }
+ * - title: 모달 타이틀(기본 "알림")
+ * - delay: 지정하면 자동으로 닫힘(ms). 예: 2000
+ * - onHide: 모달이 닫힌 뒤 호출될 콜백
+ */
+const AppAlert = (() => {
+  const modalEl = document.getElementById('appAlertModal');
+  const modal = new bootstrap.Modal(modalEl);
+  const titleEl = document.getElementById('appAlertTitle');
+  const bodyEl  = document.getElementById('appAlertBody');
+
+  let timer = null;
+
+  // 모달이 열릴 때 포커스를 OK 버튼으로
+  modalEl.addEventListener('shown.bs.modal', () => {
+    document.getElementById('appAlertOkBtn')?.focus();
   });
+
+  return function AppAlert(message, { title = '알림', delay = null, onHide = null } = {}) {
+    titleEl.textContent = title;
+    bodyEl.textContent  = String(message);
+
+    // 이전 자동닫힘 타이머 제거
+    if (timer) { clearTimeout(timer); timer = null; }
+
+    // onHide 1회성 바인딩
+    if (typeof onHide === 'function') {
+      const handler = () => {
+        modalEl.removeEventListener('hidden.bs.modal', handler);
+        onHide();
+      };
+      modalEl.addEventListener('hidden.bs.modal', handler);
+    }
+
+    modal.show();
+
+    if (typeof delay === 'number' && delay > 0) {
+      timer = setTimeout(() => modal.hide(), delay);
+    }
+  };
+})();
 </script>
 </body>
 </html>

@@ -101,7 +101,6 @@ public class UsersService {
                 .telecom(usersForm.getTelecom())
                 .phone(phoneDigits)
                 .gender(usersForm.getGender())
-                .loginType("local")
                 .mileage(0)
                 .build();
 

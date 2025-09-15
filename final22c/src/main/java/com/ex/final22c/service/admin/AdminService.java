@@ -78,7 +78,9 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminService {
@@ -99,6 +101,7 @@ public class AdminService {
     private final RestockNotifyService restockNotifyService;
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
+    ProductForm productForm;
 
     public Map<String, Object> buildDashboardKpis() {
         LocalDate today = LocalDate.now();
@@ -368,6 +371,10 @@ public class AdminService {
         return this.brandRepository.save(brand);
     }
 
+    public boolean existsByBrandName(String brandName) {
+        return brandRepository.existsByBrandName(brandName);
+    }
+    
     // 그레이드 목록
     public List<Grade> getGrade() {
         return this.gradeRepository.findAll();
@@ -403,7 +410,11 @@ public class AdminService {
         product.setDescription(dto.getDescription());
 
         String brandName = null;
-
+        
+        // AI 가이드 설정 (수정 모드에서만)
+        if (dto.getId() != null && dto.getAiGuide() != null) {
+            product.setAiGuide(dto.getAiGuide());
+        }
         // 브랜드 처리
         if (dto.getBrandNo() != null) {
             Brand brand = brandRepository.findById(dto.getBrandNo())
@@ -445,7 +456,6 @@ public class AdminService {
         }
 
         // 이미지 처리
-     // 이미지 처리
         String uploadDir2 = "src/main/resources/static/img/" + brandName + "/";
         Path uploadPath = Paths.get(uploadDir2);
 
@@ -1157,5 +1167,38 @@ public class AdminService {
             .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다."));
         product.setAiGuide(aiGuide);
         // JPA dirty checking으로 자동 업데이트
+    }
+    
+    // 상품 수정에서 aiguide 수정시 일괄 업데이트(같은 상품명 용량만 다른 제품일 경우)
+    @Transactional
+    public void updateAiGuideForSimilarProducts(Long productId, String newAiGuide) {
+        Product targetProduct = productRepository.findById(productId)
+            .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다."));
+        
+        // 상품명에서 용량 제거하여 기본명 추출
+        String baseName = cleanProductNameForComparison(targetProduct.getName());
+        Long brandId = targetProduct.getBrand().getId();
+        
+        // 같은 브랜드 + 같은 기본명의 모든 상품 조회
+        List<Product> similarProducts = findSimilarProductsByBaseName(brandId, baseName);
+        
+        // 모든 관련 상품의 AI가이드 업데이트
+        for (Product product : similarProducts) {
+            product.setAiGuide(newAiGuide);
+            log.info("AI가이드 일괄 업데이트: productId={}, name={}", product.getId(), product.getName());
+        }
+    }
+
+    private String cleanProductNameForComparison(String name) {
+        if (name == null) return "";
+        return name.replaceAll("\\s*\\d+\\s*[mM][lL]\\s*", " ")
+                .replaceAll("\\s*\\d+ml\\s*", " ")
+                .replaceAll("\\s*\\d+ML\\s*", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private List<Product> findSimilarProductsByBaseName(Long brandId, String baseName) {
+        return productRepository.findSimilarProductsByBaseName(brandId, baseName);
     }
 }
