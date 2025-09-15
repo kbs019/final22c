@@ -37,7 +37,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         Users u = userRepository.findByUserName(username)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
         if ("inactive".equalsIgnoreCase(u.getStatus())) {
-            throw new DisabledException("회원탈퇴 된 계정입니다. 새로 가입해 주세요.");
+            throw new DisabledException("회원탈퇴 된 계정입니다.");
         }
 
         if (!passwordEncoder.matches(rawPw, userDetails.getPassword())) {

@@ -224,7 +224,7 @@ public class UsersService {
         CodeInfo(String code, Instant expiry) { this.code = code; this.expiry = expiry; }
     }
 
-    /** 아이디 + 이메일 확인 후 인증코드 발송 (이메일은 sanitize 후 DB 값과 비교) */
+    /** 아이디 + 이메일 확인 후 인증코드 발송 */
     public boolean sendResetPasswordAuthCode(String userName, String email) {
         final String uname = userName == null ? "" : userName.trim();
 
@@ -266,7 +266,7 @@ public class UsersService {
             String encodedPw = passwordEncoder.encode(newPassword);
             user.setPassword(encodedPw);
             userRepository.save(user);
-            resetCodes.remove(userName); // 재사용 방지
+            resetCodes.remove(userName);
         });
     }
 
@@ -275,40 +275,36 @@ public class UsersService {
         return String.valueOf(100000 + random.nextInt(900000)); // 6자리
     }
 
-    // ===== 계정 비활성화/삭제 (누락 보완) =====
+    // ===== 계정 비활성화 =====
     @Transactional
     public void deactivateAccount(String username) {
         Users me = getUser(username);
-        me.setStatus("inactive");   // Users에 status 필드가 있어야 합니다.
+        me.setStatus("inactive");   // Users.status 필드 필요
         userRepository.save(me);
     }
 
-    /** 물리 삭제 대신 비활성화 사용 (호출부 호환 위해 유지) */
-    @Deprecated
-    @Transactional
-    public void deleteAccount(String username) {
-        deactivateAccount(username);
-    }
-
-    // ===== QnA 조회 =====
+    /** 마이페이지 - 내가 쓴 QnA 목록 조회 */
+    @Transactional(readOnly = true)
     public List<QuestionDto> getUserQuestions(String userName) {
         List<Question> questions = questionRepository.findByWriterUserName(userName);
-        List<QuestionDto> questionDtos = new ArrayList<>();
-        for (Question question : questions) {
+
+        List<QuestionDto> dtos = new ArrayList<>();
+        for (Question q : questions) {
             QuestionDto dto = new QuestionDto();
-            dto.setQId(question.getQId());
-            dto.setStatus(question.getStatus());
-            dto.setTitle(question.getTitle());
-            dto.setContent(question.getContent());
-            dto.setQcId(question.getQc().getQcId());
-            dto.setCreateDate(question.getCreateDate());
-            Answer answer = question.getAnswer();
+            dto.setQId(q.getQId());
+            dto.setStatus(q.getStatus());
+            dto.setTitle(q.getTitle());
+            dto.setContent(q.getContent());
+            dto.setQcId(q.getQc().getQcId());
+            dto.setCreateDate(q.getCreateDate());
+
+            Answer answer = q.getAnswer();
             if (answer != null) {
                 dto.setAnswer(answer.getContent());
                 dto.setAnswerCreateDate(answer.getCreateDate());
             }
-            questionDtos.add(dto);
+            dtos.add(dto);
         }
-        return questionDtos;
+        return dtos;
     }
 }

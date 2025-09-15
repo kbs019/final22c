@@ -7,8 +7,9 @@
 <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
 
 <div layout:fragment="content">
+
   <style>
-    :root {
+    :root{
       scrollbar-gutter: stable;
       /* 배송지관리와 동일한 폰트 스택 */
       --font-sans: system-ui, -apple-system, "Noto Sans KR", "Malgun Gothic",
@@ -16,395 +17,388 @@
         "Apple SD Gothic Neo", "Apple Color Emoji", "Segoe UI Emoji";
     }
 
-    html {
-      overflow-y: scroll;
+    html{ overflow-y:scroll; }
+
+    .mypage-wrap{
+      font-family:var(--font-sans);
+      font-size:14px;
+      color:#111827;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.6;
     }
 
-    .mypage-wrap {
-      font-family: var(--font-sans);
-      font-size: 14px;
-      color: #111827;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      line-height: 1.6;
+    .mp-grid{
+      display:grid;
+      grid-template-columns:260px minmax(0,1fr);
+      gap:24px;
+      align-items:start;
     }
 
-    .mp-grid {
-      display: grid;
-      grid-template-columns: 260px minmax(0, 1fr);
-      gap: 24px;
-      align-items: start;
+    .mp-col-left{
+      position:sticky;
+      top:24px;
+      align-self:start;
+      z-index:1;
     }
 
-    .mp-col-left {
-      position: sticky;
-      top: 24px;
-      align-self: start;
-      z-index: 1;
+    .mypage-body{ max-width:900px; margin:0 auto; }
+
+    .page-title{ font-size:20px; font-weight:800; margin:0 0 12px; }
+
+    .mp-card{
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:16px;
     }
 
-    .mypage-body {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .page-title {
-      font-size: 20px;
-      font-weight: 800;
-      margin: 0 0 12px;
-    }
-
-    .mp-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .mp-field {
-      margin: 10px 0;
-    }
-
-    .mp-field>label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 700;
-    }
+    .mp-field{ margin:10px 0; }
+    .mp-field>label{ display:block; margin-bottom:6px; font-weight:700; }
 
     .mp-input,
-    .mp-select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      background: #fff;
-      line-height: 1.2;
-      box-sizing: border-box;
+    .mp-select{
+      width:100%;
+      padding:10px;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      background:#fff;
+      line-height:1.2;
+      box-sizing:border-box;
+    }
+    .mp-input--readonly{ background:#f9fafb; color:#6b7280; }
+
+    .mp-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      white-space:nowrap;
+      padding:0 14px;
+      border-radius:10px;
+      border:1px solid #e5e7eb;
+      background:#fff;
+      cursor:pointer;
+      font-weight:700;
+      min-width:72px;
+      height:42px;
+      box-sizing:border-box;
+      font-size:14px;
+      transition:background .15s, border-color .15s, opacity .15s, box-shadow .15s;
+    }
+    .mp-btn:hover{ background:#f3f4f6; }
+    .mp-btn--primary{ background:#111827; color:#fff; border-color:#111827; }
+    .mp-btn--primary:hover{ opacity:.92; }
+    .mp-btn--sm{ padding-left:10px; padding-right:10px; min-width:56px; }
+
+    .verify-row{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      align-items:center;
     }
 
-    .mp-input--readonly {
-      background: #f9fafb;
-      color: #6b7280;
+    .pw-grid{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      align-items:center;
     }
-
-    .mp-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      white-space: nowrap;
-      padding: 0 14px;
-      border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      background: #fff;
-      cursor: pointer;
-      font-weight: 700;
-      min-width: 72px;
-      height: 42px;
-      box-sizing: border-box;
-      font-size: 14px;
-      transition: background .15s, border-color .15s, opacity .15s, box-shadow .15s;
+    .pw-grid label{
+      display:block;
+      margin-bottom:6px;
+      font-weight:700;
+      grid-column:1;
     }
+    .pw-spacer{ grid-column:2; width:1px; height:1px; }
 
-    .mp-btn:hover {
-      background: #f3f4f6;
+    /* =========================
+      휴대폰(본문) : 통신사 → 번호 → 버튼
+      ========================= */
+    .phone-field{
+      display:grid;
+      grid-template-columns: minmax(96px,auto) 64px 8px minmax(120px,1fr) 8px minmax(120px,1fr) auto;
+      gap:8px;
+      align-items:center;
     }
-
-    .mp-btn--primary {
-      background: #111827;
-      color: #fff;
-      border-color: #111827;
-    }
-
-    .mp-btn--primary:hover {
-      opacity: .92;
-    }
-
-    .mp-btn--sm {
-      padding-left: 10px;
-      padding-right: 10px;
-      min-width: 56px;
-    }
-
-    .verify-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .pw-grid {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .pw-grid label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 700;
-      grid-column: 1;
-    }
-
-    .pw-spacer {
-      grid-column: 2;
-      width: 1px;
-      height: 1px;
-    }
-
-    .phone-field {
-      display: grid;
-      grid-template-columns: 64px 8px minmax(120px, 1fr) 8px minmax(120px, 1fr) minmax(96px, auto) auto;
-      align-items: center;
-      gap: 8px;
-    }
-
     .phone-field input,
-    .phone-field select {
-      min-width: 0;
-      box-sizing: border-box;
-      text-align: center;
+    .phone-field select{
+      min-width:0;
+      box-sizing:border-box;
+      text-align:center;
+    }
+    .phone-field .telco{ min-width:96px; }
+
+    /* 이메일 레이아웃(그룹 + 버튼) */
+    .email-field{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      align-items:center;
     }
 
-    .phone-field .telco {
-      min-width: 96px;
+    /* ===== 이메일 입력: 인풋-@-인풋 '한 덩어리' (메인 폼) ===== */
+    .email-inline{
+      display:flex;
+      align-items:stretch;
+      gap:0; /* @ 사이 여백 제거 */
+    }
+    .email-inline .mp-input{
+      border-radius:0;
+      height:42px;
+    }
+    .email-inline .mp-input:first-child{
+      border-top-left-radius:10px;
+      border-bottom-left-radius:10px;
+      border-right:0; /* 경계선 겹침 제거 */
+    }
+    .email-inline .mp-at{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:36px;
+      padding:0 10px;
+      border:1px solid #e5e7eb;
+      border-left:0;
+      border-right:0;
+      background:#f9fafb;
+      color:#6b7280;
+      height:42px; /* 인풋과 높이 동일 */
+      box-sizing:border-box;
+    }
+    .email-inline .mp-input:last-child{
+      border-top-right-radius:10px;
+      border-bottom-right-radius:10px;
+      border-left:0;
+    }
+    .email-inline .mp-input--readonly{
+      background:#f9fafb;
+      color:#6b7280;
     }
 
-    .email-field {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      align-items: center;
-    }
+    .mp-msg{ margin-top:6px; font-size:13px; }
+    .mp-msg--ok{ color:#065f46; }
+    .mp-msg--bad{ color:#dc2626; }
 
-    .email-inline {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .mp-at {
-      flex: 0 0 auto;
-      padding: 0 4px;
-      color: #6b7280;
-    }
-
-    .mp-msg {
-      margin-top: 6px;
-      font-size: 13px;
-    }
-
-    .mp-msg--ok {
-      color: #065f46;
-    }
-
-    .mp-msg--bad {
-      color: #dc2626;
-    }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      margin: -1px;
-      padding: 0;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-      border: 0;
+    .sr-only{
+      position:absolute;
+      width:1px;
+      height:1px;
+      margin:-1px;
+      padding:0;
+      overflow:hidden;
+      clip:rect(0 0 0 0);
+      border:0;
     }
 
     /* 사이드박스 - 배송지관리와 동일 */
-    .mp-sidebox__title {
-      font-size: 20px;
-      font-weight: 800;
-      margin: 0 0 12px;
-    }
-
+    .mp-sidebox__title{ font-size:20px; font-weight:800; margin:0 0 12px; }
     .mp-sidebox__nav,
-    .mp-sidebox__nav ul {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      list-style: none;
-      margin: 0;
-      padding: 0;
+    .mp-sidebox__nav ul{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      list-style:none;
+      margin:0;
+      padding:0;
+    }
+    .mp-sidebox__link{
+      display:block;
+      width:100%;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid #e5e7eb;
+      background:#fff;
+      color:#111827;
+      text-decoration:none;
+    }
+    .mp-sidebox__link:hover{ background:#f3f7ff; }
+    .mp-sidebox__link.is-active{
+      background:#111827;
+      color:#fff;
+      border-color:#111827;
     }
 
-    .mp-sidebox__link {
-      display: block;
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      background: #fff;
-      color: #111827;
-      text-decoration: none;
-    }
-
-    .mp-sidebox__link:hover {
-      background: #f3f7ff;
-    }
-
-    .mp-sidebox__link.is-active {
-      background: #111827;
-      color: #fff;
-      border-color: #111827;
-    }
-
-    @media (max-width: 560px) {
-
+    /* ========== 반응형 ========== */
+    @media (max-width:560px){
       .verify-row,
-      .pw-grid {
-        grid-template-columns: 1fr;
+      .pw-grid{ grid-template-columns:1fr; }
+
+      .pw-spacer{ display:none; }
+      .mp-btn--sm{ width:100%; }
+
+      /* 통신사 → 번호(010-xxxx-xxxx) → 버튼(다음 줄) */
+      .phone-field{
+        grid-template-columns: minmax(96px,auto) 64px 6px 1fr 6px 1fr;
+        row-gap:8px;
+      }
+      .phone-field > .mp-btn{
+        grid-column:1 / -1;
+        justify-self:end;
       }
 
-      .pw-spacer {
-        display: none;
-      }
+      .email-field{ grid-template-columns:1fr; }
+    }
 
-      .mp-btn--sm {
-        width: 100%;
-      }
-
-      .phone-field {
-        grid-template-columns: 64px 6px 1fr 6px 1fr;
-        row-gap: 8px;
-      }
-
-      .phone-field .telco {
-        grid-column: 1 / -1;
-        justify-self: start;
-      }
-
-      .email-field {
-        grid-template-columns: 1fr;
+    @media (max-width:380px){
+      .phone-field{
+        grid-template-columns: minmax(96px,auto) 56px 6px 1fr 6px 1fr;
+        gap:6px;
       }
     }
 
-    @media (max-width: 380px) {
-      .phone-field {
-        grid-template-columns: 56px 6px 1fr 6px 1fr;
-        gap: 6px;
-      }
+    /* =========================
+      모달
+      ========================= */
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+    }
+    .modal.is-open{ display:flex; }
+    .modal__backdrop{
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.45);
     }
 
-    /* 모달 */
-    .modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
-    }
-
-    .modal.is-open {
-      display: flex;
-    }
-
-    .modal__backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, .45);
-    }
-
-    .modal__panel {
-      position: relative;
-      z-index: 1;
-      width: min(560px, calc(100% - 32px));
-      background: #fff;
-      border-radius: 14px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
-      padding: 18px;
+    .modal__panel{
+      position:relative;
+      z-index:1;
+      width:min(560px, calc(100% - 32px));
+      background:#fff;
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+      box-shadow:0 10px 30px rgba(0,0,0,.2);
+      padding:18px;
     }
 
     .modal__title,
-    .modal__title_tel {
-      font-size: 18px;
-      font-weight: 800;
-      margin: 0 0 12px;
+    .modal__title_tel{
+      font-size:18px;
+      font-weight:800;
+      margin:0 0 12px;
     }
 
-    .modal__body {
-      display: grid;
-      gap: 10px;
-    }
+    .modal__body{ display:grid; gap:10px; }
 
-    .modal__row {
-      display: grid;
-      grid-template-columns: 64px 8px 1fr 8px 1fr minmax(96px, auto);
-      gap: 8px;
-      align-items: center;
+    .modal__row{
+      display:grid;
+      grid-template-columns:64px 8px 1fr 8px 1fr minmax(96px,auto);
+      gap:8px;
+      align-items:center;
     }
-
     .modal__row input,
-    .modal__row select {
-      text-align: center;
-      min-width: 0;
-      box-sizing: border-box;
-      height: 42px;
+    .modal__row select{
+      text-align:center;
+      min-width:0;
+      box-sizing:border-box;
+      height:42px;
     }
 
-    .modal__footer {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      margin-top: 8px;
+    .modal__footer{
+      display:flex;
+      gap:8px;
+      justify-content:flex-end;
+      margin-top:8px;
+    }
+    .modal__error{
+      margin-top:4px;
+      font-size:13px;
+      color:#dc2626;
+      min-height:18px;
+    }
+    .modal__row .telco{ min-width:120px; }
+
+    /* 휴대폰 변경 1행: 통신사 → 010-xxxx-xxxx */
+    .modal__row--phone{
+      grid-template-columns: minmax(120px,auto) 64px 8px 1fr 8px 1fr;
     }
 
-    .modal__error {
-      margin-top: 4px;
-      font-size: 13px;
-      color: #dc2626;
-      min-height: 18px;
+    /* ===== 이메일 모달: 인풋-@-인풋 그룹 ===== */
+    .modal__row--email,
+    #emailModal .modal__row{
+      grid-template-columns:1fr auto 1fr !important;
+      gap:0;
+      align-items:center;
+    }
+    .modal__row--email > input.mp-input,
+    #emailModal .modal__row > input.mp-input{
+      height:42px;
+      border-radius:0;
+    }
+    .modal__row--email > input.mp-input:first-of-type,
+    #emailModal .modal__row > input.mp-input:first-of-type{
+      border-top-left-radius:10px;
+      border-bottom-left-radius:10px;
+      border-right:0;
+    }
+    .modal__row--email > span[aria-hidden="true"],
+    #emailModal .modal__row > span[aria-hidden="true"]{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:36px;
+      padding:0 10px;
+      height:42px;
+      box-sizing:border-box;
+      border:1px solid #e5e7eb;
+      border-left:0;
+      border-right:0;
+      background:#f9fafb;
+      color:#6b7280;
+    }
+    .modal__row--email > input.mp-input:last-of-type,
+    #emailModal .modal__row > input.mp-input:last-of-type{
+      border-top-right-radius:10px;
+      border-bottom-right-radius:10px;
+      border-left:0;
     }
 
-    .modal__row .telco {
-      min-width: 120px;
-    }
-
-    .modal__row--email {
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-    }
-
-    @media (max-width: 520px) {
-      .modal__row {
-        grid-template-columns: 64px 6px 1fr 6px 1fr;
-        row-gap: 8px;
+    @media (max-width:520px){
+      .modal__row{
+        grid-template-columns:64px 6px 1fr 6px 1fr;
+        row-gap:8px;
       }
-
-      .modal__row select {
-        grid-column: 1 / -1;
-        justify-self: start;
+      /* 기본 규칙을 덮어써서 .modal__row--phone에서는 통신사가 왼쪽에 그대로 위치 */
+      .modal__row select{
+        grid-column:1 / -1;
+        justify-self:start;
       }
+      .modal__row--phone{
+        grid-template-columns:minmax(120px,auto) 64px 6px 1fr 6px 1fr;
+      }
+      .modal__row--phone select{
+        grid-column:auto;
+        justify-self:stretch;
+      }
+      .modal__row--phone .telco{ grid-column:auto; min-width:120px; }
 
-      .modal__row .telco {
-        grid-column: 1 / -1;
-        justify-self: start;
-        min-width: 0;
+      /* 이메일 모달은 작은 화면에서도 3열 유지 */
+      .modal__row--email,
+      #emailModal .modal__row{
+        grid-template-columns:1fr auto 1fr !important;
       }
     }
 
     /* 부가 버튼 스타일 */
-    .mp-btn--fit {
-      min-width: 0;
-      width: auto;
-      inline-size: fit-content;
-      white-space: nowrap;
+    .mp-btn--fit{
+      min-width:0;
+      width:auto;
+      inline-size:fit-content;
+      white-space:nowrap;
     }
-
-    .mp-btn--danger-ghost {
-      background: #fff;
-      color: #111827;
-      border-color: #e5e7eb;
+    .mp-btn--danger-ghost{
+      background:#fff;
+      color:#111827;
+      border-color:#e5e7eb;
     }
-
-    .mp-btn--danger-ghost:hover {
-      background: #111827;
-      color: #fff;
-      border-color: #111827;
+    .mp-btn--danger-ghost:hover{
+      background:#111827;
+      color:#fff;
+      border-color:#111827;
     }
   </style>
 
@@ -477,20 +471,22 @@
               <div class="mp-field">
                 <label for="phone1">휴대폰 번호</label>
                 <div class="phone-field">
-                  <input id="phone1" name="phone1" value="010" class="mp-input mp-input--readonly" readonly />
-                  <span aria-hidden="true">-</span>
-                  <input id="phone2" name="phone2" maxlength="4" inputmode="numeric" class="mp-input mp-input--readonly"
-                    readonly
-                    th:value="${me.phone != null and #strings.length(me.phone)==11 ? #strings.substring(me.phone,3,7) : ( #lists.size(#strings.arraySplit(me.phone?:'', '-'))>=2 ? #strings.arraySplit(me.phone,'-')[1] : '' )}" />
-                  <span aria-hidden="true">-</span>
-                  <input id="phone3" name="phone3" maxlength="4" inputmode="numeric" class="mp-input mp-input--readonly"
-                    readonly
-                    th:value="${me.phone != null and #strings.length(me.phone)==11 ? #strings.substring(me.phone,7) : ( #lists.size(#strings.arraySplit(me.phone?:'', '-'))>=3 ? #strings.arraySplit(me.phone,'-')[2] : '' )}" />
-                  <select id="telecom" name="telecom" class="mp-select mp-input--readonly" disabled>
+                  <!-- 통신사 먼저 -->
+                  <select id="telecom" name="telecom" class="mp-select telco" disabled>
                     <option value="SKT" th:selected="${me.telecom=='SKT'}">SKT</option>
-                    <option value="KT" th:selected="${me.telecom=='KT'}">KT</option>
+                    <option value="KT"  th:selected="${me.telecom=='KT'}">KT</option>
                     <option value="LGU" th:selected="${me.telecom=='LGU'}">LG U+</option>
                   </select>
+
+                  <input id="phone1" name="phone1" value="010" class="mp-input mp-input--readonly" readonly />
+                  <span aria-hidden="true">-</span>
+                  <input id="phone2" name="phone2" maxlength="4" inputmode="numeric"
+                    class="mp-input mp-input--readonly" readonly
+                    th:value="${me.phone != null and #strings.length(me.phone)==11 ? #strings.substring(me.phone,3,7) : ( #lists.size(#strings.arraySplit(me.phone?:'', '-'))>=2 ? #strings.arraySplit(me.phone,'-')[1] : '' )}" />
+                  <span aria-hidden="true">-</span>
+                  <input id="phone3" name="phone3" maxlength="4" inputmode="numeric"
+                    class="mp-input mp-input--readonly" readonly
+                    th:value="${me.phone != null and #strings.length(me.phone)==11 ? #strings.substring(me.phone,7) : ( #lists.size(#strings.arraySplit(me.phone?:'', '-'))>=3 ? #strings.arraySplit(me.phone,'-')[2] : '' )}" />
                   <button type="button" id="btnChangePhone" class="mp-btn mp-btn--primary mp-btn--sm">변경</button>
                   <input type="hidden" id="phone" name="phone" />
                 </div>
@@ -536,19 +532,20 @@
     <div class="modal__panel" role="document">
       <h3 class="modal__title">새 휴대폰 번호</h3>
       <div class="modal__body">
-        <div class="modal__row">
-          <input id="mPhone1" class="mp-input" value="010" readonly />
-          <span aria-hidden="true">-</span>
-          <input id="mPhone2" class="mp-input" inputmode="numeric" maxlength="4" placeholder="1234" />
-          <span aria-hidden="true">-</span>
-          <input id="mPhone3" class="mp-input" inputmode="numeric" maxlength="4" placeholder="5678" />
-          <label for="mTelecom" class="sr-only">통신사</label>
+        <div class="modal__row modal__row--phone">
+          <!-- 통신사 먼저 -->
           <select id="mTelecom" class="mp-select telco">
             <option value="">통신사 선택</option>
             <option value="SKT">SKT</option>
             <option value="KT">KT</option>
             <option value="LGU">LG U+</option>
           </select>
+
+          <input id="mPhone1" class="mp-input" value="010" readonly />
+          <span aria-hidden="true">-</span>
+          <input id="mPhone2" class="mp-input" inputmode="numeric" maxlength="4" placeholder="1234" />
+          <span aria-hidden="true">-</span>
+          <input id="mPhone3" class="mp-input" inputmode="numeric" maxlength="4" placeholder="5678" />
         </div>
 
         <div class="modal__row" style="grid-template-columns:minmax(120px,auto) 8px 1fr auto">
@@ -574,20 +571,23 @@
     <div class="modal__panel" role="document">
       <h3 class="modal__title">새 이메일</h3>
       <div class="modal__body">
+        <!-- 입력 UI (이미지2 스타일) -->
         <div class="modal__row" style="grid-template-columns:1fr auto 1fr">
-          <input id="mEmailLocal" class="mp-input" type="text" placeholder="example" />
+          <input id="mEmailLocal" class="mp-input" type="text" placeholder="이메일" />
           <span aria-hidden="true">@</span>
-          <input id="mEmailDomainCombo" class="mp-input" type="text" placeholder="도메인 선택 또는 입력" list="email-domain-list"
-            autocomplete="off" />
+          <input id="mEmailDomainCombo" class="mp-input" type="text"
+                placeholder="예) gmail.com" list="email-domain-list" autocomplete="off" />
           <datalist id="email-domain-list">
-            <option value="naver.com"></option>
             <option value="gmail.com"></option>
+            <option value="naver.com"></option>
             <option value="daum.net"></option>
             <option value="kakao.com"></option>
             <option value="hotmail.com"></option>
           </datalist>
         </div>
+        <!-- 안내/오류 메시지 -->
         <div id="modalEmailMsg" class="mp-msg" aria-live="polite"></div>
+        <div id="modalEmailErr" class="modal__error" aria-live="polite"></div>
       </div>
       <div class="modal__footer">
         <button type="button" class="mp-btn mp-btn--primary" id="modalEmailYes">예</button>
@@ -595,6 +595,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- ===== 회원 탈퇴 모달 ===== -->
   <div id="deleteModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true">
@@ -637,485 +638,666 @@
     </div>
   </div>
 
-  <script th:inline="javascript">
-    /* ===== 공통 CSRF & 알림 모달 ===== */
-    function getCsrf() {
-      const metaToken = document.querySelector('meta[name="_csrf"]')?.content || "";
-      const metaHeader = document.querySelector('meta[name="_csrf_header"]')?.content || "X-CSRF-TOKEN";
-      const cookieToken = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)?.[1] || "";
-      return { header: metaHeader, token: metaToken || cookieToken };
-    }
-    (function () {
-      const notice = document.getElementById("noticeModal");
-      if (!notice) return;
-      const text = document.getElementById("noticeText");
-      const ok = document.getElementById("noticeOk");
-      const backdrop = notice.querySelector(".modal__backdrop");
-      function openNotice(msg) {
-        text.textContent = msg || "";
-        notice.classList.add("is-open");
-        notice.setAttribute("aria-hidden", "false");
-        setTimeout(() => ok.focus(), 0);
-        document.addEventListener("keydown", onKey);
-      }
-      function closeNotice() {
-        notice.classList.remove("is-open");
-        notice.setAttribute("aria-hidden", "true");
-        document.removeEventListener("keydown", onKey);
-      }
-      function onKey(e) { if (e.key === "Escape") closeNotice(); }
-      ok.addEventListener("click", closeNotice);
-      backdrop.addEventListener("click", closeNotice);
-      window.openNotice = openNotice;
-    })();
+<script th:inline="javascript">
+  /* ===== 공통 CSRF & 알림 모달 ===== */
+  function getCsrf() {
+    const metaToken = document.querySelector('meta[name="_csrf"]')?.content || "";
+    const metaHeader = document.querySelector('meta[name="_csrf_header"]')?.content || "X-CSRF-TOKEN";
+    const cookieToken = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)?.[1] || "";
+    return { header: metaHeader, token: metaToken || cookieToken };
+  }
+  (function () {
+    const notice = document.getElementById("noticeModal");
+    if (!notice) return;
+    const text = document.getElementById("noticeText");
+    const ok = document.getElementById("noticeOk");
+    const backdrop = notice.querySelector(".modal__backdrop");
 
-    /* ===== 재인증 Ajax (Enter 지원) ===== */
-    document.addEventListener("DOMContentLoaded", () => {
-      const btn = document.getElementById("guardSubmit");
-      const pwEl = document.getElementById("guardPassword");
-      const err = document.getElementById("guardError");
-      if (!btn || !pwEl) return;
-      pwEl.addEventListener("keydown", (e) => {
-        if (e.isComposing) return;
-        if (e.key === "Enter") { e.preventDefault(); btn.click(); }
+    function openNotice(msg) {
+      text.textContent = msg || "";
+      notice.classList.add("is-open");
+      notice.setAttribute("aria-hidden", "false");
+      setTimeout(() => ok.focus(), 0);
+      document.addEventListener("keydown", onKey);
+    }
+    function closeNotice() {
+      notice.classList.remove("is-open");
+      notice.setAttribute("aria-hidden", "true");
+      document.removeEventListener("keydown", onKey);
+    }
+    function onKey(e) { if (e.key === "Escape") closeNotice(); }
+
+    ok.addEventListener("click", closeNotice);
+    backdrop.addEventListener("click", closeNotice);
+
+    window.openNotice = openNotice;
+    // 카운트다운 알림 + 자동 이동
+    window.openNoticeCountdown = function (msg, seconds, to) {
+      let left = seconds;
+      openNotice(""); // 모달 오픈
+      const render = () => (text.textContent = `${msg} ${left}초 후 이동합니다.`);
+      render();
+      const t = setInterval(() => {
+        left -= 1;
+        if (left <= 0) { clearInterval(t); location.href = to; }
+        else render();
+      }, 1000);
+    };
+  })();
+
+  /* ===== (A) 재인증 Ajax (Enter 지원) ===== */
+  document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("guardSubmit");
+    const pwEl = document.getElementById("guardPassword");
+    const err = document.getElementById("guardError");
+    if (!btn || !pwEl) return;
+
+    pwEl.addEventListener("keydown", (e) => {
+      if (!e.isComposing && e.key === "Enter") { e.preventDefault(); btn.click(); }
+    });
+    btn.addEventListener("click", async () => {
+      const pw = (pwEl.value || "").trim();
+      err.textContent = "";
+      if (!pw) { err.textContent = "비밀번호를 입력해 주세요."; return; }
+      const { header, token } = getCsrf();
+      try {
+        const res = await fetch("/mypage/profile/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
+          body: JSON.stringify({ password: pw }),
+          credentials: "same-origin",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) throw new Error(data.message || `인증 실패 (${res.status})`);
+        location.reload();
+      } catch (e) { err.textContent = e.message || "인증 중 오류가 발생했습니다."; }
+    });
+  });
+
+  /* ===== (B) 폼: 이메일 hidden 구성 ===== */
+  (function () {
+    const form = document.getElementById("profileForm");
+    if (!form) return;
+    const p2 = document.getElementById("phone2"), p3 = document.getElementById("phone3");
+    const digitsOnly = (el) => (el.value = (el.value || "").replace(/\D+/g, ""));
+    p2?.addEventListener("input", () => { digitsOnly(p2); if (p2.value.length === 4) p3?.focus(); });
+    p3?.addEventListener("input", () => digitsOnly(p3));
+
+    const emailHidden = document.getElementById("email");
+    const emailLocal = document.getElementById("emailLocal");
+    const emailDomain = document.getElementById("emailDomain");
+    const emailErr = document.getElementById("emailError");
+    const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+    function prepareAndValidate() {
+      emailErr.textContent = "";
+      const l = (emailLocal?.value || "").trim();
+      const d = (emailDomain?.value || "").trim();
+      if (l && d) {
+        const e = `${l}@${d}`;
+        if (!isValidEmail(e)) { emailErr.textContent = "이메일 형식을 확인해 주세요."; return false; }
+        emailHidden.value = e;
+      } else emailHidden.value = "";
+      return true;
+    }
+    form.addEventListener("submit", (e) => { if (!prepareAndValidate()) e.preventDefault(); });
+  })();
+
+  /* ===== (C) 비밀번호 변경 Ajax ===== */
+  (function () {
+    const btn = document.getElementById("btnChangePw");
+    if (!btn) return;
+    const newPw = document.getElementById("newPw");
+    const confirmPw = document.getElementById("confirmPw");
+    const matchMsg = document.getElementById("pwMatchMsg");
+    const changeMsg = document.getElementById("pwChangeMsg");
+    const pwRule = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^\w\s]).{8,64}$/;
+
+    function setMatchMessage() {
+      const a = newPw.value || "", b = confirmPw.value || "";
+      matchMsg.textContent = ""; matchMsg.classList.remove("mp-msg--ok", "mp-msg--bad");
+      if (!a && !b) return;
+      if (a !== b) { matchMsg.textContent = "비밀번호가 일치하지 않습니다."; matchMsg.classList.add("mp-msg--bad"); return; }
+      if (!pwRule.test(a)) { matchMsg.textContent = "영문/숫자/특수문자 조합 8~64자로 입력해 주세요."; matchMsg.classList.add("mp-msg--bad"); return; }
+      matchMsg.textContent = "사용 가능한 비밀번호입니다."; matchMsg.classList.add("mp-msg--ok");
+    }
+    newPw.addEventListener("input", setMatchMessage);
+    confirmPw.addEventListener("input", setMatchMessage);
+    confirmPw.addEventListener("keydown", (e) => { if (!e.isComposing && e.key === "Enter") { e.preventDefault(); btn.click(); } });
+
+    btn.addEventListener("click", async () => {
+      changeMsg.textContent = ""; changeMsg.classList.remove("mp-msg--ok", "mp-msg--bad");
+      const a = (newPw.value || "").trim(), b = (confirmPw.value || "").trim();
+      if (!a || !b) { changeMsg.textContent = "새 비밀번호를 모두 입력해 주세요."; changeMsg.classList.add("mp-msg--bad"); return; }
+      if (a !== b) { changeMsg.textContent = "비밀번호가 일치하지 않습니다."; changeMsg.classList.add("mp-msg--bad"); return; }
+      if (!pwRule.test(a)) { changeMsg.textContent = "영문/숫자/특수문자 조합 8~64자로 입력해 주세요."; changeMsg.classList.add("mp-msg--bad"); return; }
+
+      const { header, token } = getCsrf();
+      btn.disabled = true;
+      try {
+        const res = await fetch("/mypage/profile/password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
+          credentials: "same-origin",
+          body: JSON.stringify({ newPassword: a, confirmPassword: b }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 403) {
+          changeMsg.textContent = "보안을 위해 비밀번호 재인증 후 다시 시도해 주세요.";
+          changeMsg.classList.add("mp-msg--bad");
+          window.openNotice?.("보안을 위해 다시 한 번 비밀번호를 입력해 주세요.");
+          setTimeout(() => location.reload(), 300);
+          return;
+        }
+        if (!res.ok || data.ok === false) throw new Error(data.message || `변경 실패 (${res.status})`);
+        changeMsg.textContent = "비밀번호가 변경되었습니다."; changeMsg.classList.add("mp-msg--ok");
+        newPw.value = ""; confirmPw.value = ""; setMatchMessage();
+      } catch (e) {
+        changeMsg.textContent = e.message || "변경 중 오류가 발생했습니다."; changeMsg.classList.add("mp-msg--bad");
+      } finally { btn.disabled = false; }
+    });
+  })();
+
+  /* ===== (D) 휴대폰 변경 (모달 + 인증) ===== */
+  (function () {
+    const openBtn = document.getElementById("btnChangePhone");
+    if (!openBtn) return;
+    const modal = document.getElementById("phoneModal");
+    const backdrop = modal.querySelector(".modal__backdrop");
+    const noBtn = modal.querySelector('[data-close="no"]');
+    const yesBtn = document.getElementById("modalPhoneYes");
+
+    const errEl = document.getElementById("modalPhoneError");
+    const msgEl = document.getElementById("modalPhoneMsg");
+
+    const m1 = document.getElementById("mPhone1");
+    const m2 = document.getElementById("mPhone2");
+    const m3 = document.getElementById("mPhone3");
+    const mTel = document.getElementById("mTelecom");
+    const codeInput = document.getElementById("mPhoneCode");
+    const btnAction = document.getElementById("mBtnAction");
+
+    const mainP2 = document.getElementById("phone2");
+    const mainP3 = document.getElementById("phone3");
+    const mainTel = document.getElementById("telecom");
+    const hiddenPhone = document.getElementById("phone");
+
+    let cooldownTimer = null, cooldownLeft = 0;
+    let phase = "idle"; // idle | sent | verified
+    let verifiedDigits = "";
+
+    const digitsOnly = (s) => (s || "").replace(/\D+/g, "");
+    const setErr = (t = "") => (errEl.textContent = t);
+    function setMsg(t = "", ok = false) {
+      msgEl.textContent = t;
+      msgEl.classList.toggle("mp-msg--ok", ok);
+      msgEl.classList.toggle("mp-msg--bad", !ok && !!t);
+    }
+
+    function composePhoneFormatted() {
+      m2.value = digitsOnly(m2.value);
+      m3.value = digitsOnly(m3.value);
+      return `010-${m2.value}-${m3.value}`;
+    }
+    function composeDigits() { return composePhoneFormatted().replace(/-/g, ""); }
+
+    function validateInputs() {
+      const a = digitsOnly(m2.value), b = digitsOnly(m3.value), t = (mTel.value || "").trim();
+      if (a.length !== 4 || b.length !== 4 || !t) { setErr("새 휴대번호/통신사를 입력해주세요"); return null; }
+      const phone = `010-${a}-${b}`;
+      if (!/^010-\d{4}-\d{4}$/.test(phone)) { setErr("휴대폰 번호 형식을 확인해 주세요. (예: 010-1234-5678)"); return null; }
+      setErr(""); return { phone, telecom: t };
+    }
+
+    function stopCooldown() { if (cooldownTimer) clearInterval(cooldownTimer); cooldownTimer = null; }
+    function startCooldown(sec) {
+      cooldownLeft = Math.max(1, sec | 0); updateActionLabel(); stopCooldown();
+      cooldownTimer = setInterval(() => { cooldownLeft--; if (cooldownLeft <= 0) stopCooldown(); updateActionLabel(); }, 1000);
+    }
+
+    function updateActionLabel() {
+      if (phase === "idle") { btnAction.textContent = "인증번호 발송"; btnAction.classList.add("mp-btn--primary"); return; }
+      if (phase === "sent") {
+        const hasCode = /^\d{6}$/.test(digitsOnly(codeInput.value));
+        if (hasCode) { btnAction.textContent = "인증 확인"; btnAction.classList.add("mp-btn--primary"); }
+        else { btnAction.textContent = cooldownLeft > 0 ? `재전송 (${cooldownLeft}s)` : "재전송"; btnAction.classList.toggle("mp-btn--primary", cooldownLeft <= 0); }
+        return;
+      }
+      if (phase === "verified") { btnAction.textContent = "재요청"; btnAction.classList.remove("mp-btn--primary"); }
+    }
+
+    function presetFromMain() {
+      m1.value = "010";
+      m2.value = digitsOnly(mainP2?.value);
+      m3.value = digitsOnly(mainP3?.value);
+      mTel.value = mainTel?.value || "";
+      codeInput.value = "";
+      codeInput.readOnly = false;
+      verifiedDigits = "";
+      phase = "idle";
+      stopCooldown();
+      setErr(""); setMsg(""); updateActionLabel();
+    }
+
+    function openModal() {
+      presetFromMain();
+      modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+      setTimeout(() => m2.focus(), 0);
+      document.addEventListener("keydown", onKeydown);
+    }
+    function closeModal() {
+      modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true");
+      document.removeEventListener("keydown", onKeydown);
+    }
+    function onKeydown(e) { if (e.key === "Escape") closeModal(); }
+
+    openBtn.addEventListener("click", openModal);
+    backdrop.addEventListener("click", closeModal);
+    noBtn.addEventListener("click", closeModal);
+    m2.addEventListener("input", () => { m2.value = digitsOnly(m2.value); if (m2.value.length === 4) m3.focus(); });
+    m3.addEventListener("input", () => { m3.value = digitsOnly(m3.value); });
+    codeInput.addEventListener("input", updateActionLabel);
+
+    async function postForm(url, params) {
+      const body = new URLSearchParams(params);
+      const { header, token } = getCsrf?.() || { header: "X-CSRF-TOKEN", token: "" };
+      if (token) body.append(header, token);
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        credentials: "same-origin",
+        body,
       });
-      btn.addEventListener("click", async () => {
-        const pw = (pwEl.value || "").trim();
-        err.textContent = "";
-        if (!pw) { err.textContent = "비밀번호를 입력해 주세요."; return; }
-        const { header, token } = getCsrf();
+      return await r.json();
+    }
+
+    btnAction.addEventListener("click", async () => {
+      const v = validateInputs(); if (!v) return;
+      const digits = composeDigits();
+      const hasCode = /^\d{6}$/.test(digitsOnly(codeInput.value));
+
+      if (phase === "idle") {
         try {
-          const res = await fetch("/mypage/profile/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
-            body: JSON.stringify({ password: pw }),
-            credentials: "same-origin",
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || data.ok === false) throw new Error(data.message || `인증 실패 (${res.status})`);
-          location.reload();
-        } catch (e) {
-          err.textContent = e.message || "인증 중 오류가 발생했습니다.";
+          const d = await postForm("/auth/phone/send", { phone: digits });
+          if (d.ok) { phase = "sent"; setMsg("인증번호가 발송되었습니다. 5분 내 입력해 주세요.", true); startCooldown(d.cooldownSeconds ?? 60); codeInput.focus(); }
+          else { setMsg(d.msg || "발송 실패", false); if (d.cooldownSeconds) { phase = "sent"; startCooldown(d.cooldownSeconds); } }
+        } catch { setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false); }
+        updateActionLabel(); return;
+      }
+
+      if (phase === "sent") {
+        if (hasCode) {
+          try {
+            const d = await postForm("/auth/phone/verify", { phone: digits, code: digitsOnly(codeInput.value) });
+            if (d.ok) { phase = "verified"; verifiedDigits = digits; setMsg("휴대폰 인증이 완료되었습니다.", true); codeInput.readOnly = true; stopCooldown(); }
+            else { setMsg(d.msg || "인증 실패", false); }
+          } catch { setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false); }
+          updateActionLabel(); return;
+        }
+        if (cooldownLeft <= 0) {
+          try {
+            const d = await postForm("/auth/phone/send", { phone: digits });
+            if (d.ok) { setMsg("인증번호가 재전송되었습니다.", true); startCooldown(d.cooldownSeconds ?? 60); }
+            else { setMsg(d.msg || "재전송 실패", false); if (d.cooldownSeconds) startCooldown(d.cooldownSeconds); }
+          } catch { setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false); }
+          updateActionLabel();
+        }
+        return;
+      }
+
+      if (phase === "verified") { codeInput.readOnly = false; codeInput.value = ""; verifiedDigits = ""; phase = "idle"; updateActionLabel(); }
+    });
+
+    yesBtn.addEventListener("click", async () => {
+      const v = validateInputs(); if (!v) return;
+      const digits = composeDigits();
+      if (verifiedDigits !== digits) { setMsg("새 휴대폰 번호 인증을 먼저 완료해 주세요.", false); return; }
+
+      const { header, token } = getCsrf();
+      try {
+        const res = await fetch("/mypage/profile/phone", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
+          body: JSON.stringify(v),
+          credentials: "same-origin",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 403) { setErr(""); setMsg(""); closeModal(); window.openNotice?.("보안을 위해 다시 한 번 비밀번호를 입력해 주세요."); setTimeout(() => location.reload(), 300); return; }
+        if (!res.ok || !data.ok) throw new Error(data.message || "변경 실패");
+
+        const parts = v.phone.split("-");
+        if (mainP2) mainP2.value = parts[1] || "";
+        if (mainP3) mainP3.value = parts[2] || "";
+        if (hiddenPhone) hiddenPhone.value = digits;
+        if (mainTel) mainTel.value = v.telecom;
+
+        closeModal();
+        window.openNotice?.("휴대폰 번호/통신사가 변경되었습니다.");
+      } catch (e) { setErr(e.message || "변경 중 오류가 발생했습니다."); }
+    });
+  })();
+
+  /* ===== (E) 이메일 변경 Ajax — 개선: @ 입력 시 도메인으로 포커스 이동 + 가입과 동일한 검증(폴백 내장) ===== */
+  (function () {
+    const openBtn = document.getElementById("btnChangeEmail");
+    if (!openBtn) return;
+
+    const modal    = document.getElementById("emailModal");
+    const backdrop = modal.querySelector(".modal__backdrop");
+    const noBtn    = modal.querySelector('[data-close="no"]');
+    const yesBtn   = document.getElementById("modalEmailYes");
+
+    const msgEl = document.getElementById("modalEmailMsg");
+    const errEl = document.getElementById("modalEmailErr");
+
+    const localInput  = document.getElementById("mEmailLocal");
+    const domainInput = document.getElementById("mEmailDomainCombo");
+
+    const mainLocal  = document.getElementById("emailLocal");
+    const mainDomain = document.getElementById("emailDomain");
+
+    const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+    function buildEmail() {
+      const l = (localInput.value  || "").trim();
+      const d = (domainInput.value || "").trim().toLowerCase();
+      return l && d ? `${l}@${d}` : "";
+    }
+    function focusDomain(end = true) {
+      setTimeout(() => {
+        domainInput.focus();
+        if (end) {
+          const v = domainInput.value || "";
+          domainInput.setSelectionRange(v.length, v.length);
+        }
+      }, 0);
+    }
+    function splitIfFullEmailIntoFields(str, moveFocus = true) {
+      const v = (str || "").trim();
+      const at = v.indexOf("@");
+      if (at > 0) {
+        localInput.value  = v.slice(0, at);
+        domainInput.value = v.slice(at + 1).replace(/^@+/, "").replace(/\s+/g, "").toLowerCase();
+        if (moveFocus) focusDomain(true);
+        return true;
+      }
+      return false;
+    }
+
+    function normalizeFields() {
+      // 도메인 칸에 전체 메일을 붙여넣은 경우도 분리
+      const d = (domainInput.value || "").trim();
+      if (d.includes("@")) {
+        splitIfFullEmailIntoFields(`${(localInput.value||"").trim()}@${d}`, true);
+      } else {
+        domainInput.value = d.replace(/\s+/g, "").replace(/^@+/, "").toLowerCase();
+      }
+    }
+
+    function liveValidate() {
+      normalizeFields();
+      msgEl.textContent = "";
+      errEl.textContent = "";
+
+      // 로컬 칸에 전체 이메일을 입력하거나 '@'가 들어오면 즉시 분리 후 도메인으로 포커스
+      const l = (localInput.value || "");
+      if (l.includes("@")) splitIfFullEmailIntoFields(l, true);
+
+      const email = buildEmail();
+      const ok = email && isValidEmail(email);
+      yesBtn.disabled = !ok;
+      if (!ok && (localInput.value || domainInput.value)) {
+        errEl.textContent = "도메인을 입력하거나 선택해 주세요.";
+      }
+      return ok;
+    }
+
+    // ⌨️ UX: 로컬 칸에서 '@' 키를 누르면 도메인 칸으로 바로 이동 (타이핑 계속 가능)
+    localInput.addEventListener("keydown", (e) => {
+      if (!e.isComposing && e.key === "@") {
+        e.preventDefault();
+        const v   = localInput.value || "";
+        const s   = localInput.selectionStart ?? v.length;
+        const epos= localInput.selectionEnd   ?? v.length;
+        const left  = v.slice(0, s);
+        const right = v.slice(epos); // 선택영역 뒤 텍스트를 도메인으로 보냄
+        localInput.value = left;
+        if (right) domainInput.value = (domainInput.value || "") + right.replace(/^@+/, "");
+        focusDomain(true);
+        liveValidate();
+      }
+    });
+
+    // 붙여넣기: 로컬/도메인 어디든 전체 메일이면 자동 분리
+    [localInput, domainInput].forEach((el) => {
+      el.addEventListener("paste", (e) => {
+        const txt = (e.clipboardData || window.clipboardData).getData("text") || "";
+        if (txt.includes("@")) {
+          e.preventDefault();
+          splitIfFullEmailIntoFields(txt, true);
+          liveValidate();
         }
       });
     });
 
-    /* ===== 폼: 이메일 hidden 구성 ===== */
-    (function () {
-      const form = document.getElementById("profileForm");
-      if (!form) return;
-      const p2 = document.getElementById("phone2"), p3 = document.getElementById("phone3");
-      const digitsOnly = (el) => (el.value = (el.value || "").replace(/\D+/g, ""));
-      p2?.addEventListener("input", () => { digitsOnly(p2); if (p2.value.length === 4) p3?.focus(); });
-      p3?.addEventListener("input", () => digitsOnly(p3));
+    ["input", "blur"].forEach((ev) => {
+      localInput.addEventListener(ev, liveValidate);
+      domainInput.addEventListener(ev, liveValidate);
+    });
+    domainInput.addEventListener("keydown", (e) => {
+      if (!e.isComposing && e.key === "Enter") { e.preventDefault(); yesBtn.click(); }
+    });
+    localInput.addEventListener("keydown", (e) => {
+      if (!e.isComposing && e.key === "Enter") { e.preventDefault(); yesBtn.click(); }
+    });
 
-      const emailHidden = document.getElementById("email");
-      const emailLocal = document.getElementById("emailLocal");
-      const emailDomain = document.getElementById("emailDomain");
-      const emailErr = document.getElementById("emailError");
-      const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-
-      function prepareAndValidate() {
-        emailErr.textContent = "";
-        const l = (emailLocal?.value || "").trim();
-        const d = (emailDomain?.value || "").trim();
-        if (l && d) {
-          const e = `${l}@${d}`;
-          if (!isValidEmail(e)) { emailErr.textContent = "이메일 형식을 확인해 주세요."; return false; }
-          emailHidden.value = e;
-        } else emailHidden.value = "";
-        return true;
-      }
-      form.addEventListener("submit", (e) => { if (!prepareAndValidate()) e.preventDefault(); });
-    })();
-
-    /* ===== 비밀번호 변경 Ajax ===== */
-    (function () {
-      const btn = document.getElementById("btnChangePw");
-      if (!btn) return;
-      const newPw = document.getElementById("newPw");
-      const confirmPw = document.getElementById("confirmPw");
-      const matchMsg = document.getElementById("pwMatchMsg");
-      const changeMsg = document.getElementById("pwChangeMsg");
-      const pwRule = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^\w\s]).{8,64}$/;
-
-      function setMatchMessage() {
-        const a = newPw.value || "", b = confirmPw.value || "";
-        matchMsg.textContent = "";
-        matchMsg.classList.remove("mp-msg--ok", "mp-msg--bad");
-        if (!a && !b) return;
-        if (a !== b) { matchMsg.textContent = "비밀번호가 일치하지 않습니다."; matchMsg.classList.add("mp-msg--bad"); return; }
-        if (!pwRule.test(a)) { matchMsg.textContent = "영문/숫자/특수문자 조합 8~64자로 입력해 주세요."; matchMsg.classList.add("mp-msg--bad"); return; }
-        matchMsg.textContent = "사용 가능한 비밀번호입니다."; matchMsg.classList.add("mp-msg--ok");
-      }
-      newPw.addEventListener("input", setMatchMessage);
-      confirmPw.addEventListener("input", setMatchMessage);
-      confirmPw.addEventListener("keydown", (e) => { if (!e.isComposing && e.key === "Enter") { e.preventDefault(); btn.click(); } });
-
-      btn.addEventListener("click", async () => {
-        changeMsg.textContent = "";
-        changeMsg.classList.remove("mp-msg--ok", "mp-msg--bad");
-        const a = (newPw.value || "").trim(), b = (confirmPw.value || "").trim();
-        if (!a || !b) { changeMsg.textContent = "새 비밀번호를 모두 입력해 주세요."; changeMsg.classList.add("mp-msg--bad"); return; }
-        if (a !== b) { changeMsg.textContent = "비밀번호가 일치하지 않습니다."; changeMsg.classList.add("mp-msg--bad"); return; }
-        if (!pwRule.test(a)) { changeMsg.textContent = "영문/숫자/특수문자 조합 8~64자로 입력해 주세요."; changeMsg.classList.add("mp-msg--bad"); return; }
-
-        const { header, token } = getCsrf();
-        btn.disabled = true;
-        try {
-          const res = await fetch("/mypage/profile/password", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
-            credentials: "same-origin",
-            body: JSON.stringify({ newPassword: a, confirmPassword: b }),
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.status === 403) {
-            changeMsg.textContent = "보안을 위해 비밀번호 재인증 후 다시 시도해 주세요.";
-            changeMsg.classList.add("mp-msg--bad");
-            window.openNotice?.("보안을 위해 다시 한 번 비밀번호를 입력해 주세요.");
-            setTimeout(() => location.reload(), 300);
-            return;
+    // 회원가입과 동일한 “강화된 이메일 체크” 시도 → 실패 시 기존 중복체크로 폴백
+    async function checkEmailAdvancedOrFallback(email) {
+      try {
+        const r = await fetch(`/user/check/email?email=${encodeURIComponent(email)}`, { credentials: "same-origin" });
+        const d = await r.json().catch(() => ({}));
+        if (typeof d.acceptable === "boolean") {
+          if (!d.acceptable) {
+            let msg = !d.syntax
+              ? "올바른 이메일 형식이 아닙니다."
+              : d.disposable
+                ? "임시메일(일회용) 도메인은 사용할 수 없습니다."
+                : d.mx === false
+                  ? "이 도메인에는 메일 서버(MX)가 없어 수신이 어려울 수 있습니다."
+                  : "사용할 수 없는 이메일입니다.";
+            return { ok: false, message: msg };
           }
-          if (!res.ok || data.ok === false) throw new Error(data.message || `변경 실패 (${res.status})`);
-          changeMsg.textContent = "비밀번호가 변경되었습니다.";
-          changeMsg.classList.add("mp-msg--ok");
-          newPw.value = ""; confirmPw.value = ""; setMatchMessage();
-        } catch (e) {
-          changeMsg.textContent = e.message || "변경 중 오류가 발생했습니다.";
-          changeMsg.classList.add("mp-msg--bad");
-        } finally { btn.disabled = false; }
-      });
-    })();
-
-    /* ===== 휴대폰 변경 (모달 + 인증) ===== */
-    (function () {
-      const openBtn = document.getElementById("btnChangePhone");
-      if (!openBtn) return;
-      const modal = document.getElementById("phoneModal");
-      const backdrop = modal.querySelector(".modal__backdrop");
-      const noBtn = modal.querySelector('[data-close="no"]');
-      const yesBtn = document.getElementById("modalPhoneYes");
-
-      const errEl = document.getElementById("modalPhoneError");
-      const msgEl = document.getElementById("modalPhoneMsg");
-
-      const m1 = document.getElementById("mPhone1");
-      const m2 = document.getElementById("mPhone2");
-      const m3 = document.getElementById("mPhone3");
-      const mTel = document.getElementById("mTelecom");
-      const codeInput = document.getElementById("mPhoneCode");
-      const btnAction = document.getElementById("mBtnAction");
-
-      const mainP2 = document.getElementById("phone2");
-      const mainP3 = document.getElementById("phone3");
-      const mainTel = document.getElementById("telecom");
-      const hiddenPhone = document.getElementById("phone");
-
-      let cooldownTimer = null, cooldownLeft = 0;
-      let phase = "idle"; // idle | sent | verified
-      let verifiedDigits = "";
-
-      const digitsOnly = (s) => (s || "").replace(/\D+/g, "");
-      const setErr = (t = "") => (errEl.textContent = t);
-      function setMsg(t = "", ok = false) {
-        msgEl.textContent = t;
-        msgEl.classList.toggle("mp-msg--ok", ok);
-        msgEl.classList.toggle("mp-msg--bad", !ok && !!t);
-      }
-
-      function composePhoneFormatted() {
-        m2.value = digitsOnly(m2.value);
-        m3.value = digitsOnly(m3.value);
-        return `010-${m2.value}-${m3.value}`;
-      }
-      function composeDigits() { return composePhoneFormatted().replace(/-/g, ""); }
-
-      function validateInputs() {
-        const a = digitsOnly(m2.value), b = digitsOnly(m3.value), t = (mTel.value || "").trim();
-        if (a.length !== 4 || b.length !== 4 || !t) { setErr("새 휴대번호/통신사를 입력해주세요"); return null; }
-        const phone = `010-${a}-${b}`;
-        if (!/^010-\d{4}-\d{4}$/.test(phone)) { setErr("휴대폰 번호 형식을 확인해 주세요. (예: 010-1234-5678)"); return null; }
-        setErr(""); return { phone, telecom: t };
-      }
-
-      function stopCooldown() { if (cooldownTimer) clearInterval(cooldownTimer); cooldownTimer = null; }
-      function startCooldown(sec) {
-        cooldownLeft = Math.max(1, sec | 0); updateActionLabel(); stopCooldown();
-        cooldownTimer = setInterval(() => { cooldownLeft--; if (cooldownLeft <= 0) stopCooldown(); updateActionLabel(); }, 1000);
-      }
-
-      function updateActionLabel() {
-        if (phase === "idle") { btnAction.textContent = "인증번호 발송"; btnAction.classList.add("mp-btn--primary"); return; }
-        if (phase === "sent") {
-          const hasCode = /^\d{6}$/.test(digitsOnly(codeInput.value));
-          if (hasCode) { btnAction.textContent = "인증 확인"; btnAction.classList.add("mp-btn--primary"); }
-          else { btnAction.textContent = cooldownLeft > 0 ? `재전송 (${cooldownLeft}s)` : "재전송"; btnAction.classList.toggle("mp-btn--primary", cooldownLeft <= 0); }
-          return;
+          return d.available === false
+            ? { ok: false, message: "중복된 이메일입니다." }
+            : { ok: true, message: "사용 가능한 이메일입니다." };
         }
-        if (phase === "verified") { btnAction.textContent = "재요청"; btnAction.classList.remove("mp-btn--primary"); }
-      }
+      } catch { /* fallthrough */ }
 
-      function presetFromMain() {
-        m1.value = "010";
-        m2.value = digitsOnly(mainP2?.value);
-        m3.value = digitsOnly(mainP3?.value);
-        mTel.value = mainTel?.value || "";
-        codeInput.value = "";
-        codeInput.readOnly = false;
-        verifiedDigits = "";
-        phase = "idle";
-        stopCooldown();
-        setErr(""); setMsg(""); updateActionLabel();
-      }
-
-      function openModal() {
-        presetFromMain();
-        modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
-        setTimeout(() => m2.focus(), 0);
-        document.addEventListener("keydown", onKeydown);
-      }
-      function closeModal() {
-        modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true");
-        document.removeEventListener("keydown", onKeydown);
-      }
-      function onKeydown(e) { if (e.key === "Escape") closeModal(); }
-
-      openBtn.addEventListener("click", openModal);
-      backdrop.addEventListener("click", closeModal);
-      noBtn.addEventListener("click", closeModal);
-      m2.addEventListener("input", () => { m2.value = digitsOnly(m2.value); if (m2.value.length === 4) m3.focus(); });
-      m3.addEventListener("input", () => { m3.value = digitsOnly(m3.value); });
-      codeInput.addEventListener("input", updateActionLabel);
-
-      async function postForm(url, params) {
-        const body = new URLSearchParams(params);
-        const { header, token } = getCsrf?.() || { header: "X-CSRF-TOKEN", token: "" };
-        if (token) body.append(header, token);
-        const r = await fetch(url, {
+      // 폴백: 마이페이지 중복 체크
+      const { header, token } = (window.getCsrf?.() || { header: "X-CSRF-TOKEN", token: "" });
+      try {
+        const res = await fetch("/mypage/profile/email/check", {
           method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
+          body: JSON.stringify({ email }),
           credentials: "same-origin",
-          body,
         });
-        return await r.json();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) return { ok: false, message: data.message || "확인 실패" };
+        return data.available === false
+          ? { ok: false, message: "중복된 이메일입니다." }
+          : { ok: true, message: "사용 가능한 이메일입니다." };
+      } catch {
+        // 네트워크 이슈 시, 저장 전에 서버에서 한 번 더 검증되므로 통과시킴
+        return { ok: true, message: "" };
+      }
+    }
+
+    // 모달 오픈/닫기
+    function openModal() {
+      localInput.value  = (mainLocal?.value  || "").trim();
+      domainInput.value = (mainDomain?.value || "").trim();
+      msgEl.textContent = "";
+      errEl.textContent = "";
+
+      // 로컬에 전체 이메일이 들어있다면 즉시 분리 + 도메인 포커스
+      splitIfFullEmailIntoFields(localInput.value, true);
+
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      setTimeout(() => (localInput.value ? focusDomain(true) : localInput.focus()), 0);
+      document.addEventListener("keydown", onKeydown);
+      liveValidate();
+    }
+    function closeModal() {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      document.removeEventListener("keydown", onKeydown);
+    }
+    function onKeydown(e) { if (e.key === "Escape") closeModal(); }
+
+    openBtn.addEventListener("click", openModal);
+    backdrop.addEventListener("click", closeModal);
+    noBtn.addEventListener("click", closeModal);
+
+    yesBtn.addEventListener("click", async () => {
+      msgEl.textContent = ""; errEl.textContent = "";
+      if (!liveValidate()) return;
+
+      const email = buildEmail().toLowerCase();
+
+      // 가입과 동일한 정책 검사(가능하면) → 중복 확인 폴백
+      const chk = await checkEmailAdvancedOrFallback(email);
+      if (!chk.ok) { errEl.textContent = chk.message || "이메일 확인 실패"; return; }
+      msgEl.textContent = chk.message || "사용 가능한 이메일입니다.";
+
+      // 저장
+      const { header, token } = (window.getCsrf?.() || { header: "X-CSRF-TOKEN", token: "" });
+      try {
+        const res = await fetch("/mypage/profile/email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
+          body: JSON.stringify({ email }),
+          credentials: "same-origin",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.message || "변경 실패");
+
+        // 메인 폼 반영
+        if (mainLocal)  mainLocal.value  = email.split("@")[0];
+        if (mainDomain) mainDomain.value = email.split("@")[1];
+
+        closeModal();
+        window.openNotice?.("이메일이 변경되었습니다.");
+      } catch (e) {
+        errEl.textContent = e.message || "변경 중 오류가 발생했습니다.";
+      }
+    });
+  })();
+
+  /* ===== (F) 회원 탈퇴: 경고 버튼 + 인증 후 삭제 ===== */
+  (function () {
+    const dangerBtn = document.getElementById("btnDeleteAccount");
+    const modal = document.getElementById("deleteModal");
+    if (!dangerBtn || !modal) return;
+
+    const backdrop = modal.querySelector(".modal__backdrop");
+    const noBtn = modal.querySelector('[data-close="no"]');
+    const phoneMasked = document.getElementById("delPhoneMasked");
+    const phoneDigitsEl = document.getElementById("delPhoneDigits");
+    const codeInput = document.getElementById("delCode");
+    const actionBtn = document.getElementById("delBtnAction");
+    const yesBtn = document.getElementById("delYes");
+    const msgEl = document.getElementById("delMsg");
+    const errEl = document.getElementById("delErr");
+
+    let phase = "idle"; // idle | sent | verified
+    let cooldown = 0, timer = null;
+
+    function setErr(t = "") { errEl.textContent = t; }
+    function setMsg(t = "", ok = false) {
+      msgEl.textContent = t;
+      msgEl.classList.toggle("mp-msg--ok", ok);
+      msgEl.classList.toggle("mp-msg--bad", !ok && !!t);
+    }
+    function openModal() {
+      fetch("/mypage/profile/delete/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(getCsrf().token ? { [getCsrf().header]: getCsrf().token } : {}) },
+        credentials: "same-origin",
+        body: "{}",
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (!d.ok) { throw new Error(d.message || "정보 조회 실패"); }
+          phoneMasked.value = d.phoneMasked || "";
+          phoneDigitsEl.value = d.phoneDigits || "";
+          phase = "idle"; cooldown = 0; stopTimer();
+          codeInput.value = ""; codeInput.readOnly = false; yesBtn.disabled = true;
+          setErr(""); setMsg(""); updateActionLabel();
+          modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+          setTimeout(() => codeInput.focus(), 0);
+          document.addEventListener("keydown", onKey);
+        })
+        .catch((e) => { window.openNotice?.(e.message || "탈퇴 준비 중 오류가 발생했습니다."); });
+    }
+    function closeModal() { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); document.removeEventListener("keydown", onKey); stopTimer(); }
+    function onKey(e) { if (e.key === "Escape") closeModal(); }
+
+    function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+    function startTimer() {
+      stopTimer();
+      timer = setInterval(() => { cooldown = Math.max(0, cooldown - 1); if (cooldown === 0) stopTimer(); updateActionLabel(); }, 1000);
+    }
+
+    function updateActionLabel() {
+      if (phase === "idle") { actionBtn.textContent = "인증번호 발송"; actionBtn.classList.add("mp-btn--primary"); return; }
+      if (phase === "sent") {
+        const hasCode = /^\d{6}$/.test((codeInput.value || "").replace(/\D+/g, ""));
+        if (hasCode) { actionBtn.textContent = "인증 확인"; actionBtn.classList.add("mp-btn--primary"); }
+        else { actionBtn.textContent = cooldown > 0 ? `재전송 (${cooldown}s)` : "재전송"; actionBtn.classList.toggle("mp-btn--primary", cooldown <= 0); }
+        return;
+      }
+      if (phase === "verified") { actionBtn.textContent = "재요청"; actionBtn.classList.remove("mp-btn--primary"); }
+    }
+
+    function digitsOnly(s) { return (s || "").replace(/\D+/g, ""); }
+
+    actionBtn.addEventListener("click", async () => {
+      const phone = phoneDigitsEl.value || "";
+      if (!/^01[016789]\d{8}$/.test(phone)) { setErr("등록된 휴대폰 번호가 올바르지 않습니다."); return; }
+
+      if (phase === "idle") {
+        try {
+          const body = new URLSearchParams({ phone });
+          const res = await fetch("/auth/phone/send", {
+            method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            credentials: "same-origin", body,
+          });
+          const d = await res.json();
+          if (!d.ok) throw new Error(d.msg || "발송 실패");
+          setMsg("인증번호가 발송되었습니다. 5분 내 입력해 주세요.", true);
+          phase = "sent"; cooldown = d.cooldownSeconds ?? 60; startTimer();
+        } catch (e) { setMsg(e.message || "발송 중 오류", false); }
+        updateActionLabel(); return;
       }
 
-      btnAction.addEventListener("click", async () => {
-        const v = validateInputs(); if (!v) return;
-        const digits = composeDigits();
-        const hasCode = /^\d{6}$/.test(digitsOnly(codeInput.value));
-
-        if (phase === "idle") {
+      if (phase === "sent") {
+        const code = digitsOnly(codeInput.value);
+        if (/^\d{6}$/.test(code)) {
           try {
-            const d = await postForm("/auth/phone/send", { phone: digits });
-            if (d.ok) { phase = "sent"; setMsg("인증번호가 발송되었습니다. 5분 내 입력해 주세요.", true); startCooldown(d.cooldownSeconds ?? 60); codeInput.focus(); }
-            else { setMsg(d.msg || "발송 실패", false); if (d.cooldownSeconds) { phase = "sent"; startCooldown(d.cooldownSeconds); } }
-          } catch { setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false); }
+            const body = new URLSearchParams({ phone, code });
+            const res = await fetch("/auth/phone/verify", {
+              method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              credentials: "same-origin", body,
+            });
+            const d = await res.json();
+            if (!d.ok) throw new Error(d.msg || "인증 실패");
+            phase = "verified"; yesBtn.disabled = false; codeInput.readOnly = true; stopTimer(); setMsg("휴대폰 인증이 완료되었습니다.", true);
+          } catch (e) { setMsg(e.message || "인증 중 오류", false); }
           updateActionLabel(); return;
         }
-
-        if (phase === "sent") {
-          if (hasCode) {
-            try {
-              const d = await postForm("/auth/phone/verify", { phone: digits, code: digitsOnly(codeInput.value) });
-              if (d.ok) { phase = "verified"; verifiedDigits = digits; setMsg("휴대폰 인증이 완료되었습니다.", true); codeInput.readOnly = true; stopCooldown(); }
-              else { setMsg(d.msg || "인증 실패", false); }
-            } catch { setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false); }
-            updateActionLabel(); return;
-          }
-          if (cooldownLeft <= 0) {
-            try {
-              const d = await postForm("/auth/phone/send", { phone: digits });
-              if (d.ok) { setMsg("인증번호가 재전송되었습니다.", true); startCooldown(d.cooldownSeconds ?? 60); }
-              else { setMsg(d.msg || "재전송 실패", false); if (d.cooldownSeconds) startCooldown(d.cooldownSeconds); }
-            } catch { setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false); }
-            updateActionLabel();
-          }
-          return;
-        }
-
-        if (phase === "verified") { codeInput.readOnly = false; codeInput.value = ""; verifiedDigits = ""; phase = "idle"; updateActionLabel(); }
-      });
-
-      yesBtn.addEventListener("click", async () => {
-        const v = validateInputs(); if (!v) return;
-        const digits = composeDigits();
-        if (verifiedDigits !== digits) { setMsg("새 휴대폰 번호 인증을 먼저 완료해 주세요.", false); return; }
-
-        const { header, token } = getCsrf();
-        try {
-          const res = await fetch("/mypage/profile/phone", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
-            body: JSON.stringify(v),
-            credentials: "same-origin",
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.status === 403) { setErr(""); setMsg(""); closeModal(); window.openNotice?.("보안을 위해 다시 한 번 비밀번호를 입력해 주세요."); setTimeout(() => location.reload(), 300); return; }
-          if (!res.ok || !data.ok) throw new Error(data.message || "변경 실패");
-
-          const parts = v.phone.split("-");
-          if (mainP2) mainP2.value = parts[1] || "";
-          if (mainP3) mainP3.value = parts[2] || "";
-          if (hiddenPhone) hiddenPhone.value = digits;
-          if (mainTel) mainTel.value = v.telecom;
-
-          closeModal();
-          window.openNotice?.("휴대폰 번호/통신사가 변경되었습니다.");
-        } catch (e) { setErr(e.message || "변경 중 오류가 발생했습니다."); }
-      });
-    })();
-
-    /* ===== 이메일 변경 Ajax ===== */
-    (function () {
-      const openBtn = document.getElementById("btnChangeEmail");
-      if (!openBtn) return;
-      const modal = document.getElementById("emailModal");
-      const backdrop = modal.querySelector(".modal__backdrop");
-      const noBtn = modal.querySelector('[data-close="no"]');
-      const yesBtn = document.getElementById("modalEmailYes");
-      const msgEl = document.getElementById("modalEmailMsg");
-      const localInput = document.getElementById("mEmailLocal");
-      const domainCombo = document.getElementById("mEmailDomainCombo");
-      const mainLocal = document.getElementById("emailLocal");
-      const mainDomain = document.getElementById("emailDomain");
-
-      function openModal() {
-        msgEl.textContent = "";
-        localInput.value = (mainLocal?.value || "").trim();
-        domainCombo.value = (mainDomain?.value || "").trim();
-        modal.classList.add("is-open");
-        modal.setAttribute("aria-hidden", "false");
-        setTimeout(() => (localInput.value ? domainCombo.focus() : localInput.focus()), 0);
-        document.addEventListener("keydown", onKeydown);
-      }
-      function closeModal() { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); document.removeEventListener("keydown", onKeydown); }
-      function onKeydown(e) { if (e.key === "Escape") closeModal(); }
-      openBtn.addEventListener("click", openModal);
-      backdrop.addEventListener("click", closeModal);
-      noBtn.addEventListener("click", closeModal);
-
-      const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      async function checkDup(email) {
-        const { header, token } = getCsrf?.() || { header: "X-CSRF-TOKEN", token: "" };
-        try {
-          const res = await fetch("/mypage/profile/email/check", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
-            body: JSON.stringify({ email }),
-            credentials: "same-origin",
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || data.ok === false) return { ok: false, message: data.message || "확인 실패" };
-          return data.available === false ? { ok: false, message: "중복된 이메일입니다." } : { ok: true, message: "사용 가능한 이메일입니다." };
-        } catch { return { ok: false, message: "확인 중 오류" }; }
-      }
-
-      yesBtn.addEventListener("click", async () => {
-        msgEl.textContent = "";
-        const email = `${(localInput.value || "").trim()}@${(domainCombo.value || "").trim().toLowerCase()}`;
-        if (!isValidEmail(email)) { msgEl.textContent = "이메일 형식을 확인해 주세요."; msgEl.classList.remove("mp-msg--ok"); msgEl.classList.add("mp-msg--bad"); return; }
-        const chk = await checkDup(email);
-        msgEl.textContent = chk.message || "";
-        msgEl.classList.toggle("mp-msg--ok", !!chk.ok);
-        msgEl.classList.toggle("mp-msg--bad", !chk.ok);
-        if (!chk.ok) return;
-
-        const { header, token } = getCsrf?.() || { header: "X-CSRF-TOKEN", token: "" };
-        try {
-          const res = await fetch("/mypage/profile/email", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
-            body: JSON.stringify({ email }),
-            credentials: "same-origin",
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data.ok) throw new Error(data.message || "변경 실패");
-          if (mainLocal) mainLocal.value = email.split("@")[0];
-          if (mainDomain) mainDomain.value = email.split("@")[1];
-          closeModal();
-          window.openNotice?.("이메일이 변경되었습니다.");
-        } catch (e) {
-          msgEl.textContent = e.message || "변경 중 오류가 발생했습니다.";
-          msgEl.classList.remove("mp-msg--ok"); msgEl.classList.add("mp-msg--bad");
-        }
-      });
-    })();
-
-    /* ===== 회원 탈퇴: 경고 버튼 + 모달 + 휴대폰 인증 후 삭제 ===== */
-    (function () {
-      const dangerBtn = document.getElementById("btnDeleteAccount");
-      const modal = document.getElementById("deleteModal");
-      if (!dangerBtn || !modal) return;
-
-      const backdrop = modal.querySelector(".modal__backdrop");
-      const noBtn = modal.querySelector('[data-close="no"]');
-      const phoneMasked = document.getElementById("delPhoneMasked");
-      const phoneDigitsEl = document.getElementById("delPhoneDigits");
-      const codeInput = document.getElementById("delCode");
-      const actionBtn = document.getElementById("delBtnAction");
-      const yesBtn = document.getElementById("delYes");
-      const msgEl = document.getElementById("delMsg");
-      const errEl = document.getElementById("delErr");
-
-      let phase = "idle"; // idle | sent | verified
-      let cooldown = 0, timer = null;
-
-      function setErr(t = "") { errEl.textContent = t; }
-      function setMsg(t = "", ok = false) {
-        msgEl.textContent = t;
-        msgEl.classList.toggle("mp-msg--ok", ok);
-        msgEl.classList.toggle("mp-msg--bad", !ok && !!t);
-      }
-      function openModal() {
-        fetch("/mypage/profile/delete/check", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...(getCsrf().token ? { [getCsrf().header]: getCsrf().token } : {}) },
-          credentials: "same-origin",
-          body: "{}",
-        })
-          .then((r) => r.json())
-          .then((d) => {
-            if (!d.ok) { throw new Error(d.message || "정보 조회 실패"); }
-            phoneMasked.value = d.phoneMasked || "";
-            phoneDigitsEl.value = d.phoneDigits || "";
-            phase = "idle"; cooldown = 0; stopTimer();
-            codeInput.value = ""; codeInput.readOnly = false; yesBtn.disabled = true;
-            setErr(""); setMsg(""); updateActionLabel();
-            modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
-            setTimeout(() => codeInput.focus(), 0);
-            document.addEventListener("keydown", onKey);
-          })
-          .catch((e) => { window.openNotice?.(e.message || "탈퇴 준비 중 오류가 발생했습니다."); });
-      }
-      function closeModal() { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); document.removeEventListener("keydown", onKey); stopTimer(); }
-      function onKey(e) { if (e.key === "Escape") closeModal(); }
-
-      function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
-      function startTimer() {
-        stopTimer();
-        timer = setInterval(() => { cooldown = Math.max(0, cooldown - 1); if (cooldown === 0) stopTimer(); updateActionLabel(); }, 1000);
-      }
-
-      function updateActionLabel() {
-        if (phase === "idle") { actionBtn.textContent = "인증번호 발송"; actionBtn.classList.add("mp-btn--primary"); return; }
-        if (phase === "sent") {
-          const hasCode = /^\d{6}$/.test((codeInput.value || "").replace(/\D+/g, ""));
-          if (hasCode) { actionBtn.textContent = "인증 확인"; actionBtn.classList.add("mp-btn--primary"); }
-          else { actionBtn.textContent = cooldown > 0 ? `재전송 (${cooldown}s)` : "재전송"; actionBtn.classList.toggle("mp-btn--primary", cooldown <= 0); }
-          return;
-        }
-        if (phase === "verified") { actionBtn.textContent = "재요청"; actionBtn.classList.remove("mp-btn--primary"); }
-      }
-
-      function digitsOnly(s) { return (s || "").replace(/\D+/g, ""); }
-
-      actionBtn.addEventListener("click", async () => {
-        const phone = phoneDigitsEl.value || "";
-        if (!/^01[016789]\d{8}$/.test(phone)) { setErr("등록된 휴대폰 번호가 올바르지 않습니다."); return; }
-
-        if (phase === "idle") {
+        if (cooldown <= 0) {
           try {
             const body = new URLSearchParams({ phone });
             const res = await fetch("/auth/phone/send", {
@@ -1123,72 +1305,59 @@
               credentials: "same-origin", body,
             });
             const d = await res.json();
-            if (!d.ok) throw new Error(d.msg || "발송 실패");
-            setMsg("인증번호가 발송되었습니다. 5분 내 입력해 주세요.", true);
-            phase = "sent"; cooldown = d.cooldownSeconds ?? 60; startTimer();
-          } catch (e) { setMsg(e.message || "발송 중 오류", false); }
-          updateActionLabel(); return;
+            if (!d.ok) throw new Error(d.msg || "재전송 실패");
+            setMsg("인증번호가 재전송되었습니다.", true);
+            cooldown = d.cooldownSeconds ?? 60; startTimer();
+          } catch (e) { setMsg(e.message || "재전송 중 오류", false); }
+          updateActionLabel();
         }
+        return;
+      }
 
-        if (phase === "sent") {
-          const code = digitsOnly(codeInput.value);
-          if (/^\d{6}$/.test(code)) {
-            try {
-              const body = new URLSearchParams({ phone, code });
-              const res = await fetch("/auth/phone/verify", {
-                method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                credentials: "same-origin", body,
-              });
-              const d = await res.json();
-              if (!d.ok) throw new Error(d.msg || "인증 실패");
-              phase = "verified"; yesBtn.disabled = false; codeInput.readOnly = true; stopTimer(); setMsg("휴대폰 인증이 완료되었습니다.", true);
-            } catch (e) { setMsg(e.message || "인증 중 오류", false); }
-            updateActionLabel(); return;
-          }
-          if (cooldown <= 0) {
-            try {
-              const body = new URLSearchParams({ phone });
-              const res = await fetch("/auth/phone/send", {
-                method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                credentials: "same-origin", body,
-              });
-              const d = await res.json();
-              if (!d.ok) throw new Error(d.msg || "재전송 실패");
-              setMsg("인증번호가 재전송되었습니다.", true);
-              cooldown = d.cooldownSeconds ?? 60; startTimer();
-            } catch (e) { setMsg(e.message || "재전송 중 오류", false); }
-            updateActionLabel();
-          }
+      if (phase === "verified") {
+        codeInput.readOnly = false; codeInput.value = ""; yesBtn.disabled = true; phase = "idle"; setMsg(""); setErr(""); updateActionLabel();
+      }
+    });
+
+    yesBtn.addEventListener("click", async () => {
+      // ✅ 인증 완료 전 탈퇴 버튼 방지
+      if (phase !== "verified" || yesBtn.disabled) {
+        setMsg("");
+        setErr("인증번호 확인을 먼저 완료해 주세요.");
+        codeInput?.focus();
+        return;
+      }
+
+      setErr(""); setMsg("");
+      try {
+        const { header, token } = getCsrf();
+        const res = await fetch("/mypage/profile/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
+          credentials: "same-origin",
+          body: "{}",
+        });
+        const d = await res.json().catch(() => ({}));
+        if (res.status === 403) {
+          closeModal();
+          window.openNotice?.("보안을 위해 다시 한 번 비밀번호를 입력해 주세요.");
+          setTimeout(() => location.reload(), 300);
           return;
         }
+        if (!res.ok || !d.ok) throw new Error(d.message || "탈퇴 실패");
 
-        if (phase === "verified") {
-          codeInput.readOnly = false; codeInput.value = ""; yesBtn.disabled = true; phase = "idle"; setMsg(""); setErr(""); updateActionLabel();
-        }
-      });
+        // 성공: 안내 모달 → 3초 뒤 로그인 이동
+        closeModal();
+        window.openNoticeCountdown?.("회원 탈퇴(비활성화)가 완료되었습니다.", 3, "/user/login");
+      } catch (e) { setErr(e.message || "탈퇴 중 오류가 발생했습니다."); }
+    });
 
-      yesBtn.addEventListener("click", async () => {
-        setErr(""); setMsg("");
-        try {
-          const { header, token } = getCsrf();
-          const res = await fetch("/mypage/profile/delete", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...(token ? { [header]: token } : {}) },
-            credentials: "same-origin",
-            body: "{}",
-          });
-          const d = await res.json().catch(() => ({}));
-          if (res.status === 403) { closeModal(); window.openNotice?.("보안을 위해 다시 한 번 비밀번호를 입력해 주세요."); setTimeout(() => location.reload(), 300); return; }
-          if (!res.ok || !d.ok) throw new Error(d.message || "탈퇴 실패");
-          closeModal(); const to = d.redirectUrl || "/main"; location.href = to;
-        } catch (e) { setErr(e.message || "탈퇴 중 오류가 발생했습니다."); }
-      });
+    dangerBtn.addEventListener("click", openModal);
+    backdrop.addEventListener("click", closeModal);
+    noBtn.addEventListener("click", closeModal);
+  })();
+</script>
 
-      dangerBtn.addEventListener("click", openModal);
-      backdrop.addEventListener("click", closeModal);
-      noBtn.addEventListener("click", closeModal);
-    })();
-  </script>
 </div>
 
 </html>

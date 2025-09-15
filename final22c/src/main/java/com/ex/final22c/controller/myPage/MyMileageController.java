@@ -13,8 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.ex.final22c.data.user.MileageUsageDto;
-import com.ex.final22c.data.user.Users;
-import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.mypage.MyMileageService;
 
 import lombok.RequiredArgsConstructor;
@@ -24,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/mypage")
 public class MyMileageController {
     private final MyMileageService myMileageService;
+
 
     @GetMapping("/mileage")
     public String mileage(

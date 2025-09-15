@@ -14,9 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.ex.final22c.data.user.Users;
@@ -59,7 +57,7 @@ public class MyProfileController {
     public String saveProfile(
             Principal principal,
             HttpSession session,
-            RedirectAttributes ra,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes ra,
             @RequestParam(name = "email", required = false) String email,
             @RequestParam(name = "phone", required = false) String phone,
             @RequestParam(name = "phone2", required = false) String phone2,
@@ -317,10 +315,11 @@ public class MyProfileController {
         return ResponseEntity.ok(Map.of(
                 "ok", true,
                 "phoneMasked", masked,
-                "phoneDigits", digits // 프론트가 /auth/phone/send, /auth/phone/verify에 그대로 사용
+                "phoneDigits", digits
         ));
     }
 
+    /** 탈퇴: status=inactive */
     @PostMapping(value = "/delete", produces = "application/json")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> deleteMyAccount(
@@ -340,7 +339,7 @@ public class MyProfileController {
         }
 
         Users me = usersService.getUser(principal.getName());
-        String digits = java.util.Optional.ofNullable(me.getPhone()).orElse("").replaceAll("\\D+", "");
+        String digits = Optional.ofNullable(me.getPhone()).orElse("").replaceAll("\\D+", "");
         if (!digits.matches("^01[016789]\\d{8}$")) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("ok", false, "message", "등록된 휴대폰 번호가 올바르지 않습니다."));
@@ -351,14 +350,10 @@ public class MyProfileController {
         }
 
         try {
-            // 비활성화
             usersService.deactivateAccount(principal.getName());
             phoneCodeService.clearVerified(digits);
 
-            try {
-                session.invalidate();
-            } catch (Exception ignore) {
-            }
+            try { session.invalidate(); } catch (Exception ignore) {}
             new org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler()
                     .logout(request, response, null);
 
@@ -370,5 +365,92 @@ public class MyProfileController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("ok", false, "message", "탈퇴 처리 중 오류가 발생했습니다."));
         }
+    }
+
+    /** 탈퇴용 인증번호 전송 */
+    @PostMapping(value = "/delete/sendCode", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> sendDeleteCode(Principal principal, HttpSession session) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+        Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
+        boolean verified = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
+        if (!verified) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("ok", false, "message", "재인증이 필요합니다."));
+        }
+
+        Users me = usersService.getUser(principal.getName());
+        String digits = Optional.ofNullable(me.getPhone()).orElse("").replaceAll("\\D+", "");
+        if (!digits.matches("^01[016789]\\d{8}$")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("ok", false, "message", "등록된 휴대폰 번호가 올바르지 않습니다."));
+        }
+
+        PhoneCodeService.SendResp sendResp = phoneCodeService.send(digits);
+        if (!sendResp.ok) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "ok", false,
+                    "message", sendResp.msg,
+                    "cooldownSeconds", Math.max(0, sendResp.cooldownSeconds),
+                    "remainToday", Math.max(0, sendResp.remainToday)
+            ));
+        }
+
+        // 삭제용 인증 윈도우 마킹(요청 시각) — 필요 시 프론트에서 안내
+        session.setAttribute("DELETE_CODE_REQUESTED_AT", System.currentTimeMillis());
+        return ResponseEntity.ok(Map.of(
+                "ok", true,
+                "message", "인증번호를 전송했습니다.",
+                "cooldownSeconds", sendResp.cooldownSeconds,
+                "remainToday", sendResp.remainToday
+        ));
+    }
+
+    /** 탈퇴용 인증번호 검증 */
+    @PostMapping(value = "/delete/verifyCode", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> verifyDeleteCode(
+            Principal principal,
+            HttpSession session,
+            @RequestParam(name = "code") String code) {
+
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("ok", false, "message", "로그인이 필요합니다."));
+        }
+        Long ts = (Long) session.getAttribute("PROFILE_AUTH_AT");
+        boolean verifiedProfile = (ts != null) && (System.currentTimeMillis() - ts <= 5 * 60 * 1000L);
+        if (!verifiedProfile) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("ok", false, "message", "재인증이 필요합니다."));
+        }
+
+        Long reqAt = (Long) session.getAttribute("DELETE_CODE_REQUESTED_AT");
+        boolean codeWindow = (reqAt != null) && (System.currentTimeMillis() - reqAt <= 10 * 60 * 1000L); // 10분
+        if (!codeWindow) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("ok", false, "message", "인증 유효시간이 만료되었습니다. 다시 요청해 주세요."));
+        }
+
+        Users me = usersService.getUser(principal.getName());
+        String digits = Optional.ofNullable(me.getPhone()).orElse("").replaceAll("\\D+", "");
+        if (!digits.matches("^01[016789]\\d{8}$")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("ok", false, "message", "등록된 휴대폰 번호가 올바르지 않습니다."));
+        }
+
+        PhoneCodeService.VerifyResp vr = phoneCodeService.verify(digits, code);
+        if (!vr.ok) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("ok", false, "message", vr.msg));
+        }
+
+        // 성공: 별도 플래그가 굳이 필요 없지만( isVerified로 충분 ),
+        // UX 용도로 성공 시각을 남겨둘 수 있습니다.
+        session.setAttribute("DELETE_AUTH_AT", System.currentTimeMillis());
+        return ResponseEntity.ok(Map.of("ok", true, "message", "인증이 완료되었습니다."));
     }
 }

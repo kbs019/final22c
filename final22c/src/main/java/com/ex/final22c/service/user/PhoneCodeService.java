@@ -12,6 +12,13 @@ import com.ex.final22c.CoolSmsSender;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 휴대폰 인증번호 발송/검증 서비스.
+ * - send(phone): 인증번호 발송, 쿨다운/일일한도/유효시간 관리
+ * - verify(phone, code): 인증번호 검증(해시 비교), 성공 시 10분간 isVerified=true
+ * - isVerified(phone): 서버 측 최종 검증(예: 회원가입/탈퇴 직전)
+ * - clearVerified(phone): 사용 후 정리
+ */
 @Service
 @RequiredArgsConstructor
 public class PhoneCodeService {
@@ -19,22 +26,27 @@ public class PhoneCodeService {
     private final CoolSmsSender coolSmsSender;
     private final PasswordEncoder passwordEncoder;
 
-    // 정책
+    // ===== 정책 =====
     private static final int CODE_LEN = 6;                 // 인증번호 자리수
-    private static final int EXPIRE_MINUTES = 5;           // 코드 유효시간(분)
+    private static final int EXPIRE_MINUTES = 5;           // 인증코드 유효시간(분)
     private static final int RESEND_COOLDOWN_SEC = 60;     // 재전송 쿨다운(초)
-    private static final int MAX_DAILY_SEND = 5;           // 하루 발송 제한
-    private static final int MAX_VERIFY_ATTEMPTS = 5;      // 최대 검증 시도
+    private static final int MAX_DAILY_SEND = 5;           // 하루 발송 제한(회)
+    private static final int MAX_VERIFY_ATTEMPTS = 5;      // 최대 검증 시도(회)
+    private static final int VERIFIED_HOLD_MINUTES = 10;   // 인증 성공 후 isVerified 유효(분)
 
-    // 인메모리 저장소
-    private static final ConcurrentHashMap<String, CodeEntry> CODE_MAP = new ConcurrentHashMap<>();  // phone -> code
-    private static final ConcurrentHashMap<String, Integer> DAILY_COUNT = new ConcurrentHashMap<>(); // phone:yyyymmdd -> count
-    private static final ConcurrentHashMap<String, Long> COOLDOWN_UNTIL = new ConcurrentHashMap<>(); // phone -> epochSec
-    private static final ConcurrentHashMap<String, Long> VERIFIED_UNTIL = new ConcurrentHashMap<>(); // phone -> epochMs
+    // ===== 인메모리 저장소 =====
+    // phone -> CodeEntry (암호화된 코드, 만료시각, 시도횟수)
+    private static final ConcurrentHashMap<String, CodeEntry> CODE_MAP = new ConcurrentHashMap<>();
+    // phone:yyyymmdd -> count (일일 발송 횟수)
+    private static final ConcurrentHashMap<String, Integer> DAILY_COUNT = new ConcurrentHashMap<>();
+    // phone -> epochSec (재전송 가능 시각)
+    private static final ConcurrentHashMap<String, Long> COOLDOWN_UNTIL = new ConcurrentHashMap<>();
+    // phone -> epochMs (인증성공 유효시각)
+    private static final ConcurrentHashMap<String, Long> VERIFIED_UNTIL = new ConcurrentHashMap<>();
 
     private static final Random RNG = new Random();
 
-    /** 내부 보관용 엔트리 */
+    /** 내부 보관용 코드 엔트리 */
     private static final class CodeEntry {
         final String codeHash;
         final long expireEpochMs;
@@ -46,11 +58,12 @@ public class PhoneCodeService {
         }
     }
 
-    // 유틸
+    // ===== 유틸 =====
     private static String digits(String s) {
         return s == null ? "" : s.replaceAll("\\D+", "");
     }
     private static boolean validPhone(String p) {
+        // 010, 011, 016, 017, 018, 019 + 7~8자리
         return p != null && p.matches("^01[016789]\\d{7,8}$");
     }
     private static String todayKey() {
@@ -60,7 +73,7 @@ public class PhoneCodeService {
         return phone + ":" + todayKey();
     }
 
-    // 응답 DTO
+    // ===== 응답 DTO =====
     public static final class SendResp {
         public final boolean ok;
         public final String msg;
@@ -82,14 +95,18 @@ public class PhoneCodeService {
         }
     }
 
-    // 인증코드 생성
+    // ===== 내부: 인증코드 생성 =====
     private static String genCode() {
         int bound = (int) Math.pow(10, CODE_LEN);   // 10^len
         int n = RNG.nextInt(bound);                 // 0 ~ (10^len - 1)
         return String.format("%0" + CODE_LEN + "d", n); // 왼쪽 0패딩
     }
 
-    /** 인증번호 발송 */
+    // ===== 발송 =====
+    /**
+     * 인증번호 발송.
+     * @param phoneRaw "010-1234-5678" 또는 "01012345678" 등
+     */
     public SendResp send(String phoneRaw) {
         final String phone = digits(phoneRaw);
         if (!validPhone(phone)) {
@@ -120,8 +137,8 @@ public class PhoneCodeService {
 
         // Solapi 발송 (상세 응답)
         CoolSmsSender.SmsSendResult resp = coolSmsSender.sendPlainTextResult(phone, text);
-        if (!resp.ok()) { // ← record는 메서드 접근
-            // 실패 시 카운트 롤백
+        if (!resp.ok()) {
+            // 실패 시 발송 카운트 롤백
             DAILY_COUNT.compute(key, (k, v) -> v == null ? 0 : Math.max(0, v - 1));
 
             String failMsg = "문자 발송 실패";
@@ -131,8 +148,8 @@ public class PhoneCodeService {
             if (resp.code() != null && !resp.code().isBlank()) {
                 failMsg += " (코드=" + resp.code() + ")";
             }
-            int remain = Math.max(0, MAX_DAILY_SEND - DAILY_COUNT.getOrDefault(key, 0));
-            return new SendResp(false, failMsg, 0, remain);
+            int remain2 = Math.max(0, MAX_DAILY_SEND - DAILY_COUNT.getOrDefault(key, 0));
+            return new SendResp(false, failMsg, 0, remain2);
         }
 
         // 저장/쿨다운 설정
@@ -145,7 +162,11 @@ public class PhoneCodeService {
         return new SendResp(true, "인증번호를 발송했습니다.", RESEND_COOLDOWN_SEC, remain);
     }
 
-    /** 인증 확인 */
+    // ===== 검증 =====
+    /**
+     * 인증번호 검증.
+     * 성공 시 해당 번호에 대해 VERIFIED_HOLD_MINUTES 동안 isVerified=true.
+     */
     public VerifyResp verify(String phoneRaw, String code) {
         final String phone = digits(phoneRaw);
         if (!validPhone(phone)) {
@@ -175,22 +196,41 @@ public class PhoneCodeService {
             return new VerifyResp(false, "인증번호가 일치하지 않습니다.");
         }
 
-        // 인증 완료: 10분 유효
-        VERIFIED_UNTIL.put(phone, System.currentTimeMillis() + (10 * 60_000L));
+        // 인증 성공: isVerified 10분 부여
+        VERIFIED_UNTIL.put(phone, System.currentTimeMillis() + (VERIFIED_HOLD_MINUTES * 60_000L));
         CODE_MAP.remove(phone); // 사용된 코드는 폐기
         return new VerifyResp(true, "인증이 완료되었습니다.");
     }
 
-    /** 회원가입 직전 서버에서 최종 검증 */
+    // ===== 서버측 최종 확인/정리 =====
+    /** 서버에서 최종 보호가 필요한 시점(가입/탈퇴/변경 직전) 확인용 */
     public boolean isVerified(String phoneRaw) {
         String phone = digits(phoneRaw);
         Long until = VERIFIED_UNTIL.get(phone);
         return until != null && until >= System.currentTimeMillis();
     }
 
-    /** 가입 완료 후 정리(선택) */
+    /** 인증 성공 플래그 정리 (가입/변경 완료 후 호출 권장) */
     public void clearVerified(String phoneRaw) {
         String phone = digits(phoneRaw);
         VERIFIED_UNTIL.remove(phone);
+    }
+
+    // ===== (선택) 프론트 보조용 헬퍼 =====
+
+    /** 남은 쿨다운 초 (없으면 0) */
+    public int getCooldownRemainingSeconds(String phoneRaw) {
+        String phone = digits(phoneRaw);
+        Long until = COOLDOWN_UNTIL.get(phone);
+        if (until == null) return 0;
+        long nowSec = System.currentTimeMillis() / 1000;
+        return (int) Math.max(0, until - nowSec);
+    }
+
+    /** 오늘 남은 발송 가능 횟수 */
+    public int getRemainToday(String phoneRaw) {
+        String phone = digits(phoneRaw);
+        int used = DAILY_COUNT.getOrDefault(dcKey(phone), 0);
+        return Math.max(0, MAX_DAILY_SEND - used);
     }
 }
