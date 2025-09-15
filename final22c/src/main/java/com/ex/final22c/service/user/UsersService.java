@@ -66,7 +66,6 @@ public class UsersService {
                 .telecom(usersForm.getTelecom())
                 .phone(digitsOnly(usersForm.getPhone()))
                 .gender(usersForm.getGender())
-                .loginType("local")
                 .mileage(0)
                 .build();
 

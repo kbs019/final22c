@@ -291,7 +291,7 @@ public class RefundService {
             confirmMileage = (int) Math.floor((order.getTotalAmount()-3000) * 0.05);
             usedPoint = finalRefundAmount; // 마일리지에 환급금액을 대입
             finalRefundAmount = 0; // 환급 금액 0 초기화
-        } else { // 환급금액이 사용된 마일리지 보다 많을 때
+        } else { // 환급금액이 사용된 마일리지 보다 많을 때 
             confirmMileage = (int) Math.floor(((order.getTotalAmount() + usedPoint ) - finalRefundAmount) * 0.05);
 
             finalRefundAmount -= usedPoint; // 환급금액에서 사용된 마일리지 빼기

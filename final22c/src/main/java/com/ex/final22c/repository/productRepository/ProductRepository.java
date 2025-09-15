@@ -252,4 +252,14 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
    WHERE rn <= :limit
    """, nativeQuery = true)
    List<Object[]> findAllTimeTopSold(@Param("limit") int limit, @Param("excludeId") Long excludeId);
+   
+   
+   // 상품 수정시 ml제거
+   @Query("""
+		    SELECT p FROM Product p 
+		    WHERE p.brand.id = :brandId 
+		    AND REPLACE(REPLACE(REPLACE(LOWER(p.name), ' ', ''), 'ml', ''), 'ml', '') 
+		    LIKE CONCAT('%', REPLACE(REPLACE(REPLACE(LOWER(:baseName), ' ', ''), 'ml', ''), 'ml', ''), '%')
+		    """)
+		List<Product> findSimilarProductsByBaseName(@Param("brandId") Long brandId, @Param("baseName") String baseName);
 }

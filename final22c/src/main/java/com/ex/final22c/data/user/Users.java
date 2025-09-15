@@ -88,14 +88,6 @@ public class Users {
     @Column(name = "role", length = 20)
     private String role;
 
-    // 로그인 타입
-    @Column(name = "loginType", length = 10)
-    private String loginType;
-
-    // 카카오 UID( 로그인시 db 확인용 )
-    @Column(name = "kakaoId", length = 50, unique = true)
-    private String kakaoId;
-
     // 마일리지 : 누적 포인트 (기본 0)
     @Column(name = "mileage", nullable = false)
     private Integer mileage; // 또는 Integer

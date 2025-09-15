@@ -8,14 +8,7 @@
 
                 <!-- 상품 ID (수정용, hidden) -->
                 <input type="hidden" name="id" th:value="${product != null ? product.id : ''}"/>
-                <div class="mb-3" th:if="${product != null}">
-				    <div class="form-check">
-				        <input class="form-check-input" type="checkbox" name="regenerateAI" id="regenerateAI">
-				        <label class="form-check-label" for="regenerateAI">
-				            AI 가이드 재생성 
-				        </label>
-				    </div>
-				</div>
+
 
                 <!-- 브랜드 -->
                 <div class="mb-3">
@@ -136,6 +129,15 @@
                     <textarea name="description" class="form-control" rows="4"
                               th:text="${product != null ? product.description : ''}"></textarea>
                 </div>
+                
+                <!-- AI 가이드 (수정 시에만 표시) -->
+				<div class="mb-3" th:if="${product != null}">
+				    <label class="form-label">AI 가이드</label>
+				    <textarea name="aiGuide" class="form-control" rows="6"
+				              placeholder="AI가 생성한 상세 가이드를 편집하세요..."
+				              th:text="${product.aiGuide}"></textarea>
+				    <small class="text-muted">같은 상품명(다른 용량)의 AI가이드가 모두 함께 수정됩니다.</small>
+				</div>
 
                 <button type="submit" class="btn btn-primary w-100"
                         th:text="${product != null ? '상품 수정' : '상품 등록'}"></button>
