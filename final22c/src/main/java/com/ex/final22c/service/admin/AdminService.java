@@ -369,7 +369,10 @@ public class AdminService {
     }
 
     public boolean existsByBrandName(String brandName) {
-        return brandRepository.existsByBrandName(brandName);
+    	boolean result = brandRepository.existsByBrandName(brandName.trim());
+        System.out.println("existsByBrandName('" + brandName + "') = " + result);
+        return result;
+        
     }
     
     // 그레이드 목록
@@ -449,7 +452,6 @@ public class AdminService {
         }
 
         // 이미지 처리
-     // 이미지 처리
         String uploadDir2 = "src/main/resources/static/img/" + brandName + "/";
         Path uploadPath = Paths.get(uploadDir2);
 

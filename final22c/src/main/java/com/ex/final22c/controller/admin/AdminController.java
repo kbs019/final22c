@@ -178,9 +178,9 @@ public class AdminController {
 		return "redirect:/admin/productForm";
 	}
 
-	@GetMapping("/admin/checkBrandName")
+	@GetMapping("checkBrandName")
 	@ResponseBody
-	public boolean checkBrandName(@RequestParam String brandName) {
+	public boolean checkBrandName(@RequestParam("brandName") String brandName) {
 	    return adminService.existsByBrandName(brandName); // 있으면 true
 	}
 	
