@@ -183,9 +183,11 @@ public class AdminController {
 	public String productForm(@RequestParam("brandId") Long brandId, Model model,
 			@RequestParam(value = "id", required = false) Long id) {
 		Brand brand = this.adminService.getBrand(brandId);
+		
 		if (id != null) {
 			model.addAttribute("product", this.adminService.getProduct(id));
 		}
+		model.addAttribute("productForm", new ProductForm());
 		model.addAttribute("brand", brand);
 		model.addAttribute("grades", this.adminService.getGrade());
 		model.addAttribute("mainNotes", this.adminService.getMainNote());
@@ -200,16 +202,20 @@ public class AdminController {
 	    
 	    Product savedProduct = this.adminService.register(productForm, productForm.getImgName());
 	    
-	    // 신규 등록이거나 관리자가 AI 재생성을 체크한 경우
-	    if (isNewProduct || productForm.isRegenerateAI()) {
+	    if (isNewProduct) {
+	        // 신규 등록: AI 자동 생성
 	        try {
 	            String aiDescription = productDescriptionService.generateEnhancedDescription(savedProduct);
 	            if (aiDescription != null) {
 	                this.adminService.updateAiGuide(savedProduct.getId(), aiDescription);
-	                log.info("AI 설명문 생성 완료: productId={}", savedProduct.getId());
 	            }
 	        } catch (Exception e) {
-	            log.warn("AI 설명문 생성 실패: productId={}, error={}", savedProduct.getId(), e.getMessage());
+	            log.warn("AI 설명문 생성 실패: {}", e.getMessage());
+	        }
+	    } else {
+	        // 수정 모드: AI가이드 일괄 업데이트
+	        if (productForm.getAiGuide() != null) {
+	            this.adminService.updateAiGuideForSimilarProducts(savedProduct.getId(), productForm.getAiGuide());
 	        }
 	    }
 	    
