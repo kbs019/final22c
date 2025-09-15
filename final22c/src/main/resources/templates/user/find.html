@@ -1,103 +1,379 @@
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<div class="container mt-5" style="max-width: 500px;">
-  <h2 class="text-center mb-4">아이디 / 비밀번호 찾기</h2>
-  
-  <!-- Nav 탭 -->
-  <ul class="nav nav-tabs mb-3" id="findTab" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="id-tab" data-bs-toggle="tab" data-bs-target="#findId" type="button" role="tab">
-        아이디 찾기
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="pw-tab" data-bs-toggle="tab" data-bs-target="#findPw" type="button" role="tab">
-        비밀번호 찾기
-      </button>
-    </li>
-  </ul>
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>회원정보 찾기</title>
 
-  <!-- Tab 내용 -->
-  <div class="tab-content">
-    <!-- 아이디 찾기 -->
-    <div class="tab-pane fade show active" id="findId" role="tabpanel">
-      <form method="post" action="/user/findId">
-        <div class="mb-3">
-          <label for="findName" class="form-label">이름</label>
-          <input type="text" class="form-control" id="findName" name="name" placeholder="이름 입력" required>
-        </div>
-        <div class="mb-3">
-          <label for="findEmail" class="form-label">이메일</label>
-          <input type="email" class="form-control" id="findEmail" name="email" placeholder="이메일 입력" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100">아이디 찾기</button>
-      </form>
+  <!-- CSRF (Spring Security 사용 시) -->
+  <meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}">
+  <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f9fafb;margin:0;
+         font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;}
+    .card-wrap{width:400px;background:#fff;border-radius:12px;padding:32px;box-shadow:0 6px 20px rgba(0,0,0,.1);}
+    .title{font-size:28px;font-weight:700;color:#111827;text-align:center;margin-bottom:18px;}
+    .nav-tabs .nav-link{border:none;color:#6b7280}
+    .nav-tabs .nav-link.active{color:#111827;font-weight:700;border-bottom:2px solid #111827}
+    .form-label{font-weight:600;color:#374151}
+    .form-control{border-radius:10px}
+    .btn-dark{background:#111827;border-radius:10px}
+
+    /* 유효/무효일 때 우측 보조 input-group-text 아이콘 숨기기(중복 체크 제거) */
+    .input-group.has-validation .form-control.is-valid + .input-group-text,
+    .input-group .form-control.is-valid + .input-group-text,
+    .input-group.has-validation .form-control.is-invalid + .input-group-text,
+    .input-group .form-control.is-invalid + .input-group-text {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="card-wrap">
+    <div class="title">아이디 / 비밀번호 찾기</div>
+
+    <ul class="nav nav-tabs mb-3" id="findTab" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#findId" type="button">아이디 찾기</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#findPw" type="button">비밀번호 찾기</button></li>
+    </ul>
+
+    <div class="tab-content">
+      <!-- 아이디 찾기 (AJAX) -->
+      <div class="tab-pane fade show active" id="findId">
+        <form id="findIdForm" th:action="@{/user/findId}" method="post">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+          <div class="mb-3">
+            <label class="form-label" for="findName">이름</label>
+            <input class="form-control" id="findName" name="name" type="text" placeholder="이름 입력" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="findEmail">이메일</label>
+            <input class="form-control" id="findEmail" name="email" type="email" placeholder="이메일 입력" required>
+          </div>
+          <button type="submit" class="btn btn-dark w-100">아이디 찾기</button>
+        </form>
+      </div>
+
+      <!-- 비밀번호 찾기 (AJAX 2단계: 발송 → 인증) -->
+      <div class="tab-pane fade" id="findPw">
+        <!-- Step1: 아이디/이메일 입력 -->
+        <form id="findPwForm" th:action="@{/user/findPw}" method="post">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+          <div class="mb-3">
+            <label class="form-label" for="findIdField">아이디</label>
+            <input class="form-control" id="findIdField" name="userName" type="text" placeholder="아이디 입력" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="findPwEmail">이메일</label>
+            <input class="form-control" id="findPwEmail" name="email" type="email" placeholder="이메일 입력" required>
+          </div>
+          <button type="submit" class="btn btn-dark w-100" id="btnSendAuth">인증번호 받기</button>
+        </form>
+
+        <!-- Step2: 인증번호 확인 -->
+        <form id="authCodeForm" class="mt-3 d-none" th:action="@{/user/verifyAuthCode}" method="post">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+          <div class="mb-3">
+            <label class="form-label" for="authCode">인증번호</label>
+            <input class="form-control" id="authCode" name="authCode" type="text" placeholder="6자리 숫자 입력" required>
+          </div>
+          <button type="submit" class="btn btn-success w-100" style="border-radius:10px;">인증 확인</button>
+        </form>
+      </div>
     </div>
 
-	<!-- 비밀번호 찾기 -->
-	<div class="tab-pane fade" id="findPw" role="tabpanel">
-	  <!-- Step 1: 아이디 + 이메일 -->
-	  <form id="findPwForm" method="post" action="/user/findPw" onsubmit="return sendAuthCode(event)">
-	    <div class="mb-3">
-	      <label for="findIdField" class="form-label">아이디</label>
-	      <input type="text" class="form-control" id="findIdField" name="userName" placeholder="아이디 입력" required>
-	    </div>
-	    <div class="mb-3">
-	      <label for="findPwEmail" class="form-label">이메일</label>
-	      <input type="email" class="form-control" id="findPwEmail" name="email" placeholder="이메일 입력" required>
-	    </div>
-	    <button type="submit" class="btn btn-primary w-100">인증번호 받기</button>
-	  </form>
-
-	  <!-- Step 2: 인증번호 입력 (초기엔 숨김) -->
-	  <form id="authCodeForm" method="post" action="/user/verifyAuthCode" class="mt-3 d-none" onsubmit="return verifyAuthCode(event)">
-	    <div class="mb-3">
-	      <label for="authCode" class="form-label">인증번호</label>
-	      <input type="text" class="form-control" id="authCode" name="authCode" placeholder="6자리 숫자 입력" required>
-	    </div>
-	    <button type="submit" class="btn btn-success w-100">인증 확인</button>
-	  </form>
-	</div>
+    <div class="d-flex justify-content-between mt-3">
+      <a th:href="@{/user/create}" class="link-underline link-underline-opacity-0">회원가입</a>
+    </div>
   </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-function sendAuthCode(e) {
-  e.preventDefault();
-  const form = document.getElementById("findPwForm");
 
-  fetch(form.action, {
-    method: "POST",
-    body: new FormData(form)
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      alert("인증번호가 이메일로 발송되었습니다.");
-      document.getElementById("authCodeForm").classList.remove("d-none");
-    } else {
-      alert("아이디와 이메일이 일치하지 않습니다.");
+  <!-- 새 비밀번호 입력 모달 -->
+  <div class="modal fade" id="resetPwModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form id="resetPwModalForm" th:action="@{/user/resetPw}" method="post" class="modal-content" novalidate>
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <input type="hidden" name="userName" id="resetUserNameModal">
+
+        <div class="modal-header">
+          <h5 class="modal-title">새 비밀번호 설정</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label" for="newPasswordModal">새 비밀번호</label>
+            <input class="form-control" id="newPasswordModal" name="newPassword" type="password" autocomplete="new-password" required>
+            <div id="pwRuleFeedback" class="invalid-feedback" style="display:none">영문+숫자+특수문자 포함 8자 이상</div>
+          </div>
+          <div class="mb-1">
+            <label class="form-label" for="confirmPasswordModal">새 비밀번호 확인</label>
+            <div class="input-group has-validation">
+              <input class="form-control" id="confirmPasswordModal" name="confirmPassword" type="password" autocomplete="new-password" required>
+              <div id="pwOkFeedback" class="valid-feedback" style="display:none">비밀번호가 일치합니다.</div>
+              <div id="pwMatchFeedback" class="invalid-feedback" style="display:none">비밀번호가 일치하지 않습니다.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btnDoReset" type="submit" class="btn btn-primary w-100" disabled>비밀번호 변경</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 비밀번호 변경 완료 모달 -->
+  <div class="modal fade" id="pwChangedModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">완료</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="닫기"></button>
+        </div>
+        <div class="modal-body">비밀번호가 성공적으로 변경되었습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 안내/에러 모달 -->
+  <div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">알림</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="infoModalBody">내용</div>
+      <div class="modal-footer"><button type="button" class="btn btn-dark" data-bs-dismiss="modal">확인</button></div>
+    </div></div>
+  </div>
+
+  <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">처리 실패</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="errorModalBody">오류가 발생했습니다.</div>
+      <div class="modal-footer"><button type="button" class="btn btn-dark" data-bs-dismiss="modal">확인</button></div>
+    </div></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    /* ===== 모달 헬퍼 ===== */
+    const infoModalEl  = document.getElementById('infoModal');
+    const errorModalEl = document.getElementById('errorModal');
+    const infoBody = document.getElementById('infoModalBody');
+    const errorBody = document.getElementById('errorModalBody');
+    const infoModal  = bootstrap.Modal.getOrCreateInstance(infoModalEl);
+    const errorModal = bootstrap.Modal.getOrCreateInstance(errorModalEl);
+    const showInfo = (html)=>{ infoBody.innerHTML = html; infoModal.show(); };
+    const showErr  = (msg)=>{ errorBody.textContent = msg; errorModal.show(); };
+
+    /* ===== CSRF/POST ===== */
+    function csrfHeaders(){
+      const t = document.querySelector('meta[name="_csrf"]')?.content;
+      const h = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
+      return t ? { [h]: t } : {};
     }
-  });
-  return false;
-}
-
-function verifyAuthCode(e) {
-  e.preventDefault();
-  const form = document.getElementById("authCodeForm");
-
-  fetch(form.action, {
-    method: "POST",
-    body: new FormData(form)
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      alert("인증이 완료되었습니다. 비밀번호 재설정 화면으로 이동합니다.");
-      window.location.href = "/user/resetPwForm"; // ✅ 새 비밀번호 입력 페이지로 이동
-    } else {
-      alert("인증번호가 올바르지 않습니다.");
+    async function postForm(form){
+      const res = await fetch(form.getAttribute('action'), {
+        method:'POST', body:new FormData(form), headers:csrfHeaders(), credentials:'same-origin'
+      });
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const ct = res.headers.get('content-type') || '';
+      const txt = await res.text();
+      try { return ct.includes('application/json') ? JSON.parse(txt) : {ok:true, html:txt}; }
+      catch { return {ok:true}; }
     }
-  });
-  return false;
-}
-</script>
+
+    /* ===== busy 버튼 ===== */
+    function setBusy(btn, busy, busyText='처리 중...'){
+      if(!btn) return;
+      if(busy){
+        if(!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
+        btn.disabled = true; btn.textContent = busyText; btn.setAttribute('aria-busy','true');
+      }else{
+        btn.disabled = false; btn.textContent = btn.dataset.label || btn.textContent; btn.removeAttribute('aria-busy'); delete btn.dataset.label;
+      }
+    }
+
+    /* ===== 요소 캐시 ===== */
+    const findIdForm   = document.getElementById('findIdForm');
+    const findPwForm   = document.getElementById('findPwForm');
+    const authCodeForm = document.getElementById('authCodeForm');
+
+    const idInput    = document.getElementById('findIdField');
+    theEmailInput    = document.getElementById('findPwEmail');
+    const emailInput = document.getElementById('findPwEmail');
+    const codeInput  = document.getElementById('authCode');
+
+    const idSubmitBtn   = findIdForm?.querySelector('button[type="submit"]');
+    const pwSubmitBtn   = findPwForm?.querySelector('button[type="submit"]');
+    const codeSubmitBtn = authCodeForm?.querySelector('button[type="submit"]');
+
+    let findingId=false, sendingPw=false, verifying=false;
+
+    /* ===== 아이디 찾기 ===== */
+    findIdForm?.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(findingId) return;
+      findingId = true; setBusy(idSubmitBtn,true,'조회 중...');
+      try{
+        const data = await postForm(e.currentTarget);
+        if (data.success){
+          showInfo(`회원님의 아이디는 <strong>${data.userName}</strong> 입니다.`);
+          e.currentTarget.reset();
+        }else{
+          showErr(data.message || '일치하는 회원 정보를 찾을 수 없습니다.');
+        }
+      }catch(err){
+        showErr('요청 처리 중 오류가 발생했습니다. ' + err.message);
+      }finally{
+        setBusy(idSubmitBtn,false); findingId=false;
+      }
+    });
+
+    /* ===== Step1: 인증번호 발송 ===== */
+    findPwForm?.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(sendingPw) return;
+      sendingPw = true; setBusy(pwSubmitBtn,true,'발송 중...');
+      try{
+        const data = await postForm(e.currentTarget);
+        if (data.success){
+          showInfo('인증번호가 이메일로 발송되었습니다.');
+          authCodeForm.classList.remove('d-none');
+          if (idInput)    idInput.readOnly = true;
+          if (emailInput) emailInput.readOnly = true;
+          setBusy(pwSubmitBtn,true,'발송 완료'); // 계속 비활성
+          codeInput?.focus();
+        }else{
+          showErr(data.message || '아이디와 이메일이 일치하지 않습니다.');
+          setBusy(pwSubmitBtn,false);
+        }
+      }catch(err){
+        showErr('요청 처리 중 오류가 발생했습니다. ' + err.message);
+        setBusy(pwSubmitBtn,false);
+      }finally{
+        sendingPw=false;
+      }
+    });
+
+    /* ===== Step2: 인증 확인 → 모달 열기 ===== */
+    authCodeForm?.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(verifying) return;
+      verifying = true; setBusy(codeSubmitBtn,true,'확인 중...');
+      try{
+        const data = await postForm(e.currentTarget);
+        if (data.success){
+          document.getElementById('resetUserNameModal').value = (idInput?.value || '').trim();
+          const modalEl = document.getElementById('resetPwModal');
+          const resetModal = bootstrap.Modal.getOrCreateInstance(modalEl, {backdrop:'static', keyboard:false});
+          resetModal.show();
+          setTimeout(()=>document.getElementById('newPasswordModal')?.focus(),100);
+        }else{
+          showErr(data.message || '인증번호가 올바르지 않습니다.');
+          setBusy(codeSubmitBtn,false);
+        }
+      }catch(err){
+        showErr('요청 처리 중 오류가 발생했습니다. ' + err.message);
+        setBusy(codeSubmitBtn,false);
+      }finally{
+        verifying=false;
+      }
+    });
+
+    /* ===== 모달 내: 비밀번호 유효성(가입과 동일) ===== */
+    const PW_FALLBACK = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}\[\]|\\:;'\"<>,.?/~`]).{8,150}$/;
+    const newPw   = document.getElementById('newPasswordModal');
+    const confirm = document.getElementById('confirmPasswordModal');
+    const btnDo   = document.getElementById('btnDoReset');
+    const ruleF   = document.getElementById('pwRuleFeedback');
+    const okF     = document.getElementById('pwOkFeedback');
+    const badF    = document.getElementById('pwMatchFeedback');
+    let ajaxPwOk=false, pwAbort;
+
+    function syncMatch(){
+      const a = newPw?.value || '', b = confirm?.value || '';
+      if(!ajaxPwOk || !b){
+        confirm.classList.remove('is-valid','is-invalid');
+        okF.style.display='none';
+        badF.style.display='none';
+        btnDo.disabled = true;
+        return;
+      }
+      const same = a===b;
+      confirm.classList.toggle('is-valid',  same);
+      confirm.classList.toggle('is-invalid',!same);
+      okF.style.display  = same ? 'block':'none';
+      badF.style.display = same ? 'none' :'block';
+      btnDo.disabled = !same;
+    }
+
+    async function checkPw(){
+      const v = newPw.value || '';
+      if(!v){
+        newPw.classList.remove('is-valid','is-invalid');
+        ruleF.style.display='none'; ajaxPwOk=false; syncMatch(); return;
+      }
+      if(pwAbort) pwAbort.abort();
+      pwAbort = new AbortController();
+      try{
+        const r = await fetch(`/user/check/password?pw=${encodeURIComponent(v)}`, {signal:pwAbort.signal, credentials:'same-origin'});
+        const d = await r.json();
+        ajaxPwOk = !!(d && d.ok && d.valid);
+      }catch{
+        ajaxPwOk = PW_FALLBACK.test(v);
+      }
+      if(ajaxPwOk){
+        newPw.classList.add('is-valid'); newPw.classList.remove('is-invalid');
+        ruleF.style.display='none';
+      }else{
+        newPw.classList.add('is-invalid'); newPw.classList.remove('is-valid');
+        ruleF.textContent = '영문+숫자+특수문자 포함 8자 이상';
+        ruleF.style.display='block';
+      }
+      syncMatch();
+    }
+    newPw?.addEventListener('input', checkPw);
+    newPw?.addEventListener('blur',  checkPw);
+    confirm?.addEventListener('input', syncMatch);
+    confirm?.addEventListener('blur',  syncMatch);
+
+    // 모달 닫힐 때 입력 초기화
+    document.getElementById('resetPwModal')?.addEventListener('hidden.bs.modal', ()=>{
+      ['newPasswordModal','confirmPasswordModal'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el){ el.value=''; el.classList.remove('is-valid','is-invalid'); }
+      });
+      okF.style.display='none'; badF.style.display='none'; ruleF.style.display='none';
+      btnDo.disabled = true;
+    });
+
+    /* ===== 모달 내: 저장 ===== */
+    document.getElementById('resetPwModalForm')?.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(btnDo.disabled) return;
+      setBusy(btnDo,true,'변경 중...');
+      try{
+        const data = await postForm(e.currentTarget); // OK면 성공으로 간주
+        if (data && data.ok === false){
+          showErr(data.message || '비밀번호 변경에 실패했습니다.');
+          setBusy(btnDo,false);
+          return;
+        }
+        // 성공: 현재 모달 닫고 완료 모달 → 3초 뒤 로그인으로 이동
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('resetPwModal')).hide();
+        const done = bootstrap.Modal.getOrCreateInstance(document.getElementById('pwChangedModal'), {backdrop:'static', keyboard:false});
+        done.show();
+        setTimeout(()=>{ location.href = '/user/login'; }, 3000);
+      }catch(err){
+        showErr('요청 처리 중 오류가 발생했습니다. ' + err.message);
+        setBusy(btnDo,false);
+      }
+    });
+  </script>
+</body>
+</html>
