@@ -368,6 +368,10 @@ public class AdminService {
         return this.brandRepository.save(brand);
     }
 
+    public boolean existsByBrandName(String brandName) {
+        return brandRepository.existsByBrandName(brandName);
+    }
+    
     // 그레이드 목록
     public List<Grade> getGrade() {
         return this.gradeRepository.findAll();

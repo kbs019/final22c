@@ -178,6 +178,12 @@ public class AdminController {
 		return "redirect:/admin/productForm";
 	}
 
+	@GetMapping("/admin/checkBrandName")
+	@ResponseBody
+	public boolean checkBrandName(@RequestParam String brandName) {
+	    return adminService.existsByBrandName(brandName); // 있으면 true
+	}
+	
 	// 상품 등록/수정
 	@GetMapping("productForm")
 	public String productForm(@RequestParam("brandId") Long brandId, Model model,

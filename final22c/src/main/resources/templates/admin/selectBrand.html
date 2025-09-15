@@ -18,13 +18,14 @@
                 </div>
 
                 <!-- 새 브랜드 입력 -->
-                <form id="newBrandForm" action="/admin/save" method="post" enctype="multipart/form-data" style="display:none;">
-                    <div class="mb-3">
-                        <input type="text" name="brandName" class="form-control mb-2" placeholder="새 브랜드명">
-                        <input type="file" name="imgName" class="form-control" accept="image/*">
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">새 브랜드 등록</button>
-                </form>
+				<form id="newBrandForm" action="/admin/save" method="post" enctype="multipart/form-data" style="display:none;">
+				    <div class="mb-3">
+				        <input type="text" name="brandName" id="brandNameInput" class="form-control mb-2" placeholder="새 브랜드명">
+				        <div id="brandNameError" class="text-danger small" style="display:none;">이미 존재하는 브랜드명입니다.</div>
+				        <input type="file" name="imgName" class="form-control" accept="image/*">
+				    </div>
+				    <button type="submit" class="btn btn-success w-100">새 브랜드 등록</button>
+				</form>
 
                 <!-- 기존 브랜드 선택 후 이동 버튼 -->
                 <button id="goProductBtn" class="btn btn-primary w-100 mt-3" style="display:none;">
@@ -59,6 +60,34 @@ document.getElementById("goProductBtn").addEventListener("click", function() {
     if (brandId) {
         window.location.href = "/admin/productForm?brandId=" + brandId;
     }
+});
+
+document.getElementById("newBrandForm").addEventListener("submit", function(e) {
+    e.preventDefault(); // 기본 제출 막기
+    const brandName = document.getElementById("brandNameInput").value.trim();
+    const errorDiv = document.getElementById("brandNameError");
+
+    if (!brandName) {
+        errorDiv.textContent = "브랜드명을 입력해주세요.";
+        errorDiv.style.display = "block";
+        return;
+    }
+
+    fetch(`/admin/checkBrandName?brandName=${encodeURIComponent(brandName)}`)
+        .then(res => res.json())
+        .then(exists => {
+            if (exists) {
+                errorDiv.textContent = "이미 존재하는 브랜드명입니다.";
+                errorDiv.style.display = "block";
+            } else {
+                errorDiv.style.display = "none"; // 에러 숨기고 제출
+                this.submit();
+            }
+        })
+        .catch(() => {
+            errorDiv.textContent = "서버 오류가 발생했습니다.";
+            errorDiv.style.display = "block";
+        });
 });
 </script>
 </html>
