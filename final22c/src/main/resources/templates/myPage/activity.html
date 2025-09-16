@@ -36,8 +36,8 @@
       cursor: pointer;
       font-weight: 700;
     }
-    .pill-tabs button:hover { background: #e8f0ff; }
-    .pill-tabs button.is-active { background: #2563eb; color: #fff; }
+    .pill-tabs button:hover { background: #dfdede; }
+    .pill-tabs button.is-active { background: #000; color: #fff; }
 
     /* 목록/카드 */
     .list-wrap { margin-top: 16px; display: grid; gap: 14px; }
@@ -56,16 +56,17 @@
       object-fit: cover; background: #f3f4f6;
     }
     .title { font-weight: 800; }
+    .title:hover { text-decoration: underline; }
     .meta { color: #6b7280; font-size: 13px; margin-top: 2px; }
     .content { margin-top: 8px; line-height: 1.55; white-space: pre-wrap; }
     .actions a, .actions button {
-      border: 1px solid var(--border);
+      border: 1px solid #ccc;
       border-radius: 8px;
       padding: 8px 12px;
       background: #fff;
       cursor: pointer;
     }
-    .actions a:hover, .actions button:hover { background: #f3f7ff; }
+    .actions a:hover, .actions button:hover { background: #ccc; }
     .empty {
       padding: 36px 12px; text-align: center; color: #9ca3af;
       border: 1px dashed var(--border); border-radius: 12px; background: #fafafa;
@@ -85,13 +86,18 @@
     }
 
     .btn-unlike {
-      background: var(--accent);   /* 파란 배경 */
-      color: #212529 !important;      /* 흰 글씨 */
-      border-color: var(--accent);
+      background: #fff;   /* 파란 배경 */
+      color: #444 !important;      /* 흰 글씨 */
+      border-color: #ccc;
     }
 
     .btn-unlike:hover {
-      background: #1d4ed8;         /* hover 시 조금 진한 파랑 */
+      background: #ccc;         /* hover 시 조금 진한 파랑 */
+    }
+
+    cm-btn--primary:hover {
+      background: #ccc;
+      color: #fff;
     }
   </style>
 </head>
@@ -267,7 +273,7 @@
             <article class="card" data-id="${it.reviewId}">
               <img class="thumb" src="${esc(img)}" alt="">
               <div>
-                <div class="title"><a href="${href}">${esc(name)}</a></div>
+                <div class="title"><a style="color: #000; text-decoration: none;" href="${href}">${esc(name)}</a></div>
                 <div class="meta">
                   ${esc(brand)} ${renderRatingBars(rating)}
                   <span style="margin-left:6px">${esc(date)}</span>
@@ -300,7 +306,7 @@
             <article class="card" data-id="${it.reviewId}">
               <img class="thumb" src="${esc(img)}" alt="">
               <div>
-                <div class="title"><a href="${href}">${esc(name)}</a></div>
+                <div class="title"><a style="color: #000; text-decoration: none;" href="${href}">${esc(name)}</a></div>
                 <div class="meta">
                   ${esc(brand)} ${renderRatingBars(rating)}
                   <span style="margin-left:6px">${esc(date)}</span>
@@ -308,7 +314,7 @@
                 <div class="content">${content}</div>
               </div>
               <div class="actions">
-                <button type="button" class="btn btn-primary btn-unlike" data-id="${it.reviewId}">공감 취소</button>
+                <button type="button" class="btn btn-unlike" data-id="${it.reviewId}">공감 취소</button>
               </div>
             </article>`;
           }).join('');

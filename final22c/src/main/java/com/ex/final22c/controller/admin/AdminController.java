@@ -503,7 +503,7 @@ public class AdminController {
 
 	// ========================================== 매출 통계 =======================================
 
-	/** 페이지 진입: /admin/sales-stats -> templates/admin/salesStats.html */
+	/** 페이지 진입: /admin/salesStats -> templates/admin/salesStats.html */
 	@GetMapping("/salesStats")
 	public String page() {
 		return "admin/salesStats";
@@ -548,12 +548,14 @@ public class AdminController {
 		return salesStatService.brandSeries(brandNo, from, to, unit);
 	}
 
+	// 특정 브랜드의 상품들이 가지는 용량 리스트
 	@ResponseBody
 	@GetMapping("/salesStats/api/product/capacities")
 	public List<String> productCaps(@RequestParam("brandNo") Long brandNo) {
 		return salesStatService.productCapacitiesByBrand(brandNo);
 	}
 
+	// 특정 브랜드에서 특정 용량이 가지는 상품 리스트
 	@ResponseBody
 	@GetMapping("/salesStats/api/product/byBrandCapacity")
 	public List<Map<String,Object>> productsByBrandCapacity(@RequestParam("brandNo") Long brandNo,
