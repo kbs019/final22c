@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-  layout:decorate="~{/layout/layout}">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
 
 <head>
   <meta charset="UTF-8" />
@@ -8,136 +9,195 @@
 </head>
 
 <th:block layout:fragment="css">
+  <link rel="stylesheet" th:href="@{/css/mypage.css}">
+  
   <style>
-    /* === 사이드박스 공통 레이아웃 === */
-    .mp-grid {
-      display: grid;
-      grid-template-columns: 260px minmax(0, 1fr);
-      gap: 24px;
-      align-items: start;
+    /* === 내 문의 페이지 전용 스타일 === */
+    
+    /* 📌 공통 페이지 헤더 스타일 통일 */
+    .page-head {
+      margin-bottom: 16px; /* 다른 페이지와 동일한 여백 */
     }
-
-    .mp-col-left {
-      position: sticky;
-      top: 24px;
-      align-self: start;
-      z-index: 1;
-    }
-
+    
+    /* 📌 본문 컨테이너 스타일 통일 */
     .mp-col-right {
-      min-width: 0;
+      max-width: 100%;
+      padding: 0; /* 기본 패딩 제거 */
     }
-
-    .mp-sidebox__title {
-      font-size: 20px;
-      font-weight: 800;
-      margin: 0 0 12px;
-    }
-
-    .mp-sidebox__nav {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .mp-sidebox__link {
-      display: block;
-      padding: 8px 10px;
-      border-radius: 10px;
-      text-decoration: none;
-      color: #111827;
-      border: 1px solid #e5e7eb;
+    
+    /* === 테이블 스타일 (공통 마이페이지 스타일 적용) === */
+    .m-table {
+      width: 100%;
+      border-collapse: collapse;
       background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin-top: 16px; /* 페이지 헤더와 간격 통일 */
     }
-
-    .mp-sidebox__link:hover {
-      background: #f3f7ff;
+    
+    .m-table thead {
+      background: #f9fafb;
     }
-
-    .mp-sidebox__link.is-active {
-      background: #111827;
-      color: #fff;
-      border-color: #111827;
+    
+    .m-table th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 700;
+      color: #374151;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
     }
-
-    @media (max-width:860px) {
-      .mp-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .mp-col-left {
-        position: static;
-      }
-    }
-
-    /* === 내 문의 테이블 === */
-    .table th,
-    .table td {
+    
+    .m-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f3f4f6;
       vertical-align: middle;
+      font-size: 14px;
+      color: #111827;
     }
-
-    .modal-header .btn-close {
-      outline: none;
+    
+    .m-table tbody tr:last-child td {
+      border-bottom: none;
     }
-
-    /* === 모달창 스타일 === */
-    .modal-dialog {
-      max-width: 800px;
+    
+    .m-table tbody tr:hover {
+      background: #f9fafb;
+    }
+    
+    /* 링크 스타일 */
+    .m-link {
+      color: #111827;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color .15s ease;
+    }
+    
+    .m-link:hover {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+    
+    /* 배지 스타일 */
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      white-space: nowrap;
+    }
+    
+    .badge--ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .badge--partial {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    /* 빈 상태 메시지 */
+    .m-empty {
+      text-align: center;
+      color: #6b7280;
+      font-style: italic;
+      padding: 32px 16px !important;
+    }
+    
+    /* 📌 모달 스타일도 공통으로 통일 */
+    #questionModal .field-row {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    #questionModal .field-row:last-child {
+      border-bottom: none;
+    }
+    
+    #questionModal .field-row label {
+      font-weight: 700;
+      color: #374151;
+      font-size: 14px;
+    }
+    
+    #questionModal .qdetail-content {
+      line-height: 1.6;
+      color: #111827;
+      font-size: 14px;
+      white-space: pre-wrap;
     }
   </style>
 </th:block>
 
 <th:block layout:fragment="content">
+  <meta name="context-path" th:content="@{/}" />
+
   <section class="mypage-wrap">
     <div class="mp-grid">
-      <!-- 좌측: 사이드박스(활성키는 controller에서 넣은 section='myQuestions') -->
-      <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+      <div class="mp-col-left"
+           th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
 
-      <!-- 우측: 내 문의 본문 -->
       <div class="mp-col-right">
-        <h2>내 문의</h2>
-        <table class="table">
+        <div class="page-head">
+          <h2 class="page-title">내 문의</h2>
+        </div>
+
+        <table class="m-table" role="table" aria-label="내 문의 목록">
           <thead>
-            <tr>
-              <th>제목</th>
-              <th>작성일</th>
-              <th>상태</th>
-            </tr>
+          <tr>
+            <th scope="col">제목</th>
+            <th scope="col" style="width:160px">작성일</th>
+            <th scope="col" style="width:120px">상태</th>
+          </tr>
           </thead>
           <tbody>
-            <tr th:each="question : ${questions}">
-              <td>
-                <a href="#" th:attr="data-id=${question.qId}" class="question-title" data-toggle="modal"
-                  data-target="#questionModal">
-                  <span th:text="${question.title}"></span>
-                </a>
-              </td>
-              <td th:text="${#temporals.format(question.createDate, 'yyyy-MM-dd')}"></td>
-              <td th:text="${question.status}"></td>
-            </tr>
+          <tr th:each="q : ${questions}">
+            <td>
+              <a href="javascript:void(0)" class="m-link js-open-question"
+                 th:attr="data-id=${q.qId}">
+                <span th:text="${q.title}">제목</span>
+              </a>
+            </td>
+            <td th:text="${#temporals.format(q.createDate,'yyyy.MM.dd HH:mm')}">2025.01.01 12:00</td>
+            <td th:with="isAnswered=${!#strings.isEmpty(q.answer)}">
+              <span class="badge"
+                    th:classappend="${isAnswered} ? ' badge--answered' : ' badge--pending'"
+                    th:text="${isAnswered} ? '답변완료' : '대기'">대기</span>
+            </td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(questions)}">
+            <td colspan="3" class="m-empty">문의 내역이 없습니다.</td>
+          </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- === 모달 === -->
-    <div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="questionModalLabel">문의 상세</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-          </div>
-          <div class="modal-body">
-            <p><strong>제목: </strong><span id="modalTitle"></span></p>
-            <p><strong>작성일: </strong><span id="modalCreateDate"></span></p>
-            <p><strong>문의 내용: </strong><span id="modalContent" style="border-collapse: collapse;"></span></p>
-            <p><strong>답변 내용: </strong><span id="modalAnswer"></span></p>
-            <p><strong>답변 작성일: </strong><span id="modalAnswerDate"></span></p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-          </div>
+    <!-- 공통 모달 사용 -->
+    <div id="questionModal" class="m-modal" aria-hidden="true">
+      <div class="m-modal__backdrop" data-close></div>
+      <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="qm-title">
+        <div class="m-modal__header">
+          <h3 id="qm-title" class="m-modal__title">문의 상세</h3>
+          <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
+        </div>
+        <div class="m-modal__body">
+          <div class="field-row"><label>제목</label><div id="qd-title"></div></div>
+          <div class="field-row"><label>작성일</label><div id="qd-created"></div></div>
+          <div class="field-row"><label>문의 내용</label><div id="qd-content" class="qdetail-content"></div></div>
+          <div class="field-row"><label>답변</label><div id="qd-answer" class="qdetail-content"></div></div>
+          <div class="field-row"><label>답변일</label><div id="qd-answeredAt"></div></div>
+        </div>
+        <div class="m-modal__footer">
+          <button type="button" class="cm-btn cm-btn--primary" data-close>닫기</button>
         </div>
       </div>
     </div>
@@ -145,37 +205,44 @@
 </th:block>
 
 <script layout:fragment="script">
-  const pad = n => String(n).padStart(2, '0');
-  const fmtDate = iso => {
-    if (!iso) return '';
-    const d = new Date(iso);
-    if (isNaN(d)) return iso;        // 파싱 실패 시 원문 표시
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
-      `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
+  'use strict';
+  const CTX = (() => (document.querySelector('meta[name="context-path"]')?.content || '').replace(/\/+$/, ''))();
+  const api = (p) => (CTX ? CTX : '') + (p.startsWith('/') ? p : '/' + p);
 
-  // 모달에 데이터 채우기
-  document.addEventListener("click", function (e) {
-    if (e.target.closest(".question-title")) {
-      let questionId = e.target.closest(".question-title").getAttribute("data-id");
+  const sbw = () => window.innerWidth - document.documentElement.clientWidth;
+  const lock = () => { const w=sbw(); if(w>0) document.documentElement.style.setProperty('--sbw', w+'px'); document.body.classList.add('lock-scroll'); };
+  const unlock = () => { document.body.classList.remove('lock-scroll'); document.documentElement.style.removeProperty('--sbw'); };
+  const openModal = (m) => { if(!m) return; m.classList.add('is-open'); lock(); };
+  const closeModal = (el) => { const m = el?.classList?.contains('m-modal') ? el : el?.closest('.m-modal'); if(!m) return; m.classList.remove('is-open'); if (!document.querySelector('.m-modal.is-open')) unlock(); };
+  document.addEventListener('click', (e) => { if (e.target.matches('.m-modal [data-close], .m-modal__backdrop[data-close]')) closeModal(e.target); });
 
-      // AJAX로 데이터 가져오기
-      fetch(`/mypage/questionDetail/${questionId}`)
-        .then(response => response.json())
-        .then(data => {
-          // 모달 데이터 채우기
-          document.getElementById("modalTitle").innerText = data.title;
-          document.getElementById("modalCreateDate").innerText = fmtDate(data.createDate);
-          document.getElementById("modalContent").innerHTML = data.content;
-          document.getElementById("modalAnswer").innerHTML = data.answer || "답변 대기 중";
-          document.getElementById("modalAnswerDate").innerText = fmtDate(data.answerCreateDate) || "없음";
+  const p2 = (n)=>String(n).padStart(2,'0');
+  const fmt = (ts)=>{ if(!ts) return ''; const d=new Date(ts); if(isNaN(d)) return ts; return `${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; };
 
-          // 모달 열기
-          $('#questionModal').modal('show');  // 모달을 여는 코드
-        })
-        .catch(err => console.error('Error fetching question details:', err));
+  const $modal   = document.getElementById('questionModal');
+  const $t       = document.getElementById('qd-title');
+  const $created = document.getElementById('qd-created');
+  const $content = document.getElementById('qd-content');
+  const $answer  = document.getElementById('qd-answer');
+  const $ansAt   = document.getElementById('qd-answeredAt');
+
+  document.addEventListener('click', async (e) => {
+    const a = e.target.closest('.js-open-question'); if (!a) return;
+    try {
+      const id = a.getAttribute('data-id');
+      const res = await fetch(api(`/mypage/questionDetail/${id}`), { headers:{'Accept':'application/json'}, credentials:'same-origin' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      $t.textContent       = data.title ?? '';
+      $created.textContent = fmt(data.createDate) ?? '';
+      $content.innerHTML   = data.content ?? '';
+      $answer.innerHTML    = data.answer ?? '<span class="muted">답변 대기 중</span>';
+      $ansAt.textContent   = data.answerCreateDate ? fmt(data.answerCreateDate) : '';
+      openModal($modal);
+    } catch (e1) {
+      console.error('[question detail]', e1);
+      alert('문의 상세를 불러오지 못했습니다.');
     }
   });
 </script>
-
 </html>
