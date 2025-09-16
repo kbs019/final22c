@@ -1,90 +1,48 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-  layout:decorate="~{/layout/layout}">
+      layout:decorate="~{/layout/layout}">
 
 <head>
   <meta charset="UTF-8" />
   <title>마이페이지 - 위시리스트</title>
+
+  <!-- ✅ 공통 마이페이지 CSS: 사이드박스/그리드/폰트/간격 통일 -->
+  <link rel="stylesheet" href="/css/mypage.css" th:href="@{/css/mypage.css}">
 </head>
 
+<!-- 위시리스트 전용 스타일만 남김 (공통 레이아웃 재정의 X) -->
 <th:block layout:fragment="css">
   <style>
-    /* === 사이드박스 공통 레이아웃 === */
-    .mp-grid {
-      display: grid;
-      grid-template-columns: 260px minmax(0, 1fr);
-      gap: 24px;
-      align-items: start;
+    /* === 위시리스트 페이지 전용 스타일 === */
+    
+    /* 📌 공통 페이지 헤더 스타일 통일 */
+    .page-head {
+      margin-bottom: 16px; /* 다른 페이지와 동일한 여백 */
     }
-
-    .mp-col-left {
-      position: sticky;
-      top: 24px;
-      align-self: start;
-      z-index: 1;
-    }
-
+    
+    /* 📌 본문 컨테이너 최대폭 통일 */
     .mp-col-right {
-      min-width: 0;
+      max-width: 100%;
+      padding: 0; /* 기본 패딩 제거 */
     }
-
-    .mp-sidebox__title {
-      font-size: 20px;
-      font-weight: 800;
-      margin: 0 0 12px;
+    
+    /* === 위시리스트 전용 카드 스타일 === */
+    .wl-wrap { 
+      max-width: none; /* 기존 1100px 제한 제거하여 본문과 통일 */
+      width: 100%;
     }
-
-    .mp-sidebox__nav {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .mp-sidebox__link {
-      display: block;
-      padding: 8px 10px;
-      border-radius: 10px;
-      text-decoration: none;
-      color: #111827;
-      border: 1px solid #e5e7eb;
-      background: #fff;
-    }
-
-    .mp-sidebox__link:hover {
-      background: #f3f7ff;
-    }
-
-    .mp-sidebox__link.is-active {
-      background: #111827;
-      color: #fff;
-      border-color: #111827;
-    }
-
-    @media (max-width:860px) {
-      .mp-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .mp-col-left {
-        position: static;
-      }
-    }
-
-    /* === 위시리스트 카드 === */
-    .wl-wrap {
-      max-width: 1100px;
-    }
-
-    .wl-title {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 12px;
+    
+    .wl-title { 
+      font-size: 20px; 
+      font-weight: 800; 
+      margin-bottom: 16px; /* 다른 페이지와 동일한 여백 */
     }
 
     .wl-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 14px;
+      gap: 16px; /* 간격 조정 */
+      margin-top: 16px;
     }
 
     .wl-card {
@@ -98,452 +56,363 @@
       color: #111827;
       transition: background .15s, border-color .15s, transform .06s;
     }
-
-    .wl-card:hover {
-      background: #f9fbff;
-      border-color: #dbe3ff;
-      transform: translateY(-1px);
+    .wl-card:hover { 
+      background: #f9fbff; 
+      border-color: #dbe3ff; 
+      transform: translateY(-1px); 
     }
 
-    .wl-thumb {
-      width: 100%;
-      aspect-ratio: 1/1;
-      object-fit: cover;
-      background: #f3f4f6;
+    /* 카드 내부 요소들 */
+    .wl-thumb { 
+      width: 100%; 
+      aspect-ratio: 1/1; 
+      object-fit: cover; 
+      background: #f3f4f6; 
+    }
+    .wl-body { padding: 12px; }
+    .wl-brand { 
+      font-size: 12px; 
+      color: #6b7280; 
+      margin-bottom: 2px; 
+    }
+    .wl-name { 
+      font-weight: 700; 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+    }
+    .wl-price { 
+      margin-top: 6px; 
+      font-weight: 800; 
     }
 
-    .wl-body {
-      padding: 12px;
+    /* 찜 제거 버튼 스타일 */
+    .zzim-remove-btn {
+      position: absolute; 
+      top: 8px; 
+      right: 8px;
+      border: none; 
+      background: rgba(255,255,255,.9);
+      border-radius: 50%; 
+      padding: 6px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      cursor: pointer; 
+      transition: background .2s ease;
+    }
+    .zzim-remove-btn:hover { 
+      background: rgba(229,231,235,.95); 
+    }
+    .zzim-remove-btn svg { 
+      width: 20px; 
+      height: 20px; 
+      fill: #555; 
+      transition: fill .2s ease; 
+    }
+    .zzim-remove-btn:hover svg { 
+      fill: #111; 
     }
 
-    .wl-brand {
-      font-size: 12px;
-      color: #6b7280;
-      margin-bottom: 2px;
+    /* 리스트형 삭제 버튼 */
+    .zzim-remove-btn-list { 
+      position: static; 
+      border-radius: 6px; 
+      padding: 4px 10px; 
+      font-size: 14px; 
     }
 
-    .wl-name {
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    /* 부트스트랩 모달 오른쪽 스크롤바로 인한 흔들림 방지 */
+    body.modal-open { 
+      padding-right: 0 !important; 
     }
-
-    .wl-price {
-      margin-top: 6px;
-      font-weight: 800;
+    
+    /* 📌 버튼 그룹 스타일 통일 */
+    .d-flex.justify-content-between {
+      margin-bottom: 16px; /* 다른 페이지와 동일한 여백 */
     }
-/* 찜 취소 버튼 (카드 오른쪽 상단 고정) */
-.zzim-remove-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  border: none;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  padding: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.zzim-remove-btn:hover {
-  background: rgba(229, 231, 235, 0.95); /* hover 시 약간 진하게 */
-}
-
-.zzim-remove-btn svg {
-  width: 20px;
-  height: 20px;
-  fill: #555;
-  transition: fill 0.2s ease;
-}
-
-.zzim-remove-btn:hover svg {
-  fill: #111;
-}
-/* 리스트형 삭제 버튼 */
-.zzim-remove-btn-list {
-  position: static;  /* 카드형처럼 absolute 제거 */
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 14px;
-}
-
-body.modal-open {
-  padding-right: 0 !important;
-}
   </style>
 </th:block>
 
 <th:block layout:fragment="content">
   <section class="mypage-wrap">
-    <div class="mp-grid">
-      <!-- 좌측: 사이드박스(활성키는 controller에서 넣은 section='wishlist') -->
+    <div class="mp-grid"><!-- 공통 레이아웃: 왼쪽 사이드 + 오른쪽 본문 -->
+      <!-- 좌측: 사이드박스 (공통 파셜 / 글씨·간격 공통 CSS가 적용됨) -->
       <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+
       <!-- 우측: 위시리스트 본문 -->
       <div class="mp-col-right">
-      <div class="d-flex justify-content-between mb-3">
-        <!-- 왼쪽 버튼 그룹 -->
-        <div>
-          <button class="btn btn-outline-dark me-2" id="viewCardBtn">카드형 보기</button>
-          <button class="btn btn-outline-dark" id="viewListBtn">리스트형 보기</button>
+        <div class="d-flex justify-content-between mb-3">
+          <!-- 왼쪽 보기 전환 버튼 -->
+          <div>
+            <button class="btn btn-outline-dark me-2" id="viewCardBtn">카드형 보기</button>
+            <button class="btn btn-outline-dark" id="viewListBtn">리스트형 보기</button>
+          </div>
+          <!-- 오른쪽: 리스트형에서만 노출 -->
+          <div>
+            <button class="btn btn-secondary" id="addToCartBtn" style="display:none;">장바구니 담기</button>
+          </div>
         </div>
-      
-        <!-- 오른쪽 버튼 (리스트형 보기일 때만 보이도록 initially hidden) -->
-        <div>
-          <button class="btn btn-secondary" id="addToCartBtn" style="display: none;">장바구니 담기</button>
-        </div>
-      </div>
-       <div class="wl-grid"  id="wishlistCardView" >
-        <div class="wl-card position-relative" th:each="p : ${paging}">
-          <!-- 찜 취소 버튼 -->
-          <button type="button" class="btn btn-sm btn-light zzim-remove-btn"
-                  th:attr="data-productid=${p.id}">
-                            <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <!-- ↓ 흔한 북마크 실루엣(아래가 뾰족) -->
-                  <path class="bm-shape" d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-                </svg>
-          </button>
-      
-          <a th:href="@{|/main/content/${p.id}|}" class="d-block text-decoration-none text-dark">
-            <img class="wl-thumb" th:src="@{|${p.imgPath}${p.imgName}|}" th:alt="${p.name}">
-            <div class="wl-body">
-              <div class="wl-brand" th:text="${p.brand.brandName}">브랜드</div>
-              <div class="wl-name" th:text="${p.name}">상품명</div>
-              <div class="wl-price"
-                   th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'">0원</div>
-            </div>
-          </a>
-        </div>
-      </div>
-      <div id="wishlistListView" style="display:none;">
-        <table class="table align-middle">
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="checkAll"></th>
-              <th>상품정보</th>
-              <th>수량</th>
-              <th>가격</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr th:each="p : ${paging}">
-              <td><input type="checkbox" name="chk" th:value="${p.id}"></td>
-            <td>
-              <div class="d-flex align-items-center">
-                <a th:href="@{|/main/content/${p.id}|}" class="d-flex align-items-center text-decoration-none text-dark w-100">
-                  <img th:src="@{|${p.imgPath}${p.imgName}|}" width="80" class="me-3">
-                  <div>
-                    <div th:text="${p.brand.brandName}" class="text-muted small"></div>
-                    <div th:text="${p.name}" class="fw-bold"></div>
-                  </div>
-                </a>
-              </div>
-            </td>
-               <!-- ✅ 수량 조절 부분 -->
-               <td>
-                 <div class="d-flex align-items-center">
-                   <button type="button" class="btn btn-sm btn-outline-secondary qty-minus">-</button>
-                   <input type="text" 
-                          class="form-control text-center mx-1 qty-input"
-                          style="width:60px;"
-                          th:value="${p.count > 0 ? 1 : 0}"
-                          th:attr="data-maxcount=${p.count}"
-                          th:readonly="${p.count == 0}">
-                   <button type="button" class="btn btn-sm btn-outline-secondary qty-plus"
-                           th:disabled="${p.count == 0}">+</button>
-                 </div>
-               </td>
-              <td th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'"></td>
-              <td>
-                  <button type="button" 
-                      class="btn btn-sm btn-outline-danger zzim-remove-btn-list"
-                      th:attr="data-productid=${p.id}">삭제
-              </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      </div>
-    </div>
-    
-   <!-- === 알림 모달 === -->
-   <div class="modal fade" id="zzimRemoveModal" tabindex="-1" aria-hidden="true">
-     <div class="modal-dialog modal-dialog-centered">
-       <div class="modal-content">
-         
-         <div class="modal-header">
-           <h5 class="modal-title">관심상품 삭제</h5>
-           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-         </div>
-         
-         <div class="modal-body">
-           이 상품을 관심목록에서 삭제하시겠습니까?
-         </div>
-         
-         <div class="modal-footer">
-           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-           <button type="button" class="btn btn-danger" id="zzimRemoveConfirmBtn">삭제</button>
-         </div>
-       </div>
-     </div>
-   </div>
-   
-   <!-- 페이지 하단 알림 Toast -->
-   <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
-     <div id="cartToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-       <div class="d-flex">
-         <div class="toast-body">
-           선택한 상품이 장바구니에 담겼습니다.
-         </div>
-         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="닫기"></button>
-       </div>
-     </div>
-   </div>
 
-<!-- === 공통 알림 모달 === -->
-<div class="modal fade" id="appAlertModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header py-2">
-        <h5 class="modal-title" id="appAlertTitle">알림</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-      </div>
-      <div class="modal-body" id="appAlertBody">
-        <!-- 메시지가 동적으로 들어옵니다 -->
-      </div>
-      <div class="modal-footer py-2">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="appAlertOkBtn">확인</button>
+        <!-- 카드형 -->
+        <div class="wl-grid" id="wishlistCardView">
+          <div class="wl-card position-relative" th:each="p : ${paging}">
+            <!-- 찜 취소 버튼 -->
+            <button type="button" class="btn btn-sm btn-light zzim-remove-btn"
+                    th:attr="data-productid=${p.id}">
+              <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 3h12a1 1 0 0 1 1 1v16l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+              </svg>
+            </button>
+
+            <a th:href="@{|/main/content/${p.id}|}" class="d-block text-decoration-none text-dark">
+              <img class="wl-thumb" th:src="@{|${p.imgPath}${p.imgName}|}" th:alt="${p.name}">
+              <div class="wl-body">
+                <div class="wl-brand" th:text="${p.brand.brandName}">브랜드</div>
+                <div class="wl-name" th:text="${p.name}">상품명</div>
+                <div class="wl-price" th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'">0원</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 리스트형 -->
+        <div id="wishlistListView" style="display:none;">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="checkAll"></th>
+                <th>상품정보</th>
+                <th>수량</th>
+                <th>가격</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="p : ${paging}">
+                <td><input type="checkbox" name="chk" th:value="${p.id}"></td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <a th:href="@{|/main/content/${p.id}|}" class="d-flex align-items-center text-decoration-none text-dark w-100">
+                      <img th:src="@{|${p.imgPath}${p.imgName}|}" width="80" class="me-3">
+                      <div>
+                        <div th:text="${p.brand.brandName}" class="text-muted small"></div>
+                        <div th:text="${p.name}" class="fw-bold"></div>
+                      </div>
+                    </a>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-secondary qty-minus">-</button>
+                    <input type="text"
+                           class="form-control text-center mx-1 qty-input"
+                           style="width:60px;"
+                           th:value="${p.count > 0 ? 1 : 0}"
+                           th:attr="data-maxcount=${p.count}"
+                           th:readonly="${p.count == 0}">
+                    <button type="button" class="btn btn-sm btn-outline-secondary qty-plus"
+                            th:disabled="${p.count == 0}">+</button>
+                  </div>
+                </td>
+                <td th:text="${#numbers.formatInteger(p.sellPrice,3,'COMMA')} + '원'"></td>
+                <td>
+                  <button type="button"
+                          class="btn btn-sm btn-outline-danger zzim-remove-btn-list"
+                          th:attr="data-productid=${p.id}">
+                    삭제
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /.mp-col-right -->
+    </div><!-- /.mp-grid -->
+
+    <!-- ============ 삭제 확인 모달 ============ -->
+    <div class="modal fade" id="zzimRemoveModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">관심상품 삭제</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body">이 상품을 관심목록에서 삭제하시겠습니까?</div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+            <button type="button" class="btn btn-danger" id="zzimRemoveConfirmBtn">삭제</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
+
+    <!-- ============ 장바구니 토스트 ============ -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:1055">
+      <div id="cartToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">선택한 상품이 장바구니에 담겼습니다.</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="닫기"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 공통 알림 모달 ============ -->
+    <div class="modal fade" id="appAlertModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header py-2">
+            <h5 class="modal-title" id="appAlertTitle">알림</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+          </div>
+          <div class="modal-body" id="appAlertBody"></div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="appAlertOkBtn">확인</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </th:block>
+
+<!-- 스크립트 (기능 그대로 유지) -->
 <script layout:fragment="script">
-// 버튼 카드 <-> 리스트
-document.getElementById("viewCardBtn").addEventListener("click", function(){
-     document.getElementById("wishlistCardView").style.display = "grid";
-     document.getElementById("wishlistListView").style.display = "none";
-   });
+  // 뷰 전환
+  const viewCardBtn  = document.getElementById('viewCardBtn');
+  const viewListBtn  = document.getElementById('viewListBtn');
+  const addToCartBtn = document.getElementById('addToCartBtn');
+  const cardView     = document.getElementById('wishlistCardView');
+  const listView     = document.getElementById('wishlistListView');
 
-   document.getElementById("viewListBtn").addEventListener("click", function(){
-     document.getElementById("wishlistCardView").style.display = "none";
-     document.getElementById("wishlistListView").style.display = "block";
-   });
-   // 장바구니 담기버튼
-   const viewCardBtn = document.getElementById('viewCardBtn');
-   const viewListBtn = document.getElementById('viewListBtn');
-   const addToCartBtn = document.getElementById('addToCartBtn');
-   
-   viewListBtn.addEventListener('click', () => {
-     addToCartBtn.style.display = 'inline-block';
-   });
-   
-   viewCardBtn.addEventListener('click', () => {
-     addToCartBtn.style.display = 'none';
-   });
-   
-// 체크박스
-   document.addEventListener("DOMContentLoaded", function() {
-        const checkAll = document.getElementById("checkAll");
-        const checkboxes = document.querySelectorAll("input[name='chk']");
-
-        // 전체선택 클릭 시
-        checkAll.addEventListener("change", function() {
-          checkboxes.forEach(cb => cb.checked = checkAll.checked);
-        });
-
-        // 개별 체크박스 상태에 따라 전체선택 해제/체크
-        checkboxes.forEach(cb => {
-          cb.addEventListener("change", function() {
-            const allChecked = Array.from(checkboxes).every(c => c.checked);
-            checkAll.checked = allChecked;
-          });
-        });
-      });
-   
-   document.addEventListener("click", function(e) {
-        // 증가 버튼
-        if (e.target.closest(".qty-plus")) {
-          let row = e.target.closest("tr");
-          let input = row.querySelector(".qty-input");
-          let max = parseInt(input.getAttribute("data-maxcount")) || 1;
-          let current = parseInt(input.value) || 1;
-
-          if (current < max) {
-            input.value = current + 1;
-          } else {
-            AppAlert("최대 " + max + "개까지 담을 수 있습니다.");
-          }
-        }
-
-        // 감소 버튼
-        if (e.target.closest(".qty-minus")) {
-          let row = e.target.closest("tr");
-          let input = row.querySelector(".qty-input");
-          let current = parseInt(input.value) || 1;
-
-          if (current > 1) {
-            input.value = current - 1;
-          }
-        }
-      });
-
-      // ✅ 직접 입력했을 때 제한
-      document.addEventListener("input", function(e) {
-        if (e.target.classList.contains("qty-input")) {
-          let input = e.target;
-          let max = parseInt(input.getAttribute("data-maxcount")) || 1;
-          let value = parseInt(input.value);
-
-          if (isNaN(value) || value < 1) {
-            input.value = 1; // 최소 1
-          } else if (value > max) {
-            input.value = max; // 최대 count
-            AppAlert("최대 " + max + "개까지 담을 수 있습니다.");
-          }
-        }
-      });
-   
-let targetProductId = null;
-let targetCard = null;
-
-document.addEventListener("click", function(e) {
-  if (e.target.closest(".zzim-remove-btn")) {
-    let btn = e.target.closest(".zzim-remove-btn");
-    targetProductId = btn.getAttribute("data-productid");
-    targetCard = btn.closest(".wl-card");
-
-    // 모달 열기
-    let modal = new bootstrap.Modal(document.getElementById("zzimRemoveModal"));
-    modal.show();
-  }
-  
-  // 리스트형 버튼
-  if (e.target.closest(".zzim-remove-btn-list")) {
-    let btn = e.target.closest(".zzim-remove-btn-list");
-    targetProductId = btn.getAttribute("data-productid");
-    targetCard = btn.closest("tr");  // 리스트는 행 단위 삭제
-    let modal = new bootstrap.Modal(document.getElementById("zzimRemoveModal"));
-    modal.show();
-  }
-});
-
-// 모달 내 "삭제" 버튼 클릭 시 실행
-document.getElementById("zzimRemoveConfirmBtn").addEventListener("click", function() {
-  if (!targetProductId) return;
-
-  fetch("zzimList/remove", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ productId: targetProductId })
-  })
-  .then(res => {
-    if (res.ok) {
-      // 카드 삭제
-      if (targetCard) targetCard.remove();
-      bootstrap.Modal.getInstance(document.getElementById("zzimRemoveModal")).hide();
-    } else {
-      AppAlert("삭제 처리 중 오류가 발생했습니다.", { title: "오류" });
-    }
+  viewCardBtn.addEventListener('click', () => {
+    cardView.style.display = 'grid';
+    listView.style.display = 'none';
+    addToCartBtn.style.display = 'none';
   });
-});
-
-// 장바구니 담기 버튼 클릭
-addToCartBtn.addEventListener("click", function() {
-    // 리스트형 보기에서만 동작
-    const rows = document.querySelectorAll("#wishlistListView tbody tr");
-    let itemsToAdd = [];
-
-    rows.forEach(row => {
-        const checkbox = row.querySelector("input[name='chk']");
-        if (checkbox.checked) {
-            const productId = checkbox.value;
-            const qtyInput = row.querySelector(".qty-input");
-            const quantity = parseInt(qtyInput.value) || 1;
-
-            itemsToAdd.push({ productId: productId, quantity: quantity });
-        }
-    });
-
-    if (itemsToAdd.length === 0) {
-        AppAlert("장바구니에 담을 상품을 선택해주세요.");
-        return;
-    }
-
-    // 서버로 전송
-    fetch("/mypage/addBatch", {  // 서버 URL은 상황에 맞게 변경
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(itemsToAdd)
-    })
-    .then(res => {
-        if (res.ok) {
-            // 기존 alert() 대신 Toast 표시
-            const toastEl = document.getElementById('cartToast');
-            const toast = new bootstrap.Toast(toastEl, { delay: 2000 }); // 2초 후 자동 사라짐
-            toast.show();
-            // 체크박스 초기화
-            rows.forEach(row => row.querySelector("input[name='chk']").checked = false);
-        } else {
-            AppAlert("장바구니 담기 중 오류가 발생했습니다.", { title: "오류" });
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        AppAlert("장바구니 담기 중 오류가 발생했습니다.", { title: "오류" });
-    });
-});
-
-/**
- * AppAlert(message, options?)
- * options: { title?: string, delay?: number(ms), onHide?: Function }
- * - title: 모달 타이틀(기본 "알림")
- * - delay: 지정하면 자동으로 닫힘(ms). 예: 2000
- * - onHide: 모달이 닫힌 뒤 호출될 콜백
- */
-const AppAlert = (() => {
-  const modalEl = document.getElementById('appAlertModal');
-  const modal = new bootstrap.Modal(modalEl);
-  const titleEl = document.getElementById('appAlertTitle');
-  const bodyEl  = document.getElementById('appAlertBody');
-
-  let timer = null;
-
-  // 모달이 열릴 때 포커스를 OK 버튼으로
-  modalEl.addEventListener('shown.bs.modal', () => {
-    document.getElementById('appAlertOkBtn')?.focus();
+  viewListBtn.addEventListener('click', () => {
+    cardView.style.display = 'none';
+    listView.style.display = 'block';
+    addToCartBtn.style.display = 'inline-block';
   });
 
-  return function AppAlert(message, { title = '알림', delay = null, onHide = null } = {}) {
-    titleEl.textContent = title;
-    bodyEl.textContent  = String(message);
+  // 체크박스 전체선택
+  document.addEventListener('DOMContentLoaded', () => {
+    const checkAll  = document.getElementById('checkAll');
+    const checks    = document.querySelectorAll("input[name='chk']");
+    if (!checkAll) return;
+    checkAll.addEventListener('change', () => checks.forEach(cb => cb.checked = checkAll.checked));
+    checks.forEach(cb => cb.addEventListener('change', () => {
+      checkAll.checked = Array.from(checks).every(c => c.checked);
+    }));
+  });
 
-    // 이전 자동닫힘 타이머 제거
-    if (timer) { clearTimeout(timer); timer = null; }
-
-    // onHide 1회성 바인딩
-    if (typeof onHide === 'function') {
-      const handler = () => {
-        modalEl.removeEventListener('hidden.bs.modal', handler);
-        onHide();
-      };
-      modalEl.addEventListener('hidden.bs.modal', handler);
+  // 수량 +/-
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.qty-plus')) {
+      const row = e.target.closest('tr');
+      const input = row.querySelector('.qty-input');
+      const max = parseInt(input.getAttribute('data-maxcount')) || 1;
+      const cur = parseInt(input.value) || 1;
+      if (cur < max) input.value = cur + 1;
+      else AppAlert(`최대 ${max}개까지 담을 수 있습니다.`);
     }
+    if (e.target.closest('.qty-minus')) {
+      const row = e.target.closest('tr');
+      const input = row.querySelector('.qty-input');
+      const cur = parseInt(input.value) || 1;
+      if (cur > 1) input.value = cur - 1;
+    }
+  });
+  document.addEventListener('input', (e) => {
+    if (!e.target.classList.contains('qty-input')) return;
+    const input = e.target;
+    const max = parseInt(input.getAttribute('data-maxcount')) || 1;
+    let val = parseInt(input.value);
+    if (isNaN(val) || val < 1) input.value = 1;
+    else if (val > max) { input.value = max; AppAlert(`최대 ${max}개까지 담을 수 있습니다.`); }
+  });
 
+  // 찜 삭제 (카드/리스트 공통)
+  let targetProductId = null;
+  let targetNode = null;
+
+  document.addEventListener('click', (e) => {
+    const cardBtn = e.target.closest('.zzim-remove-btn');
+    const listBtn = e.target.closest('.zzim-remove-btn-list');
+    if (!cardBtn && !listBtn) return;
+
+    const btn = cardBtn || listBtn;
+    targetProductId = btn.getAttribute('data-productid');
+    targetNode = cardBtn ? btn.closest('.wl-card') : btn.closest('tr');
+
+    const modal = new bootstrap.Modal(document.getElementById('zzimRemoveModal'));
     modal.show();
+  });
 
-    if (typeof delay === 'number' && delay > 0) {
-      timer = setTimeout(() => modal.hide(), delay);
-    }
-  };
-})();
+  document.getElementById('zzimRemoveConfirmBtn').addEventListener('click', () => {
+    if (!targetProductId) return;
+    fetch('zzimList/remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: targetProductId })
+    }).then((res) => {
+      if (res.ok) {
+        targetNode?.remove();
+        bootstrap.Modal.getInstance(document.getElementById('zzimRemoveModal')).hide();
+      } else AppAlert('삭제 처리 중 오류가 발생했습니다.', { title: '오류' });
+    });
+  });
+
+  // 장바구니 담기(리스트형 선택품목)
+  addToCartBtn.addEventListener('click', () => {
+    const rows = document.querySelectorAll('#wishlistListView tbody tr');
+    const items = [];
+    rows.forEach((row) => {
+      const chk = row.querySelector("input[name='chk']");
+      if (!chk?.checked) return;
+      const qty = parseInt(row.querySelector('.qty-input').value) || 1;
+      items.push({ productId: chk.value, quantity: qty });
+    });
+    if (!items.length) { AppAlert('장바구니에 담을 상품을 선택해주세요.'); return; }
+
+    fetch('/mypage/addBatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(items)
+    }).then((res) => {
+      if (res.ok) {
+        const toast = new bootstrap.Toast(document.getElementById('cartToast'), { delay: 2000 });
+        toast.show();
+        rows.forEach((row) => row.querySelector("input[name='chk']").checked = false);
+      } else AppAlert('장바구니 담기 중 오류가 발생했습니다.', { title: '오류' });
+    }).catch(() => AppAlert('장바구니 담기 중 오류가 발생했습니다.', { title: '오류' }));
+  });
+
+  /**
+   * AppAlert(message, options?)
+   * options: { title?: string, delay?: number(ms), onHide?: Function }
+   */
+  const AppAlert = (() => {
+    const el = document.getElementById('appAlertModal');
+    const modal = new bootstrap.Modal(el);
+    const titleEl = document.getElementById('appAlertTitle');
+    const bodyEl  = document.getElementById('appAlertBody');
+    let timer = null;
+
+    el.addEventListener('shown.bs.modal', () => document.getElementById('appAlertOkBtn')?.focus());
+
+    return function (message, { title='알림', delay=null, onHide=null } = {}) {
+      titleEl.textContent = title;
+      bodyEl.textContent  = String(message);
+      if (timer) { clearTimeout(timer); timer = null; }
+
+      if (typeof onHide === 'function') {
+        const handler = () => { el.removeEventListener('hidden.bs.modal', handler); onHide(); };
+        el.addEventListener('hidden.bs.modal', handler);
+      }
+      modal.show();
+      if (typeof delay === 'number' && delay > 0) timer = setTimeout(() => modal.hide(), delay);
+    };
+  })();
 </script>
 </html>
