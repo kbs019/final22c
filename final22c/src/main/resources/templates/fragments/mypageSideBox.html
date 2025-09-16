@@ -4,11 +4,13 @@
     font-weight: 800;
     margin: 0 0 12px
   }
+
   .mp-sidebox__nav {
     display: flex;
     flex-direction: column;
     gap: 6px
   }
+
   .mp-sidebox__link {
     display: block;
     padding: 8px 10px;
@@ -18,7 +20,11 @@
     border: 1px solid #e5e7eb;
     background: #fff
   }
-  .mp-sidebox__link:hover { background: #f3f7ff }
+
+  .mp-sidebox__link:hover {
+    background: #f3f7ff
+  }
+
   .mp-sidebox__link.is-active {
     background: #111827;
     color: #fff;
@@ -30,46 +36,45 @@
   <aside class="mp-sidebox" role="navigation" aria-label="마이페이지 메뉴">
     <h2 class="mp-sidebox__title">마이페이지</h2>
     <nav class="mp-sidebox__nav">
-      <a th:href="@{/mypage/activity}" class="mp-sidebox__link"
-         th:classappend="${section}=='activity' ? ' is-active' : ''"
-         th:attr="aria-current=(${section}=='activity') ? 'page' : null">
-        활동내역
-      </a>
-
-      <a th:href="@{/mypage/address}" class="mp-sidebox__link"
-         th:classappend="${section}=='address' ? ' is-active' : ''"
-         th:attr="aria-current=(${section}=='address') ? 'page' : null">
-        배송지 관리
-      </a>
-
       <!-- 주의: URL은 /mypage/order, section 값은 'orders' -->
-      <a th:href="@{/mypage/order}" class="mp-sidebox__link"
-         th:classappend="${section}=='orders' ? ' is-active' : ''"
-         th:attr="aria-current=(${section}=='orders') ? 'page' : null">
-        주문내역
+      <a th:href="@{/mypage/order}" class="mp-sidebox__link" th:classappend="${section}=='orders' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='orders') ? 'page' : null">
+        주문 내역
       </a>
 
       <a th:href="@{/mypage/mileage}" class="mp-sidebox__link"
-         th:classappend="${section}=='mileage' ? ' is-active' : ''"
-         th:attr="aria-current=(${section}=='mileage') ? 'page' : null">
+        th:classappend="${section}=='mileage' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='mileage') ? 'page' : null">
         마일리지 내역
+      </a>
+      
+      <a th:href="@{/mypage/activity}" class="mp-sidebox__link"
+        th:classappend="${section}=='activity' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='activity') ? 'page' : null">
+        활동 내역
       </a>
 
       <a th:href="@{/mypage/zzimList}" class="mp-sidebox__link"
-         th:classappend="${section}=='wishlist' ? ' is-active' : ''"
-         th:attr="aria-current=(${section}=='wishlist') ? 'page' : null">
+        th:classappend="${section}=='wishlist' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='wishlist') ? 'page' : null">
         위시리스트
       </a>
 
       <a th:href="@{/mypage/profile}" class="mp-sidebox__link"
-         th:classappend="${section}=='profile' ? ' is-active' : ''"
-         th:attr="aria-current=(${section}=='profile') ? 'page' : null">
-        개인정보
+        th:classappend="${section}=='profile' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='profile') ? 'page' : null">
+        개인 정보 
+      </a>
+
+      <a th:href="@{/mypage/address}" class="mp-sidebox__link"
+        th:classappend="${section}=='address' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='address') ? 'page' : null">
+        배송지 관리
       </a>
 
       <a th:href="@{/mypage/myQuestion}" class="mp-sidebox__link"
-         th:classappend="${section}=='myQuestion' ? ' is-active' : ''"
-         th:attr="aria-current=(${section}=='myQuestion') ? 'page' : null">
+        th:classappend="${section}=='myQuestion' ? ' is-active' : ''"
+        th:attr="aria-current=(${section}=='myQuestion') ? 'page' : null">
         내 문의
       </a>
     </nav>
