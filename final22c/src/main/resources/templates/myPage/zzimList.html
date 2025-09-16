@@ -131,6 +131,56 @@
     .d-flex.justify-content-between {
       margin-bottom: 16px; /* 다른 페이지와 동일한 여백 */
     }
+
+    /* 1) 부트스트랩 모달 컨테이너 리셋 (레거시 .modal 규칙 무력화) */
+#zzimRemoveModal,
+#appAlertModal {
+  position: fixed;         /* Bootstrap 기본 */
+  inset: 0;                /* left/top 초기화 대체 */
+  left: 0 !important;      /* 레거시의 left:50%/top:50% 제거 */
+  top: 0 !important;
+  transform: none !important;
+  min-width: 0 !important; /* 레거시 min-width:420px 제거 */
+  max-width: none !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;   /* 레거시 padding 제거 */
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  overflow: visible !important; /* 레거시 overflow-y:auto로 인한 잘림 방지 */
+  z-index: 1055 !important;     /* Bootstrap 기본 계층 유지 */
+}
+
+/* 2) 모달 다이얼로그는 Bootstrap 기본대로 */
+#zzimRemoveModal .modal-dialog,
+#appAlertModal .modal-dialog {
+  margin: .5rem auto; /* 뷰포트 중앙 정렬 및 여백 */
+}
+
+/* 3) 백드롭 리셋: 레거시 .modal-backdrop {display:none} 덮어쓰기 방지 */
+.modal-backdrop {
+  display: block !important;
+  position: fixed;
+  inset: 0;
+  z-index: 1050 !important; /* 모달(1055) 바로 아래 */
+  background-color: rgba(0,0,0,.5);
+}
+
+/* 4) 모바일에서 뷰포트 흔들림/잘림 최소화 */
+@supports (-webkit-touch-callout: none) {
+  #zzimRemoveModal,
+  #appAlertModal {
+    overscroll-behavior: contain; /* iOS 스크롤 튐 방지 */
+  }
+}
+
+/* 5) 이 페이지에서만 레거시 심플 레이어 모달을 명시적으로 제외(충돌 예방)
+   (레거시 .modal은 id가 없고 .modal-content 없이 사용됨 → Bootstrap과 구분) */
+#zzimRemoveModal.modal .modal-content,
+#appAlertModal.modal .modal-content {
+  border-radius: .5rem; /* 보기만 보정, 기능엔 영향 X */
+}
   </style>
 </th:block>
 
@@ -383,7 +433,13 @@
       if (res.ok) {
         const toast = new bootstrap.Toast(document.getElementById('cartToast'), { delay: 2000 });
         toast.show();
+
+        // ✅ 개별 체크박스 해제
         rows.forEach((row) => row.querySelector("input[name='chk']").checked = false);
+
+        // ✅ 전체 선택 체크박스도 해제
+        const checkAll = document.getElementById('checkAll');
+        if (checkAll) checkAll.checked = false;
       } else AppAlert('장바구니 담기 중 오류가 발생했습니다.', { title: '오류' });
     }).catch(() => AppAlert('장바구니 담기 중 오류가 발생했습니다.', { title: '오류' }));
   });
