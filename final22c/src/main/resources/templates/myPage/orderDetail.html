@@ -27,17 +27,22 @@
       <tbody>
       <tr th:each="d : ${order.details}">
         <td>
-          <img class="rounded"
-               th:if="${!#strings.isEmpty(d.product.imgName)}"
-               th:src="@{|${ #strings.endsWith(d.product.imgPath,'/') ? d.product.imgPath : d.product.imgPath + '/' }${d.product.imgName}|}"
-               alt="" style="width:72px;height:72px;object-fit:cover">
-          <img class="rounded"
-               th:if="${#strings.isEmpty(d.product.imgName)}"
-               th:src="@{/img/noimage.png}" alt=""
-               style="width:72px;height:72px;object-fit:cover">
+          <a th:href="@{|/main/content/${d.product.id}|}">
+            <img class="rounded"
+                 th:if="${!#strings.isEmpty(d.product.imgName)}"
+                 th:src="@{|${ #strings.endsWith(d.product.imgPath,'/') ? d.product.imgPath : d.product.imgPath + '/' }${d.product.imgName}|}"
+                 alt="" style="width:72px;height:72px;object-fit:cover">
+            <img class="rounded"
+                 th:if="${#strings.isEmpty(d.product.imgName)}"
+                 th:src="@{/img/noimage.png}" alt=""
+                 style="width:72px;height:72px;object-fit:cover">
+          </a>
         </td>
         <td>
-          <div class="fw-semibold" th:text="${d.product.name}">상품명</div>
+          <!-- ✅ 상품명 링크 -->
+          <div class="fw-semibold">
+            <a class="m-link" th:href="@{|/main/content/${d.product.id}|}" th:text="${d.product.name}">상품명</a>
+          </div>
           <div class="small text-muted">
             <span>개당 </span>
             <span th:text="${#numbers.formatInteger((d.sellPrice != null ? d.sellPrice : 0),1,'COMMA')}">0</span>
@@ -64,7 +69,6 @@
       <tr>
         <th colspan="4" class="text-end">상품 합계</th>
         <th class="text-end">
-          <!-- null 값 제외 후 합산 -->
           <span th:text="${#numbers.formatInteger((#aggregates.sum(order.details.?[totalPrice != null].![totalPrice]) ?: 0), 1, 'COMMA')}">0</span>원
         </th>
       </tr>
@@ -112,16 +116,13 @@
         </thead>
 
         <tbody>
-          <!-- iterStat로 첫 행에서만 사용 포인트 노출 -->
           <tr th:each="p,iter : ${payments}">
             <td th:text="${(p.tid != null or p.aid != null) ? '카카오페이' : (!#strings.isEmpty(p.status) ? p.status : '-')}">
               카카오페이
             </td>
-
             <td th:text="${iter.index == 0 ? #numbers.formatInteger((usedMileage != null ? usedMileage : 0), 1, 'COMMA') + 'P' : '-'}">
               0P
             </td>
-
             <td class="text-end">
               <span th:text="${#numbers.formatInteger((p.amount != null ? p.amount : 0), 1, 'COMMA')}">0</span>원
             </td>

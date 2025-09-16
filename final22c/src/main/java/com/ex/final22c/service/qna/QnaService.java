@@ -45,7 +45,7 @@ public class QnaService {
         question.setContent(dto.getContent());
         question.setWriter(writer);
         question.setQc(qc);
-        question.setStatus("wait"); // 기본 상태
+        question.setStatus("WAIT");
 
         // 저장
         questionRepository.save(question);
