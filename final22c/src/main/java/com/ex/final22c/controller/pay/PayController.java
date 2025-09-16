@@ -57,7 +57,7 @@ public class PayController {
     
     private static final int SHIPPING_FEE = 3000;
 
-    /* ================= 단건 결제 (JSON) ================= */
+    /* ================= 단건 결제 (JSON, CHECKOUT.HTML에서 AJAX,FETCH로) ================= */
     @PostMapping(value = "/ready/single", consumes = "application/json", produces = "application/json")
     @ResponseBody
     public Map<String, Object> readySingle(@RequestBody PaySingleRequest req, Principal principal) {
@@ -93,75 +93,108 @@ public class PayController {
         );
     }
 
-    /* ================= 장바구니 다건 결제 (JSON) ================= */
+    /* ================= 장바구니 다건 결제 (JSON, CHECKOUT.HTML에서 AJAX,FETCH로) ================= */
     @PostMapping(value = "/ready/cart", consumes = "application/json", produces = "application/json")
     @ResponseBody
     public Map<String, Object> readyCart(@RequestBody PayCartRequest req, Principal principal) {
+        
+        // 1. 로그인 검증
         if (principal == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        
+        // 2. 요청 데이터 파싱 및 기본값 설정
         final String userId = principal.getName();
-        final int usedPoint = Math.max(0, req.usedPoint() == null ? 0 : req.usedPoint());
-        final ShipSnapshotReq ship = req.ship();
-
+        final int usedPoint = Math.max(0, req.usedPoint() == null ? 0 : req.usedPoint()); // 음수 방지
+        final ShipSnapshotReq ship = req.ship(); // 배송 정보
+        
+        // 3. 선택된 장바구니 아이템들을 CartService용 객체로 변환
         var selection = req.items().stream()
                 .map(i -> new CartService.SelectionItem(
                         i.cartDetailId(),
-                        Math.max(1, i.quantity() == null ? 1 : i.quantity())
+                        Math.max(1, i.quantity() == null ? 1 : i.quantity()) // 최소 1개 보장
                 ))
                 .toList();
-        // 선택된 cardetatil의 목록을 수정한다
-        List<Long> selectedCartDetailIds = req.items().stream()
-        		.map(PayCartRequest.Item::cartDetailId)
-        		.filter(Objects::nonNull)
-        		.toList();
         
+        // 4. 선택된 cartDetailId 목록 추출 (주문 완료 후 장바구니에서 삭제용)
+        List<Long> selectedCartDetailIds = req.items().stream()
+                .map(PayCartRequest.Item::cartDetailId)
+                .filter(Objects::nonNull) // null 제외
+                .toList();
+        
+        // 5. 장바구니 결제 정보 계산
         CartView view = cartService.prepareCheckoutView(userId, selection);
         List<CartLine> lines = view.getLines();
         if (lines.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선택된 상품이 없습니다.");
-
-        int itemsTotal = view.getSubtotal();
-        int shipping   = SHIPPING_FEE;
-        int payable    = Math.max(0, itemsTotal + shipping - usedPoint);
         
-        // 선택된 cardetailId들을 서비스로 넘김
-        Order order = orderService.createCartPendingOrder(userId, lines, itemsTotal, shipping, usedPoint, payable, ship, selectedCartDetailIds);
-        // 0원 결제 
+        int itemsTotal = view.getSubtotal();    // 상품 총액
+        int shipping = SHIPPING_FEE;            // 배송비 (3000원 고정)
+        int payable = Math.max(0, itemsTotal + shipping - usedPoint); // 실제 결제 금액
+        
+        // 6. 주문 생성 (PENDING 상태)
+        Order order = orderService.createCartPendingOrder(
+                userId, lines, itemsTotal, shipping, usedPoint, payable, ship, selectedCartDetailIds
+        );
+        
+        // 7. 0원 결제 처리 (포인트 전액 사용시)
         if (payable == 0) {
-            paymentService.recordZeroPayment(order.getOrderId());
-            orderService.markPaid(order.getOrderId());
-
+            paymentService.recordZeroPayment(order.getOrderId());  // 결제 기록 생성 (amount=0)
+            orderService.markPaid(order.getOrderId());             // 주문 상태를 PAID로 변경
+            
             return Map.of(
-                "next_redirect_pc_url", "/pay/success-zero?orderId=" + order.getOrderId(),
-                "orderId", order.getOrderId()
+                    "next_redirect_pc_url", "/pay/success-zero?orderId=" + order.getOrderId(),
+                    "orderId", order.getOrderId()
             );
         }
+        
+        // 8. 카카오페이 결제 준비
         var ready = kakaoApiService.readyCart(order);
-
-
+        
         return Map.of(
-                "next_redirect_pc_url", ready.get("next_redirect_pc_url"),
+                "next_redirect_pc_url", ready.get("next_redirect_pc_url"), // 카카오페이 결제창 URL
                 "orderId", order.getOrderId()
         );
     }
 
-    /* ================= 승인/취소/실패 콜백 ================= */
+    /* ================= 결제 성공 승인 콜백 ================= */
     @GetMapping("/success")
     public String success(@RequestParam("pg_token") String pgToken,
-                          @RequestParam("orderId") Long orderId,
-                          Principal principal,
-                          Model model) {
+                         @RequestParam("orderId") Long orderId,
+                         Principal principal,
+                         Model model) {
         try {
-            String userId = (principal != null ? principal.getName() : "GUEST");
+            // 1️. 사용자 정보 추출 (이미 로그인된 상태)
+            String userId = principal.getName();
+            
+            // 2️. 주문에 연결된 최신 결제 정보 조회
+            // - Payment 테이블에서 tid(거래고유번호) 가져오기
             var latest = paymentService.getLatestByOrderId(orderId);
-            var result = kakaoApiService.approve(latest.getTid(), String.valueOf(orderId), userId, pgToken);
+            
+            // 3️. 카카오페이 최종 승인 API 호출
+            // - READY 상태 → SUCCESS 상태로 전환
+            // - Payment 테이블에 aid, approvedAt 업데이트
+            var result = kakaoApiService.approve(latest.getTid(), 
+                                               String.valueOf(orderId), 
+                                               userId, 
+                                               pgToken);
+            
+            // 4️. 주문 상태를 PAID로 변경 및 후처리
+            // - Order 상태: PENDING → PAID
+            // - 마일리지 차감 (실제 사용분)
+            // - 재고는 이미 PENDING시 차감됨 (추가 처리 없음)
+            // - 장바구니에서 구매한 상품 삭제
             orderService.markPaid(orderId);
 
+            // 5️. 성공 팝업 페이지에 전달할 데이터 설정
             model.addAttribute("orderId", orderId);
-            model.addAttribute("pay", result);
-            return "pay/success-popup";
+            model.addAttribute("pay", result);    // 카카오페이 승인 결과 (금액, 시간 등)
+            
+            return "pay/success-popup";           // 성공 팝업 페이지로 이동
+            
         } catch (Exception e) {
+            // 6️. 승인 실패 시 예외 처리
+            // - 네트워크 오류, PG 승인 실패, DB 오류 등
             model.addAttribute("orderId", orderId);
             model.addAttribute("error", e.getMessage());
-            return "pay/fail-popup";
+            return "pay/fail-popup";              // 실패 팝업 페이지로 이동
         }
     }
     // 0 원 결제시 
