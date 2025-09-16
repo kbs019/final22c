@@ -377,3 +377,90 @@ html {
     color:#ef4444;          /* 빨간색 */
     font-size:12px;
 }
+
+/* ===== Mileage (table only; HTML 수정 불필요) ===== */
+
+/* 테이블 */
+.m-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.m-table th,
+.m-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.m-table thead th {
+  background: #f8fafc;
+  font-weight: 800;
+}
+/* 좌/우 여백 정돈 */
+.m-table th:first-child,
+.m-table td:first-child { padding-left: 16px; }
+.m-table th:last-child,
+.m-table td:last-child { padding-right: 16px; white-space: nowrap; }
+
+/* 숫자 컬럼 정렬(사용/적립/환급/잔액) */
+.m-table th:nth-child(3),
+.m-table th:nth-child(4),
+.m-table th:nth-child(5),
+.m-table th:nth-child(6),
+.m-table td:nth-child(3),
+.m-table td:nth-child(4),
+.m-table td:nth-child(5),
+.m-table td:nth-child(6) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 링크 */
+.m-link { color:#2563eb; text-decoration: none; }
+.m-link:hover { text-decoration: underline; }
+
+/* 포인트 색상 */
+.pt-use  { color:#ef4444; font-weight:800; }  /* 사용(음수) */
+.pt-earn { color:#16a34a; font-weight:800; }  /* 적립/환급(양수) */
+
+/* 비어있을 때 */
+.m-empty { padding:48px 0; text-align:center; color:#9ca3af; }
+
+/* (선택) 레거시 컨테이너 호환: .m-wrap도 공통 폰트 적용 */
+.m-wrap { font-family: var(--font-sans); font-size:14px; line-height:1.6; color:#111827; }
+
+/* ===== Mileage header balance chip (CSS-only, no HTML change) ===== */
+.page-head .badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-width:170px;
+  height:44px;
+  padding:8px 14px;
+  border-radius:14px;
+  border:none;                   /* 공통 .badge 테두리 무시 */
+  background:linear-gradient(135deg,#5b67ff,#8a48d9);
+  color:#fff;
+  box-shadow:0 6px 14px rgba(0,0,0,.08);
+  font-weight:700;
+}
+.page-head .badge strong{
+  font-size:20px;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.page-head .badge strong + *{    /* 뒤따르는 'P' */
+  opacity:.95;
+  font-weight:800;
+}
+@media (max-width: 860px){
+  .page-head{
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .page-head .badge{
+    width:100%;
+    justify-content:flex-end;
+  }
+}
