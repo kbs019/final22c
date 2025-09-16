@@ -206,7 +206,7 @@ public class AdminController {
 	    
 	    Product savedProduct = this.adminService.register(productForm, productForm.getImgName());
 	    
-	    // 신규 등록이거나 관리자가 AI 재생성을 체크한 경우
+	    // 신규 등록인 경우
 	    if (isNewProduct || productForm.isRegenerateAI()) {
 	        try {
 	            String aiDescription = productDescriptionService.generateEnhancedDescription(savedProduct);
