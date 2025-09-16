@@ -1,4 +1,22 @@
 <!-- templates/mypage/orderDetail.html -->
+<style>
+  /* ✅ 상품/총 주문 금액 행만 선 표시, 배송비 행은 선 제거 */
+  .table-summary tr { border-top: none; }
+
+  .table-summary tr:first-child {
+    border-top: 1px solid var(--bs-border-color); /* 상품 합계 위 */
+  }
+
+  .table-summary tr:last-child {
+    border-top: 1px solid var(--bs-border-color); /* 총 주문 금액 위 */
+  }
+
+  .table-summary tr:nth-child(2) {
+    border-top: none !important;  /* 배송비 위 선 제거 */
+    border-bottom: none !important; /* 배송비 아래 선 제거 */
+  }
+</style>
+
 <div th:fragment="items">
 
   <!-- 상단: 주문일시 · 주문번호 -->
@@ -24,6 +42,7 @@
         <th class="text-end" style="width:160px">합계</th>
       </tr>
       </thead>
+
       <tbody>
       <tr th:each="d : ${order.details}">
         <td>
@@ -39,7 +58,6 @@
           </a>
         </td>
         <td>
-          <!-- ✅ 상품명 링크 -->
           <div class="fw-semibold">
             <a class="m-link" th:href="@{|/main/content/${d.product.id}|}" th:text="${d.product.name}">상품명</a>
           </div>
@@ -65,13 +83,35 @@
         </td>
       </tr>
       </tbody>
-      <tfoot class="table-light">
-      <tr>
-        <th colspan="4" class="text-end">상품 합계</th>
-        <th class="text-end">
-          <span th:text="${#numbers.formatInteger((#aggregates.sum(order.details.?[totalPrice != null].![totalPrice]) ?: 0), 1, 'COMMA')}">0</span>원
-        </th>
-      </tr>
+
+      <!-- ✅ 요약부: 배송비 표시 + 중간 줄 제거 -->
+      <tfoot class="table-light table-summary"
+            th:with="
+              productSum=${#aggregates.sum(order.details.?[totalPrice != null].![totalPrice]) ?: 0},
+              paySum=${(payments != null) ? (#aggregates.sum(payments.![amount]) ?: 0) : 0},
+              used=${usedMileage != null ? usedMileage : 0},
+              shippingFee=${(paySum + used) - productSum}
+            ">
+        <tr>
+          <th colspan="4" class="text-end">상품 합계</th>
+          <th class="text-end">
+            <span th:text="${#numbers.formatInteger(productSum, 1, 'COMMA')}">0</span>원
+          </th>
+        </tr>
+
+        <tr th:if="${shippingFee > 0}">
+          <th colspan="4" class="text-end">배송비</th>
+          <th class="text-end">
+            <span th:text="${#numbers.formatInteger(shippingFee, 1, 'COMMA')}">0</span>원
+          </th>
+        </tr>
+
+        <tr>
+          <th colspan="4" class="text-end">총 주문 금액</th>
+          <th class="text-end fw-semibold">
+            <span th:text="${#numbers.formatInteger(productSum + (shippingFee > 0 ? shippingFee : 0), 1, 'COMMA')}">0</span>원
+          </th>
+        </tr>
       </tfoot>
     </table>
   </div>

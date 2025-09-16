@@ -28,7 +28,7 @@ public class PhoneCodeService {
 
     // ===== 정책 =====
     private static final int CODE_LEN = 6;                 // 인증번호 자리수
-    private static final int EXPIRE_MINUTES = 5;           // 인증코드 유효시간(분)
+    private static final int EXPIRE_MINUTES = 3;           // 인증코드 유효시간(분)
     private static final int RESEND_COOLDOWN_SEC = 60;     // 재전송 쿨다운(초)
     private static final int MAX_DAILY_SEND = 5;           // 하루 발송 제한(회)
     private static final int MAX_VERIFY_ATTEMPTS = 5;      // 최대 검증 시도(회)
@@ -133,7 +133,7 @@ public class PhoneCodeService {
 
         // 코드 생성 & 메시지
         String code = genCode();
-        String text = "[22°C] 인증번호 " + code + " (5분 내 유효)\n타인에게 절대 공유하지 마세요.";
+        String text = "[22°C] 인증번호 " + code + " (3분 내 유효)\n타인에게 절대 공유하지 마세요.";
 
         // Solapi 발송 (상세 응답)
         CoolSmsSender.SmsSendResult resp = coolSmsSender.sendPlainTextResult(phone, text);

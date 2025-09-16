@@ -22,6 +22,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
     <title>회원가입</title>
   </head>
+  <style>
+    #btnPhoneAction { white-space: nowrap; }
+  </style>
 
   <div layout:fragment="content">
     <div class="container py-4">
@@ -65,25 +68,13 @@
                 required
                 placeholder="영문/숫자/밑줄, 4~20자"
               />
-              <div
-                class="invalid-feedback"
-                id="userNameRuleMsg"
-                style="display: none"
-              >
+              <div class="invalid-feedback" id="userNameRuleMsg" style="display:none">
                 아이디는 4~20자, 영문/숫자/밑줄만 가능합니다.
               </div>
-              <div
-                class="invalid-feedback"
-                id="userNameDupMsg"
-                style="display: none"
-              >
+              <div class="invalid-feedback" id="userNameDupMsg" style="display:none">
                 이미 사용 중인 아이디입니다.
               </div>
-              <div
-                class="valid-feedback"
-                id="userNameOkMsg"
-                style="display: none"
-              >
+              <div class="valid-feedback" id="userNameOkMsg" style="display:none">
                 사용 가능한 아이디입니다.
               </div>
             </div>
@@ -101,7 +92,7 @@
                     class="form-control"
                     minlength="8"
                     maxlength="150"
-                    pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;&quot;'&lt;&gt;,.?/~`]).{8,150}$"
+                    pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:&quot;'&lt;&gt;,.?/~`]).{8,150}$"
                     required
                     placeholder="영문+숫자+특수문자 포함 8자 이상"
                   />
@@ -115,11 +106,7 @@
                     <i class="bi bi-eye"></i>
                   </button>
                 </div>
-                <div
-                  id="pwRuleFeedback"
-                  class="invalid-feedback"
-                  style="display: none"
-                >
+                <div id="pwRuleFeedback" class="invalid-feedback" style="display:none">
                   영문+숫자+특수문자 포함 8자 이상
                 </div>
               </div>
@@ -148,18 +135,10 @@
                     <i class="bi bi-eye"></i>
                   </button>
                 </div>
-                <div
-                  id="pwOkFeedback"
-                  class="valid-feedback"
-                  style="display: none"
-                >
+                <div id="pwOkFeedback" class="valid-feedback" style="display:none">
                   비밀번호가 일치합니다.
                 </div>
-                <div
-                  id="pwMatchFeedback"
-                  class="invalid-feedback"
-                  style="display: none"
-                >
+                <div id="pwMatchFeedback" class="invalid-feedback" style="display:none">
                   비밀번호가 일치하지 않습니다.
                 </div>
               </div>
@@ -169,21 +148,9 @@
             <div class="mb-3">
               <label class="form-label">이메일</label>
               <div class="input-group has-validation">
-                <input
-                  id="emailLocal"
-                  type="text"
-                  class="form-control"
-                  placeholder="이메일"
-                  autocomplete="username"
-                />
+                <input id="emailLocal" type="text" class="form-control" placeholder="이메일" autocomplete="username" />
                 <span id="emailAt" class="input-group-text">@</span>
-                <input
-                  id="emailDomain"
-                  type="text"
-                  class="form-control"
-                  list="emailDomainList"
-                  placeholder="예) gmail.com"
-                />
+                <input id="emailDomain" type="text" class="form-control" list="emailDomainList" placeholder="예) gmail.com" />
                 <datalist id="emailDomainList">
                   <option value="gmail.com"></option>
                   <option value="naver.com"></option>
@@ -196,29 +163,16 @@
                   <option value="yahoo.com"></option>
                 </datalist>
               </div>
-              <div
-                class="invalid-feedback"
-                id="emailRuleMsg"
-                style="display: none"
-              >
+              <div class="invalid-feedback" id="emailRuleMsg" style="display:none">
                 올바른 이메일을 입력해 주세요. (예: name@example.com)
               </div>
-              <div
-                class="invalid-feedback"
-                id="emailDupMsg"
-                style="display: none"
-              >
+              <div class="invalid-feedback" id="emailDupMsg" style="display:none">
                 이미 사용 중인 이메일입니다.
               </div>
-              <div class="valid-feedback" id="emailOkMsg" style="display: none">
+              <div class="valid-feedback" id="emailOkMsg" style="display:none">
                 사용 가능한 이메일입니다.
               </div>
-              <input
-                id="email"
-                name="email"
-                th:field="*{email}"
-                type="hidden"
-              />
+              <input id="email" name="email" th:field="*{email}" type="hidden" />
             </div>
 
             <!-- 이름 / 생년월일(3-Select) -->
@@ -226,20 +180,12 @@
               <div class="col-md-6">
                 <label for="name" class="form-label">이름</label>
                 <input
-                  id="name"
-                  name="name"
-                  th:field="*{name}"
-                  type="text"
-                  class="form-control"
+                  id="name" name="name" th:field="*{name}"
+                  type="text" class="form-control"
                   th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
-                  maxlength="30"
-                  required
+                  maxlength="30" required
                 />
-                <div
-                  class="invalid-feedback"
-                  th:if="${#fields.hasErrors('name')}"
-                  th:errors="*{name}"
-                >
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
                   이름 에러
                 </div>
               </div>
@@ -247,34 +193,17 @@
               <div class="mb-3">
                 <label class="form-label">생년월일</label>
                 <div class="d-flex gap-2">
-                  <select
-                    id="birthYear"
-                    class="form-select"
-                    aria-label="출생 연도"
-                  >
+                  <select id="birthYear" class="form-select" aria-label="출생 연도">
                     <option value="" selected disabled>YYYY</option>
                   </select>
-                  <select
-                    id="birthMonth"
-                    class="form-select"
-                    aria-label="출생 월"
-                  >
+                  <select id="birthMonth" class="form-select" aria-label="출생 월">
                     <option value="" selected disabled>MM</option>
                   </select>
-                  <select
-                    id="birthDay"
-                    class="form-select"
-                    aria-label="출생 일"
-                  >
+                  <select id="birthDay" class="form-select" aria-label="출생 일">
                     <option value="" selected disabled>DD</option>
                   </select>
                 </div>
-                <input
-                  type="hidden"
-                  id="birth"
-                  name="birth"
-                  th:field="*{birth}"
-                />
+                <input type="hidden" id="birth" name="birth" th:field="*{birth}" />
               </div>
             </div>
 
@@ -283,38 +212,17 @@
               <div class="col-md-6">
                 <label class="form-label d-block">성별</label>
                 <div class="form-check form-check-inline">
-                  <input
-                    class="form-check-input"
-                    id="genderM"
-                    type="radio"
-                    th:field="*{gender}"
-                    name="gender"
-                    value="M"
-                    required
-                  />
+                  <input class="form-check-input" id="genderM" type="radio" th:field="*{gender}" name="gender" value="M" required />
                   <label class="form-check-label" for="genderM">남성</label>
                 </div>
                 <div class="form-check form-check-inline">
-                  <input
-                    class="form-check-input"
-                    id="genderF"
-                    type="radio"
-                    th:field="*{gender}"
-                    name="gender"
-                    value="F"
-                  />
+                  <input class="form-check-input" id="genderF" type="radio" th:field="*{gender}" name="gender" value="F" />
                   <label class="form-check-label" for="genderF">여성</label>
                 </div>
               </div>
               <div class="col-md-6">
                 <label for="telecom" class="form-label">통신사</label>
-                <select
-                  id="telecom"
-                  name="telecom"
-                  th:field="*{telecom}"
-                  class="form-select"
-                  required
-                >
+                <select id="telecom" name="telecom" th:field="*{telecom}" class="form-select" required>
                   <option value="" disabled selected>통신사 선택</option>
                   <option value="SKT">SKT</option>
                   <option value="KT">KT</option>
@@ -326,88 +234,33 @@
             <!-- 휴대폰 -->
             <div class="mb-3 mt-3">
               <label class="form-label">휴대폰 번호</label>
-              <div class="row g-2">
-                <div class="col-4 col-sm-3">
-                  <input
-                    id="phone1"
-                    name="phone1"
-                    type="text"
-                    class="form-control"
-                    value="010"
-                    readonly
-                  />
+
+              <div class="row g-2 align-items-center">
+                <div class="col-3 col-sm-3">
+                  <input id="phone1" name="phone1" type="text" class="form-control" value="010" readonly />
                 </div>
-                <div class="col-4 col-sm-4">
-                  <input
-                    id="phone2"
-                    name="phone2"
-                    type="text"
-                    class="form-control"
-                    inputmode="numeric"
-                    maxlength="4"
-                    placeholder="1234"
-                    required
-                  />
+                <div class="col-3 col-sm-3">
+                  <input id="phone2" name="phone2" type="text" class="form-control" inputmode="numeric" maxlength="4" placeholder="1234" required />
                 </div>
-                <div class="col-4 col-sm-5">
-                  <input
-                    id="phone3"
-                    name="phone3"
-                    type="text"
-                    class="form-control"
-                    inputmode="numeric"
-                    maxlength="4"
-                    placeholder="5678"
-                    required
-                  />
+                <div class="col-3 col-sm-3">
+                  <input id="phone3" name="phone3" type="text" class="form-control" inputmode="numeric" maxlength="4" placeholder="5678" required />
+                </div>
+                <div class="col-3 col-sm-3 d-grid">
+                  <button type="button" id="btnPhoneAction" class="btn btn-outline-secondary w-100 text-nowrap">
+                    인증번호 발송
+                  </button>
                 </div>
               </div>
-              <input
-                type="hidden"
-                id="phone"
-                name="phone"
-                th:field="*{phone}"
-              />
-              <div
-                class="text-danger small"
-                th:if="${#fields.hasErrors('phone')}"
-                th:errors="*{phone}"
-              >
-                휴대폰 에러
-              </div>
+
+              <input type="hidden" id="phone" name="phone" th:field="*{phone}" />
+              <div class="text-danger small" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}">휴대폰 에러</div>
+
+              <!-- 코드 입력/확인 버튼이 동적으로 생성될 자리 -->
+              <div id="phoneCodeArea" class="mt-2"></div>
+
+              <div class="form-text" id="phoneMsg"></div>
+              <input type="hidden" id="phoneVerified" name="phoneVerified" value="N" />
             </div>
-            <!-- 휴대폰 인증 UI -->
-            <div class="d-flex gap-2 mt-2 align-items-start">
-              <button
-                type="button"
-                id="btnSendCode"
-                class="btn btn-outline-secondary"
-              >
-                인증번호 발송
-              </button>
-              <input
-                id="phoneCode"
-                type="text"
-                class="form-control"
-                inputmode="numeric"
-                maxlength="6"
-                placeholder="인증번호 6자리"
-              />
-              <button
-                type="button"
-                id="btnVerifyCode"
-                class="btn btn-outline-primary"
-              >
-                인증 확인
-              </button>
-            </div>
-            <div class="form-text" id="phoneMsg"></div>
-            <input
-              type="hidden"
-              id="phoneVerified"
-              name="phoneVerified"
-              value="N"
-            />
 
             <div class="d-grid mt-3">
               <button type="submit" class="btn btn-primary btn-lg">
@@ -419,854 +272,515 @@
       </div>
     </div>
 
-    <script>
-      (() => {
-        "use strict";
-        const form = document.getElementById("signupForm");
+<script>
+(() => {
+  "use strict";
+  const form = document.getElementById("signupForm");
 
-        /* ==== helpers ==== */
-        const debounce = (fn, ms = 300) => {
-          let t;
-          return (...a) => {
-            clearTimeout(t);
-            t = setTimeout(() => fn(...a), ms);
-          };
-        };
-        const setValid = (input, ok, okEl, badEl) => {
-          input.classList.remove("is-valid", "is-invalid");
-          if (ok) {
-            okEl && (okEl.style.display = "block");
-            badEl && (badEl.style.display = "none");
-            input.classList.add("is-valid");
-          } else {
-            okEl && (okEl.style.display = "none");
-            badEl && (badEl.style.display = "block");
-            input.classList.add("is-invalid");
-          }
-        };
-        const digitsOnly = (v) => (v || "").replace(/\D+/g, "");
+  /* ==== helpers ==== */
+  const debounce = (fn, ms = 300) => {
+    let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+  };
+  const setValid = (input, ok, okEl, badEl) => {
+    input.classList.remove("is-valid", "is-invalid");
+    if (ok) { okEl && (okEl.style.display = "block"); badEl && (badEl.style.display = "none"); input.classList.add("is-valid"); }
+    else { okEl && (okEl.style.display = "none"); badEl && (badEl.style.display = "block"); input.classList.add("is-invalid"); }
+  };
+  const digitsOnly = (v) => (v || "").replace(/\D+/g, "");
 
-        /* ==== username rule + duplicate ==== */
-        const userName = document.getElementById("userName");
-        const userNameRuleMsg = document.getElementById("userNameRuleMsg");
-        const userNameDupMsg = document.getElementById("userNameDupMsg");
-        const userNameOkMsg = document.getElementById("userNameOkMsg");
-        [userNameRuleMsg, userNameDupMsg, userNameOkMsg].forEach(
-          (el) => el && (el.style.display = "none")
-        );
+  /* ==== username rule + duplicate ==== */
+  const userName = document.getElementById("userName");
+  const userNameRuleMsg = document.getElementById("userNameRuleMsg");
+  const userNameDupMsg = document.getElementById("userNameDupMsg");
+  const userNameOkMsg = document.getElementById("userNameOkMsg");
+  [userNameRuleMsg, userNameDupMsg, userNameOkMsg].forEach((el) => el && (el.style.display = "none"));
 
-        function validateUserRule() {
-          const v = (userName.value || "").trim();
-          let ok = true,
-            msg = "";
-          if (!v) {
-            userName.classList.remove("is-valid", "is-invalid");
-            userNameRuleMsg.style.display = "none";
-            return false;
-          }
-          if (v.length < 4) {
-            ok = false;
-            msg = "아이디는 최소 4자 이상 입력해 주세요.";
-          } else if (v.length > 20) {
-            ok = false;
-            msg = "아이디는 20자 이하로 입력해 주세요.";
-          } else if (!/^[A-Za-z0-9_]+$/.test(v)) {
-            ok = false;
-            msg = "영문/숫자/밑줄(_)만 가능합니다.";
-          }
-          userName.classList.toggle("is-invalid", !ok);
-          userNameRuleMsg.textContent =
-            msg || "아이디는 4~20자, 영문/숫자/밑줄만 가능합니다.";
-          userNameRuleMsg.style.display = ok ? "none" : "block";
-          if (!ok) {
-            userNameOkMsg.style.display = "none";
-            userNameDupMsg.style.display = "none";
-          }
-          return ok;
+  function validateUserRule() {
+    const v = (userName.value || "").trim();
+    let ok = true, msg = "";
+    if (!v) { userName.classList.remove("is-valid", "is-invalid"); userNameRuleMsg.style.display = "none"; return false; }
+    if (v.length < 4) { ok = false; msg = "아이디는 최소 4자 이상 입력해 주세요."; }
+    else if (v.length > 20) { ok = false; msg = "아이디는 20자 이하로 입력해 주세요."; }
+    else if (!/^[A-Za-z0-9_]+$/.test(v)) { ok = false; msg = "영문/숫자/밑줄(_)만 가능합니다."; }
+    userName.classList.toggle("is-invalid", !ok);
+    userNameRuleMsg.textContent = msg || "아이디는 4~20자, 영문/숫자/밑줄만 가능합니다.";
+    userNameRuleMsg.style.display = ok ? "none" : "block";
+    if (!ok) { userNameOkMsg.style.display = "none"; userNameDupMsg.style.display = "none"; }
+    return ok;
+  }
+
+  let userAbort;
+  const checkUserNameLive = debounce(async () => {
+    if (!validateUserRule()) return;
+    const v = (userName.value || "").trim();
+    if (userAbort) userAbort.abort();
+    userAbort = new AbortController();
+    try {
+      const r = await fetch(`/user/check/username?userName=${encodeURIComponent(v)}`, { signal: userAbort.signal, credentials: "same-origin" });
+      const d = await r.json();
+      setValid(userName, !!(d && d.ok && d.available), userNameOkMsg, userNameDupMsg);
+    } catch {
+      userName.classList.remove("is-valid", "is-invalid");
+      userNameOkMsg.style.display = "none"; userNameDupMsg.style.display = "none";
+    }
+  }, 250);
+  userName?.addEventListener("input", checkUserNameLive);
+  userName?.addEventListener("blur", checkUserNameLive);
+
+  /* ==== email (local + @ + domain text) ==== */
+  const emailHidden = document.getElementById("email");
+  const emailLocal = document.getElementById("emailLocal");
+  const emailDomain = document.getElementById("emailDomain");
+  const atAddon = emailDomain ? emailDomain.previousElementSibling : null;
+  const emailDupMsg = document.getElementById("emailDupMsg");
+  const emailOkMsg = document.getElementById("emailOkMsg");
+  const emailRuleMsg = document.getElementById("emailRuleMsg");
+  [emailDupMsg, emailOkMsg, emailRuleMsg].forEach((el) => el && (el.style.display = "none"));
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let singleMode = false;
+
+  function setSingleMode(on) {
+    singleMode = !!on;
+    if (emailDomain) emailDomain.classList.toggle("d-none", singleMode);
+    if (atAddon) atAddon.classList.toggle("d-none", singleMode);
+  }
+  function buildEmail() {
+    const local = (emailLocal?.value || "").trim();
+    if (singleMode) { emailHidden.value = local.toLowerCase(); return emailHidden.value; }
+    const domain = (emailDomain?.value || "").trim();
+    emailHidden.value = local && domain ? `${local}@${domain}`.toLowerCase() : "";
+    return emailHidden.value;
+  }
+
+  emailLocal?.addEventListener("keydown", (e) => {
+    if (e.key === "@") {
+      e.preventDefault();
+      const s = emailLocal.selectionStart ?? emailLocal.value.length;
+      const epos = emailLocal.selectionEnd ?? emailLocal.value.length;
+      const v = emailLocal.value;
+      emailLocal.value = v.slice(0, s) + "@" + v.slice(epos);
+      emailLocal.setSelectionRange(s + 1, s + 1);
+      setSingleMode(true); buildEmail(); checkEmailLive();
+    }
+  });
+  emailLocal?.addEventListener("paste", (e) => {
+    const t = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+    if (t.includes("@")) { e.preventDefault(); emailLocal.value = t.trim(); setSingleMode(true); buildEmail(); checkEmailLive(); }
+  });
+  emailLocal?.addEventListener("input", () => { if (singleMode && !emailLocal.value.includes("@")) setSingleMode(false); buildEmail(); checkEmailLive(); });
+  emailDomain?.addEventListener("input", () => { buildEmail(); checkEmailLive(); });
+
+  (function hydrateEmail() {
+    const v = (emailHidden?.value || "").trim();
+    if (v && v.includes("@")) { emailLocal.value = v; setSingleMode(true); }
+  })();
+
+  let emailAbort;
+  const checkEmailLive = debounce(async () => {
+    const value = buildEmail();
+    if (!emailRegex.test(value)) {
+      emailHidden.classList.remove("is-valid", "is-invalid");
+      emailOkMsg.style.display = "none"; emailDupMsg.style.display = "none";
+      emailRuleMsg && (emailRuleMsg.style.display = "none");
+      return;
+    }
+    if (emailAbort) emailAbort.abort();
+    emailAbort = new AbortController();
+    try {
+      const r = await fetch(`/user/check/email?email=${encodeURIComponent(value)}`, { signal: emailAbort.signal, credentials: "same-origin" });
+      const d = await r.json();
+      let msg = "";
+      if (!d.syntax) msg = "올바른 이메일 형식이 아닙니다.";
+      else if (d.disposable) msg = "임시메일 도메인은 사용할 수 없습니다.";
+      else if (!d.mx) msg = "이 도메인에는 메일 서버(MX)가 없어 수신이 어려울 수 있습니다.";
+
+      if (!d.acceptable) {
+        emailHidden.classList.add("is-invalid"); emailHidden.classList.remove("is-valid");
+        emailOkMsg.style.display = "none"; emailDupMsg.style.display = "none";
+        if (emailRuleMsg) { emailRuleMsg.textContent = msg || "사용할 수 없는 이메일입니다."; emailRuleMsg.style.display = "block"; }
+        return;
+      } else {
+        if (emailRuleMsg) emailRuleMsg.style.display = "none";
+        setValid(emailHidden, !!d.available, emailOkMsg, emailDupMsg);
+      }
+    } catch {
+      emailHidden.classList.remove("is-valid", "is-invalid");
+      emailOkMsg.style.display = "none"; emailDupMsg.style.display = "none";
+      emailRuleMsg && (emailRuleMsg.style.display = "none");
+    }
+  }, 220);
+
+  /* ==== custom domain dropdown (unchanged logic omitted for brevity) ==== */
+  const nativeListId = emailDomain?.getAttribute("list");
+  if (nativeListId) emailDomain.removeAttribute("list");
+  const listEl = nativeListId ? document.getElementById(nativeListId) : null;
+  const DEFAULT_DOMAINS = ["gmail.com","naver.com","daum.net","hanmail.net","nate.com","kakao.com","outlook.com","icloud.com","yahoo.com"];
+  const DOMAIN_ITEMS = listEl?.options?.length ? Array.from(listEl.options).map(o=>o.value).filter(Boolean) : DEFAULT_DOMAINS;
+
+  if (emailDomain?.parentElement && getComputedStyle(emailDomain.parentElement).position === "static") {
+    emailDomain.parentElement.style.position = "relative";
+  }
+  let menu, menuOpen=false, activeIndex=-1;
+  function ensureMenu(){ if (menu) return menu; menu = document.createElement("ul"); menu.id="emailDomainMenu"; menu.setAttribute("role","listbox"); menu.className="list-group"; Object.assign(menu.style,{position:"absolute",zIndex:1055,display:"none",maxHeight:"200px",overflowY:"auto"}); emailDomain.parentElement.appendChild(menu); return menu;}
+  function updateMenuPos(){ if(!menu) return; const r=emailDomain.getBoundingClientRect(), pr=emailDomain.parentElement.getBoundingClientRect(); menu.style.left=r.left-pr.left+"px"; menu.style.top=r.bottom-pr.top+"px"; menu.style.width=r.width+"px";}
+  function populateMenu(filter=""){ ensureMenu(); menu.innerHTML=""; const f=(filter||"").toLowerCase(); const items=DOMAIN_ITEMS.filter(d=>d.toLowerCase().startsWith(f)); (items.length?items:DOMAIN_ITEMS).forEach((d,idx)=>{ const li=document.createElement("li"); li.className="list-group-item list-group-item-action"; li.textContent=d; li.setAttribute("role","option"); li.addEventListener("mousedown",e=>e.preventDefault()); li.addEventListener("click",()=>chooseValue(d)); li.addEventListener("mouseenter",()=>highlight(idx)); menu.appendChild(li);}); activeIndex=-1;}
+  function highlight(index){ if(!menuOpen) return; const items=menu.querySelectorAll("li"); items.forEach((li,i)=>{ li.classList.toggle("active", i===index); li.setAttribute("aria-selected", String(i===index)); }); activeIndex=index; if(index>=0 && items[index]){ const li=items[index]; const mTop=menu.scrollTop, mBot=mTop+menu.clientHeight; const liTop=li.offsetTop, liBot=liTop+li.offsetHeight; if(liTop<mTop) menu.scrollTop=liTop; else if(liBot>mBot) menu.scrollTop=liBot-menu.clientHeight; } }
+  function showDomainDropdown(){ if(singleMode||menuOpen) return; ensureMenu(); updateMenuPos(); populateMenu(emailDomain.value); menu.style.display="block"; menuOpen=true; }
+  function hideDomainDropdown(){ if(!menu) return; menu.style.display="none"; menuOpen=false; activeIndex=-1; }
+  function filterDomainDropdown(q){ if(!menuOpen) return; populateMenu(q); }
+  function chooseValue(v){ emailDomain.value=v; buildEmail(); checkEmailLive(); hideDomainDropdown(); emailDomain.focus(); }
+  emailDomain?.addEventListener("focus", showDomainDropdown);
+  emailDomain?.addEventListener("click", showDomainDropdown);
+  emailDomain?.addEventListener("input", () => { buildEmail(); checkEmailLive(); filterDomainDropdown(emailDomain.value); showDomainDropdown(); });
+  emailDomain?.addEventListener("blur", ()=>setTimeout(hideDomainDropdown,150));
+  window.addEventListener("resize", updateMenuPos);
+  window.addEventListener("scroll", updateMenuPos, true);
+  emailDomain?.addEventListener("keydown", (e) => {
+    if (singleMode) return;
+    if (e.key === "ArrowDown"){ e.preventDefault(); if(!menuOpen){showDomainDropdown(); return;} const len=menu.querySelectorAll("li").length; if(!len) return; highlight(activeIndex < len-1 ? activeIndex+1 : 0); }
+    else if (e.key === "ArrowUp"){ e.preventDefault(); if(!menuOpen){showDomainDropdown(); return;} const len=menu.querySelectorAll("li").length; if(!len) return; highlight(activeIndex > 0 ? activeIndex-1 : len-1); }
+    else if (e.key === "Enter"){ if(menuOpen && activeIndex>=0){ e.preventDefault(); const li=menu.querySelectorAll("li")[activeIndex]; if(li) chooseValue(li.textContent.trim()); } }
+    else if (e.key === "Tab"){ if(menuOpen && activeIndex>=0){ const li=menu.querySelectorAll("li")[activeIndex]; if(li) chooseValue(li.textContent.trim()); } }
+    else if (e.key === "Escape"){ if(menuOpen){ e.preventDefault(); hideDomainDropdown(); } }
+  });
+
+  /* ==== toggle password ==== */
+  document.querySelectorAll(".toggle-pw").forEach((btn) => {
+    const sel = btn.getAttribute("data-target");
+    const input = document.querySelector(sel);
+    if (!input) return;
+    const icon = btn.querySelector("i") || btn.appendChild(document.createElement("i"));
+    icon.classList.add("bi");
+    const sync = () => {
+      icon.classList.remove("bi-eye", "bi-eye-slash");
+      icon.classList.add(input.type === "password" ? "bi-eye" : "bi-eye-slash");
+      btn.setAttribute("aria-pressed", String(input.type === "text"));
+      btn.setAttribute("aria-label", input.type === "password" ? "비밀번호 보기" : "비밀번호 숨기기");
+    };
+    sync();
+    btn.addEventListener("click", () => { input.type = input.type === "password" ? "text" : "password"; sync(); });
+  });
+
+  /* ==== password rule + match ==== */
+  const pw1 = document.getElementById("password1");
+  const pw2 = document.getElementById("password2");
+  const pwRule = document.getElementById("pwRuleFeedback");
+  const pwOkF = document.getElementById("pwOkFeedback");
+  const pwBadF = document.getElementById("pwMatchFeedback");
+  let pwAbort, pwAjaxValid = false;
+  const PW_CLIENT_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;'"<>,.?/~`]).{8,150}$/;
+
+  const showRuleError = (msg) => { pw1.classList.add("is-invalid"); if (pwRule) { pwRule.textContent = msg || "영문+숫자+특수문자 포함 8자 이상"; pwRule.style.display = "block"; } };
+  const clearRuleError = () => { pw1.classList.remove("is-invalid"); if (pwRule) pwRule.style.display = "none"; };
+  const syncPwMatch = () => {
+    const a = pw1.value || "", b = pw2.value || "";
+    if (!pwAjaxValid || !b) { pw2.classList.remove("is-valid","is-invalid"); pwOkF.style.display="none"; pwBadF.style.display="none"; return; }
+    const match = a === b;
+    pw2.classList.toggle("is-valid", match);
+    pw2.classList.toggle("is-invalid", !match);
+    pwOkF.style.display = match ? "block" : "none";
+    pwBadF.style.display = match ? "none" : "block";
+  };
+  const checkPwAjax = debounce(async () => {
+    const v = pw1.value || "";
+    if (!v) { pw1.classList.remove("is-valid","is-invalid"); if (pwRule) pwRule.style.display="none"; pwAjaxValid=false; syncPwMatch(); return; }
+    if (pwAbort) pwAbort.abort();
+    pwAbort = new AbortController();
+    try {
+      const r = await fetch(`/user/check/password?pw=${encodeURIComponent(v)}`, { signal: pwAbort.signal, credentials: "same-origin" });
+      const d = await r.json();
+      pwAjaxValid = !!(d && d.ok && d.valid);
+      if (pwAjaxValid) { clearRuleError(); pw1.classList.add("is-valid"); } else { showRuleError(d && d.msg); pw1.classList.remove("is-valid"); }
+    } catch {
+      const ok = PW_CLIENT_REGEX.test(v);
+      pwAjaxValid = ok;
+      if (ok) { clearRuleError(); pw1.classList.add("is-valid"); }
+      else { showRuleError(); pw1.classList.remove("is-valid"); }
+    }
+    syncPwMatch();
+  }, 300);
+  pw1?.addEventListener("input", checkPwAjax);
+  pw1?.addEventListener("blur", checkPwAjax);
+  pw2?.addEventListener("input", syncPwMatch);
+  pw2?.addEventListener("blur", syncPwMatch);
+
+  /* ==== phone compose ==== */
+  const ph2 = document.getElementById("phone2");
+  const ph3 = document.getElementById("phone3");
+  const phoneHidden = document.getElementById("phone");
+  function buildPhone() {
+    const a = digitsOnly(ph2?.value), b = digitsOnly(ph3?.value);
+    if (ph2) ph2.value = a; if (ph3) ph3.value = b;
+    const d = a?.length === 4 && b?.length === 4 ? `010${a}${b}` : "";
+    phoneHidden.value = d;
+    return d && /^01[016789]\d{8}$/.test(d);
+  }
+  ph2?.addEventListener("input", () => { if (digitsOnly(ph2.value).length === 4) ph3?.focus(); buildPhone(); });
+  ph3?.addEventListener("input", () => buildPhone());
+  ph3?.addEventListener("keydown", (e) => { if (e.key === "Backspace" && ph3.selectionStart === 0 && ph3.selectionEnd === 0) ph2?.focus(); });
+
+  /* ==== phone verification (재전송 버튼 + 별도 인증확인 버튼 + 3분 만료) ==== */
+  const CODE_EXPIRE_SEC = 180; // 3분
+  const btnAction   = document.getElementById("btnPhoneAction"); // 발송/재전송
+  const codeArea    = document.getElementById("phoneCodeArea");
+  const phoneVerified = document.getElementById("phoneVerified");
+  const msgEl       = document.getElementById("phoneMsg");
+  const csrfInput   = document.querySelector('input[name="_csrf"]');
+
+  let phase = "idle";       // idle | sent | verified
+  let codeInput = null;     // 동적으로 추가되는 입력 참조
+  let btnVerify = null;     // "인증 확인" 버튼
+  let expireTimer = null, expireLeft = 0;
+
+  function setMsg(text, ok = false) {
+    if (!msgEl) return;
+    msgEl.textContent = text || "";
+    msgEl.className = "form-text " + (ok ? "text-success" : "text-danger");
+  }
+  async function postForm(url, params) {
+    const body = new URLSearchParams(params);
+    if (csrfInput?.value) body.append(csrfInput.getAttribute("name") || "_csrf", csrfInput.value);
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type":"application/x-www-form-urlencoded" }, credentials: "same-origin", body });
+    return await r.json();
+  }
+  function mmss(sec){ const m = Math.floor(sec/60), s = sec%60; return `${String(m).padStart(1,"0")}:${String(s).padStart(2,"0")}`; }
+
+  function ensureCodeRow() {
+    if (codeInput && btnVerify) return codeInput;
+    const wrap = document.createElement("div");
+    wrap.className = "row g-2 align-items-start";
+    wrap.innerHTML = `
+      <div class="col-8 col-sm-6">
+        <input id="phoneCode" type="text" class="form-control" inputmode="numeric" maxlength="6" placeholder="인증번호 6자리" />
+      </div>
+      <div class="col-4 col-sm-6 d-grid">
+        <button type="button" class="btn btn-primary" id="btnPhoneVerify">인증 확인</button>
+      </div>`;
+    codeArea.innerHTML = ""; // 중복 생성 방지
+    codeArea.appendChild(wrap);
+    codeInput = wrap.querySelector("#phoneCode");
+    btnVerify = wrap.querySelector("#btnPhoneVerify");
+
+    codeInput.addEventListener("keydown", (e) => {
+      if (!e.isComposing && e.key === "Enter") {
+        e.preventDefault();
+        btnVerify?.click();
+      }
+    });
+    btnVerify.addEventListener("click", onVerifyClick);
+    return codeInput;
+  }
+
+  function setPhaseLabel() {
+    if (phase === "idle") {
+      btnAction.textContent = "인증번호 발송";
+      btnAction.disabled = false;
+    } else if (phase === "sent") {
+      btnAction.disabled = false; // 재전송 허용
+      btnAction.textContent = `재전송(${mmss(expireLeft)})`;
+    } else if (phase === "verified") {
+      btnAction.textContent = "인증 완료";
+      btnAction.classList.remove("btn-outline-secondary");
+      btnAction.classList.add("btn-outline-success");
+      btnAction.disabled = true;
+    }
+  }
+
+  function stopExpireTimer(){ clearInterval(expireTimer); expireTimer = null; }
+  function startExpireTimer(){
+    expireLeft = CODE_EXPIRE_SEC;
+    stopExpireTimer();
+    expireTimer = setInterval(() => {
+      expireLeft--;
+      if (phase === "sent") setPhaseLabel();
+      if (expireLeft <= 0) {
+        stopExpireTimer();
+        // 만료 처리: 실패로 간주
+        setMsg("다시 인증을 시도하십시요", false);
+        btnVerify && (btnVerify.disabled = true);
+        codeInput && (codeInput.readOnly = true);
+        phase = "idle";
+        setPhaseLabel();
+      }
+    }, 1000);
+  }
+
+  async function onSendOrResend() {
+    const phone = document.getElementById("phone")?.value || "";
+    if (!buildPhone() || !/^01[016789]\d{8}$/.test(phone)) {
+      setMsg("휴대폰 번호를 올바르게 입력해 주세요.", false);
+      ph2?.focus(); return;
+    }
+    try {
+      btnAction.disabled = true;
+      const d = await postForm("/auth/phone/send", { phone });
+      if (d.ok) {
+        phase = "sent";
+        ensureCodeRow()?.focus();
+        // 성공 문구: 3분으로 변경
+        setMsg("인증번호가 발송되었습니다. 3분 내 입력해 주세요.", true);
+        // 3분 만료 타이머 시작
+        startExpireTimer();
+        setPhaseLabel(); // 재전송(3:00)
+        btnVerify && (btnVerify.disabled = false);
+        codeInput && (codeInput.readOnly = false);
+      } else {
+        setMsg(d.msg || "발송 실패", false);
+      }
+    } catch {
+      setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false);
+    } finally {
+      if (phase !== "verified") btnAction.disabled = false;
+    }
+  }
+
+  async function onVerifyClick() {
+    if (phase !== "sent") return;
+    if (expireLeft <= 0) {
+      setMsg("다시 인증을 시도하십시요", false);
+      return;
+    }
+    const phone = document.getElementById("phone")?.value || "";
+    const code  = digitsOnly(ensureCodeRow()?.value);
+    if (!/^\d{6}$/.test(code || "")) {
+      setMsg("인증번호 6자리를 입력해 주세요.", false);
+      codeInput?.focus(); return;
+    }
+    try {
+      btnVerify.disabled = true;
+      const d = await postForm("/auth/phone/verify", { phone, code });
+      if (d.ok) {
+        phase = "verified";
+        stopExpireTimer();
+        setPhaseLabel();
+        setMsg("휴대폰 인증이 완료되었습니다.", true);
+        phoneVerified.value = "Y";
+        ph2.readOnly = true; ph3.readOnly = true;
+        codeInput && (codeInput.readOnly = true);
+      } else {
+        setMsg(d.msg || "인증 실패", false);
+      }
+    } catch {
+      setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false);
+    } finally {
+      if (phase !== "verified") btnVerify.disabled = false;
+    }
+  }
+
+  btnAction?.addEventListener("click", () => {
+    if (phase === "idle") onSendOrResend();
+    else if (phase === "sent") onSendOrResend(); // 재전송
+  });
+  setPhaseLabel();
+
+  /* ==== birth: 3-select + 8세 이상 ==== */
+  (() => {
+    const MIN_AGE = 8;
+    const ySel = document.getElementById("birthYear"),
+          mSel = document.getElementById("birthMonth"),
+          dSel = document.getElementById("birthDay");
+    const hidden = document.getElementById("birth");
+    const invalid = document.getElementById("birthInvalid");
+    const today = new Date();
+    const cutoff = new Date(today.getFullYear()-MIN_AGE, today.getMonth(), today.getDate());
+    const pad = (n)=>String(n).padStart(2,"0");
+    const fmt = (y,m,d)=>`${y}-${pad(m)}-${pad(d)}`;
+    for (let y = cutoff.getFullYear(); y >= 1900; y--) { const o=document.createElement("option"); o.value=String(y); o.textContent=String(y); ySel.appendChild(o); }
+    for (let m = 1; m <= 12; m++) { const o=document.createElement("option"); o.value=String(m); o.textContent=pad(m); mSel.appendChild(o); }
+    const daysInMonth=(Y,M)=>new Date(Y,M,0).getDate();
+    function fillDays(){ const y=parseInt(ySel.value,10), m=parseInt(mSel.value,10); const last=!isNaN(y)&&!isNaN(m)?daysInMonth(y,m):31;
+      const prev=parseInt(dSel.value,10); dSel.innerHTML = '<option value="" selected disabled>DD</option>';
+      for (let d=1; d<=last; d++){ const o=document.createElement("option"); o.value=String(d); o.textContent=pad(d); dSel.appendChild(o); }
+      if (prev && prev <= last) dSel.value = String(prev);
+    }
+    function validateAndBuild(){ const y=parseInt(ySel.value,10), m=parseInt(mSel.value,10), d=parseInt(dSel.value,10);
+      let ok=false; if(!isNaN(y)&&!isNaN(m)&&!isNaN(d)){ const sel=new Date(y,m-1,d);
+        const notFuture = sel <= cutoff; const notTooOld = sel >= new Date(1900,0,1);
+        ok = notFuture && notTooOld && sel.getFullYear()===y && sel.getMonth()===m-1 && sel.getDate()===d; hidden.value = ok ? fmt(y,m,d) : "";
+      } else hidden.value = "";
+      const touched = !!(ySel.value||mSel.value||dSel.value);
+      [ySel,mSel,dSel].forEach(el=>{ el.classList.toggle("is-valid", ok); el.classList.toggle("is-invalid", !ok && touched); });
+      invalid && (invalid.style.display = ok ? "none" : touched ? "block" : "none");
+      return ok;
+    }
+    ySel.addEventListener("change", ()=>{ fillDays(); validateAndBuild(); });
+    mSel.addEventListener("change", ()=>{ fillDays(); validateAndBuild(); });
+    dSel.addEventListener("change", ()=>{ validateAndBuild(); });
+    if (hidden.value){ const [yy,mm,dd]=hidden.value.split("-").map(s=>parseInt(s,10)); if(yy) ySel.value=String(yy); if(mm) mSel.value=String(mm); fillDays(); if(dd) dSel.value=String(dd); validateAndBuild(); }
+    window.validateBirth = validateAndBuild;
+  })();
+
+  /* ==== final submit ==== */
+  const emailRegexFinal = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  async function ensureAvailableSoft() {
+    const id = (userName.value || "").trim();
+    const em = (buildEmail() || "").toLowerCase();
+    const idRuleOk = id.length >= 4 && /^[A-Za-z0-9_]+$/.test(id);
+    const emRuleOk = emailRegexFinal.test(em);
+    let idOk = idRuleOk, emOk = emRuleOk;
+
+    if (idRuleOk) {
+      try { const r = await fetch(`/user/check/username?userName=${encodeURIComponent(id)}`, { credentials:"same-origin" }); const d = await r.json(); idOk = !!(d && d.ok && d.available); }
+      catch { idOk = true; }
+    }
+    if (emRuleOk) {
+      try {
+        const r = await fetch(`/user/check/email?email=${encodeURIComponent(em)}`, { credentials:"same-origin" });
+        const d = await r.json();
+        emOk = !!(d && d.acceptable && d.available);
+        if (!d.acceptable && emailRuleMsg) {
+          let msg = !d.syntax ? "올바른 이메일 형식이 아닙니다." : d.disposable ? "해당 이메일 주소는 사용할 수 없습니다." : !d.mx ? "이 도메인에는 메일 서버가 없어 수신이 불가능 합니다." : "사용할 수 없는 이메일입니다.";
+          emailRuleMsg.textContent = msg; emailRuleMsg.style.display = "block";
         }
+      } catch { emOk = true; }
+    }
+    setValid(userName, idOk, userNameOkMsg, userNameDupMsg);
+    if (emailRuleMsg && emOk) emailRuleMsg.style.display = "none";
+    setValid(emailHidden, emOk, emailOkMsg, emailDupMsg);
+    return idOk && emOk;
+  }
 
-        let userAbort;
-        const checkUserNameLive = debounce(async () => {
-          if (!validateUserRule()) return;
-          const v = (userName.value || "").trim();
-          if (userAbort) userAbort.abort();
-          userAbort = new AbortController();
-          try {
-            const r = await fetch(
-              `/user/check/username?userName=${encodeURIComponent(v)}`,
-              { signal: userAbort.signal, credentials: "same-origin" }
-            );
-            const d = await r.json();
-            setValid(
-              userName,
-              !!(d && d.ok && d.available),
-              userNameOkMsg,
-              userNameDupMsg
-            );
-          } catch {
-            userName.classList.remove("is-valid", "is-invalid");
-            userNameOkMsg.style.display = "none";
-            userNameDupMsg.style.display = "none";
-          }
-        }, 250);
-        userName?.addEventListener("input", checkUserNameLive);
-        userName?.addEventListener("blur", checkUserNameLive);
+  let submitting = false;
+  form?.addEventListener("submit", async (e) => {
+    if (submitting) return;
+    e.preventDefault();
 
-        /* ==== email (local + @ + domain text) ==== */
-        const emailHidden = document.getElementById("email");
-        const emailLocal = document.getElementById("emailLocal");
-        const emailDomain = document.getElementById("emailDomain");
-        const atAddon = emailDomain ? emailDomain.previousElementSibling : null;
-        const emailDupMsg = document.getElementById("emailDupMsg");
-        const emailOkMsg = document.getElementById("emailOkMsg");
-        const emailRuleMsg = document.getElementById("emailRuleMsg");
-        [emailDupMsg, emailOkMsg, emailRuleMsg].forEach(
-          (el) => el && (el.style.display = "none")
-        );
+    if (!window.validateBirth?.()) return;
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 로컬 '.'/특수문자 허용(표준 널널 매칭)
-        let singleMode = false; // true: emailLocal에 전체 이메일을 입력하는 모드
+    // 비밀번호 규칙
+    const v = document.getElementById("password1")?.value || "";
+    let pwOk = false;
+    try { const r = await fetch(`/user/check/password?pw=${encodeURIComponent(v)}`, { credentials:"same-origin" }); const d = await r.json(); pwOk = !!(d && d.ok && d.valid); }
+    catch { pwOk = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;'"<>,.?/~`]).{8,150}$/.test(v); }
+    if (!pwOk) { document.getElementById("password1")?.focus(); return; }
 
-        function setSingleMode(on) {
-          singleMode = !!on;
-          if (emailDomain) emailDomain.classList.toggle("d-none", singleMode);
-          if (atAddon) atAddon.classList.toggle("d-none", singleMode);
-        }
-        function buildEmail() {
-          const local = (emailLocal?.value || "").trim();
-          if (singleMode) {
-            emailHidden.value = local.toLowerCase();
-            return emailHidden.value;
-          }
-          const domain = (emailDomain?.value || "").trim();
-          emailHidden.value =
-            local && domain ? `${local}@${domain}`.toLowerCase() : "";
-          return emailHidden.value;
-        }
+    if ((document.getElementById("password2")?.value || "") !== v) { document.getElementById("password2")?.focus(); return; }
 
-        // '@'을 입력하면 단일 모드로 전환(입력칸/Addon 숨김)
-        emailLocal?.addEventListener("keydown", (e) => {
-          if (e.key === "@") {
-            e.preventDefault();
-            const s = emailLocal.selectionStart ?? emailLocal.value.length;
-            const epos = emailLocal.selectionEnd ?? emailLocal.value.length;
-            const v = emailLocal.value;
-            emailLocal.value = v.slice(0, s) + "@" + v.slice(epos);
-            emailLocal.setSelectionRange(s + 1, s + 1);
-            setSingleMode(true);
-            buildEmail();
-            checkEmailLive();
-          }
-        });
-        // 붙여넣기 'local@domain' → 단일 모드
-        emailLocal?.addEventListener("paste", (e) => {
-          const t =
-            (e.clipboardData || window.clipboardData)?.getData("text") || "";
-          if (t.includes("@")) {
-            e.preventDefault();
-            emailLocal.value = t.trim();
-            setSingleMode(true);
-            buildEmail();
-            checkEmailLive();
-          }
-        });
-        // '@'가 사라지면 다시 분리 모드
-        emailLocal?.addEventListener("input", () => {
-          if (singleMode && !emailLocal.value.includes("@"))
-            setSingleMode(false);
-          buildEmail();
-          checkEmailLive();
-        });
-        emailDomain?.addEventListener("input", () => {
-          buildEmail();
-          checkEmailLive();
-        });
+    // 휴대폰 조합/검증
+    if (!buildPhone()) {
+      document.getElementById("phone2")?.classList.add("is-invalid");
+      document.getElementById("phone3")?.classList.add("is-invalid");
+      document.getElementById("phone2")?.focus();
+      return;
+    }
 
-        // 초기 값 복원
-        (function hydrateEmail() {
-          const v = (emailHidden?.value || "").trim();
-          if (v && v.includes("@")) {
-            emailLocal.value = v;
-            setSingleMode(true);
-          }
-        })();
+    // 인증 완료 여부
+    if (document.getElementById("phoneVerified")?.value !== "Y") {
+      document.getElementById("phoneCode")?.focus();
+      const m = "휴대폰 인증을 완료해 주세요. '인증번호 발송' → 문자 수신 → '인증 확인'을 눌러 인증하세요.";
+      const msgEl = document.getElementById("phoneMsg");
+      if (msgEl) { msgEl.textContent = m; msgEl.className = "form-text text-danger"; }
+      return;
+    }
 
-        // 강화된 이메일 검사(API: acceptable/available)
-        let emailAbort;
-        const checkEmailLive = debounce(async () => {
-          const value = buildEmail();
-          if (!emailRegex.test(value)) {
-            emailHidden.classList.remove("is-valid", "is-invalid");
-            emailOkMsg.style.display = "none";
-            emailDupMsg.style.display = "none";
-            emailRuleMsg && (emailRuleMsg.style.display = "none");
-            return;
-          }
-          if (emailAbort) emailAbort.abort();
-          emailAbort = new AbortController();
-          try {
-            const r = await fetch(
-              `/user/check/email?email=${encodeURIComponent(value)}`,
-              { signal: emailAbort.signal, credentials: "same-origin" }
-            );
-            const d = await r.json();
+    await ensureAvailableSoft(); // 실패해도 서버에서 재검증
 
-            // 정책 사유 메시지
-            let msg = "";
-            if (!d.syntax) msg = "올바른 이메일 형식이 아닙니다.";
-            else if (d.disposable)
-              msg = "임시메일 도메인은 사용할 수 없습니다.";
-            else if (!d.mx)
-              msg =
-                "이 도메인에는 메일 서버(MX)가 없어 수신이 어려울 수 있습니다.";
+    submitting = true;
+    form.submit();
+  });
+})();
+</script>
 
-            if (!d.acceptable) {
-              emailHidden.classList.add("is-invalid");
-              emailHidden.classList.remove("is-valid");
-              emailOkMsg.style.display = "none";
-              emailDupMsg.style.display = "none";
-              if (emailRuleMsg) {
-                emailRuleMsg.textContent =
-                  msg || "사용할 수 없는 이메일입니다.";
-                emailRuleMsg.style.display = "block";
-              }
-              return;
-            } else {
-              if (emailRuleMsg) emailRuleMsg.style.display = "none";
-              setValid(emailHidden, !!d.available, emailOkMsg, emailDupMsg);
-            }
-          } catch {
-            emailHidden.classList.remove("is-valid", "is-invalid");
-            emailOkMsg.style.display = "none";
-            emailDupMsg.style.display = "none";
-            emailRuleMsg && (emailRuleMsg.style.display = "none");
-          }
-        }, 220);
-
-        /* ==== 도메인 제안 드롭다운(커스텀) + 키보드 내비 ==== */
-        const nativeListId = emailDomain?.getAttribute("list");
-        if (nativeListId) emailDomain.removeAttribute("list");
-        const listEl = nativeListId
-          ? document.getElementById(nativeListId)
-          : null;
-        const DEFAULT_DOMAINS = [
-          "gmail.com",
-          "naver.com",
-          "daum.net",
-          "hanmail.net",
-          "nate.com",
-          "kakao.com",
-          "outlook.com",
-          "icloud.com",
-          "yahoo.com",
-        ];
-        const DOMAIN_ITEMS = listEl?.options?.length
-          ? Array.from(listEl.options)
-              .map((o) => o.value)
-              .filter(Boolean)
-          : DEFAULT_DOMAINS;
-
-        if (
-          emailDomain?.parentElement &&
-          getComputedStyle(emailDomain.parentElement).position === "static"
-        ) {
-          emailDomain.parentElement.style.position = "relative";
-        }
-        let menu,
-          menuOpen = false,
-          activeIndex = -1;
-        function ensureMenu() {
-          if (menu) return menu;
-          menu = document.createElement("ul");
-          menu.id = "emailDomainMenu";
-          menu.setAttribute("role", "listbox");
-          menu.className = "list-group";
-          Object.assign(menu.style, {
-            position: "absolute",
-            zIndex: 1055,
-            display: "none",
-            maxHeight: "200px",
-            overflowY: "auto",
-          });
-          emailDomain.parentElement.appendChild(menu);
-          return menu;
-        }
-        function updateMenuPos() {
-          if (!menu) return;
-          const r = emailDomain.getBoundingClientRect(),
-            pr = emailDomain.parentElement.getBoundingClientRect();
-          menu.style.left = r.left - pr.left + "px";
-          menu.style.top = r.bottom - pr.top + "px";
-          menu.style.width = r.width + "px";
-        }
-        function populateMenu(filter = "") {
-          ensureMenu();
-          menu.innerHTML = "";
-          const f = (filter || "").toLowerCase();
-          const items = DOMAIN_ITEMS.filter((d) =>
-            d.toLowerCase().startsWith(f)
-          );
-          (items.length ? items : DOMAIN_ITEMS).forEach((d, idx) => {
-            const li = document.createElement("li");
-            li.className = "list-group-item list-group-item-action";
-            li.textContent = d;
-            li.setAttribute("role", "option");
-            li.addEventListener("mousedown", (e) => e.preventDefault());
-            li.addEventListener("click", () => chooseValue(d));
-            li.addEventListener("mouseenter", () => highlight(idx));
-            menu.appendChild(li);
-          });
-          activeIndex = -1;
-        }
-        function highlight(index) {
-          if (!menuOpen) return;
-          const items = menu.querySelectorAll("li");
-          items.forEach((li, i) => {
-            li.classList.toggle("active", i === index);
-            li.setAttribute("aria-selected", String(i === index));
-          });
-          activeIndex = index;
-          if (index >= 0 && items[index]) {
-            const li = items[index];
-            const mTop = menu.scrollTop,
-              mBot = mTop + menu.clientHeight;
-            const liTop = li.offsetTop,
-              liBot = liTop + li.offsetHeight;
-            if (liTop < mTop) menu.scrollTop = liTop;
-            else if (liBot > mBot) menu.scrollTop = liBot - menu.clientHeight;
-          }
-        }
-        function showDomainDropdown() {
-          if (singleMode || menuOpen) return;
-          ensureMenu();
-          updateMenuPos();
-          populateMenu(emailDomain.value);
-          menu.style.display = "block";
-          menuOpen = true;
-        }
-        function hideDomainDropdown() {
-          if (!menu) return;
-          menu.style.display = "none";
-          menuOpen = false;
-          activeIndex = -1;
-        }
-        function filterDomainDropdown(q) {
-          if (!menuOpen) return;
-          populateMenu(q);
-        }
-        function chooseValue(v) {
-          emailDomain.value = v;
-          buildEmail();
-          checkEmailLive();
-          hideDomainDropdown();
-          emailDomain.focus();
-        }
-
-        emailDomain?.addEventListener("focus", showDomainDropdown);
-        emailDomain?.addEventListener("click", showDomainDropdown);
-        emailDomain?.addEventListener("input", () => {
-          buildEmail();
-          checkEmailLive();
-          filterDomainDropdown(emailDomain.value);
-          showDomainDropdown();
-        });
-        emailDomain?.addEventListener("blur", () =>
-          setTimeout(hideDomainDropdown, 150)
-        );
-        window.addEventListener("resize", updateMenuPos);
-        window.addEventListener("scroll", updateMenuPos, true);
-        emailDomain?.addEventListener("keydown", (e) => {
-          if (singleMode) return;
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            if (!menuOpen) {
-              showDomainDropdown();
-              return;
-            }
-            const len = menu.querySelectorAll("li").length;
-            if (!len) return;
-            highlight(activeIndex < len - 1 ? activeIndex + 1 : 0);
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            if (!menuOpen) {
-              showDomainDropdown();
-              return;
-            }
-            const len = menu.querySelectorAll("li").length;
-            if (!len) return;
-            highlight(activeIndex > 0 ? activeIndex - 1 : len - 1);
-          } else if (e.key === "Enter") {
-            if (menuOpen && activeIndex >= 0) {
-              e.preventDefault();
-              const li = menu.querySelectorAll("li")[activeIndex];
-              if (li) chooseValue(li.textContent.trim());
-            }
-          } else if (e.key === "Tab") {
-            if (menuOpen && activeIndex >= 0) {
-              const li = menu.querySelectorAll("li")[activeIndex];
-              if (li) chooseValue(li.textContent.trim());
-            }
-          } else if (e.key === "Escape") {
-            if (menuOpen) {
-              e.preventDefault();
-              hideDomainDropdown();
-            }
-          }
-        });
-
-        /* ==== toggle password ==== */
-        document.querySelectorAll(".toggle-pw").forEach((btn) => {
-          const sel = btn.getAttribute("data-target");
-          const input = document.querySelector(sel);
-          if (!input) return;
-          const icon =
-            btn.querySelector("i") ||
-            btn.appendChild(document.createElement("i"));
-          icon.classList.add("bi");
-          const sync = () => {
-            icon.classList.remove("bi-eye", "bi-eye-slash");
-            icon.classList.add(
-              input.type === "password" ? "bi-eye" : "bi-eye-slash"
-            );
-            btn.setAttribute("aria-pressed", String(input.type === "text"));
-            btn.setAttribute(
-              "aria-label",
-              input.type === "password" ? "비밀번호 보기" : "비밀번호 숨기기"
-            );
-          };
-          sync();
-          btn.addEventListener("click", () => {
-            input.type = input.type === "password" ? "text" : "password";
-            sync();
-          });
-        });
-
-        /* ==== password rule + match ==== */
-        const pw1 = document.getElementById("password1");
-        const pw2 = document.getElementById("password2");
-        const pwRule = document.getElementById("pwRuleFeedback");
-        const pwOkF = document.getElementById("pwOkFeedback");
-        const pwBadF = document.getElementById("pwMatchFeedback");
-        let pwAbort,
-          pwAjaxValid = false;
-
-        // 클라이언트 폴백용: 영문+숫자+특수문자 ≥1, 8~150자
-        const PW_CLIENT_REGEX =
-          /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;'"<>,.?/~`]).{8,150}$/;
-
-        const showRuleError = (msg) => {
-          pw1.classList.add("is-invalid");
-          if (pwRule) {
-            pwRule.textContent = msg || "영문+숫자+특수문자 포함 8자 이상";
-            pwRule.style.display = "block";
-          }
-        };
-        const clearRuleError = () => {
-          pw1.classList.remove("is-invalid");
-          if (pwRule) pwRule.style.display = "none";
-        };
-        const syncPwMatch = () => {
-          const a = pw1.value || "",
-            b = pw2.value || "";
-          if (!pwAjaxValid || !b) {
-            pw2.classList.remove("is-valid", "is-invalid");
-            pwOkF.style.display = "none";
-            pwBadF.style.display = "none";
-            return;
-          }
-          const match = a === b;
-          pw2.classList.toggle("is-valid", match);
-          pw2.classList.toggle("is-invalid", !match);
-          pwOkF.style.display = match ? "block" : "none";
-          pwBadF.style.display = match ? "none" : "block";
-        };
-
-        const checkPwAjax = debounce(async () => {
-          const v = pw1.value || "";
-          if (!v) {
-            pw1.classList.remove("is-valid", "is-invalid");
-            if (pwRule) pwRule.style.display = "none";
-            pwAjaxValid = false;
-            syncPwMatch();
-            return;
-          }
-          if (pwAbort) pwAbort.abort();
-          pwAbort = new AbortController();
-          try {
-            const r = await fetch(
-              `/user/check/password?pw=${encodeURIComponent(v)}`,
-              { signal: pwAbort.signal, credentials: "same-origin" }
-            );
-            const d = await r.json();
-            pwAjaxValid = !!(d && d.ok && d.valid);
-            if (pwAjaxValid) {
-              clearRuleError();
-              pw1.classList.add("is-valid");
-            } else {
-              showRuleError(d && d.msg);
-              pw1.classList.remove("is-valid");
-            }
-          } catch {
-            const ok = PW_CLIENT_REGEX.test(v); // 폴백 규칙도 특수문자 포함
-            pwAjaxValid = ok;
-            if (ok) {
-              clearRuleError();
-              pw1.classList.add("is-valid");
-            } else {
-              showRuleError();
-              pw1.classList.remove("is-valid");
-            }
-          }
-          syncPwMatch();
-        }, 300);
-        pw1?.addEventListener("input", checkPwAjax);
-        pw1?.addEventListener("blur", checkPwAjax);
-        pw2?.addEventListener("input", syncPwMatch);
-        pw2?.addEventListener("blur", syncPwMatch);
-
-        /* ==== phone compose ==== */
-        const ph2 = document.getElementById("phone2");
-        const ph3 = document.getElementById("phone3");
-        const phoneHidden = document.getElementById("phone");
-        function buildPhone() {
-          const a = digitsOnly(ph2?.value),
-            b = digitsOnly(ph3?.value);
-          if (ph2) ph2.value = a;
-          if (ph3) ph3.value = b;
-          const d = a?.length === 4 && b?.length === 4 ? `010${a}${b}` : "";
-          phoneHidden.value = d;
-          return d && /^01[016789]\d{8}$/.test(d);
-        }
-        ph2?.addEventListener("input", () => {
-          if (digitsOnly(ph2.value).length === 4) ph3?.focus();
-          buildPhone();
-        });
-        ph3?.addEventListener("input", () => buildPhone());
-        ph3?.addEventListener("keydown", (e) => {
-          if (
-            e.key === "Backspace" &&
-            ph3.selectionStart === 0 &&
-            ph3.selectionEnd === 0
-          )
-            ph2?.focus();
-        });
-
-        /* ==== phone verification (SMS) ==== */
-        const btnSend = document.getElementById("btnSendCode");
-        const btnVerify = document.getElementById("btnVerifyCode");
-        const codeInput = document.getElementById("phoneCode");
-        const phoneVerified = document.getElementById("phoneVerified");
-        const msgEl = document.getElementById("phoneMsg");
-        const csrfInput = document.querySelector('input[name="_csrf"]');
-        let cooldownTimer = null,
-          cooldownLeft = 0;
-
-        function setMsg(text, ok = false) {
-          if (!msgEl) return;
-          msgEl.textContent = text || "";
-          msgEl.className =
-            "form-text " + (ok ? "text-success" : "text-danger");
-        }
-
-        async function postForm(url, params) {
-          const body = new URLSearchParams(params);
-          if (csrfInput?.value)
-            body.append(
-              csrfInput.getAttribute("name") || "_csrf",
-              csrfInput.value
-            );
-          const r = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            credentials: "same-origin",
-            body,
-          });
-          return await r.json();
-        }
-
-        function startCooldown(sec) {
-          cooldownLeft = Math.max(1, sec | 0);
-          btnSend.disabled = true;
-          btnSend.textContent = `재전송 (${cooldownLeft}s)`;
-          clearInterval(cooldownTimer);
-          cooldownTimer = setInterval(() => {
-            cooldownLeft--;
-            if (cooldownLeft <= 0) {
-              clearInterval(cooldownTimer);
-              btnSend.disabled = false;
-              btnSend.textContent = "인증번호 발송";
-            } else {
-              btnSend.textContent = `재전송 (${cooldownLeft}s)`;
-            }
-          }, 1000);
-        }
-
-        btnSend?.addEventListener("click", async () => {
-          const ok = typeof buildPhone === "function" ? buildPhone() : false;
-          const phone = document.getElementById("phone")?.value || "";
-          if (!ok || !/^01[016789]\d{8}$/.test(phone)) {
-            setMsg("휴대폰 번호를 올바르게 입력해 주세요.", false);
-            document.getElementById("phone2")?.focus();
-            return;
-          }
-          try {
-            const d = await postForm("/auth/phone/send", { phone });
-            if (d.ok) {
-              setMsg("인증번호가 발송되었습니다. 5분 내 입력해 주세요.", true);
-              startCooldown(d.cooldownSeconds ?? 60);
-              codeInput?.focus();
-            } else {
-              setMsg(d.msg || "발송 실패", false);
-              if (d.cooldownSeconds) startCooldown(d.cooldownSeconds);
-            }
-          } catch {
-            setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false);
-          }
-        });
-
-        btnVerify?.addEventListener("click", async () => {
-          const phone = document.getElementById("phone")?.value || "";
-          const code = digitsOnly(codeInput?.value);
-          if (!phone) {
-            setMsg("먼저 인증번호를 발송해 주세요.", false);
-            return;
-          }
-          if (!/^\d{6}$/.test(code || "")) {
-            setMsg("인증번호 6자리를 입력해 주세요.", false);
-            codeInput?.focus();
-            return;
-          }
-          try {
-            const d = await postForm("/auth/phone/verify", { phone, code });
-            if (d.ok) {
-              setMsg("휴대폰 인증이 완료되었습니다.", true);
-              phoneVerified.value = "Y";
-              // 성공 시 입력 잠금 (선택)
-              document.getElementById("phone2").readOnly = true;
-              document.getElementById("phone3").readOnly = true;
-              codeInput.readOnly = true;
-              btnSend.disabled = true;
-              btnVerify.disabled = true;
-            } else {
-              setMsg(d.msg || "인증 실패", false);
-            }
-          } catch {
-            setMsg("네트워크 오류입니다. 잠시 후 다시 시도해 주세요.", false);
-          }
-        });
-
-        /* ==== birth: 3-select + 8세 이상 ==== */
-        (() => {
-          const MIN_AGE = 8;
-          const ySel = document.getElementById("birthYear"),
-            mSel = document.getElementById("birthMonth"),
-            dSel = document.getElementById("birthDay");
-          const hidden = document.getElementById("birth");
-          const invalid = document.getElementById("birthInvalid");
-          const today = new Date();
-          const cutoff = new Date(
-            today.getFullYear() - MIN_AGE,
-            today.getMonth(),
-            today.getDate()
-          );
-          const pad = (n) => String(n).padStart(2, "0");
-          const fmt = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
-          for (let y = cutoff.getFullYear(); y >= 1900; y--) {
-            const o = document.createElement("option");
-            o.value = String(y);
-            o.textContent = String(y);
-            ySel.appendChild(o);
-          }
-          for (let m = 1; m <= 12; m++) {
-            const o = document.createElement("option");
-            o.value = String(m);
-            o.textContent = pad(m);
-            mSel.appendChild(o);
-          }
-          const daysInMonth = (Y, M) => new Date(Y, M, 0).getDate();
-          function fillDays() {
-            const y = parseInt(ySel.value, 10),
-              m = parseInt(mSel.value, 10);
-            const last = !isNaN(y) && !isNaN(m) ? daysInMonth(y, m) : 31;
-            const prev = parseInt(dSel.value, 10);
-            dSel.innerHTML = '<option value="" selected disabled>DD</option>';
-            for (let d = 1; d <= last; d++) {
-              const o = document.createElement("option");
-              o.value = String(d);
-              o.textContent = pad(d);
-              dSel.appendChild(o);
-            }
-            if (prev && prev <= last) dSel.value = String(prev);
-          }
-          function validateAndBuild() {
-            const y = parseInt(ySel.value, 10),
-              m = parseInt(mSel.value, 10),
-              d = parseInt(dSel.value, 10);
-            let ok = false;
-            if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
-              const sel = new Date(y, m - 1, d);
-              const notFuture = sel <= cutoff;
-              const notTooOld = sel >= new Date(1900, 0, 1);
-              ok =
-                notFuture &&
-                notTooOld &&
-                sel.getFullYear() === y &&
-                sel.getMonth() === m - 1 &&
-                sel.getDate() === d;
-              hidden.value = ok ? fmt(y, m, d) : "";
-            } else hidden.value = "";
-            const touched = !!(ySel.value || mSel.value || dSel.value);
-            [ySel, mSel, dSel].forEach((el) => {
-              el.classList.toggle("is-valid", ok);
-              el.classList.toggle("is-invalid", !ok && touched);
-            });
-            invalid &&
-              (invalid.style.display = ok
-                ? "none"
-                : touched
-                ? "block"
-                : "none");
-            return ok;
-          }
-          ySel.addEventListener("change", () => {
-            fillDays();
-            validateAndBuild();
-          });
-          mSel.addEventListener("change", () => {
-            fillDays();
-            validateAndBuild();
-          });
-          dSel.addEventListener("change", () => {
-            validateAndBuild();
-          });
-          if (hidden.value) {
-            const [yy, mm, dd] = hidden.value
-              .split("-")
-              .map((s) => parseInt(s, 10));
-            if (yy) ySel.value = String(yy);
-            if (mm) mSel.value = String(mm);
-            fillDays();
-            if (dd) dSel.value = String(dd);
-            validateAndBuild();
-          }
-          window.validateBirth = validateAndBuild;
-        })();
-
-        /* ==== final submit ==== */
-        async function ensureAvailableSoft() {
-          const id = (userName.value || "").trim();
-          const em = (buildEmail() || "").toLowerCase();
-          const idRuleOk = id.length >= 4 && /^[A-Za-z0-9_]+$/.test(id);
-          const emRuleOk = emailRegex.test(em);
-
-          let idOk = idRuleOk,
-            emOk = emRuleOk;
-
-          if (idRuleOk) {
-            try {
-              const r = await fetch(
-                `/user/check/username?userName=${encodeURIComponent(id)}`,
-                { credentials: "same-origin" }
-              );
-              const d = await r.json();
-              idOk = !!(d && d.ok && d.available);
-            } catch {
-              idOk = true;
-            }
-          }
-          if (emRuleOk) {
-            try {
-              const r = await fetch(
-                `/user/check/email?email=${encodeURIComponent(em)}`,
-                { credentials: "same-origin" }
-              );
-              const d = await r.json();
-              emOk = !!(d && d.acceptable && d.available);
-              if (!d.acceptable) {
-                let msg = !d.syntax
-                  ? "올바른 이메일 형식이 아닙니다."
-                  : d.disposable
-                  ? "해당 이메일 주소는 사용할 수 없습니다."
-                  : !d.mx
-                  ? "이 도메인에는 메일 서버가 없어 수신이 불가능 합니다."
-                  : "사용할 수 없는 이메일입니다.";
-                if (emailRuleMsg) {
-                  emailRuleMsg.textContent = msg;
-                  emailRuleMsg.style.display = "block";
-                }
-              }
-            } catch {
-              emOk = true;
-            }
-          }
-
-          setValid(userName, idOk, userNameOkMsg, userNameDupMsg);
-          if (emailRuleMsg && emOk) emailRuleMsg.style.display = "none";
-          setValid(emailHidden, emOk, emailOkMsg, emailDupMsg);
-
-          return idOk && emOk;
-        }
-
-        let submitting = false;
-        form?.addEventListener("submit", async (e) => {
-          if (submitting) return;
-          e.preventDefault();
-
-          if (!window.validateBirth?.()) return;
-
-          // 비밀번호 규칙(서버 우선, 실패시 로컬 폴백)
-          const v = document.getElementById("password1")?.value || "";
-          let pwOk = false;
-          try {
-            const r = await fetch(
-              `/user/check/password?pw=${encodeURIComponent(v)}`,
-              { credentials: "same-origin" }
-            );
-            const d = await r.json();
-            pwOk = !!(d && d.ok && d.valid);
-          } catch {
-            pwOk =
-              /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;'"<>,.?/~`]).{8,150}$/.test(
-                v
-              );
-          }
-          if (!pwOk) {
-            document.getElementById("password1")?.focus();
-            return;
-          }
-
-          if ((document.getElementById("password2")?.value || "") !== v) {
-            document.getElementById("password2")?.focus();
-            return;
-          }
-
-          // 휴대폰 조합/검증
-          if (!buildPhone()) {
-            document.getElementById("phone2")?.classList.add("is-invalid");
-            document.getElementById("phone3")?.classList.add("is-invalid");
-            document.getElementById("phone2")?.focus();
-            return;
-          }
-
-          //  인증 완료 여부 확인 (클라 보조)
-          if (document.getElementById("phoneVerified")?.value !== "Y") {
-            document.getElementById("phoneCode")?.focus();
-            const m =
-              "휴대폰 인증을 완료해 주세요. '인증번호 발송' → 문자 수신 → '인증 확인'을 눌러 인증하세요.";
-            const msgEl = document.getElementById("phoneMsg");
-            if (msgEl) {
-              msgEl.textContent = m;
-              msgEl.className = "form-text text-danger";
-            }
-            return;
-          }
-
-          await ensureAvailableSoft(); // 실패해도 서버 단에서 한 번 더 검증
-
-          submitting = true;
-          form.submit();
-        });
-      })();
-    </script>
   </div>
 </html>
