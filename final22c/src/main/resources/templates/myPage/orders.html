@@ -1,8 +1,8 @@
+<!-- templates/mypage/orders.html (환불결과 모달 포함: 신청/승인 2칼럼 적용 버전) -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/layout}">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,12 +10,8 @@
   <meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}" />
   <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
   <title>마이페이지 - 주문내역</title>
-</head>
 
-<!-- 공통 CSS 링크 유지 -->
-<th:block layout:fragment="css">
   <link rel="stylesheet" th:href="@{/css/mypage.css}">
-  <!-- 페이지 전용(기존 그대로) -->
   <style>
     .muted{color:#6b7280;font-size:12px}
     .order-title{font-weight:700;letter-spacing:-.01em}
@@ -59,25 +55,11 @@
     #refundRequestsModal .m-modal__box, #refundResultModal .m-modal__box{max-width:720px}
     .badge.badge--partial{background:#fef9c3;color:#713f12!important;border-color:#fde68a}
     .rrm-table td,
-    .rrm-table th {
-      vertical-align: middle;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* 테이블 기본 */
-    .rrm-table td,
-    .rrm-table th {
-      vertical-align: middle;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* 셀 단위 정렬 */
-    .rrm-table td.t-qty, .rrm-table th.t-qty { text-align: center; } /* 수량 */
-    .rrm-table td.t-right, .rrm-table th.t-right { text-align: right; } /* 단가/합계 */
-
+    .rrm-table th { vertical-align: middle; font-variant-numeric: tabular-nums; }
+    .rrm-table td.t-qty, .rrm-table th.t-qty { text-align: center; }
+    .rrm-table td.t-right, .rrm-table th.t-right { text-align: right; }
     #resultText { white-space: pre-line; }
   </style>
-</th:block>
 </head>
 
 <body>
@@ -106,8 +88,7 @@
                   th:classappend="${o.status=='CANCELED'} ? ' is-canceled'"
                   th:attr="data-order-id=${o.orderId}"
                   th:with="first=${#lists.isEmpty(o.details) ? null : o.details[0]},
-                           restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1}"
-                >
+                           restCnt=${#lists.isEmpty(o.details) ? 0 : #lists.size(o.details)-1}">
                   <div class="order-info">
                     <div class="order-head">
                       <div class="order-thumb">
@@ -147,8 +128,7 @@
                       th:with="d=${#strings.trim(o.deliveryStatus)},
                                 step=${#strings.equalsIgnoreCase(d,'DELIVERED') ? 3 :
                                        (#strings.equalsIgnoreCase(d,'SHIPPING')  ? 2 : 1)}"
-                      th:attr="data-step=${step}, data-max=3"
-                    >
+                      th:attr="data-step=${step}, data-max=3">
                       <div class="step"><div class="dot"></div><span>주문접수</span></div>
                       <div class="step"><div class="dot"></div><span>배송 중</span></div>
                       <div class="step"><div class="dot"></div><span>배송완료</span></div>
@@ -530,7 +510,6 @@
         const reasonErr = document.getElementById("refundReasonErr");
         const btnOk  = document.getElementById("refundSubmit");
 
-        // 테이블 한 행 생성 (✅ 링크 적용)
         function makeRow({ odId, pid, name, max, unit, img }) {
           const tr = document.createElement("tr");
           tr.dataset.odId = odId;
@@ -582,7 +561,6 @@
           return sum;
         }
 
-        // 모달 열기
         window.openRefundModalFromCard = function (card) {
           const orderId = card?.dataset.orderId;
           if (!orderId) return;
@@ -632,12 +610,10 @@
           openModal(modal);
         };
 
-        // 취소
         document.getElementById("refundCancel")?.addEventListener("click", (e) => {
           e.preventDefault(); closeModal(modal);
         });
 
-        // 제출
         btnOk?.addEventListener("click", async () => {
           const orderId = tbody.dataset.orderId;
           const text = (reason?.value || "").trim();
@@ -798,26 +774,24 @@
           else if (isRejected) { label = "거절/취소"; cls = "badge--reject"; }
           else if (isPartial)  { label = "부분환불"; cls = "badge--partial"; }
 
-          const head = `
-            <div class="rr-admin__head">
-              <div class="rr-admin__title">환불번호&nbsp;${esc(rf?.refundId ?? (idx+1))}</div>
-              <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
-                <span class="muted" style="font-size:12px;">요청일시&nbsp;${formatDateTime(rf?.createdAt || fallback?.createdAt)}</span>
-                <span class="badge ${cls}">${label}</span>
-              </div>
-            </div>`;
-
           const rows = (rf?.details || []).map((d) => {
             const pname = d?.productName ?? "-";
             const pid   = d?.productId ?? d?.productID ?? d?.pid ?? resolvePidFromOrder(orderId, pname);
             const img   = resolveImgFromOrder(orderId, pname);
             const nameCell = thumbNameCell({ name: pname, pid, img });
+
+            const reqQty  = d?.refundQty ?? d?.requestQty ?? d?.requestedQty ?? d?.qty ?? "-"; // 신청
+            const appQty  = d?.approvedQty ?? d?.approveQty ?? d?.refundApprovedQty ?? "-";    // 승인
+            const unitAmt = d?.unitRefundAmount ?? d?.unitAmount ?? 0;
+            const subTot  = d?.subtotal ?? d?.detailRefundAmount ?? 0;
+
             return `
               <tr>
                 <td>${nameCell}</td>
-                <td class="t-qty">${esc(d?.refundQty ?? d?.approvedQty ?? "-")}</td>
-                <td class="t-right">${num(d?.unitRefundAmount ?? 0)}</td>
-                <td class="t-right"><strong>${num(d?.subtotal ?? d?.detailRefundAmount ?? 0)}</strong></td>
+                <td class="t-qty">${esc(reqQty)}</td>
+                <td class="t-qty">${esc(appQty)}</td>
+                <td class="t-right">${num(unitAmt)}</td>
+                <td class="t-right"><strong>${num(subTot)}</strong></td>
               </tr>`;
           }).join("");
 
@@ -831,16 +805,37 @@
 
           return `
             <section class="rrm-card" style="border:none; padding:0;">
-              ${head}
+              <div class="rr-admin__head">
+                <div class="rr-admin__title">환불번호&nbsp;${esc(rf?.refundId ?? (idx+1))}</div>
+                <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+                  <span class="muted" style="font-size:12px;">요청일시&nbsp;${formatDateTime(rf?.createdAt || fallback?.createdAt)}</span>
+                  <span class="badge ${cls}">${label}</span>
+                </div>
+              </div>
+
               <div class="rr-admin__block">
                 <header>환불 품목</header>
                 <div class="body">
                   <table class="rrm-table rrm-table--refund" style="width:100%;">
-                    <colgroup><col class="c-name"><col class="c-qty"><col class="c-unit"><col class="c-sub"></colgroup>
-                    <thead><tr><th>상품</th><th class="t-qty">환불수량</th><th class="t-right">단가</th><th class="t-right">합계</th></tr></thead>
+                    <colgroup>
+                      <col class="c-name">
+                      <col class="c-qty"><!-- 신청 -->
+                      <col class="c-qty"><!-- 승인 -->
+                      <col class="c-unit">
+                      <col class="c-sub">
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>상품</th>
+                        <th class="t-qty">신청수량</th>
+                        <th class="t-qty">승인수량</th>
+                        <th class="t-right">단가</th>
+                        <th class="t-right">합계</th>
+                      </tr>
+                    </thead>
                     <tbody>${rows}</tbody>
                     <tfoot>
-                      <tr><td colspan="3" class="t-right">환불 총액</td><td class="t-right"><strong>${num(itemsSubtotal)}</strong></td></tr>
+                      <tr><td colspan="4" class="t-right">환불 총액</td><td class="t-right"><strong>${num(itemsSubtotal)}</strong></td></tr>
                     </tfoot>
                   </table>
                 </div>

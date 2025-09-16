@@ -1,22 +1,21 @@
 <!-- templates/mypage/orderDetail.html -->
-<style>
-  /* ✅ 상품/총 주문 금액 행만 선 표시, 배송비 행은 선 제거 */
-  .table-summary tr { border-top: none; }
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>주문 상세</title>
+  <link rel="stylesheet" th:href="@{/css/mypage.css}"/>
 
-  .table-summary tr:first-child {
-    border-top: 1px solid var(--bs-border-color); /* 상품 합계 위 */
-  }
+  <style>
+    /* ✅ tfoot: 상품/총 주문 금액 행만 선 표시(배송비 행은 위/아래 선 제거) */
+    .table-summary tr { border-top: none; }
+    .table-summary tr:first-child { border-top: 1px solid var(--bs-border-color); }
+    .table-summary tr:last-child  { border-top: 1px solid var(--bs-border-color); }
+    .table-summary tr:nth-child(2) { border-top: none !important; border-bottom: none !important; }
+  </style>
+</head>
 
-  .table-summary tr:last-child {
-    border-top: 1px solid var(--bs-border-color); /* 총 주문 금액 위 */
-  }
-
-  .table-summary tr:nth-child(2) {
-    border-top: none !important;  /* 배송비 위 선 제거 */
-    border-bottom: none !important; /* 배송비 아래 선 제거 */
-  }
-</style>
-
+<body>
 <div th:fragment="items">
 
   <!-- 상단: 주문일시 · 주문번호 -->
@@ -61,6 +60,8 @@
           <div class="fw-semibold">
             <a class="m-link" th:href="@{|/main/content/${d.product.id}|}" th:text="${d.product.name}">상품명</a>
           </div>
+
+          <!-- ✅ 상세 라벨: 상태별 “신청/승인” 동시 표기 -->
           <div class="small text-muted">
             <span>개당 </span>
             <span th:text="${#numbers.formatInteger((d.sellPrice != null ? d.sellPrice : 0),1,'COMMA')}">0</span>
@@ -70,6 +71,7 @@
               · 환불요청 <span th:text="${d.refundDetail.quantity}">0</span>
             </span>
             <span th:if="${order.status=='REFUNDED' and d.refundDetail != null}">
+              · 환불신청 <span th:text="${d.refundDetail.quantity}">0</span>
               · 환불승인 <span th:text="${d.refundDetail.refundQty}">0</span>
             </span>
           </div>
@@ -84,14 +86,13 @@
       </tr>
       </tbody>
 
-      <!-- ✅ 요약부: 배송비 표시 + 중간 줄 제거 -->
+      <!-- ✅ 요약부: 배송비 계산/표시 + 배송비 행의 위/아래 선 제거 -->
       <tfoot class="table-light table-summary"
-            th:with="
-              productSum=${#aggregates.sum(order.details.?[totalPrice != null].![totalPrice]) ?: 0},
-              paySum=${(payments != null) ? (#aggregates.sum(payments.![amount]) ?: 0) : 0},
-              used=${usedMileage != null ? usedMileage : 0},
-              shippingFee=${(paySum + used) - productSum}
-            ">
+             th:with="
+               productSum=${#aggregates.sum(order.details.?[totalPrice != null].![totalPrice]) ?: 0},
+               paySum=${(payments != null) ? (#aggregates.sum(payments.![amount]) ?: 0) : 0},
+               used=${usedMileage != null ? usedMileage : 0},
+               shippingFee=${(paySum + used) - productSum}">
         <tr>
           <th colspan="4" class="text-end">상품 합계</th>
           <th class="text-end">
@@ -143,7 +144,6 @@
 
   <!-- 결제 정보 -->
   <h5 class="mb-3">결제 정보</h5>
-
   <div th:if="${payments != null and !payments.isEmpty()}">
     <div class="table-responsive">
       <table class="table align-middle">
@@ -154,28 +154,20 @@
           <th class="text-end" style="width:160px">결제금액</th>
         </tr>
         </thead>
-
         <tbody>
-          <tr th:each="p,iter : ${payments}">
-            <td th:text="${(p.tid != null or p.aid != null) ? '카카오페이' : (!#strings.isEmpty(p.status) ? p.status : '-')}">
-              카카오페이
-            </td>
-            <td th:text="${iter.index == 0 ? #numbers.formatInteger((usedMileage != null ? usedMileage : 0), 1, 'COMMA') + 'P' : '-'}">
-              0P
-            </td>
-            <td class="text-end">
-              <span th:text="${#numbers.formatInteger((p.amount != null ? p.amount : 0), 1, 'COMMA')}">0</span>원
-            </td>
-          </tr>
+        <tr th:each="p,iter : ${payments}">
+          <td th:text="${(p.tid != null or p.aid != null) ? '카카오페이' : (!#strings.isEmpty(p.status) ? p.status : '-')}">카카오페이</td>
+          <td th:text="${iter.index == 0 ? #numbers.formatInteger((usedMileage != null ? usedMileage : 0), 1, 'COMMA') + 'P' : '-'}">0P</td>
+          <td class="text-end"><span th:text="${#numbers.formatInteger((p.amount != null ? p.amount : 0), 1, 'COMMA')}">0</span>원</td>
+        </tr>
         </tbody>
-
         <tfoot class="table-light">
-          <tr>
-            <th colspan="2" class="text-end">결제 합계</th>
-            <th class="text-end">
-              <span th:text="${#numbers.formatInteger((#aggregates.sum(payments.![amount]) ?: 0), 1, 'COMMA')}">0</span>원
-            </th>
-          </tr>
+        <tr>
+          <th colspan="2" class="text-end">결제 합계</th>
+          <th class="text-end">
+            <span th:text="${#numbers.formatInteger((#aggregates.sum(payments.![amount]) ?: 0), 1, 'COMMA')}">0</span>원
+          </th>
+        </tr>
         </tfoot>
       </table>
     </div>
@@ -204,3 +196,5 @@
   </div>
 
 </div>
+</body>
+</html>
