@@ -8,6 +8,18 @@
   <title>22°C | Chat</title>
   <th:block layout:fragment="css">
     <!-- 필요시 전용 css -->
+    <style>
+      /* textarea 기본 리사이즈 방지 */
+      #summernote {
+        resize: none;
+      }
+
+      /* Summernote 하단 리사이즈/상태바 숨김 */
+      .note-statusbar,
+      .note-resizebar {
+        display: none !important;
+      }
+    </style>
   </th:block>
 </head>
 <body>
@@ -30,8 +42,8 @@
         </div>
 
         <div class="mb-3">
-            <label for="content" class="form-label">내용</label>
-            <textarea id="summernote" name="content"></textarea>
+          <label for="content" class="form-label">내용</label>
+          <textarea id="summernote" name="content"></textarea>
         </div>
 
         <button type="submit" class="btn btn-primary">문의 등록</button>
@@ -48,8 +60,9 @@
             toolbar: [
                 ['insert', ['picture']]   // ✅ 사진만 업로드 가능
             ],
-            disableDragAndDrop: true     // ✅ 드래그 앤 드롭 업로드 막기 (선택)
+            disableDragAndDrop: true     // ✅ 드래그 앤 드롭 업로드 막기
         });
     });
 </script>
 </body>
+</html>

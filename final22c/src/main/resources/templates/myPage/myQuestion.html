@@ -133,6 +133,12 @@
       font-size: 14px;
       white-space: pre-wrap;
     }
+
+    /* === 내 문의 상태 뱃지 텍스트를 검정으로 통일 === */
+    .badge--pending,
+    .badge--answered {
+      color: #111827 !important;
+    }
   </style>
 </th:block>
 
@@ -225,6 +231,7 @@
   const $content = document.getElementById('qd-content');
   const $answer  = document.getElementById('qd-answer');
   const $ansAt   = document.getElementById('qd-answeredAt');
+  const $rowAnsAt = document.getElementById('qd-answeredAt')?.closest('.field-row');
 
   document.addEventListener('click', async (e) => {
     const a = e.target.closest('.js-open-question'); if (!a) return;
@@ -233,11 +240,22 @@
       const res = await fetch(api(`/mypage/questionDetail/${id}`), { headers:{'Accept':'application/json'}, credentials:'same-origin' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+
       $t.textContent       = data.title ?? '';
       $created.textContent = fmt(data.createDate) ?? '';
+
+      const hasAnswer = !!(data.answer && String(data.answer).trim());
       $content.innerHTML   = data.content ?? '';
-      $answer.innerHTML    = data.answer ?? '<span class="muted">답변 대기 중</span>';
-      $ansAt.textContent   = data.answerCreateDate ? fmt(data.answerCreateDate) : '';
+      $answer.innerHTML    = hasAnswer ? data.answer : '<span class="muted">답변 대기 중</span>';
+
+      if (hasAnswer && data.answerCreateDate) {
+        if ($rowAnsAt) $rowAnsAt.style.display = '';            // 보이기
+        $ansAt.textContent = fmt(data.answerCreateDate);
+      } else {
+        if ($rowAnsAt) $rowAnsAt.style.display = 'none';        // 숨기기
+        $ansAt.textContent = '';
+      }
+
       openModal($modal);
     } catch (e1) {
       console.error('[question detail]', e1);
