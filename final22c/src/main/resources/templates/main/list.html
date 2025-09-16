@@ -183,19 +183,18 @@
                 
                 <!-- 가격영역 -->
                 <div class="price-row mt-1">
+                  <span class="sale"
+                  th:text="${#numbers.formatInteger(p['sellPrice'],3,'COMMA')} + '원'">0원</span>
+                  
+                  <span class="list"
+                  th:if="${p['price'] != null and p['price'] > p['sellPrice']}"
+                  th:text="${#numbers.formatInteger(p['price'],3,'COMMA')} + '원'">0원</span>
                   <span class="disc"
                   th:if="${p['discount'] != null and p['discount'] > 0}"
                   th:text="${#numbers.formatInteger(p['discount'],0)} + '%'">10%</span>
-
-                  <span class="sale"
-                        th:text="${#numbers.formatInteger(p['sellPrice'],3,'COMMA')} + '원'">0원</span>
                         
-                        <span class="list"
-                        th:if="${p['price'] != null and p['price'] > p['sellPrice']}"
-                        th:text="${#numbers.formatInteger(p['price'],3,'COMMA')} + '원'">0원</span>
-                        
-                        <a class="stretched-link" th:href="@{'/main/content/' + ${p['id']}}"></a>
-                      </div>
+                  <a class="stretched-link" th:href="@{'/main/content/' + ${p['id']}}"></a>
+                </div>
               </div>
             </div>
           </div>

@@ -98,16 +98,16 @@ html,body,#content{ background:#fff; color:#111; }
 #product-grid .card-body{ padding:.55rem 0 .7rem; }
 
 /* 텍스트들 */
-.brand-compact{ font-size:.82rem; color:var(--ink-3) !important; }
-.name-compact{ font-size:.92rem; line-height:1.25; color:var(--ink-2); }
+.small.brand-compact {font-size: .75rem !important; color: var(--ink-3) !important;}
+.name-compact{ font-size:.85rem; line-height:1.25; color:var(--ink-2); }
 .linkish{ text-decoration:none; }
 .product-card:hover .name-compact{ text-decoration:underline; }
 
 /* 가격 */
 .price-row{ display:flex; align-items:baseline; gap:.45rem; white-space:nowrap; }
-.price-row .disc{ color:#c85a5a; font-weight:500; font-size:.88rem; }
-.price-row .sale{ font-weight:800; font-size:.98rem; color:var(--ink); }
-.price-row .list{ color:#aeb4bb; text-decoration:line-through; font-size:.88rem; margin-left:.1rem; }
+.price-row .disc{ color:#c85a5a; font-weight:400; font-size:.75rem; }
+.price-row .sale{ font-weight:700; font-size:.80rem; color:var(--ink); }
+.price-row .list{ color:#aeb4bb; text-decoration:line-through; font-size:.70rem; margin-left:.1rem; }
 .card .price-row .sale, .card .price-row .disc, .card .price-row .list{ line-height:1.08; }
 
 /* ===== 정렬 드롭다운(무채색 미니멀) ===== */
