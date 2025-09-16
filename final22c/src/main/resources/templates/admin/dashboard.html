@@ -50,7 +50,7 @@
         <a th:href="@{/admin/salesStats}" class="text-decoration-none text-reset">
           <div class="card kpi-card"><div class="card-body">
             <div class="kpi-sub">매출통계&gt;</div>
-            <div class="mt-1 mb-1">오늘 매출</div>
+            <div class="mt-1 mb-1">당일 매출</div>
             <div id="kpi-todayRevenue" class="kpi-value">-</div>
           </div></div>
         </a>
@@ -60,7 +60,7 @@
         <a th:href="@{/admin/orderList}" class="text-decoration-none text-reset">
           <div class="card kpi-card"><div class="card-body">
             <div class="kpi-sub">주문관리&gt;</div>
-            <div class="mt-1 mb-1">오늘 주문</div>
+            <div class="mt-1 mb-1">당일 주문</div>
             <div id="kpi-ordersToday" class="kpi-value">-</div>
           </div></div>
         </a>
@@ -70,7 +70,7 @@
         <a th:href="@{/admin/usersStats}" class="text-decoration-none text-reset">
           <div class="card kpi-card"><div class="card-body">
             <div class="kpi-sub">전체회원통계&gt;</div>
-            <div class="mt-1 mb-1">전체 회원수</div>
+            <div class="mt-1 mb-1">전체 회원</div>
             <div id="kpi-totalUsers" class="kpi-value">-</div>
           </div></div>
         </a>
@@ -80,7 +80,7 @@
         <a th:href="@{/admin/usersStats}" class="text-decoration-none text-reset">
           <div class="card kpi-card"><div class="card-body">
             <div class="kpi-sub">전체회원통계&gt;</div>
-            <div class="mt-1 mb-1">최근 7일 신규</div>
+            <div class="mt-1 mb-1">신규 회원(최근 7일)</div>
             <div id="kpi-newUsers7d" class="kpi-value">-</div>
           </div></div>
         </a>
@@ -115,7 +115,7 @@
         <div class="card chart-card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span class="fw-semibold">최근 7일 매출</span>
-            <a th:href="@{/admin/salesStats}" class="goto" aria-label="매출통계로 이동">발주통계 페이지 &gt;</a>
+            <a th:href="@{/admin/salesStats}" class="goto" aria-label="매출통계로 이동">매출 통계 &gt;</a>
           </div>
           <div class="card-body chart-body">
             <canvas id="sales7d" class="chart-canvas"></canvas>
@@ -125,7 +125,7 @@
       <div class="col-12 col-lg-6">
         <div class="card chart-card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-semibold">최근 7일 신규회원</span>
+            <span class="fw-semibold">최근 7일 가입수</span>
             <a th:href="@{/admin/usersStats}" class="goto" aria-label="전체회원통계로 이동">회원 통계 &gt;</a>
           </div>
           <div class="card-body chart-body">
@@ -169,7 +169,7 @@
           <div class="pager" id="lowstock-pager"></div>
 
           <div class="card-footer text-secondary small">
-            재고가 <b>1~20개</b>인 상품만 표시되며, 페이지당 5개씩 보여줍니다.
+            재고가 <b>1~20개</b>인 상품만 표시됩니다.
           </div>
         </div>
       </div>
@@ -209,7 +209,7 @@
           <div class="pager" id="soldout-pager"></div>
 
           <div class="card-footer text-secondary small">
-            재고가 0인 상품만 표시되며, 페이지당 5개씩 보여줍니다.
+            재고가 0인 상품만 표시됩니다.
           </div>
         </div>
       </div>
