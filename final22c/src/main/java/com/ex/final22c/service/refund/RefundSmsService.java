@@ -57,7 +57,7 @@ public class RefundSmsService {
             .append("적립 마일리지: ").append(fmtP(confirmMileage)).append('\n')
             .append("현재 보유 마일리지: ").append(fmtP(mileageBalance)).append('\n')
             .append("처리일시: ").append(when.format(FMT)).append('\n')
-            .append("문의 02-000-0000")
+            .append("문의 02-6020-0055")
             .toString();
 
         m.setText(text);
@@ -97,7 +97,7 @@ public class RefundSmsService {
         if (rejectedQtySum > 0 && rejectReason != null && !rejectReason.isBlank()) {
             sb.append("\n[거절사유]\n").append(rejectReason.trim());
         }
-        sb.append("\n문의 02-000-0000");
+        sb.append("\n문의 02-6020-0055");
 
         m.setText(sb.toString());
         send(m);

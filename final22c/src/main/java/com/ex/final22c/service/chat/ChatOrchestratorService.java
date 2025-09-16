@@ -33,11 +33,11 @@ public class ChatOrchestratorService {
     
     private static final Pattern NAMED_POSITIONAL = Pattern.compile(":\\d+\\b");
     private static final Pattern MOM_KEYWORDS =
-    	    Pattern.compile("(?i)(전월\\s*대비|MoM|month\\s*over\\s*month|월\\s*대비|달\\s*대비)");
+           Pattern.compile("(?i)(전월\\s*대비|MoM|month\\s*over\\s*month|월\\s*대비|달\\s*대비)");
 
-    	private static boolean isMoM(String msg){
-    	    return msg != null && MOM_KEYWORDS.matcher(msg).find();
-    	}
+       private static boolean isMoM(String msg){
+           return msg != null && MOM_KEYWORDS.matcher(msg).find();
+       }
     // === 상품명 자동 따옴표 감지 ===
     private static final Pattern PRODUCT_PHRASE =
             Pattern.compile("([\\p{L}\\p{N}][\\p{L}\\p{N}\\s\\-·’'()]+?\\s*\\d+\\s*ml)\\b",
@@ -55,28 +55,28 @@ public class ChatOrchestratorService {
     }
     
     private static final Pattern TOPN_PATTERN =
-    	    Pattern.compile("(?i)(?:top\\s*(\\d+)|상위\\s*(\\d+))");
-    	private static final Pattern MIN_REVIEW_PATTERN =
-    	    Pattern.compile("(?:리뷰|후기)\\s*(\\d+)\\s*건\\s*이상");
+           Pattern.compile("(?i)(?:top\\s*(\\d+)|상위\\s*(\\d+))");
+       private static final Pattern MIN_REVIEW_PATTERN =
+           Pattern.compile("(?:리뷰|후기)\\s*(\\d+)\\s*건\\s*이상");
 
-    	private static int extractTopN(String msg, int def) {
-    	    if (msg == null) return def;
-    	    Matcher m = TOPN_PATTERN.matcher(msg);
-    	    if (m.find()) {
-    	        for (int i=1;i<=m.groupCount();i++) {
-    	            String g = m.group(i);
-    	            if (g!=null) try { return Math.max(1, Math.min(Integer.parseInt(g), 100)); } catch (Exception ignore) {}
-    	        }
-    	    }
-    	    return def;
-    	}
-    	private static int extractMinReviews(String msg, int def) {
-    	    if (msg == null) return def;
-    	    Matcher m = MIN_REVIEW_PATTERN.matcher(msg);
-    	    if (m.find()) try { return Math.max(1, Integer.parseInt(m.group(1))); } catch (Exception ignore) {}
-    	    return def;
-    	}
-    	
+       private static int extractTopN(String msg, int def) {
+           if (msg == null) return def;
+           Matcher m = TOPN_PATTERN.matcher(msg);
+           if (m.find()) {
+               for (int i=1;i<=m.groupCount();i++) {
+                   String g = m.group(i);
+                   if (g!=null) try { return Math.max(1, Math.min(Integer.parseInt(g), 100)); } catch (Exception ignore) {}
+               }
+           }
+           return def;
+       }
+       private static int extractMinReviews(String msg, int def) {
+           if (msg == null) return def;
+           Matcher m = MIN_REVIEW_PATTERN.matcher(msg);
+           if (m.find()) try { return Math.max(1, Integer.parseInt(m.group(1))); } catch (Exception ignore) {}
+           return def;
+       }
+       
     private String autoQuoteProductName(String msg) {
         if (msg == null) return null;
         if (msg.contains("\"")) return msg; // 이미 따옴표 있으면 그대로
@@ -98,7 +98,7 @@ public class ChatOrchestratorService {
     private static record TwoProducts(String a, String b) {}
    
     private static final Pattern YOY_KEYWORDS =
-    	    Pattern.compile("(?i)(전년\\s*동기|전년\\s*동기간|전년\\s*대비|작년\\s*동기|작년\\s*동기간|작년\\s*대비|YoY|year\\s*over\\s*year|yoy)");
+           Pattern.compile("(?i)(전년\\s*동기|전년\\s*동기간|전년\\s*대비|작년\\s*동기|작년\\s*동기간|작년\\s*대비|YoY|year\\s*over\\s*year|yoy)");
 
     private static boolean isYoY(String msg){
         return msg != null && YOY_KEYWORDS.matcher(msg).find();
@@ -175,11 +175,11 @@ public class ChatOrchestratorService {
             -- USERS(USERNO PK, USERNAME UK, PASSWORD, EMAIL UK, NAME, BIRTH, GENDER, TELECOM, PHONE UK, REG, STATUS, BANREG, ROLE, LOGINTYPE, KAKAOID UK, MILEAGE, AGE)
             -- ⚠️ 중요: USERS.REG는 LocalDate 타입 (가입일)
             -- ⚠️ USERS.STATUS 값: 'active', 'suspended', 'banned' 등
-			-- ⚠️ USERS.ROLE 값: 'user', 'admin' 등
+         -- ⚠️ USERS.ROLE 값: 'user', 'admin' 등
             -- ⚠️ 회원 질문 처리 예시:
-			-- 신규 가입자: SELECT COUNT(*) FROM USERS WHERE REG >= :start AND REG < :end
-			-- 전체 회원: SELECT COUNT(*) FROM USERS WHERE STATUS = 'active'
-			-- 마일리지 상위: SELECT USERNO, NAME, MILEAGE FROM USERS WHERE STATUS = 'active' ORDER BY MILEAGE DESC
+         -- 신규 가입자: SELECT COUNT(*) FROM USERS WHERE REG >= :start AND REG < :end
+         -- 전체 회원: SELECT COUNT(*) FROM USERS WHERE STATUS = 'active'
+         -- 마일리지 상위: SELECT USERNO, NAME, MILEAGE FROM USERS WHERE STATUS = 'active' ORDER BY MILEAGE DESC
             -- 성별 분포: SELECT GENDER, COUNT(*) FROM USERS GROUP BY GENDER
             -- 연령대 분포: SELECT 
             --   CASE WHEN AGE BETWEEN 10 AND 19 THEN '10대'
@@ -282,7 +282,7 @@ public class ChatOrchestratorService {
     );
 
     private static final Pattern USERS_RELATED_KEYWORDS =
-    	    Pattern.compile("(?i)(회원|가입|신규|고객|사용자|마일리지|\\bTOP\\b|\\bVIP\\b|\\bmembers?\\b|\\busers?\\b|\\bcustomers?\\b)");
+           Pattern.compile("(?i)(회원|가입|신규|고객|사용자|마일리지|\\bTOP\\b|\\bVIP\\b|\\bmembers?\\b|\\busers?\\b|\\bcustomers?\\b)");
 
     private static boolean isUsersRelatedQuery(String userMsg) {
         if (userMsg != null && USERS_RELATED_KEYWORDS.matcher(userMsg).find()) {
@@ -292,20 +292,20 @@ public class ChatOrchestratorService {
         return false;
     }
     private static final Pattern ORDER_COUNT_KEYWORDS =
-    	    Pattern.compile("(?i)(주문\\s*건수|건수|몇\\s*건|order\\s*count|주문\\s*수)");
+           Pattern.compile("(?i)(주문\\s*건수|건수|몇\\s*건|order\\s*count|주문\\s*수)");
 
-    	private static boolean wantsOrderCount(String msg){
-    	    return msg != null && ORDER_COUNT_KEYWORDS.matcher(msg).find();
-    	}
-    	
+       private static boolean wantsOrderCount(String msg){
+           return msg != null && ORDER_COUNT_KEYWORDS.matcher(msg).find();
+       }
+       
     private static boolean saysMonthly(String msg){
         return containsAny(msg, "월별", "monthly", "month");
     }
     private static final Pattern INTENT_ANY_CHART =
-    	    Pattern.compile("(차트|그래프|분포|비율|파이|도넛|chart|distribution)", Pattern.CASE_INSENSITIVE);
+           Pattern.compile("(차트|그래프|분포|비율|파이|도넛|chart|distribution)", Pattern.CASE_INSENSITIVE);
 
     private static final Pattern ORDERS_RELATED_KEYWORDS =
-    	    Pattern.compile("(?i)(매출|주문|결제|판매량|매출액|\\brevenue\\b|\\bsales\\b|\\borders?\\b|\\bpayments?\\b)");
+           Pattern.compile("(?i)(매출|주문|결제|판매량|매출액|\\brevenue\\b|\\bsales\\b|\\borders?\\b|\\bpayments?\\b)");
 
     private static final Pattern ALL_TIME_KEYWORDS =
             Pattern.compile("(?i)(전체|전체기간|누적|전기간|모든|총|all\\s*time|total|cumulative)");
@@ -314,10 +314,10 @@ public class ChatOrchestratorService {
             Pattern.compile("(?i)(통계|누적|총계|전체\\s*내역|전기간|lifetime|all\\s*-?time)");
 
     private static final Pattern EXPLICIT_PERIOD_KEYWORDS =
-    	    Pattern.compile("(?i)(오늘|어제|이번|지난|작년|올해|전년|전월|월별|주별|일별|분기|상반기|하반기"
-    	        + "|최근\\s*\\d+\\s*(일|주|개월|달|년)"
-    	        + "|(일주일|1주일|한\\s*주|한주)"
-    	        + "|\\bQ[1-4]\\b|\\d{4}\\s*년|\\d{1,2}\\s*월|this|last|previous)");
+           Pattern.compile("(?i)(오늘|어제|이번|지난|작년|올해|전년|전월|월별|주별|일별|분기|상반기|하반기"
+               + "|최근\\s*\\d+\\s*(일|주|개월|달|년)"
+               + "|(일주일|1주일|한\\s*주|한주)"
+               + "|\\bQ[1-4]\\b|\\d{4}\\s*년|\\d{1,2}\\s*월|this|last|previous)");
 
     private static String extractBrandName(String msg){
         if (msg == null) return null;
@@ -743,7 +743,7 @@ public class ChatOrchestratorService {
 
         } else {
             // 기본값: 주문/회원 관련이면 최근 30일, 그 외 전체기간
-        	if ((isOrdersRelatedQuery(msg, null) && !isProductStatsIntent(msg)) || isUsersRelatedQuery(msg)) {
+           if ((isOrdersRelatedQuery(msg, null) && !isProductStatsIntent(msg)) || isUsersRelatedQuery(msg)) {
                 LocalDateTime endTime   = LocalDateTime.now()
                         .plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
                 LocalDateTime startTime = endTime.minusDays(30);
@@ -867,22 +867,22 @@ public class ChatOrchestratorService {
         if (msg.contains("VIP") || (msg.contains("100만원") && msg.contains("이상"))) {
             ai = """
                 SELECT
-				  u.USERNO, u.NAME, u.EMAIL,
-				  SUM(od.CONFIRMQUANTITY * od.SELLPRICE)          AS total_purchase_amount,
-				  COUNT(DISTINCT o.ORDERID)                        AS total_orders,
-				  TO_CHAR(MIN(o.REGDATE),'YYYY-MM-DD HH24:MI:SS')  AS first_purchase_date,
-				  TO_CHAR(MAX(o.REGDATE),'YYYY-MM-DD HH24:MI:SS')  AS last_purchase_date
-				FROM USERS u
-				JOIN ORDERS o      ON u.USERNO = o.USERNO
-				JOIN ORDERDETAIL od ON od.ORDERID = o.ORDERID
-				WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
-				  AND u.STATUS = 'active'
-				  AND o.REGDATE >= :start
-				  AND o.REGDATE <  :end
-				GROUP BY u.USERNO, u.NAME, u.EMAIL
-				HAVING SUM(od.CONFIRMQUANTITY * od.SELLPRICE) >= 1000000
-				ORDER BY total_purchase_amount DESC
-				FETCH FIRST 50 ROWS ONLY
+              u.USERNO, u.NAME, u.EMAIL,
+              SUM(od.CONFIRMQUANTITY * od.SELLPRICE)          AS total_purchase_amount,
+              COUNT(DISTINCT o.ORDERID)                        AS total_orders,
+              TO_CHAR(MIN(o.REGDATE),'YYYY-MM-DD HH24:MI:SS')  AS first_purchase_date,
+              TO_CHAR(MAX(o.REGDATE),'YYYY-MM-DD HH24:MI:SS')  AS last_purchase_date
+            FROM USERS u
+            JOIN ORDERS o      ON u.USERNO = o.USERNO
+            JOIN ORDERDETAIL od ON od.ORDERID = o.ORDERID
+            WHERE o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+              AND u.STATUS = 'active'
+              AND o.REGDATE >= :start
+              AND o.REGDATE <  :end
+            GROUP BY u.USERNO, u.NAME, u.EMAIL
+            HAVING SUM(od.CONFIRMQUANTITY * od.SELLPRICE) >= 1000000
+            ORDER BY total_purchase_amount DESC
+            FETCH FIRST 50 ROWS ONLY
                 """;
         }
         // ---------- [복잡한 회원 분석 템플릿 분기] 끝 ----------
@@ -898,87 +898,87 @@ public class ChatOrchestratorService {
             ai = buildTopRatedProductsSql(topN, minReviews);
         } else if (!yoyApplied && !wantCompare && isProductStatsIntent(msg) && (asksRefund || asksReview || asksSales)) {
             String orderBy = asksSales ? "TOTAL_SALES_AMOUNT" : "TOTAL_SOLD_QTY";
-        	ai = ("""
-        	        SELECT
-        	            p.ID   AS PRODUCT_ID,
-        	            p.NAME AS PRODUCT_NAME,
-        	            SUM(od.CONFIRMQUANTITY)                             AS TOTAL_SOLD_QTY,
-        	            SUM(od.CONFIRMQUANTITY * od.SELLPRICE)              AS TOTAL_SALES_AMOUNT,
-        	            NVL(SUM(rd.REFUNDQTY), 0)                           AS TOTAL_REFUND_QTY,
-        	            CASE WHEN SUM(od.CONFIRMQUANTITY) > 0
-        	                 THEN ROUND(NVL(SUM(rd.REFUNDQTY), 0) / SUM(od.CONFIRMQUANTITY) * 100, 2)
-        	                 ELSE 0 END                                     AS REFUND_RATE,
-        	            NVL(rv.TOTAL_REVIEWS, 0)                            AS TOTAL_REVIEWS,
-        	            NVL(rv.AVG_RATING, 0)                               AS AVG_RATING
-        	        FROM PRODUCT p
-        	        JOIN ORDERDETAIL od ON p.ID = od.ID
-        	        JOIN ORDERS o       ON od.ORDERID = o.ORDERID
-        	        LEFT JOIN REFUND rf       ON o.ORDERID = rf.ORDERID
-        	        LEFT JOIN REFUNDDETAIL rd ON rf.REFUNDID = rd.REFUND_REFUNDID
-        	                                  AND rd.ORDERDETAILID = od.ORDERDETAILID
-        	        LEFT JOIN (
-        	            SELECT PRODUCT_ID, COUNT(*) AS TOTAL_REVIEWS, ROUND(AVG(RATING), 1) AS AVG_RATING
-        	            FROM REVIEW
-        	            GROUP BY PRODUCT_ID
-        	        ) rv ON p.ID = rv.PRODUCT_ID
-        	        WHERE UPPER(REPLACE(p.NAME,' ','')) LIKE UPPER('%' || REPLACE(NVL(:q,''),' ','') || '%')
-        	          AND o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
-        	          AND o.REGDATE >= :start
-        	          AND o.REGDATE <  :end
-        	        GROUP BY p.ID, p.NAME, rv.TOTAL_REVIEWS, rv.AVG_RATING
-        	        ORDER BY ${ORDER_BY} DESC NULLS LAST
-        	        FETCH FIRST 2000 ROWS ONLY
-        	        """).replace("${ORDER_BY}", orderBy);
+           ai = ("""
+                   SELECT
+                       p.ID   AS PRODUCT_ID,
+                       p.NAME AS PRODUCT_NAME,
+                       SUM(od.CONFIRMQUANTITY)                             AS TOTAL_SOLD_QTY,
+                       SUM(od.CONFIRMQUANTITY * od.SELLPRICE)              AS TOTAL_SALES_AMOUNT,
+                       NVL(SUM(rd.REFUNDQTY), 0)                           AS TOTAL_REFUND_QTY,
+                       CASE WHEN SUM(od.CONFIRMQUANTITY) > 0
+                            THEN ROUND(NVL(SUM(rd.REFUNDQTY), 0) / SUM(od.CONFIRMQUANTITY) * 100, 2)
+                            ELSE 0 END                                     AS REFUND_RATE,
+                       NVL(rv.TOTAL_REVIEWS, 0)                            AS TOTAL_REVIEWS,
+                       NVL(rv.AVG_RATING, 0)                               AS AVG_RATING
+                   FROM PRODUCT p
+                   JOIN ORDERDETAIL od ON p.ID = od.ID
+                   JOIN ORDERS o       ON od.ORDERID = o.ORDERID
+                   LEFT JOIN REFUND rf       ON o.ORDERID = rf.ORDERID
+                   LEFT JOIN REFUNDDETAIL rd ON rf.REFUNDID = rd.REFUND_REFUNDID
+                                             AND rd.ORDERDETAILID = od.ORDERDETAILID
+                   LEFT JOIN (
+                       SELECT PRODUCT_ID, COUNT(*) AS TOTAL_REVIEWS, ROUND(AVG(RATING), 1) AS AVG_RATING
+                       FROM REVIEW
+                       GROUP BY PRODUCT_ID
+                   ) rv ON p.ID = rv.PRODUCT_ID
+                   WHERE UPPER(REPLACE(p.NAME,' ','')) LIKE UPPER('%' || REPLACE(NVL(:q,''),' ','') || '%')
+                     AND o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+                     AND o.REGDATE >= :start
+                     AND o.REGDATE <  :end
+                   GROUP BY p.ID, p.NAME, rv.TOTAL_REVIEWS, rv.AVG_RATING
+                   ORDER BY ${ORDER_BY} DESC NULLS LAST
+                   FETCH FIRST 2000 ROWS ONLY
+                   """).replace("${ORDER_BY}", orderBy);
 
         }
         // ---------- [하드코딩 템플릿 분기] 끝 ----------
 
         // 6) 브랜드 폴백
         if (ai != null && !wantsTopRated && (  // ← 이 부분 추가
-        	    msg.contains("브랜드별") || (msg.contains("브랜드") &&
-        	    (msg.contains("매출") || msg.contains("판매") || msg.contains("점수")))
-        	)) {
+               msg.contains("브랜드별") || (msg.contains("브랜드") &&
+               (msg.contains("매출") || msg.contains("판매") || msg.contains("점수")))
+           )) {
 
             if (msg.contains("리뷰") || msg.contains("점수") || msg.contains("평점")) {
                 ai = """
                     SELECT 
-					  b.BRANDNAME,
-					  COUNT(DISTINCT p.ID)                     AS product_count,
-					  SUM(od.CONFIRMQUANTITY * od.SELLPRICE)   AS total_sales,
-					  SUM(od.CONFIRMQUANTITY)                  AS total_quantity,
-					  (SELECT ROUND(AVG(r.RATING), 1)
-					   FROM REVIEW r
-					   JOIN PRODUCT p2 ON r.PRODUCT_ID = p2.ID
-					  WHERE p2.BRAND_BRANDNO = b.BRANDNO
-					    AND r.CREATEDATE >= :start
-					    AND r.CREATEDATE <  :end
-					) AS avg_rating
-					FROM BRAND b
-					LEFT JOIN PRODUCT p      ON b.BRANDNO = p.BRAND_BRANDNO
-					LEFT JOIN ORDERDETAIL od ON p.ID       = od.ID
-					LEFT JOIN ORDERS o       ON od.ORDERID = o.ORDERID
-					                        AND o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
-					                        AND o.REGDATE >= :start
-					                        AND o.REGDATE <  :end
-					GROUP BY b.BRANDNO, b.BRANDNAME
-					ORDER BY total_sales DESC NULLS LAST
+                 b.BRANDNAME,
+                 COUNT(DISTINCT p.ID)                     AS product_count,
+                 SUM(od.CONFIRMQUANTITY * od.SELLPRICE)   AS total_sales,
+                 SUM(od.CONFIRMQUANTITY)                  AS total_quantity,
+                 (SELECT ROUND(AVG(r.RATING), 1)
+                  FROM REVIEW r
+                  JOIN PRODUCT p2 ON r.PRODUCT_ID = p2.ID
+                 WHERE p2.BRAND_BRANDNO = b.BRANDNO
+                   AND r.CREATEDATE >= :start
+                   AND r.CREATEDATE <  :end
+               ) AS avg_rating
+               FROM BRAND b
+               LEFT JOIN PRODUCT p      ON b.BRANDNO = p.BRAND_BRANDNO
+               LEFT JOIN ORDERDETAIL od ON p.ID       = od.ID
+               LEFT JOIN ORDERS o       ON od.ORDERID = o.ORDERID
+                                       AND o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+                                       AND o.REGDATE >= :start
+                                       AND o.REGDATE <  :end
+               GROUP BY b.BRANDNO, b.BRANDNAME
+               ORDER BY total_sales DESC NULLS LAST
                     """;
             } else {
                 ai = """
                     SELECT 
-					    b.BRANDNAME,
-					    SUM(od.CONFIRMQUANTITY * od.SELLPRICE) AS total_sales,
-					    SUM(od.CONFIRMQUANTITY)                AS total_quantity,
-					    COUNT(DISTINCT o.ORDERID)              AS order_count
-					FROM BRAND b
-					LEFT JOIN PRODUCT p      ON b.BRANDNO = p.BRAND_BRANDNO
-					LEFT JOIN ORDERDETAIL od ON p.ID       = od.ID
-					LEFT JOIN ORDERS o       ON od.ORDERID = o.ORDERID
-					                        AND o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
-					                        AND o.REGDATE >= :start
-					                        AND o.REGDATE <  :end
-					GROUP BY b.BRANDNO, b.BRANDNAME
-					ORDER BY total_sales DESC NULLS LAST
+                   b.BRANDNAME,
+                   SUM(od.CONFIRMQUANTITY * od.SELLPRICE) AS total_sales,
+                   SUM(od.CONFIRMQUANTITY)                AS total_quantity,
+                   COUNT(DISTINCT o.ORDERID)              AS order_count
+               FROM BRAND b
+               LEFT JOIN PRODUCT p      ON b.BRANDNO = p.BRAND_BRANDNO
+               LEFT JOIN ORDERDETAIL od ON p.ID       = od.ID
+               LEFT JOIN ORDERS o       ON od.ORDERID = o.ORDERID
+                                       AND o.STATUS IN ('PAID','CONFIRMED','REFUNDED')
+                                       AND o.REGDATE >= :start
+                                       AND o.REGDATE <  :end
+               GROUP BY b.BRANDNO, b.BRANDNAME
+               ORDER BY total_sales DESC NULLS LAST
                     """;
             }
         }
@@ -1110,11 +1110,11 @@ public class ChatOrchestratorService {
             double qtyRate = (prevQty != 0) ? (qtyDiff * 100.0 / prevQty) : (thisQty==0 ? 0 : 100.0);
 
             summary += String.format(
-            		  " · 전년 동기 대비: 올해 %,d원 vs 전년 %,d원 · 증감 %+,d원 (%+.1f%%), " +
-            		  "수량 %,d개 vs %,d개 · 증감 %+,d개 (%+.1f%%).",
-            		  Math.round(thisAmt), Math.round(prevAmt), Math.round(amtDiff), amtRate,
-            		  thisQty, prevQty, (thisQty - prevQty), qtyRate
-            		);
+                    " · 전년 동기 대비: 올해 %,d원 vs 전년 %,d원 · 증감 %+,d원 (%+.1f%%), " +
+                    "수량 %,d개 vs %,d개 · 증감 %+,d개 (%+.1f%%).",
+                    Math.round(thisAmt), Math.round(prevAmt), Math.round(amtDiff), amtRate,
+                    thisQty, prevQty, (thisQty - prevQty), qtyRate
+                  );
         }
         if (wantCompare) {
             boolean refundMode = wantRefundCompare;
@@ -1395,12 +1395,12 @@ public class ChatOrchestratorService {
         if (rows.isEmpty()){
             msg = "%s 기준 조건에 맞는 데이터가 없습니다.".formatted(period.label());
         } else {
-        	boolean looksStatusDistribution =
-        		    safe.toUpperCase(Locale.ROOT).matches(".*\\bSTATUS\\s+AS\\s+LABEL\\b.*")
-        		    || title.contains("상태"); // 기존 로직 + 정규식
+           boolean looksStatusDistribution =
+                  safe.toUpperCase(Locale.ROOT).matches(".*\\bSTATUS\\s+AS\\s+LABEL\\b.*")
+                  || title.contains("상태"); // 기존 로직 + 정규식
             boolean wantsCount = wantsOrderCount(userMsg);
 
-            if ("count".equalsIgnoreCase(format) && (looksStatusDistribution || wantsCount)) {
+if ("count".equalsIgnoreCase(format) && (looksStatusDistribution || wantsCount)) {
                 long total = 0L;
                 for (Number v : values) if (v != null) total += v.longValue();
 
@@ -1944,7 +1944,7 @@ public class ChatOrchestratorService {
     private static String fmtQty(long v)   { return String.format("%,d", v); }
     // 추가: 메트릭 단어 목록
     private static final Pattern METRIC_WORDS =
-    	    Pattern.compile("(?i)(판매|매출|환불|리뷰|평점|별점|주문|통계|수량|금액|sales?|revenue|refunds?|reviews?|ratings?|orders?)");
+           Pattern.compile("(?i)(판매|매출|환불|리뷰|평점|별점|주문|통계|수량|금액|sales?|revenue|refunds?|reviews?|ratings?|orders?)");
 
 
     // 추가: 이 토큰이 '상품처럼' 보이는지
