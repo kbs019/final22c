@@ -238,16 +238,16 @@ public class RefundService {
                 .orElseGet(Collections::emptyList)
                 .stream()
                 .collect(Collectors.toMap(
-                        ApproveRefundRequest.Item::getRefundDetailId,
-                        i -> nvl(i.getRefundQty(), 0),
-                        (a, b) -> b));
+                    ApproveRefundRequest.Item::getRefundDetailId,
+                    i -> nvl(i.getRefundQty(), 0),
+                    (a, b) -> b));
 
         // 3) 상세 계산: 승인/거절 수량 및 금액, 승인/거절 "건수"
-        int itemSubtotal = 0; // ★ 상품 소계(단가×승인수량 합)
-        int approvedLines = 0;
-        int rejectedLines = 0;
-        int rejectedQtyTotal = 0; // ★ 총 거절 수량
-        int approvedQtyTotal = 0; // ★ 승인 "총 수량"
+        int itemSubtotal = 0; //  상품 소계(단가×승인수량 합)
+        int approvedLines = 0;  // 승인 수향
+        int rejectedLines = 0;  // 거절 수량
+        int rejectedQtyTotal = 0; //  총 거절 수량
+        int approvedQtyTotal = 0; //  승인 "총 수량"
 
         for (RefundDetail d : refund.getDetails()) {
             int requested = nvl(d.getQuantity(), 0);
@@ -269,8 +269,7 @@ public class RefundService {
             if (rejectedQty > 0) {
                 rejectedLines++;
                 OrderDetail od = d.getOrderDetail();
-                od.setConfirmQuantity(nvl(od.getConfirmQuantity(), 0) - approveQty); // confirmQuantity 를 승인 수량만큼 다운시켜서
-                                                                                     // 거절된 수량은 주문확정된 건으로 처리
+                od.setConfirmQuantity(nvl(od.getConfirmQuantity(), 0) - approveQty); // confirmQuantity 를 승인 수량만큼 다운시켜서 거절된 수량은 주문확정된 건으로 처리
                 orderDetailRepository.save(od);
             }
             refundDetailRepository.save(d);
@@ -303,8 +302,7 @@ public class RefundService {
         int refundMileage = usedPoint; // 환급 마일리지 확정
 
         Users user = refund.getUser(); // user 객체 찾고
-        user.setMileage(user.getMileage() + refundMileage + confirmMileage); // 유저의 남은 마일리지 + 환급 마일리지 + 최종 주문 확정에 대한
-                                                                             // 마일리지
+        user.setMileage(user.getMileage() + refundMileage + confirmMileage); // 유저의 남은 마일리지 + 환급 마일리지 + 최종 주문 확정에 대한 마일리지
         this.userRepository.save(user); // 저장
 
         int mileageBalance = user.getMileage(); // 현재 보유 마일리지 (반영 후)
@@ -370,17 +368,12 @@ public class RefundService {
                         rejectReason);
             }
         }
-
         // 8) 결과
         return ApproveRefundResult.success(
                 refund.getRefundId(),
                 refund.getStatus(), // "REFUNDED"
-                finalRefundAmount,
-                partial,
-                approvedQtyTotal,
-                shippingRefund,
-                rejectedQtyTotal,
-                itemSubtotal);
+                finalRefundAmount, partial, approvedQtyTotal, 
+                shippingRefund, rejectedQtyTotal, itemSubtotal);
     }
 
     // ===== 유틸 =====
