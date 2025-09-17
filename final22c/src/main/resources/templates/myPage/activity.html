@@ -1,353 +1,312 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-  layout:decorate="~{layout/layout}">
+      layout:decorate="~{layout/layout}">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- _csrf 메타는 없을 수도 있으니 조건부로 -->
+  <!-- _csrf 메타(있을 때만) -->
   <meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}" />
   <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}" />
 
   <title>마이페이지 - 활동내역</title>
 
   <!-- 공통 CSS -->
-    <link rel="stylesheet" href="/css/mypage.css" th:href="@{/css/mypage.css}">
-  <!-- (선택) 페이지 전용 CSS로 분리하고 싶으면 아래 링크 사용
-  <link rel="stylesheet" th:href="@{/css/mypage-activity.css}">
-  -->
+  <link rel="stylesheet" href="/css/mypage.css" th:href="@{/css/mypage.css}">
 
   <style>
-    /* ================= 활동내역 전용 스타일(공통 제외) ================= */
+    /* ================= 활동내역 전용 (페이지 로컬) ================= */
 
     /* 탭 */
-    .pill-tabs {
-      display: inline-flex;
-      border: 1px solid var(--border);
-      border-radius: 9999px;
-      overflow: hidden;
-      background: #fff;
-    }
-    .pill-tabs button {
-      border: 0;
-      background: #fff;
-      padding: 10px 18px;
-      cursor: pointer;
-      font-weight: 700;
-    }
-    .pill-tabs button:hover { background: #dfdede; }
-    .pill-tabs button.is-active { background: #000; color: #fff; }
+    .pill-tabs{display:inline-flex;border:1px solid var(--border);border-radius:9999px;overflow:hidden;background:#fff}
+    .pill-tabs button{border:0;background:#fff;padding:10px 18px;cursor:pointer;font-weight:700}
+    .pill-tabs button:hover{background:#dfdede}
+    .pill-tabs button.is-active{background:#000;color:#fff}
 
-    /* 목록/카드 */
-    .list-wrap { margin-top: 16px; display: grid; gap: 14px; }
-    .card {
-      display: grid;
-      grid-template-columns: 88px 1fr auto;
-      gap: 16px;
-      align-items: start;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-    }
-    .thumb {
-      width: 88px; height: 88px; border-radius: 10px;
-      object-fit: cover; background: #f3f4f6;
-    }
-    .title { font-weight: 800; }
-    .title:hover { text-decoration: underline; }
-    .meta { color: #6b7280; font-size: 13px; margin-top: 2px; }
-    .content { margin-top: 8px; line-height: 1.55; white-space: pre-wrap; }
-    .actions a, .actions button {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 8px 12px;
-      background: #fff;
-      cursor: pointer;
-    }
-    .actions a:hover, .actions button:hover { background: #ccc; }
-    .empty {
-      padding: 36px 12px; text-align: center; color: #9ca3af;
-      border: 1px dashed var(--border); border-radius: 12px; background: #fafafa;
-    }
+    /* 목록 래퍼 */
+    .list-wrap{margin-top:16px;display:grid;gap:14px}
 
-    /* 모달 내부(상단 헤더/썸네일 등) */
-    .amodal__head { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-    .amodal__thumb { width: 72px; height: 72px; border-radius: 10px; overflow: hidden; background: #f3f4f6; flex: 0 0 72px; }
-    .amodal__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .amodal__title { font-weight: 800; line-height: 1.3; }
-    .amodal__body { margin-top: 8px; }
-    .amodal__actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+    /* ===== Activity 전용 카드 레이아웃 (공통 .card와 충돌 방지) ===== */
+    .a-card{
+      display:grid !important;
+      grid-template-columns:88px 1fr 160px !important; /* 썸네일 | 본문 | 사이드(날짜+버튼) */
+      gap:16px;
+      align-items:start;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:14px 16px;
+    }
+    .a-card .thumb{grid-area:auto;width:88px;height:88px;border-radius:10px;object-fit:cover;background:#f3f4f6}
+    .a-card .card-main{}
+    .a-card .card-side{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+    .a-card .card-side .date{font-size:13px;color:#6b7280;white-space:nowrap}
 
-    /* 모바일 카드 컬럼 축소 */
-    @media (max-width:860px) {
-      .card { grid-template-columns: 72px 1fr; }
+    .title{font-weight:800}
+    .title:hover{text-decoration:underline}
+    .meta{color:#6b7280;font-size:13px;margin-top:2px}
+    .content{margin-top:8px;line-height:1.55;white-space:pre-wrap}
+
+    .actions{display:flex;gap:8px;justify-content:flex-end}
+    .actions a,.actions button{border:1px solid #ccc;border-radius:8px;padding:8px 12px;background:#fff;cursor:pointer}
+    .actions a:hover,.actions button:hover{background:#ccc}
+
+    .empty{padding:36px 12px;text-align:center;color:#9ca3af;border:1px dashed var(--border);border-radius:12px;background:#fafafa}
+
+    /* 모달(공통 박스는 mypage.css 사용, 내부만 보조) */
+    .amodal__head{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+    .amodal__thumb{width:72px;height:72px;border-radius:10px;overflow:hidden;background:#f3f4f6;flex:0 0 72px}
+    .amodal__thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .amodal__title{font-weight:800;line-height:1.3}
+    .amodal__body{margin-top:8px}
+    .amodal__actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+    /* 모바일에서 2열(사이드 아래) */
+    @media (max-width:860px){
+      .a-card{grid-template-columns:72px 1fr !important}
+      .a-card .card-side{align-items:flex-start;gap:8px;margin-top:8px}
     }
 
-    .btn-unlike {
-      background: #fff;   /* 파란 배경 */
-      color: #444 !important;      /* 흰 글씨 */
-      border-color: #ccc;
-    }
-
-    .btn-unlike:hover {
-      background: #ccc;         /* hover 시 조금 진한 파랑 */
-    }
-
-    cm-btn--primary:hover {
-      background: #ccc;
-      color: #fff;
-    }
+    /* 버튼 토큰 */
+    .btn-unlike{background:#fff;color:#444 !important;border-color:#ccc}
+    .btn-unlike:hover{background:#ccc}
   </style>
 </head>
 
 <body>
-  <div layout:fragment="content">
-    <section class="mypage-wrap">
-      <div class="mp-grid">
-        <!-- 좌측: 사이드박스 (공통 파셜) -->
-        <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
+<div layout:fragment="content">
+  <section class="mypage-wrap">
+    <div class="mp-grid">
+      <!-- 좌측 사이드 -->
+      <div class="mp-col-left" th:replace="~{fragments/mypageSidebox :: mypageSidebox(${section})}"></div>
 
-        <!-- 우측: 본문 -->
-        <div class="mp-col-right">
-          <section class="mypage-body" role="region" aria-labelledby="pageTitle">
-            <h1 id="pageTitle" class="sr-only">마이페이지 - 활동내역</h1>
+      <!-- 우측 본문 -->
+      <div class="mp-col-right">
+        <section class="mypage-body" role="region" aria-labelledby="pageTitle">
+          <h1 id="pageTitle" class="sr-only">마이페이지 - 활동내역</h1>
 
-            <div class="page-head">
-              <h2 class="page-title">활동내역</h2>
-            </div>
+          <div class="page-head"><h2 class="page-title">활동내역</h2></div>
 
-            <!-- 탭 -->
-            <div class="pill-tabs" role="tablist" aria-label="활동 분류">
-              <button id="tab-reviews" class="is-active" role="tab" aria-selected="true" aria-controls="panel-reviews"
-                data-tab="reviews">리뷰</button>
-              <button id="tab-likes" role="tab" aria-selected="false" aria-controls="panel-likes"
-                data-tab="likes">공감</button>
-            </div>
-
-            <!-- 탭패널: 리뷰 -->
-            <div id="panel-reviews" role="tabpanel" tabindex="0" aria-labelledby="tab-reviews">
-              <div id="list" class="list-wrap" aria-live="polite"></div>
-              <nav id="pager" class="pager" aria-label="페이지네이션" hidden>
-                <div id="pagerBtns"></div>
-              </nav>
-            </div>
-
-            <!-- 탭패널: 공감 -->
-            <div id="panel-likes" role="tabpanel" tabindex="0" aria-labelledby="tab-likes" hidden></div>
-          </section>
-
-          <!-- 수정 모달 (컨테이너/백드롭/박스는 공통 CSS 사용) -->
-          <div id="editModal" class="amodal" aria-hidden="true">
-            <div class="amodal__backdrop" data-close></div>
-            <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="editTitle">
-              <div class="amodal__head">
-                <div class="amodal__thumb"><img id="emImg" alt=""></div>
-                <div>
-                  <div class="amodal__title" id="editTitle">상품명</div>
-                  <div class="meta" id="emBrand">브랜드</div>
-                </div>
-              </div>
-              <div class="amodal__body">
-                <!-- 평점 입력 (막대 5칸, 라디오 접근성) -->
-                <div class="rating-edit" style="margin-bottom:10px;">
-                  <label class="rating-label" for="emRating"
-                    style="display:block;font-weight:700;margin-bottom:6px;">평점</label>
-                  <div id="emRating" class="rating-bars rating-input" role="radiogroup" aria-label="평점 선택 (1~5점)">
-                    <!-- JS에서 5칸 렌더 -->
-                  </div>
-                </div>
-
-                <textarea id="emContent" rows="6"
-                  style="width:100%; border:1px solid var(--border); border-radius:10px; padding:10px; resize:none"
-                  placeholder="리뷰 내용을 입력하세요"></textarea>
-              </div>
-              <div class="amodal__actions">
-                <button class="cm-btn" data-close>닫기</button>
-                <button class="cm-btn cm-btn--primary" id="emSave">수정</button>
-              </div>
-            </div>
+          <!-- 탭 -->
+          <div class="pill-tabs" role="tablist" aria-label="활동 분류">
+            <button id="tab-reviews" class="is-active" role="tab" aria-selected="true" aria-controls="panel-reviews" data-tab="reviews">리뷰</button>
+            <button id="tab-likes" role="tab" aria-selected="false" aria-controls="panel-likes" data-tab="likes">공감</button>
           </div>
 
-          <!-- 삭제 모달 -->
-          <div id="deleteModal" class="amodal" aria-hidden="true">
-            <div class="amodal__backdrop" data-close></div>
-            <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="delTitle">
-              <div class="amodal__body" id="delTitle" style="font-weight:700; margin-bottom:8px;">리뷰를 삭제하시겠습니까?</div>
-              <div class="amodal__actions">
-                <button class="cm-btn cm-btn--primary" id="dmYes">예</button>
-                <button class="cm-btn" data-close>아니요</button>
-              </div>
-            </div>
+          <!-- 리뷰 -->
+          <div id="panel-reviews" role="tabpanel" tabindex="0" aria-labelledby="tab-reviews">
+            <div id="list" class="list-wrap" aria-live="polite"></div>
+            <nav id="pager" class="pager" aria-label="페이지네이션" hidden>
+              <div id="pagerBtns"></div>
+            </nav>
           </div>
 
-        </div><!-- /.mp-col-right -->
-      </div><!-- /.mp-grid -->
-    </section>
+          <!-- 공감 -->
+          <div id="panel-likes" role="tabpanel" tabindex="0" aria-labelledby="tab-likes" hidden></div>
+        </section>
 
-    <!-- ===== 스크립트: 목록/탭/페이지네이션 ===== -->
-    <script>
-      (function () {
-        const listEl = document.getElementById('list');
-        const pagerEl = document.getElementById('pager');
-        const pagerBtns = document.getElementById('pagerBtns');
-        const tabs = document.querySelectorAll('.pill-tabs button');
+        <!-- 수정 모달 -->
+        <div id="editModal" class="amodal" aria-hidden="true">
+          <div class="amodal__backdrop" data-close></div>
+          <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+            <div class="amodal__head">
+              <div class="amodal__thumb"><img id="emImg" alt=""></div>
+              <div>
+                <div class="amodal__title" id="editTitle">상품명</div>
+                <div class="meta" id="emBrand">브랜드</div>
+              </div>
+            </div>
+            <div class="amodal__body">
+              <div class="rating-edit" style="margin-bottom:10px;">
+                <label class="rating-label" for="emRating" style="display:block;font-weight:700;margin-bottom:6px;">평점</label>
+                <div id="emRating" class="rating-bars rating-input" role="radiogroup" aria-label="평점 선택 (1~5점)"></div>
+              </div>
+              <textarea id="emContent" rows="6"
+                        style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px;resize:none"
+                        placeholder="리뷰 내용을 입력하세요"></textarea>
+            </div>
+            <div class="amodal__actions">
+              <button class="cm-btn cm-btn--primary" id="emSave">수정</button>
+              <button class="cm-btn" data-close>닫기</button>
+            </div>
+          </div>
+        </div>
 
-        // --- 상태
-        const state = { tab: 'reviews', page: 0, size: 10, totalPages: 0 };
+        <!-- 리뷰 삭제 모달 -->
+        <div id="deleteModal" class="amodal" aria-hidden="true">
+          <div class="amodal__backdrop" data-close></div>
+          <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+            <div class="amodal__head"><div class="amodal__title" id="delTitle">리뷰 삭제</div></div>
+            <div class="amodal__body">이 리뷰를 삭제하시겠습니까?</div>
+            <div class="amodal__actions">
+              <button class="cm-btn cm-btn--primary" id="dmYes" aria-label="리뷰 삭제 확인">예</button>
+              <button class="cm-btn" data-close>아니요</button>
+            </div>
+          </div>
+        </div>
 
-        // 평점 막대 HTML (공통 클래스 사용)
-        function renderRatingBars(rating) {
-          const r = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
-          const cells = Array.from({ length: 5 }, (_, i) =>
-            `<div class="cell${i < r ? ' filled' : ''}"></div>`).join('');
-          return `<span class="rating-bars" aria-label="평점 ${r}점">${cells}</span>`;
-        }
+        <!-- 공감 취소 모달 -->
+        <div id="unlikeModal" class="amodal" aria-hidden="true">
+          <div class="amodal__backdrop" data-close></div>
+          <div class="amodal__box" role="dialog" aria-modal="true" aria-labelledby="unlikeTitle">
+            <div class="amodal__head"><div class="amodal__title" id="unlikeTitle">공감 취소</div></div>
+            <div class="amodal__body">이 공감을 취소하시겠습니까?</div>
+            <div class="amodal__actions">
+              <button class="cm-btn cm-btn--primary" id="umYes" aria-label="공감 취소 확인">예</button>
+              <button class="cm-btn" data-close>아니요</button>
+            </div>
+          </div>
+        </div>
 
-        function getInitialTab() {
-          const params = new URLSearchParams(location.search);
-          const p = (params.get('tab') || '').toLowerCase();
-          return (p === 'likes' || p === 'reviews') ? p : 'reviews';
-        }
+      </div><!-- /.mp-col-right -->
+    </div><!-- /.mp-grid -->
+  </section>
 
-        function setActiveTab(tab) {
-          state.tab = (tab === 'likes') ? 'likes' : 'reviews';
-          tabs.forEach(b => {
-            const on = (b.dataset.tab === state.tab);
-            b.classList.toggle('is-active', on);
-            b.setAttribute('aria-selected', on ? 'true' : 'false');
+  <!-- ===== 스크립트: 목록/탭/페이지네이션 ===== -->
+  <script>
+    (function () {
+      const listEl = document.getElementById('list');
+      const pagerEl = document.getElementById('pager');
+      const pagerBtns = document.getElementById('pagerBtns');
+      const tabs = document.querySelectorAll('.pill-tabs button');
+
+      // 상태
+      const state = { tab: 'reviews', page: 0, size: 10, totalPages: 0 };
+
+      // 평점 막대
+      function renderRatingBars(rating) {
+        const r = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+        const cells = Array.from({ length: 5 }, (_, i) =>
+          `<div class="cell${i < r ? ' filled' : ''}"></div>`).join('');
+        return `<span class="rating-bars" aria-label="평점 ${r}점">${cells}</span>`;
+      }
+
+      function esc(s) {
+        return String(s || '').replace(/[&<>"']/g, m => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[m]));
+      }
+
+      function getInitialTab() {
+        const p = (new URLSearchParams(location.search).get('tab') || '').toLowerCase();
+        return (p === 'likes' || p === 'reviews') ? p : 'reviews';
+      }
+
+      function setActiveTab(tab) {
+        state.tab = (tab === 'likes') ? 'likes' : 'reviews';
+        tabs.forEach(b => {
+          const on = (b.dataset.tab === state.tab);
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        const url = new URL(location.href);
+        url.searchParams.set('tab', state.tab);
+        history.replaceState({}, '', url);
+      }
+
+      function fetchAndRender() {
+        const url = state.tab === 'reviews'
+          ? `/mypage/reviews?page=${state.page}&size=${state.size}`
+          : `/mypage/likes?page=${state.page}&size=${state.size}`;
+
+        fetch(url)
+          .then(r => {
+            const ct = r.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) throw new Error('NOT_JSON');
+            return r.json();
+          })
+          .then(data => {
+            state.totalPages = data.totalPages || 0;
+            if (state.tab === 'reviews') renderReviewCards(data.content || []);
+            else renderLikeCards(data.content || []);
+            renderPager(data);
+          })
+          .catch(err => {
+            console.error(err);
+            if (listEl) listEl.innerHTML = `<div class="empty">목록을 불러오지 못했습니다.</div>`;
+            if (pagerEl) pagerEl.hidden = true;
           });
-          const url = new URL(location.href);
-          url.searchParams.set('tab', state.tab);
-          history.replaceState({}, '', url);
+      }
+
+      // 카드: 리뷰
+      function renderReviewCards(items) {
+        if (!listEl) return;
+        if (!items.length) {
+          listEl.innerHTML = `<div class="empty">작성한 리뷰가 없습니다.</div>`;
+          return;
         }
+        listEl.innerHTML = items.map(it => {
+          const href = it.productId ? (`/main/content/${it.productId}`) : '#';
+          return `
+            <article class="card a-card" data-id="${it.reviewId}">
+              <img class="thumb" src="${esc(it.imageUrl)}" alt="">
+              <div class="card-main">
+                <div class="title"><a href="${href}" style="color:#000;text-decoration:none;">${esc(it.productName||'상품명')}</a></div>
+                <div class="meta">${esc(it.brandName||'브랜드')} ${renderRatingBars(it.rating??0)}</div>
+                <div class="content">${esc(it.content||'')}</div>
+              </div>
+              <div class="card-side">
+                <div class="date">${esc(it.createDate||'')}</div>
+                <div class="actions">
+                  <a class="btn btn-edit" href="/review/${it.reviewId}/edit">수정</a>
+                  <a class="btn btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
+                </div>
+              </div>
+            </article>`;
+        }).join('');
+      }
 
-        function fetchAndRender() {
-          const url = state.tab === 'reviews'
-            ? `/mypage/reviews?page=${state.page}&size=${state.size}`
-            : `/mypage/likes?page=${state.page}&size=${state.size}`;
-
-          fetch(url)
-            .then(r => {
-              const ct = r.headers.get('content-type') || '';
-              if (!ct.includes('application/json')) throw new Error('NOT_JSON');
-              return r.json();
-            })
-            .then(data => {
-              state.totalPages = data.totalPages || 0;
-              if (state.tab === 'reviews') renderReviewCards(data.content || []);
-              else renderLikeCards(data.content || []);
-              renderPager(data);
-            })
-            .catch(err => {
-              console.error(err);
-              if (listEl) listEl.innerHTML = `<div class="empty">목록을 불러오지 못했습니다.</div>`;
-              if (pagerEl) pagerEl.hidden = true;
-            });
+      // 카드: 공감
+      function renderLikeCards(items) {
+        if (!listEl) return;
+        if (!items.length) {
+          listEl.innerHTML = `<div class="empty">공감한 리뷰가 없습니다.</div>`;
+          return;
         }
+        listEl.innerHTML = items.map(it => {
+          const href = it.productId ? (`/main/content/${it.productId}`) : '#';
+          return `
+            <article class="card a-card" data-id="${it.reviewId}">
+              <img class="thumb" src="${esc(it.imageUrl||'/img/noimg.png')}" alt="">
+              <div class="card-main">
+                <div class="title"><a href="${href}" style="color:#000;text-decoration:none;">${esc(it.productName||'상품명')}</a></div>
+                <div class="meta">${esc(it.brandName||'브랜드')} ${renderRatingBars(it.rating??0)}</div>
+                <div class="content">${esc(it.content||'')}</div>
+              </div>
+              <div class="card-side">
+                <div class="date">${esc(it.createDate||'')}</div>
+                <div class="actions"><button type="button" class="btn btn-unlike" data-id="${it.reviewId}">공감 취소</button></div>
+              </div>
+            </article>`;
+        }).join('');
 
-        tabs.forEach(btn => {
+        // 공감 취소 → 모달 오픈
+        listEl.querySelectorAll('.btn-unlike').forEach(btn => {
           btn.addEventListener('click', () => {
-            state.page = 0;
-            setActiveTab(btn.dataset.tab);
-            fetchAndRender();
+            const id = btn.dataset.id;
+            if (typeof window._openUnlikeModal === 'function') window._openUnlikeModal(id);
           });
         });
+      }
 
-        function renderReviewCards(items) {
-          if (!listEl) return;
-          if (!items.length) {
-            listEl.innerHTML = `<div class="empty">작성한 리뷰가 없습니다.</div>`;
-            return;
-          }
-          listEl.innerHTML = items.map(it => {
-            const href = it.productId ? (`/main/content/${it.productId}`) : '#';
-            const img = it.imageUrl;
-            const name = it.productName || '상품명';
-            const brand = it.brandName || '브랜드';
-            const date = it.createDate || '';
-            const rating = (it.rating ?? 0);
-            const content = esc(it.content || '');
-            return `
-            <article class="card" data-id="${it.reviewId}">
-              <img class="thumb" src="${esc(img)}" alt="">
-              <div>
-                <div class="title"><a style="color: #000; text-decoration: none;" href="${href}">${esc(name)}</a></div>
-                <div class="meta">
-                  ${esc(brand)} ${renderRatingBars(rating)}
-                  <span style="margin-left:6px">${esc(date)}</span>
-                </div>
-                <div class="content">${content}</div>
-              </div>
-              <div class="actions">
-                <a class="btn btn-edit" href="/review/${it.reviewId}/edit">수정</a>
-                <a class="btn btn-delete" href="/review/${it.reviewId}/delete">삭제</a>
-              </div>
-            </article>`;
-          }).join('');
-        }
+      // 페이지네이션(심플)
+      function renderPager(data) {
+        if (!pagerEl || !pagerBtns) return;
+        const total = Math.max(0, Number(data.totalPages) || 0);
+        const page  = Math.min(Math.max(0, Number(data.page) || 0), Math.max(0, total - 1));
+        if (total <= 1) { pagerEl.hidden = true; return; }
+        pagerEl.hidden = false;
 
-        function renderLikeCards(items) {
-          if (!listEl) return;
-          if (!items.length) {
-            listEl.innerHTML = `<div class="empty">공감한 리뷰가 없습니다.</div>`;
-            return;
-          }
-          listEl.innerHTML = items.map(it => {
-            const href = it.productId ? (`/main/content/${it.productId}`) : '#';
-            const img = it.imageUrl || '/img/noimg.png';
-            const name = it.productName || '상품명';
-            const brand = it.brandName || '브랜드';
-            const rating = (it.rating ?? 0);
-            const date = it.createDate || '';
-            const content = esc(it.content || '');
-            return `
-            <article class="card" data-id="${it.reviewId}">
-              <img class="thumb" src="${esc(img)}" alt="">
-              <div>
-                <div class="title"><a style="color: #000; text-decoration: none;" href="${href}">${esc(name)}</a></div>
-                <div class="meta">
-                  ${esc(brand)} ${renderRatingBars(rating)}
-                  <span style="margin-left:6px">${esc(date)}</span>
-                </div>
-                <div class="content">${content}</div>
-              </div>
-              <div class="actions">
-                <button type="button" class="btn btn-unlike" data-id="${it.reviewId}">공감 취소</button>
-              </div>
-            </article>`;
-          }).join('');
+        const isFirst = page === 0;
+        const isLast  = page === total - 1;
 
-          // 공감 취소 이벤트 바인딩
-          listEl.querySelectorAll('.btn-unlike').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              const id = btn.dataset.id;
-              try {
-                const res = await fetch(`/mypage/likes/${id}`, { method: 'DELETE', credentials: 'same-origin' });
-                if (!res.ok) throw new Error();
-                fetchAndRender();
-              } catch { alert('공감 취소 중 오류가 발생했습니다.'); }
-            });
-          });
-        }
+        const pagesHtml = Array.from({ length: total }, (_, i) => {
+          const currentAttr = i === page ? ' aria-current="page"' : '';
+          return `<button type="button" class="page-btn"${currentAttr} data-page="${i}">${i + 1}</button>`;
+        }).join('');
 
-        function renderPager(data) {
-          if (!pagerEl || !pagerBtns) return;
-          const total = Math.max(0, Number(data.totalPages) || 0);
-          const page = Math.min(Math.max(0, Number(data.page) || 0), Math.max(0, total - 1));
-          if (total <= 1) { pagerEl.hidden = true; return; }
-          pagerEl.hidden = false;
-
-          const isFirst = page === 0;
-          const isLast = page === total - 1;
-
-          const pagesHtml = Array.from({ length: total }, (_, i) => {
-            const currentAttr = i === page ? ' aria-current="page"' : '';
-            return `<button type="button" class="page-btn"${currentAttr} data-page="${i}">${i + 1}</button>`;
-          }).join('');
-
-          pagerBtns.innerHTML = `
+        pagerBtns.innerHTML = `
           <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="첫 페이지">«</button>
           <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst ? 'disabled aria-disabled="true"' : ''} aria-label="이전 페이지">‹</button>
           ${pagesHtml}
@@ -355,208 +314,235 @@
           <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast ? 'disabled aria-disabled="true"' : ''} aria-label="마지막 페이지">»</button>
         `;
 
-          pagerBtns.querySelectorAll('.page-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              if (btn.disabled) return;
-              const nav = btn.dataset.nav;
-              let next = page;
-              if (nav === 'first') next = 0;
-              else if (nav === 'prev') next = Math.max(0, page - 1);
-              else if (nav === 'next') next = Math.min(total - 1, page + 1);
-              else if (nav === 'last') next = total - 1;
-              else if (btn.dataset.page != null) next = Number(btn.dataset.page);
-              if (next === page) return;
-              const keepFocus = () => {
-                const selector = `.page-btn[data-page="${next}"]`;
-                const nextBtn = pagerBtns.querySelector(selector) || pagerBtns.querySelector('.nav-next');
-                nextBtn?.focus();
-              };
-              state.page = next;
-              fetchAndRender();
-              setTimeout(keepFocus, 0);
-            });
+        pagerBtns.querySelectorAll('.page-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (btn.disabled) return;
+            const nav = btn.dataset.nav;
+            let next = page;
+            if (nav === 'first') next = 0;
+            else if (nav === 'prev') next = Math.max(0, page - 1);
+            else if (nav === 'next') next = Math.min(total - 1, page + 1);
+            else if (nav === 'last') next = total - 1;
+            else if (btn.dataset.page != null) next = Number(btn.dataset.page);
+            if (next === page) return;
+
+            const keepFocus = () => {
+              const selector = `.page-btn[data-page="${next}"]`;
+              const nextBtn = pagerBtns.querySelector(selector) || pagerBtns.querySelector('.nav-next');
+              nextBtn?.focus();
+            };
+            state.page = next;
+            fetchAndRender();
+            setTimeout(keepFocus, 0);
           });
-        }
-
-        function esc(s) {
-          return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-        }
-
-        // 초기 실행
-        setActiveTab(getInitialTab());
-        fetchAndRender();
-
-        // 디버그/외부 호출용
-        window.fetchAndRender = fetchAndRender;
-      })();
-    </script>
-
-    <!-- ===== 스크립트: 수정/삭제 모달 & 액션 ===== -->
-    <script>
-      (function () {
-        const listEl = document.getElementById('list');
-
-        function getCsrf() {
-          const t = document.querySelector('meta[name="_csrf"]')?.content || '';
-          const h = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
-          return { header: h, token: t };
-        }
-
-        function openModal(el) { el?.classList.add('is-open'); }
-        function closeModal(el) { el?.classList.remove('is-open'); }
-
-        document.addEventListener('click', (e) => {
-          if (e.target.matches('[data-close], .amodal__backdrop')) {
-            const m = e.target.closest('.amodal'); closeModal(m);
-          }
         });
+      }
 
-        const em = document.getElementById('editModal');
-        const emImg = document.getElementById('emImg');
-        const editTitle = document.getElementById('editTitle');
-        const emBrand = document.getElementById('emBrand');
-        const emContent = document.getElementById('emContent');
-        const emSave = document.getElementById('emSave');
+      // 초기 실행
+      setActiveTab(getInitialTab());
+      fetchAndRender();
+      tabs.forEach(btn => btn.addEventListener('click', () => { state.page = 0; setActiveTab(btn.dataset.tab); fetchAndRender(); }));
+      window.fetchAndRender = fetchAndRender;
+    })();
+  </script>
 
-        /* 수정 모달 평점 입력 제어 (공통 rating-bars 활용) */
-        const emRating = document.getElementById('emRating');
-        let currentRating = 0;
+  <!-- ===== 스크립트: 수정/삭제/공감취소 모달 액션 ===== -->
+  <script>
+    (function () {
+      const listEl = document.getElementById('list');
 
-        function drawEditRating(r) {
-          currentRating = Math.max(0, Math.min(5, Math.round(Number(r) || 0)));
-          emRating.innerHTML = Array.from({ length: 5 }, (_, i) => {
-            const val = i + 1;
-            const filled = val <= currentRating ? ' filled' : '';
-            const checked = val === currentRating ? 'true' : 'false';
-            const tab = val === (currentRating || 1) ? '0' : '-1';
-            return `<div class="cell${filled}" role="radio" aria-checked="${checked}" aria-label="${val}점" tabindex="${tab}" data-val="${val}"></div>`;
-          }).join('');
+      function getCsrf() {
+        const t = document.querySelector('meta[name="_csrf"]')?.content || '';
+        const h = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
+        return { header: h, token: t };
+      }
+
+      function openModal(el){ el?.classList.add('is-open'); }
+      function closeModal(el){ el?.classList.remove('is-open'); }
+
+      document.addEventListener('click', (e) => {
+        if (e.target.matches('[data-close], .amodal__backdrop')) {
+          const m = e.target.closest('.amodal'); closeModal(m);
         }
-        function bindEditRatingHandlers() {
-          emRating.addEventListener('click', (e) => {
-            const cell = e.target.closest('.cell');
-            if (!cell) return;
-            drawEditRating(Number(cell.dataset.val) || 0);
-          });
-          emRating.addEventListener('keydown', (e) => {
-            const key = e.key;
-            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End', ' ', 'Enter'].includes(key)) return;
-            e.preventDefault();
-            let next = currentRating || 1;
-            if (key === 'ArrowLeft') next = Math.max(1, next - 1);
-            if (key === 'ArrowRight') next = Math.min(5, next + 1);
-            if (key === 'Home') next = 1;
-            if (key === 'End') next = 5;
-            if (key === ' ' || key === 'Enter') {
-              const focused = document.activeElement?.dataset?.val;
-              if (focused) next = Number(focused);
-            }
-            drawEditRating(next);
-            emRating.querySelector(`.cell[data-val="${next}"]`)?.focus();
-          });
-        }
-        bindEditRatingHandlers();
+      });
 
-        let currentReviewId = null;
+      // 수정 모달 요소
+      const em = document.getElementById('editModal');
+      const emImg = document.getElementById('emImg');
+      const editTitle = document.getElementById('editTitle');
+      const emBrand = document.getElementById('emBrand');
+      const emContent = document.getElementById('emContent');
+      const emSave = document.getElementById('emSave');
 
-        // 수정 버튼 → 상세 조회 → 모달 오픈
-        listEl.addEventListener('click', async (e) => {
-          const a = e.target.closest('.btn-edit');
-          if (!a) return;
+      // 수정 모달 평점 입력
+      const emRating = document.getElementById('emRating');
+      let currentRating = 0;
+
+      function drawEditRating(r) {
+        currentRating = Math.max(0, Math.min(5, Math.round(Number(r) || 0)));
+        emRating.innerHTML = Array.from({ length: 5 }, (_, i) => {
+          const val = i + 1;
+          const filled = val <= currentRating ? ' filled' : '';
+          const checked = val === currentRating ? 'true' : 'false';
+          const tab = val === (currentRating || 1) ? '0' : '-1';
+          return `<div class="cell${filled}" role="radio" aria-checked="${checked}" aria-label="${val}점" tabindex="${tab}" data-val="${val}"></div>`;
+        }).join('');
+      }
+      function bindEditRatingHandlers() {
+        emRating.addEventListener('click', (e) => {
+          const cell = e.target.closest('.cell');
+          if (!cell) return;
+          drawEditRating(Number(cell.dataset.val) || 0);
+        });
+        emRating.addEventListener('keydown', (e) => {
+          const key = e.key;
+          if (!['ArrowLeft','ArrowRight','Home','End',' ','Enter'].includes(key)) return;
           e.preventDefault();
-
-          const card = a.closest('.card');
-          const reviewId = card?.dataset.id;
-          if (!reviewId) return;
-
-          try {
-            const res = await fetch(`/mypage/reviews/${reviewId}`, {
-              headers: { 'Accept': 'application/json' },
-              credentials: 'same-origin'
-            });
-
-            if (res.status === 401 || res.status === 403) {
-              alert('로그인이 필요합니다.');
-              location.href = '/user/login';
-              return;
-            }
-
-            const ct = res.headers.get('content-type') || '';
-            if (!ct.includes('application/json')) { throw new Error('NOT_JSON'); }
-
-            const d = await res.json();
-
-            emImg.src = d.imageUrl;
-            editTitle.textContent = d.productName || '상품명';
-            emBrand.textContent = d.brandName || '';
-            emContent.value = d.content || '';
-            drawEditRating(d.rating || 0);
-            currentReviewId = reviewId;
-            openModal(em);
-          } catch (err) {
-            console.error(err);
-            alert('리뷰 정보를 불러오지 못했습니다.');
+          let next = currentRating || 1;
+          if (key === 'ArrowLeft') next = Math.max(1, next - 1);
+          if (key === 'ArrowRight') next = Math.min(5, next + 1);
+          if (key === 'Home') next = 1;
+          if (key === 'End') next = 5;
+          if (key === ' ' || key === 'Enter') {
+            const focused = document.activeElement?.dataset?.val;
+            if (focused) next = Number(focused);
           }
+          drawEditRating(next);
+          emRating.querySelector(`.cell[data-val="${next}"]`)?.focus();
         });
+      }
+      bindEditRatingHandlers();
 
-        // 수정 저장
-        emSave.addEventListener('click', async () => {
-          if (!currentReviewId) return;
-          const content = emContent.value.trim();
-          if (!content) { alert('내용을 입력해 주세요.'); emContent.focus(); return; }
+      let currentReviewId = null;
 
-          const { header, token } = getCsrf();
-          try {
-            const res = await fetch(`/mypage/reviews/${currentReviewId}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json', ...(token ? { [header]: token } : {}) },
-              body: JSON.stringify({ content, rating: currentRating })
-            });
-            const d = await res.json().catch(() => ({}));
-            if (!res.ok || !d.ok) { throw new Error(d.message || '수정 실패'); }
-            closeModal(em);
-            if (typeof fetchAndRender === 'function') fetchAndRender();
-            else location.reload();
-          } catch (err) {
-            alert(err.message || '수정 중 오류가 발생했습니다.');
+      // 수정 버튼 → 상세 조회 → 모달 오픈
+      listEl.addEventListener('click', async (e) => {
+        const a = e.target.closest('.btn-edit');
+        if (!a) return;
+        e.preventDefault();
+
+        const card = a.closest('.card');
+        const reviewId = card?.dataset.id;
+        if (!reviewId) return;
+
+        try {
+          const res = await fetch(`/mypage/reviews/${reviewId}`, {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+          });
+
+          if (res.status === 401 || res.status === 403) {
+            alert('로그인이 필요합니다.');
+            location.href = '/user/login';
+            return;
           }
-        });
 
-        // 삭제 확인
-        const dm = document.getElementById('deleteModal');
-        const dmYes = document.getElementById('dmYes');
+          const ct = res.headers.get('content-type') || '';
+          if (!ct.includes('application/json')) throw new Error('NOT_JSON');
 
-        listEl.addEventListener('click', (e) => {
-          const a = e.target.closest('.btn-delete');
-          if (!a) return;
-          e.preventDefault();
-          const card = a.closest('.card');
-          const reviewId = card?.dataset.id;
-          if (!reviewId) return;
+          const d = await res.json();
+          emImg.src = d.imageUrl;
+          editTitle.textContent = d.productName || '상품명';
+          emBrand.textContent = d.brandName || '';
+          emContent.value = d.content || '';
+          drawEditRating(d.rating || 0);
           currentReviewId = reviewId;
-          openModal(dm);
-        });
+          openModal(em);
+        } catch (err) {
+          console.error(err);
+          alert('리뷰 정보를 불러오지 못했습니다.');
+        }
+      });
 
-        dmYes.addEventListener('click', async () => {
-          if (!currentReviewId) return;
-          const { header, token } = getCsrf();
-          try {
-            const res = await fetch(`/mypage/reviews/${currentReviewId}`, {
-              method: 'DELETE',
-              headers: token ? { [header]: token } : {},
-            });
-            const d = await res.json().catch(() => ({}));
-            if (!res.ok || d.ok !== true) throw new Error(d.message || '삭제 실패');
-            closeModal(dm);
-            if (typeof fetchAndRender === 'function') fetchAndRender();
-            else location.reload();
-          } catch (err) {
-            alert(err.message || '삭제 중 오류가 발생했습니다.');
-          }
-        });
-      })();
-    </script>
+      // 수정 저장
+      emSave.addEventListener('click', async () => {
+        if (!currentReviewId) return;
+        const content = emContent.value.trim();
+        if (!content) { alert('내용을 입력해 주세요.'); emContent.focus(); return; }
 
-  </div>
+        const { header, token } = getCsrf();
+        try {
+          const res = await fetch(`/mypage/reviews/${currentReviewId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...(token ? { [header]: token } : {}) },
+            body: JSON.stringify({ content, rating: currentRating })
+          });
+          const d = await res.json().catch(() => ({}));
+          if (!res.ok || !d.ok) { throw new Error(d.message || '수정 실패'); }
+          closeModal(em);
+          if (typeof fetchAndRender === 'function') fetchAndRender();
+          else location.reload();
+        } catch (err) {
+          alert(err.message || '수정 중 오류가 발생했습니다.');
+        }
+      });
+
+      // 삭제 확인
+      const dm = document.getElementById('deleteModal');
+      const dmYes = document.getElementById('dmYes');
+
+      listEl.addEventListener('click', (e) => {
+        const a = e.target.closest('.btn-delete');
+        if (!a) return;
+        e.preventDefault();
+        const card = a.closest('.card');
+        const reviewId = card?.dataset.id;
+        if (!reviewId) return;
+        currentReviewId = reviewId;
+        openModal(dm);
+      });
+
+      dmYes.addEventListener('click', async () => {
+        if (!currentReviewId) return;
+        const { header, token } = getCsrf();
+        try {
+          const res = await fetch(`/mypage/reviews/${currentReviewId}`, {
+            method: 'DELETE',
+            headers: token ? { [header]: token } : {},
+          });
+          const d = await res.json().catch(() => ({}));
+          if (!res.ok || d.ok !== true) throw new Error(d.message || '삭제 실패');
+          closeModal(dm);
+          if (typeof fetchAndRender === 'function') fetchAndRender();
+          else location.reload();
+        } catch (err) {
+          alert(err.message || '삭제 중 오류가 발생했습니다.');
+        }
+      });
+
+      // 공감 취소 확인
+      const um = document.getElementById('unlikeModal');
+      const umYes = document.getElementById('umYes');
+      let currentLikeReviewId = null;
+
+      // 목록 스크립트에서 호출
+      window._openUnlikeModal = function (reviewId) {
+        currentLikeReviewId = reviewId || null;
+        openModal(um);
+      };
+
+      umYes.addEventListener('click', async () => {
+        if (!currentLikeReviewId) return;
+        const { header, token } = getCsrf();
+        try {
+          const res = await fetch(`/mypage/likes/${currentLikeReviewId}`, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: token ? { [header]: token } : {},
+          });
+          if (!res.ok) throw new Error('공감 취소 실패');
+          closeModal(um);
+          if (typeof fetchAndRender === 'function') fetchAndRender();
+          else location.reload();
+        } catch (err) {
+          alert(err.message || '공감 취소 중 오류가 발생했습니다.');
+        } finally {
+          currentLikeReviewId = null;
+        }
+      });
+    })();
+  </script>
+
+</div>
 </body>
 </html>

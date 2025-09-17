@@ -68,7 +68,7 @@
             <span>원</span>
 
             <span th:if="${order.status=='REQUESTED' and d.refundDetail != null}">
-              · 환불요청 <span th:text="${d.refundDetail.quantity}">0</span>
+              · 환불신청 <span th:text="${d.refundDetail.quantity}">0</span>
             </span>
             <span th:if="${order.status=='REFUNDED' and d.refundDetail != null}">
               · 환불신청 <span th:text="${d.refundDetail.quantity}">0</span>

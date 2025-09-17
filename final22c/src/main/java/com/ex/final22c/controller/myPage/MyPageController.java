@@ -1,8 +1,6 @@
 package com.ex.final22c.controller.myPage;
 
 import java.security.Principal;
-import java.time.LocalDate;
-import java.time.Period;
 import java.util.List;
 import java.util.Map;
 

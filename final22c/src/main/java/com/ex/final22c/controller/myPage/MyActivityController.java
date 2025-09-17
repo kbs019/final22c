@@ -1,24 +1,25 @@
 package com.ex.final22c.controller.myPage;
 
-import com.ex.final22c.data.product.Product;
-import com.ex.final22c.data.user.Users;
-import com.ex.final22c.service.mypage.MyActivityService;
-import com.ex.final22c.service.product.ZzimService;
-import com.ex.final22c.service.user.UsersService;
-import lombok.RequiredArgsConstructor;
-
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-
 import java.security.Principal;
 import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.ex.final22c.data.user.Users;
+import com.ex.final22c.service.mypage.MyActivityService;
+import com.ex.final22c.service.user.UsersService;
+
+import lombok.RequiredArgsConstructor;
 
 @Controller  
 @RequiredArgsConstructor
@@ -27,7 +28,6 @@ public class MyActivityController {
 
     private final UsersService usersService;
     private final MyActivityService myActivityService;
-    private final ZzimService zzimService;
 
     /** 활동내역 페이지 (뷰) */
     @GetMapping("/activity")
