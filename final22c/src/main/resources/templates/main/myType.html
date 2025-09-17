@@ -8,6 +8,8 @@
     <th:block layout:fragment="css">
     <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS (필요한 경우) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* ====== Reset & Base ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -437,11 +439,31 @@
             <div class="loading-text">AI 분석 중</div>
             <div class="loading-subtitle">당신의 취향을 분석하고 있습니다</div>
         </div>
+
+        <!-- 다시 테스트하기 확인 모달 -->
+        <div class="modal fade" id="restartModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">AI 향수 추천</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                    </div>
+                    <div class="modal-body">
+                        새로 설문조사를 시작하시겠습니까?<br>
+                        현재 결과가 초기화됩니다.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-primary" id="restartConfirm">다시 시작하기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <th:block layout:fragment="script">
-    
-    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
 <script>
 //============ JSON 유틸 (수정된 버전) ============
@@ -802,7 +824,16 @@ class SimplePerfumeSurvey {
 
 // 다시 테스트하기 함수 (전역 함수로 유지)
 function restartSurvey() {
-  if (!confirm('새로 설문조사를 시작하시겠습니까?')) return;
+  // Bootstrap 모달 표시
+  const modal = document.getElementById('restartModal');
+  if (modal) {
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+  }
+}
+
+// 모달에서 확인 버튼 클릭 시 실행
+function confirmRestart() {
   const userName = document.body.dataset.user;
   const reload = () => window.location.reload();
   if (userName && userName !== 'anonymousUser') {
@@ -816,10 +847,14 @@ function restartSurvey() {
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
   window.surveyManager = new SimplePerfumeSurvey();
+  
+  // 다시 테스트하기 모달 확인 버튼 이벤트
+  const restartConfirmBtn = document.getElementById('restartConfirm');
+  if (restartConfirmBtn) {
+    restartConfirmBtn.addEventListener('click', confirmRestart);
+  }
 });
 </script>
-
-
 
     </th:block>
 </body>
