@@ -98,9 +98,9 @@ public class OrderService {
     }
 
     /**
-     * 결제 성공(승인) — 멱등
-     * 재고는 이미 PENDING 시점에 예약(감소)했으므로 여기서 추가 차감은 하지 않습니다.
-     * 마일리지만 차감하고 상태만 PAID로 변경합니다.
+     * 결제 성공(승인) - 멱등성 보장
+     * 재고는 이미 PENDING 시점에 예약(차감)했으므로 여기서 추가 차감은 하지 않음
+     * 마일리지만 차감하고 상태만 PAID로 변경
      */
     @Transactional
     public void markPaid(Long orderId) {
@@ -108,33 +108,35 @@ public class OrderService {
         Order o = orderRepository.findOneWithDetails(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문 없음: " + orderId));
 
-        if ("PAID".equalsIgnoreCase(o.getStatus()))
-            return; // 멱등
+        // 멱등성 보장 - 이미 PAID면 중복 처리 방지
+        if ("PAID".equalsIgnoreCase(o.getStatus())) 
+            return; // 더 이상 진행 안함
 
-        // 0) 결제 성공했으니까 장바구니에서 삭제해주기
-        var ids = o.getSelectedCartDetailIds();
+        // 0) 결제 성공했으니까 장바구니에서 구매한 상품들 자동 삭제
+        var ids = o.getSelectedCartDetailIds(); // 결제시 선택했던 장바구니 ID들
         if (ids != null && !ids.isEmpty()) {
             String username = o.getUser().getUserName();
-            cartService.removeAll(username, ids);
-            o.getSelectedCartDetailIds().clear(); // -> 조인테이블에도 행삭제
+            cartService.removeAll(username, ids);        // 장바구니에서 삭제
+            o.getSelectedCartDetailIds().clear();        // 조인테이블에서도 관계 해제
         }
 
-        // 1) 마일리지 차감
+        // 1) 마일리지 실제 차감 (결제 성공 확정 후)
         int used = o.getUsedPoint();
         if (used > 0) {
             int updated = usersRepository.deductMileage(o.getUser().getUserNo(), used);
             if (updated != 1)
-                throw new IllegalStateException("마일리지 차감 실패/부족");
+                throw new IllegalStateException("마일리지 차감 실패/잔액 부족");
         }
 
-        // 2) 재고 추가 차감 없음 (이미 예약됨)
+        // 2) 재고 추가 차감 없음 (이미 PENDING시 예약 차감됨)
+        //      → 오버셀 방지를 위해 주문 생성시 미리 처리
 
-        // 3) 상태 갱신
-        o.setStatus("PAID");
-        o.setDeliveryStatus("ORDERED");
+        // 3) 주문 상태 갱신
+        o.setStatus("PAID");              // 결제 완료
+        o.setDeliveryStatus("ORDERED");   // 배송 준비
         orderRepository.save(o);
 
-        // 4) PAID시 quantity만큼 confirmquantity에 추가
+        // 4) PAID시 quantity만큼 confirmQuantity에 추가 (구매 확정 대비)
         orderDetailRepository.fillConfirmQtyToQuantity(orderId);
     }
 

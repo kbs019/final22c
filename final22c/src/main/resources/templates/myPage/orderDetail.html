@@ -63,16 +63,41 @@
 
           <!-- ✅ 상세 라벨: 상태별 “신청/승인” 동시 표기 -->
           <div class="small text-muted">
-            <span>개당 </span>
-            <span th:text="${#numbers.formatInteger((d.sellPrice != null ? d.sellPrice : 0),1,'COMMA')}">0</span>
-            <span>원</span>
+                <span th:if="${
+                  (order.status == 'CONFIRMED' or order.status == 'REFUNDED')
+                  and d.confirmQuantity > 0
+                }">
+                    <!-- 리뷰 작성 여부 -->
+                    <span th:if="${d.reviewWritten == 'Y'}" class="badge bg-success">
+                        리뷰작성완료
+                    </span>
+                
+                    <!-- 미작성 시 리뷰 작성 버튼 -->
+                    <a th:if="${
+                              (order.status == 'CONFIRMED' or order.status == 'REFUNDED')
+                              and d.reviewWritten != 'Y' 
+                              and d.confirmQuantity > 0
+                              and order.regDate.plusDays(7).isAfter(T(java.time.LocalDateTime).now())
+                        }"
+                      th:href="@{/main/etc/review/new(productId=${d.product.id}, orderDetailId=${d.orderDetailId})}"
+                      class="btn btn-sm btn-outline-secondary">
+                      리뷰작성
+                    </a>
+                </span>
 
             <span th:if="${order.status=='REQUESTED' and d.refundDetail != null}">
+<<<<<<< HEAD
               · 환불신청 <span th:text="${d.refundDetail.quantity}">0</span>
             </span>
             <span th:if="${order.status=='REFUNDED' and d.refundDetail != null}">
               · 환불신청 <span th:text="${d.refundDetail.quantity}">0</span>
               · 환불승인 <span th:text="${d.refundDetail.refundQty}">0</span>
+=======
+              환불요청 <span th:text="${d.refundDetail.quantity}">0</span>
+            </span>
+            <span th:if="${order.status=='REFUNDED' and d.refundDetail != null}">
+              환불승인 <span th:text="${d.refundDetail.refundQty}">0</span>
+>>>>>>> main
             </span>
           </div>
         </td>

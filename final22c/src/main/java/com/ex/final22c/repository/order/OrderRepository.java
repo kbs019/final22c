@@ -339,7 +339,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 	        WHERE o.user.userName = :username
 	          AND d.product.id = :productId
 	          AND o.status = 'CONFIRMED'
+            OR o.status = 'REFUNDED'
 	    """)
-	    boolean existsByUserAndProduct(@Param("username") String username,
-	                                   @Param("productId") Long productId);
+	    boolean existsByUserAndProduct(@Param("username") String username, @Param("productId") Long productId);
 }
