@@ -1133,7 +1133,8 @@
 						<div id="cartModalMsg">장바구니에 제품이 등록되었습니다.</div>
 					</div>
 					<div class="modal-footer">
-						<button class="btn btn-outline-secondary" data-bs-dismiss="modal">계속 쇼핑</button>
+						<button id="continueBtn" class="btn btn-outline-secondary" data-bs-dismiss="modal">계속
+							쇼핑</button>
 						<span sec:authorize="isAuthenticated()">
 							<a th:href="@{/cart/list}" class="btn btn-secondary" id="goCartBtn">장바구니로 이동</a>
 						</span>
@@ -1777,6 +1778,11 @@
 					token: metaToken || inlineToken || ''
 				};
 			}
+
+			document.getElementById("continueBtn").addEventListener("click", function () {
+				// 모달이 닫힌 뒤 실행되도록 약간의 딜레이
+				setTimeout(() => history.go(-1), 300);
+			});
 
 			// 간단 안내 모달 열기
 			function showNoticeModal({ title = '안내', message = '' } = {}) {
