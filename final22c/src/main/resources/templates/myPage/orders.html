@@ -700,10 +700,10 @@
             <section class="rrm-card">
               <header class="rrm-card__head">
                 <div class="rrm-head-left">
-                  <div class="rrm-head-title">요청번호&nbsp;${esc(req?.refundId ?? (idx + 1))}</div>
+                  <div class="rrm-head-title">환불요청번호&nbsp;${esc(req?.refundId ?? (idx + 1))}</div>
                 </div>
                 <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
-                  <span class="muted" style="font-size:12px;">요청일시&nbsp;${formatDateTime(req?.createdAt)}</span>
+                  <span class="muted" style="font-size:12px;">환불요청일시&nbsp;${formatDateTime(req?.createdAt)}</span>
                 </div>
               </header>
               <div>
@@ -717,7 +717,7 @@
                   <thead>
                     <tr>
                       <th>상품</th>
-                      <th class="t-qty">환불수량</th>
+                      <th class="t-qty">신청수량</th>
                       <th class="t-right">단가</th>
                       <th class="t-right">합계</th>
                     </tr>
@@ -739,7 +739,7 @@
         document.addEventListener("click", async (ev) => {
           const btn = ev.target.closest(".btn-refund-requests"); if (!btn) return;
           const orderId = btn.getAttribute("data-order-id"); if (!orderId) return;
-          title.textContent = `주문번호 #${orderId} 의 환불요청 내역`;
+          title.textContent = `주문번호 ${orderId} 의 환불요청 내역`;
           body.innerHTML = `<div class="py-10 text-center muted">로딩 중…</div>`;
           openModal(modal);
           try {
@@ -876,7 +876,7 @@
 
           const orderId = btn.getAttribute("data-order-id"); if (!orderId) return;
 
-          title.textContent = `주문번호 #${orderId} 의 환불결과`;
+          title.textContent = `주문번호 ${orderId} 의 환불결과`;
           body.innerHTML = `<div class="py-10 text-center muted">로딩 중…</div>`;
           openModal(modal);
 
