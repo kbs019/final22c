@@ -372,15 +372,20 @@
       }
 
       function recalc(use){
-        use = Math.min(Math.max(0, Number(use)||0), owned, baseSum);
-        $("#usePoint").val(use);
-        $("#usedPointLabel").text(use.toLocaleString('ko-KR') + '원');
-        const pay = Math.max(0, baseSum - use);
-        $("#payTotalLabel").text(fmt(pay));
-        $("#rewardLabel").text(fmt(Math.trunc(subtotal * 0.05)));
-        $("#_usedPoint").val(use);
-        $("#_pay").val(pay);
-      }
+		  use = Math.min(Math.max(0, Number(use)||0), owned, baseSum);
+		  $("#usePoint").val(use);
+		  $("#usedPointLabel").text(use.toLocaleString('ko-KR') + '원');
+		  const pay = Math.max(0, baseSum - use);
+		  
+		  // ★ 여기 수정: (실제결제금액 - 배송비)의 0.05%, 음수면 0
+		  const rewardBase = Math.max(0, pay - shipping);
+		  const reward = Math.trunc(rewardBase * 0.05);
+		  
+		  $("#payTotalLabel").text(fmt(pay));
+		  $("#rewardLabel").text(fmt(reward));
+		  $("#_usedPoint").val(use);
+		  $("#_pay").val(pay);
+	  }
       recalc(0);
 
       $("#btnUseAllPoint").on("click", ()=> recalc(Math.min(owned, baseSum)));
