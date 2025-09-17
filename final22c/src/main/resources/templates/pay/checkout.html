@@ -487,7 +487,7 @@
           const header = $('meta[name="_csrf_header"]').attr('content');
           $.ajax({
             type: "POST",
-            url:  "/mypage/address/default",
+            url:  "/mypage/address/default.json",
             data: JSON.stringify({ addressNo }),
             contentType: "application/json; charset=UTF-8",
             dataType: "json",

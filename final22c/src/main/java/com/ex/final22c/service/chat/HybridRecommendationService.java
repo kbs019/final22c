@@ -3,7 +3,6 @@ package com.ex.final22c.service.chat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.recommendation.RecommendedProduct;
 import com.ex.final22c.data.recommendation.SituationalRecommendation;
-import com.ex.final22c.data.user.Users;
 import com.ex.final22c.repository.productMapper.ProductMapper;
 import com.ex.final22c.repository.user.UserRepository;
 import com.ex.final22c.service.product.ProductService;
@@ -33,7 +31,7 @@ public class HybridRecommendationService {
     private final ProductMapper productMapper;
     private final ProductService productService;
     private final ObjectMapper objectMapper;
-    private final UserRepository userRepository;
+
 
 
     // ===================== 내부 유틸 =====================
