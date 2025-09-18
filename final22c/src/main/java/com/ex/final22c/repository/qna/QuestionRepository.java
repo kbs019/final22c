@@ -23,19 +23,18 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findByWriterUserName(String userName);
 
     // 페이징 + 최신순(Controller에서 Sort.DESC(createDate)로 전달)
+    List<Question> findByWriter_UserName(String userName);
+
     Page<Question> findByWriter_UserName(String userName, Pageable pageable);
-
     Page<Question> findByWriter_UserNameAndAnswerIsNull(String userName, Pageable pageable);
-
     Page<Question> findByWriter_UserNameAndAnswerIsNotNull(String userName, Pageable pageable);
-
-    Optional<Question> findByQId(Long id);
 
     // 상세(with answer) – 단일 버전만 유지
     @Query("""
-        select q from Question q
-        left join fetch q.answer a
-        where q.qId = :qId
-    """)
+           select q
+           from Question q
+           left join fetch q.answer a
+           where q.qId = :qId
+           """)
     Optional<Question> findByIdWithAnswer(@Param("qId") Long qId);
 }

@@ -271,12 +271,12 @@ public class MyPageController {
     }
 
     /* =========================
-    내 문의: 상세(모달) JSON
-    ========================= */
-    @GetMapping("/mypage/questionDetail/{questionId}")
+       내 문의: 상세(모달) JSON
+       ========================= */
+    @GetMapping("/questionDetail/{questionId}")
     @ResponseBody
     public QuestionDto getQuestionDetail(@PathVariable(name = "questionId") Long questionId) {
-        Question q = questionRepository.findByIdWithAnswer(questionId)
+        Question q = questionRepository.findByIdWithAnswer(questionId)   // ✅ 메서드명 일치
                 .orElseThrow(() -> new IllegalArgumentException("Invalid question ID"));
 
         QuestionDto dto = new QuestionDto();
@@ -295,12 +295,12 @@ public class MyPageController {
         return dto;
     }
 
-        /* =========================
+    /* =========================
        내 문의: 페이지네이션 JSON
        filter: all | pending | answered
        정렬: createDate DESC(최신순)
        ========================= */
-    @GetMapping(value = "/mypage/myQuestion/page", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/myQuestion/page", produces = MediaType.APPLICATION_JSON_VALUE) // ✅ '/mypage' 중복 제거
     @ResponseBody
     public ResponseEntity<Map<String, Object>> myQuestionsPage(
             Principal principal,
@@ -320,7 +320,6 @@ public class MyPageController {
             default -> result = questionRepository.findByWriter_UserName(userName, pageable);
         }
 
-        // 프론트에서 쓰는 필드만 경량화해서 반환
         record Row(Long qId, String title, java.time.LocalDateTime createDate, boolean answered) {}
         List<Row> rows = result.getContent().stream()
                 .map(q -> new Row(q.getQId(), q.getTitle(), q.getCreateDate(), q.getAnswer() != null))
@@ -334,5 +333,4 @@ public class MyPageController {
                 "totalElements", result.getTotalElements()
         ));
     }
-    
 }

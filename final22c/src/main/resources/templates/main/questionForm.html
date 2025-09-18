@@ -1,97 +1,83 @@
 <!DOCTYPE html>
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/layout}">
 <head>
   <meta charset="UTF-8">
   <title>22°C | Chat</title>
   <th:block layout:fragment="css">
-    <!-- 필요시 전용 css -->
     <style>
-      /* textarea 기본 리사이즈 방지 */
       #summernote { resize: none; }
-
-      /* Summernote 하단 리사이즈/상태바 숨김 */
       .note-statusbar, .note-resizebar { display: none !important; }
-
-      /* 중복 제출 방지 시 버튼 스타일 */
-      .btn-loading[disabled] {
-        opacity: .7;
-        cursor: not-allowed;
-      }
-      .btn-loading[disabled]::after{
-        content: '  ···';
-        animation: blink 1s infinite;
-      }
+      .btn-loading[disabled]{ opacity:.7; cursor:not-allowed; }
+      .btn-loading[disabled]::after{ content:'  ···'; animation:blink 1s infinite; }
       @keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
     </style>
   </th:block>
 </head>
 <body>
 <th:block layout:fragment="content">
-<div class="container mt-5">
+  <div class="container mt-5">
     <h2>1:1 문의 작성</h2>
 
-    <!-- 전역 에러 메시지 -->
-    <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert"
-         th:each="ge : ${#fields.globalErrors()}"
-         th:text="${ge}">입력 오류</div>
+    <!-- 폼 바인딩 타깃 -->
+    <form th:action="@{/qna/questionSave}" th:object="${question}" method="post" id="qnaForm" novalidate>
 
-    <form th:action="@{/qna/questionSave}" method="post" id="qnaForm" novalidate>
-        <div class="mb-3">
-            <label for="title" class="form-label">제목</label>
-            <input type="text" class="form-control" id="title" name="title" required maxlength="200"
-                   th:value="${question?.title}">
-            <div class="text-danger small" th:if="${#fields.hasErrors('title')}"
-                 th:errors="*{title}">제목 오류</div>
-        </div>
+      <!-- 전역 에러: 반드시 폼 내부에서 #fields 사용 -->
+      <div th:if="${#fields.hasGlobalErrors()}">
+        <div class="alert alert-danger" role="alert"
+             th:each="ge : ${#fields.globalErrors()}"
+             th:text="${ge}">입력 오류</div>
+      </div>
 
-        <div class="mb-3">
-            <label for="qc" class="form-label">문의 유형</label>
-            <select class="form-select" id="qc" name="qcId" required>
-                <option value="" hidden>선택하세요</option>
-                <option th:each="qc : ${questionCategories}"
-                        th:value="${qc.qcId}"
-                        th:selected="${question?.qcId} == ${qc.qcId}"
-                        th:text="${qc.type}">문의유형</option>
-            </select>
-            <div class="text-danger small" th:if="${#fields.hasErrors('qcId')}"
-                 th:errors="*{qcId}">유형 오류</div>
-        </div>
+      <div class="mb-3">
+        <label for="title" class="form-label">제목</label>
+        <input type="text" class="form-control" id="title" th:field="*{title}" required maxlength="200">
+        <div class="text-danger small" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">제목 오류</div>
+      </div>
 
-        <div class="mb-3">
-          <label for="content" class="form-label">내용</label>
-          <textarea id="summernote" name="content" th:text="${question?.content}"></textarea>
-          <div class="text-danger small" th:if="${#fields.hasErrors('content')}"
-               th:errors="*{content}">내용 오류</div>
-        </div>
+      <div class="mb-3">
+        <label for="qc" class="form-label">문의 유형</label>
+        <select class="form-select" id="qc" th:field="*{qcId}" required>
+          <option value="" hidden>선택하세요</option>
+          <th:block th:each="qc : ${questionCategories}">
+            <option th:value="${qc.qcId}" th:text="${qc.type}">문의유형</option>
+          </th:block>
+        </select>
+        <div class="text-danger small" th:if="${#fields.hasErrors('qcId')}" th:errors="*{qcId}">유형 오류</div>
+      </div>
 
-        <button type="submit" class="btn btn-primary btn-loading" id="btnSubmit">문의 등록</button>
+      <div class="mb-3">
+        <label for="summernote" class="form-label">내용</label>
+        <textarea id="summernote" th:field="*{content}"></textarea>
+        <div class="text-danger small" th:if="${#fields.hasErrors('content')}" th:errors="*{content}">내용 오류</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-loading" id="btnSubmit">문의 등록</button>
     </form>
-</div>
+  </div>
 </th:block>
 
-<!-- jQuery / Summernote가 layout에 없다면 넣어주세요 -->
-<!-- <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- 필요 시 레이아웃에 jQuery/Summernote 포함 -->
+<!--
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" /> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" />
+-->
 
-<script layout:fragment="script">
-  // Summernote 초기화
-  $(document).ready(function() {
+<!-- 🔧 핵심: JS에서 [[ ... ]]를 Thymeleaf가 건드리지 않도록 인라인 해제 -->
+<script layout:fragment="script" th:inline="none">
+  $(function() {
     $('#summernote').summernote({
       placeholder: '문의 내용을 입력하세요',
       tabsize: 2,
       height: 500,
-      toolbar: [
-        ['insert', ['picture']]   // ✅ 사진만 업로드 가능
-      ],
-      disableDragAndDrop: true     // ✅ 드래그 앤 드롭 업로드 막기
+      toolbar: [['insert', ['picture']]],  // [[ ... ]] 때문에 th:inline="none" 필수
+      disableDragAndDrop: true
     });
   });
 
-  // 텍스트만 추출 (HTML 제거)
   function extractPlainText(html){
     if(!html) return '';
     const div = document.createElement('div');
@@ -100,38 +86,26 @@
     return text.replace(/\s+/g, ' ').trim();
   }
 
-  // 클라이언트 검증 + 중복 클릭 방지
   (function(){
     const form = document.getElementById('qnaForm');
     const btn  = document.getElementById('btnSubmit');
     let submitting = false;
 
     form.addEventListener('submit', function(e){
-      // 필드 값 읽기
       const title = (document.getElementById('title').value || '').trim();
       const qcId  = (document.getElementById('qc').value || '').trim();
       const html  = $('#summernote').summernote('code');
       const text  = extractPlainText(html);
 
-      // 빈칸 검증
       const errs = [];
       if(!title) errs.push('제목을 입력해 주세요.');
       if(!qcId)  errs.push('문의 유형을 선택해 주세요.');
       if(!text)  errs.push('내용을 입력해 주세요.');
 
-      if(errs.length){
-        e.preventDefault();
-        alert(errs.join('\n'));
-        return;
-      }
+      if(errs.length){ e.preventDefault(); alert(errs.join('\n')); return; }
+      if(submitting){ e.preventDefault(); return; }
 
-      // 중복 제출 방지
-      if(submitting){
-        e.preventDefault();
-        return;
-      }
-      submitting = true;
-      btn.setAttribute('disabled', 'disabled');
+      submitting = true; btn.setAttribute('disabled', 'disabled');
     });
   })();
 </script>

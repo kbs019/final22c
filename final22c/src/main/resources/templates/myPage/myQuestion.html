@@ -27,9 +27,9 @@
     .m-link{color:#111827;text-decoration:none;font-weight:600;transition:color .15s ease}
     .m-link:hover{color:#2563eb;text-decoration:underline}
 
-    .badge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;text-align:center;white-space:nowrap}
-    .badge--pending{background:#fef3c7;color:#92400e}
-    .badge--answered{background:#dcfce7;color:#166534}
+    .badge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;text-align:center;white-space:nowrap;color:#111827 !important;}
+    .badge--pending{background:#fef3c7;color:#111827 !important;}
+    .badge--answered{background:#dcfce7;color:#111827 !important;}
 
     .m-empty{text-align:center;color:#6b7280;font-style:italic;padding:32px 16px !important}
 
@@ -120,12 +120,33 @@ const p2 = (n)=>String(n).padStart(2,'0');
 const fmt = (ts)=>{ if(!ts) return ''; const d=new Date(ts); if(isNaN(d)) return ts; return `${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; };
 const esc = (s)=>String(s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
 
-// 안전하게 텍스트를 HTML로 넣되 줄바꿈 유지
-function setRich(el, text) {
+/* HTML을 안전한 텍스트로 변환(줄바꿈 유지) */
+function setRichFromHtml(el, html) {
   if (!el) return;
-  const tmp = document.createElement('div');
-  tmp.textContent = text ?? '';
-  el.innerHTML = tmp.innerHTML.replace(/\n/g, '<br>');
+  const c = document.createElement('div');
+  c.innerHTML = html || '';
+
+  // <br>를 줄바꿈으로
+  c.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+  // 블록 요소 뒤에 줄바꿈 하나씩
+  c.querySelectorAll('p,div,li,td,th,h1,h2,h3,h4,h5,h6').forEach(node => {
+    if (node.lastChild && node.lastChild.nodeType === 3) {
+      node.lastChild.textContent += '\n';
+    } else {
+      node.appendChild(document.createTextNode('\n'));
+    }
+  });
+
+  const text = (c.textContent || '')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\s+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const safe = String(text).replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+  el.innerHTML = safe.replace(/\n/g, '<br>');
 }
 
 const $tbody = document.getElementById('q-tbody');
@@ -210,9 +231,12 @@ document.addEventListener('click', async (e) => {
     $t.textContent=data.title ?? '';
     $created.textContent=fmt(data.createDate) ?? '';
     const hasAnswer=!!(data.answer && String(data.answer).trim());
-    setRich($content, data.content ?? '');
-    if(hasAnswer){ setRich($answer, data.answer ?? ''); }
+
+    /* ▼ 여기서 setRichFromHtml 사용 */
+    setRichFromHtml($content, data.content ?? '');
+    if(hasAnswer){ setRichFromHtml($answer, data.answer ?? ''); }
     else { $answer.innerHTML='<span class="muted">답변 대기 중</span>'; }
+
     if(hasAnswer && data.answerCreateDate){ $rowAnsAt.style.display=''; $ansAt.textContent=fmt(data.answerCreateDate); }
     else { $rowAnsAt.style.display='none'; $ansAt.textContent=''; }
     openModal($modal);

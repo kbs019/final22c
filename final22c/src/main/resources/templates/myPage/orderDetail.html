@@ -44,6 +44,7 @@
 
       <tbody>
       <tr th:each="d : ${order.details}">
+        <!-- 썸네일 -->
         <td>
           <a th:href="@{|/main/content/${d.product.id}|}">
             <img class="rounded"
@@ -56,26 +57,54 @@
                  style="width:72px;height:72px;object-fit:cover">
           </a>
         </td>
+
+        <!-- ✅ 상품명 옆에 리뷰작성 버튼 배치 -->
         <td>
-          <div class="fw-semibold">
-            <a class="m-link" th:href="@{|/main/content/${d.product.id}|}" th:text="${d.product.name}">상품명</a>
+          <div class="d-flex align-items-center gap-2">
+            <!-- 상품명 -->
+            <a class="m-link fw-semibold"
+               th:href="@{|/main/content/${d.product.id}|}"
+               th:text="${d.product.name}">상품명</a>
+
+            <!-- 리뷰작성 버튼(조건 충족 시) -->
+            <a th:if="${
+                      (order.status == 'CONFIRMED' or order.status == 'REFUNDED')
+                      and d.reviewWritten != 'Y'
+                      and d.confirmQuantity > 0
+                      and order.regDate.plusDays(7).isAfter(T(java.time.LocalDateTime).now())
+                  }"
+               th:href="@{/main/etc/review/new(productId=${d.product.id}, orderDetailId=${d.orderDetailId})}"
+               class="btn btn-sm btn-outline-secondary">
+              리뷰작성
+            </a>
+
+            <!-- 리뷰작성완료 배지 -->
+            <span th:if="${
+                      (order.status == 'CONFIRMED' or order.status == 'REFUNDED')
+                      and d.confirmQuantity > 0
+                      and d.reviewWritten == 'Y'
+                  }"
+                  class="badge bg-success">
+              리뷰작성완료
+            </span>
           </div>
 
-          <!-- ✅ 상세 라벨: 상태별 “신청/승인” 동시 표기 -->
-          <div class="small text-muted">
+          <!-- 하단 라벨: 개당가격 / 환불신청·승인 -->
+          <div class="small text-muted mt-1">
             <span>개당 </span>
             <span th:text="${#numbers.formatInteger((d.sellPrice != null ? d.sellPrice : 0),1,'COMMA')}">0</span>
             <span>원</span>
 
-            <span th:if="${order.status=='REQUESTED' and d.refundDetail != null}">
-              · 환불신청 <span th:text="${d.refundDetail.quantity}">0</span>
+            <span th:if="${order.status=='REQUESTED' and d.refundDetail != null}" class="ms-2">
+              환불요청 <span th:text="${d.refundDetail.quantity}">0</span>
             </span>
-            <span th:if="${order.status=='REFUNDED' and d.refundDetail != null}">
-              · 환불신청 <span th:text="${d.refundDetail.quantity}">0</span>
-              · 환불승인 <span th:text="${d.refundDetail.refundQty}">0</span>
+            <span th:if="${order.status=='REFUNDED' and d.refundDetail != null}" class="ms-2">
+              환불승인 <span th:text="${d.refundDetail.refundQty}">0</span>
             </span>
           </div>
         </td>
+
+        <!-- 수량/단가/합계 -->
         <td class="text-center" th:text="${d.quantity}">1</td>
         <td class="text-end">
           <span th:text="${#numbers.formatInteger((d.sellPrice != null ? d.sellPrice : 0),1,'COMMA')}">0</span>원
