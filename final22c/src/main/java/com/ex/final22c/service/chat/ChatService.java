@@ -317,7 +317,6 @@ public class ChatService {
     }
 
     /* ----- 상품 상세페이지에서 유저가 AI 맞춤 가이드할때 사용 ----- */
-    /* ----- 상품 상세페이지: AI 맞춤 가이드 (seemsCut 건드리지 않는 안정화 버전) ----- */
     public String generatePersonaRecommendation(String prompt) {
         final String END_MARK = "<<END>>";
 

@@ -30,7 +30,7 @@ public class RecommendationController {
      */
     @PostMapping("/analyze")
     public ResponseEntity<String> analyze(@RequestBody Map<String, String> survey) {
-            String aiJson = hybridRecommendationService.analyzeForGuest(survey);
+            String aiJson = hybridRecommendationService.analyzeSurvey(survey);
             return ResponseEntity.ok().body(aiJson);    
 	}
 

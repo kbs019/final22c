@@ -156,7 +156,7 @@ public class ProductController {
         model.addAttribute("zzimedByMe", zzimedByMe);
         model.addAttribute("guideHtml", guideHtml);
 
-        return "main/content2";
+        return "main/content";
     }
 
     // 좋아요 토글
@@ -300,7 +300,7 @@ public class ProductController {
         model.addAttribute("sort", sort);
 
         // content.html 안의 reviewList fragment 반환
-        return "main/content2 :: reviewList";
+        return "main/content :: reviewList";
     }
 
     // ========================= 리스트(정렬 + 페이징) =========================
