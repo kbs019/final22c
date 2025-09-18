@@ -255,7 +255,7 @@ public class ChatService {
         List<Object[]> rows
     ) {}
 
-    /* ----- 관리자가 상품 등록할때 AIGUIDE 생성 ----- */
+    // 관리자가 상품 등록할때 AIGUIDE 생성
     public String generateProductDescription(String prompt) {
         var body = Map.of(
             "model", model,
