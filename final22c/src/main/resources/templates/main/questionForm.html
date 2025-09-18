@@ -13,6 +13,24 @@
       .btn-loading[disabled]{ opacity:.7; cursor:not-allowed; }
       .btn-loading[disabled]::after{ content:'  ···'; animation:blink 1s infinite; }
       @keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
+
+      /* ===== 모달(알림) 공통 ===== */
+      .m-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1050}
+      .m-modal.is-open{display:flex}
+      .m-modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+      .m-modal__box{position:relative;max-width:460px;width:calc(100% - 32px);background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);overflow:hidden}
+      .m-modal__header{padding:14px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+      .m-modal__title{margin:0;font-weight:700;font-size:16px}
+      .m-modal__close{border:0;background:transparent;font-size:20px;line-height:1;cursor:pointer}
+      .m-modal__body{padding:16px}
+      .m-modal__footer{padding:12px 16px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px}
+      .cm-btn{padding:8px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer}
+      .cm-btn--primary{border-color:#2563eb;background:#2563eb;color:#fff}
+
+      /* 알림 모달 내부 */
+      .notice-msg{white-space:pre-line;color:#111827;font-size:14px;line-height:1.5}
+      .notice-msg ul{margin:0;padding-left:18px}
+      .notice-msg li{list-style:disc;}
     </style>
   </th:block>
 </head>
@@ -57,6 +75,23 @@
       <button type="submit" class="btn btn-primary btn-loading" id="btnSubmit">문의 등록</button>
     </form>
   </div>
+
+  <!-- ===== 알림 모달 ===== -->
+  <div id="noticeModal" class="m-modal" aria-hidden="true">
+    <div class="m-modal__backdrop" data-close></div>
+    <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="noticeTitle">
+      <div class="m-modal__header">
+        <h3 id="noticeTitle" class="m-modal__title">안내</h3>
+        <button type="button" class="m-modal__close" data-close aria-label="닫기">×</button>
+      </div>
+      <div class="m-modal__body">
+        <div id="noticeMsg" class="notice-msg"></div>
+      </div>
+      <div class="m-modal__footer">
+        <button type="button" class="cm-btn cm-btn--primary" data-close>확인</button>
+      </div>
+    </div>
+  </div>
 </th:block>
 
 <!-- 필요 시 레이아웃에 jQuery/Summernote 포함 -->
@@ -66,26 +101,59 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" />
 -->
 
-<!-- 🔧 핵심: JS에서 [[ ... ]]를 Thymeleaf가 건드리지 않도록 인라인 해제 -->
+<!-- 🔧 JS는 Thymeleaf 인라인 해제(th:inline="none") -->
 <script layout:fragment="script" th:inline="none">
+  // ===== 모달 유틸 =====
+  (function modalInit(){
+    const modal = document.getElementById('noticeModal');
+    const msgEl = document.getElementById('noticeMsg');
+
+    function openModal(html){
+      msgEl.innerHTML = html || '';
+      modal.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal(){
+      modal.classList.remove('is-open');
+      document.body.style.overflow = '';
+      msgEl.innerHTML = '';
+    }
+    // 외부에서 쓰도록 window에 노출
+    window.showNotice = function(messageOrList){
+      // 문자열 또는 문자열 배열 모두 지원
+      if (Array.isArray(messageOrList)) {
+        const lis = messageOrList.map(m => `<li>${escapeHtml(m)}</li>`).join('');
+        openModal(`<ul>${lis}</ul>`);
+      } else {
+        openModal(escapeHtml(String(messageOrList || '')));
+      }
+    };
+
+    // 닫기 바인딩
+    modal.addEventListener('click', e => {
+      if (e.target.matches('[data-close], .m-modal__backdrop[data-close]')) closeModal();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+    });
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+  })();
+
+  // ===== Summernote =====
   $(function() {
     $('#summernote').summernote({
       placeholder: '문의 내용을 입력하세요',
       tabsize: 2,
       height: 500,
-      toolbar: [['insert', ['picture']]],  // [[ ... ]] 때문에 th:inline="none" 필수
+      toolbar: [['insert', ['picture']]],  // [[...]] 문법 때문에 inline 해제 필요
       disableDragAndDrop: true
     });
   });
 
-  function extractPlainText(html){
-    if(!html) return '';
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    const text = (div.textContent || div.innerText || '').replace(/\u00A0/g, ' ');
-    return text.replace(/\s+/g, ' ').trim();
-  }
-
+  // ===== 클라이언트 검증 & 중복 제출 방지 (모달 알림 사용) =====
   (function(){
     const form = document.getElementById('qnaForm');
     const btn  = document.getElementById('btnSubmit');
@@ -102,12 +170,31 @@
       if(!qcId)  errs.push('문의 유형을 선택해 주세요.');
       if(!text)  errs.push('내용을 입력해 주세요.');
 
-      if(errs.length){ e.preventDefault(); alert(errs.join('\n')); return; }
-      if(submitting){ e.preventDefault(); return; }
+      if(errs.length){
+        e.preventDefault();
+        // ✅ alert 대신 모달
+        window.showNotice(errs);
+        return;
+      }
 
-      submitting = true; btn.setAttribute('disabled', 'disabled');
+      if(submitting){
+        e.preventDefault();
+        // ✅ 중복 클릭 안내도 모달
+        window.showNotice('이미 제출 중입니다. 잠시만 기다려 주세요.');
+        return;
+      }
+      submitting = true;
+      btn.setAttribute('disabled', 'disabled');
     });
   })();
+
+  function extractPlainText(html){
+    if(!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const text = (div.textContent || div.innerText || '').replace(/\u00A0/g, ' ');
+    return text.replace(/\s+/g, ' ').trim();
+  }
 </script>
 </body>
 </html>
