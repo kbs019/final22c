@@ -10,135 +10,33 @@
 
 <th:block layout:fragment="css">
   <link rel="stylesheet" th:href="@{/css/mypage.css}">
-  
   <style>
     /* === 내 문의 페이지 전용 스타일 === */
-    
-    /* 📌 공통 페이지 헤더 스타일 통일 */
-    .page-head {
-      margin-bottom: 16px; /* 다른 페이지와 동일한 여백 */
-    }
-    
-    /* 📌 본문 컨테이너 스타일 통일 */
-    .mp-col-right {
-      max-width: 100%;
-      padding: 0; /* 기본 패딩 제거 */
-    }
-    
-    /* === 테이블 스타일 (공통 마이페이지 스타일 적용) === */
-    .m-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      margin-top: 16px; /* 페이지 헤더와 간격 통일 */
-    }
-    
-    .m-table thead {
-      background: #f9fafb;
-    }
-    
-    .m-table th {
-      padding: 12px 16px;
-      text-align: left;
-      font-weight: 700;
-      color: #374151;
-      border-bottom: 1px solid var(--border);
-      font-size: 14px;
-    }
-    
-    .m-table td {
-      padding: 14px 16px;
-      border-bottom: 1px solid #f3f4f6;
-      vertical-align: middle;
-      font-size: 14px;
-      color: #111827;
-    }
-    
-    .m-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-    
-    .m-table tbody tr:hover {
-      background: #f9fafb;
-    }
-    
-    /* 링크 스타일 */
-    .m-link {
-      color: #111827;
-      text-decoration: none;
-      font-weight: 600;
-      transition: color .15s ease;
-    }
-    
-    .m-link:hover {
-      color: #2563eb;
-      text-decoration: underline;
-    }
-    
-    /* 배지 스타일 */
-    .badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      text-align: center;
-      white-space: nowrap;
-    }
-    
-    .badge--ok {
-      background: #dcfce7;
-      color: #166534;
-    }
-    
-    .badge--partial {
-      background: #fef3c7;
-      color: #92400e;
-    }
-    
-    /* 빈 상태 메시지 */
-    .m-empty {
-      text-align: center;
-      color: #6b7280;
-      font-style: italic;
-      padding: 32px 16px !important;
-    }
-    
-    /* 📌 모달 스타일도 공통으로 통일 */
-    #questionModal .field-row {
-      display: grid;
-      grid-template-columns: 100px 1fr;
-      gap: 12px;
-      align-items: start;
-      padding: 8px 0;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    
-    #questionModal .field-row:last-child {
-      border-bottom: none;
-    }
-    
-    #questionModal .field-row label {
-      font-weight: 700;
-      color: #374151;
-      font-size: 14px;
-    }
-    
-    #questionModal .qdetail-content {
-      line-height: 1.6;
-      color: #111827;
-      font-size: 14px;
-      white-space: pre-wrap;
-    }
+    .page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .page-title{margin:0}
+    .ctrls{display:flex;gap:8px;align-items:center}
+    .ctrls select{border:1px solid var(--border);padding:8px 10px;border-radius:10px;background:#fff}
 
-    /* === 내 문의 상태 뱃지 텍스트를 검정으로 통일 === */
-    .badge--pending,
-    .badge--answered {
-      color: #111827 !important;
-    }
+    .m-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--border);margin-top:8px}
+    .m-table thead{background:#f9fafb}
+    .m-table th{padding:12px 16px;text-align:left;font-weight:700;color:#374151;border-bottom:1px solid var(--border);font-size:14px}
+    .m-table td{padding:14px 16px;border-bottom:1px solid #f3f4f6;vertical-align:middle;font-size:14px;color:#111827}
+    .m-table tbody tr:last-child td{border-bottom:none}
+    .m-table tbody tr:hover{background:#f9fafb}
+
+    .m-link{color:#111827;text-decoration:none;font-weight:600;transition:color .15s ease}
+    .m-link:hover{color:#2563eb;text-decoration:underline}
+
+    .badge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;text-align:center;white-space:nowrap}
+    .badge--pending{background:#fef3c7;color:#92400e}
+    .badge--answered{background:#dcfce7;color:#166534}
+
+    .m-empty{text-align:center;color:#6b7280;font-style:italic;padding:32px 16px !important}
+
+    #questionModal .field-row{display:grid;grid-template-columns:100px 1fr;gap:12px;align-items:start;padding:8px 0;border-bottom:1px solid #f3f4f6}
+    #questionModal .field-row:last-child{border-bottom:none}
+    #questionModal .field-row label{font-weight:700;color:#374151;font-size:14px}
+    #questionModal .qdetail-content{line-height:1.6;color:#111827;font-size:14px;white-space:pre-wrap}
   </style>
 </th:block>
 
@@ -153,6 +51,14 @@
       <div class="mp-col-right">
         <div class="page-head">
           <h2 class="page-title">내 문의</h2>
+          <div class="ctrls">
+            <label for="sortSel" class="sr-only">정렬</label>
+            <select id="sortSel" aria-label="정렬">
+              <option value="all" selected>최신순 (전체)</option>
+              <option value="pending">대기중 (최신)</option>
+              <option value="answered">완료 (최신)</option>
+            </select>
+          </div>
         </div>
 
         <table class="m-table" role="table" aria-label="내 문의 목록">
@@ -163,31 +69,18 @@
             <th scope="col" style="width:120px">상태</th>
           </tr>
           </thead>
-          <tbody>
-          <tr th:each="q : ${questions}">
-            <td>
-              <a href="javascript:void(0)" class="m-link js-open-question"
-                 th:attr="data-id=${q.qId}">
-                <span th:text="${q.title}">제목</span>
-              </a>
-            </td>
-            <td th:text="${#temporals.format(q.createDate,'yyyy.MM.dd HH:mm')}">2025.01.01 12:00</td>
-            <td th:with="isAnswered=${!#strings.isEmpty(q.answer)}">
-              <span class="badge"
-                    th:classappend="${isAnswered} ? ' badge--answered' : ' badge--pending'"
-                    th:text="${isAnswered} ? '답변완료' : '대기'">대기</span>
-            </td>
-          </tr>
-
-          <tr th:if="${#lists.isEmpty(questions)}">
-            <td colspan="3" class="m-empty">문의 내역이 없습니다.</td>
-          </tr>
+          <tbody id="q-tbody">
+          <!-- JS 렌더링 -->
           </tbody>
         </table>
+
+        <nav id="pager" class="pager" aria-label="페이지네이션" hidden>
+          <div id="pagerBtns"></div>
+        </nav>
       </div>
     </div>
 
-    <!-- 공통 모달 사용 -->
+    <!-- 모달 -->
     <div id="questionModal" class="m-modal" aria-hidden="true">
       <div class="m-modal__backdrop" data-close></div>
       <div class="m-modal__box" role="dialog" aria-modal="true" aria-labelledby="qm-title">
@@ -200,7 +93,7 @@
           <div class="field-row"><label>작성일</label><div id="qd-created"></div></div>
           <div class="field-row"><label>문의 내용</label><div id="qd-content" class="qdetail-content"></div></div>
           <div class="field-row"><label>답변</label><div id="qd-answer" class="qdetail-content"></div></div>
-          <div class="field-row"><label>답변일</label><div id="qd-answeredAt"></div></div>
+          <div class="field-row" id="row-ansAt"><label>답변일</label><div id="qd-answeredAt"></div></div>
         </div>
         <div class="m-modal__footer">
           <button type="button" class="cm-btn cm-btn--primary" data-close>닫기</button>
@@ -211,56 +104,121 @@
 </th:block>
 
 <script layout:fragment="script">
-  'use strict';
-  const CTX = (() => (document.querySelector('meta[name="context-path"]')?.content || '').replace(/\/+$/, ''))();
-  const api = (p) => (CTX ? CTX : '') + (p.startsWith('/') ? p : '/' + p);
+'use strict';
+const CTX = (() => (document.querySelector('meta[name="context-path"]')?.content || '').replace(/\/+$/, ''))();
+const api = (p) => (CTX ? CTX : '') + (p.startsWith('/') ? p : '/' + p);
 
-  const sbw = () => window.innerWidth - document.documentElement.clientWidth;
-  const lock = () => { const w=sbw(); if(w>0) document.documentElement.style.setProperty('--sbw', w+'px'); document.body.classList.add('lock-scroll'); };
-  const unlock = () => { document.body.classList.remove('lock-scroll'); document.documentElement.style.removeProperty('--sbw'); };
-  const openModal = (m) => { if(!m) return; m.classList.add('is-open'); lock(); };
-  const closeModal = (el) => { const m = el?.classList?.contains('m-modal') ? el : el?.closest('.m-modal'); if(!m) return; m.classList.remove('is-open'); if (!document.querySelector('.m-modal.is-open')) unlock(); };
-  document.addEventListener('click', (e) => { if (e.target.matches('.m-modal [data-close], .m-modal__backdrop[data-close]')) closeModal(e.target); });
+const sbw = () => window.innerWidth - document.documentElement.clientWidth;
+const lock = () => { const w=sbw(); if(w>0) document.documentElement.style.setProperty('--sbw', w+'px'); document.body.classList.add('lock-scroll'); };
+const unlock = () => { document.body.classList.remove('lock-scroll'); document.documentElement.style.removeProperty('--sbw'); };
+const openModal = (m) => { if(!m) return; m.classList.add('is-open'); lock(); };
+const closeModal = (el) => { const m = el?.classList?.contains('m-modal') ? el : el?.closest('.m-modal'); if(!m) return; m.classList.remove('is-open'); if (!document.querySelector('.m-modal.is-open')) unlock(); };
+document.addEventListener('click', (e) => { if (e.target.matches('.m-modal [data-close], .m-modal__backdrop[data-close]')) closeModal(e.target); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const opened = document.querySelector('.m-modal.is-open'); if (opened) closeModal(opened); }});
 
-  const p2 = (n)=>String(n).padStart(2,'0');
-  const fmt = (ts)=>{ if(!ts) return ''; const d=new Date(ts); if(isNaN(d)) return ts; return `${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+const p2 = (n)=>String(n).padStart(2,'0');
+const fmt = (ts)=>{ if(!ts) return ''; const d=new Date(ts); if(isNaN(d)) return ts; return `${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+const esc = (s)=>String(s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
 
-  const $modal   = document.getElementById('questionModal');
-  const $t       = document.getElementById('qd-title');
-  const $created = document.getElementById('qd-created');
-  const $content = document.getElementById('qd-content');
-  const $answer  = document.getElementById('qd-answer');
-  const $ansAt   = document.getElementById('qd-answeredAt');
-  const $rowAnsAt = document.getElementById('qd-answeredAt')?.closest('.field-row');
+// 안전하게 텍스트를 HTML로 넣되 줄바꿈 유지
+function setRich(el, text) {
+  if (!el) return;
+  const tmp = document.createElement('div');
+  tmp.textContent = text ?? '';
+  el.innerHTML = tmp.innerHTML.replace(/\n/g, '<br>');
+}
 
-  document.addEventListener('click', async (e) => {
-    const a = e.target.closest('.js-open-question'); if (!a) return;
-    try {
-      const id = a.getAttribute('data-id');
-      const res = await fetch(api(`/mypage/questionDetail/${id}`), { headers:{'Accept':'application/json'}, credentials:'same-origin' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+const $tbody = document.getElementById('q-tbody');
+const $pager = document.getElementById('pager');
+const $pagerBtns = document.getElementById('pagerBtns');
+const $sortSel = document.getElementById('sortSel');
+const state = { page: 0, size: 10, filter: 'all', totalPages: 0 };
 
-      $t.textContent       = data.title ?? '';
-      $created.textContent = fmt(data.createDate) ?? '';
+function renderRows(items){
+  if(!items || !items.length){
+    $tbody.innerHTML = `<tr><td colspan="3" class="m-empty">문의 내역이 없습니다.</td></tr>`;
+    return;
+  }
+  $tbody.innerHTML = items.map(it => `
+    <tr>
+      <td><a href="javascript:void(0)" class="m-link js-open-question" data-id="${it.qId}">${esc(it.title)}</a></td>
+      <td>${esc(fmt(it.createDate))}</td>
+      <td><span class="badge ${it.answered ? 'badge--answered' : 'badge--pending'}">${it.answered ? '완료' : '대기중'}</span></td>
+    </tr>`).join('');
+}
 
-      const hasAnswer = !!(data.answer && String(data.answer).trim());
-      $content.innerHTML   = data.content ?? '';
-      $answer.innerHTML    = hasAnswer ? data.answer : '<span class="muted">답변 대기 중</span>';
+function renderPager(pg){
+  const total = Math.max(0, Number(pg.totalPages) || 0);
+  const page  = Math.min(Math.max(0, Number(pg.page) || 0), Math.max(0, total-1));
+  state.totalPages = total;
+  if(total <= 1){ $pager.hidden = true; return; }
+  $pager.hidden = false;
 
-      if (hasAnswer && data.answerCreateDate) {
-        if ($rowAnsAt) $rowAnsAt.style.display = '';            // 보이기
-        $ansAt.textContent = fmt(data.answerCreateDate);
-      } else {
-        if ($rowAnsAt) $rowAnsAt.style.display = 'none';        // 숨기기
-        $ansAt.textContent = '';
-      }
-
-      openModal($modal);
-    } catch (e1) {
-      console.error('[question detail]', e1);
-      alert('문의 상세를 불러오지 못했습니다.');
-    }
+  const isFirst = page === 0, isLast = page === total-1;
+  const pagesHtml = Array.from({length: total}, (_,i)=>`<button type="button" class="page-btn"${i===page?' aria-current="page"':''} data-page="${i}">${i+1}</button>`).join('');
+  $pagerBtns.innerHTML = `
+    <button type="button" class="page-btn nav-first" data-nav="first" ${isFirst?'disabled':''} aria-label="첫 페이지">«</button>
+    <button type="button" class="page-btn nav-prev"  data-nav="prev"  ${isFirst?'disabled':''} aria-label="이전 페이지">‹</button>
+    ${pagesHtml}
+    <button type="button" class="page-btn nav-next"  data-nav="next"  ${isLast?'disabled':''} aria-label="다음 페이지">›</button>
+    <button type="button" class="page-btn nav-last"  data-nav="last"  ${isLast?'disabled':''} aria-label="마지막 페이지">»</button>`;
+  $pagerBtns.querySelectorAll('.page-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(btn.disabled) return;
+      let next=page;
+      if(btn.dataset.nav==='first') next=0;
+      else if(btn.dataset.nav==='prev') next=Math.max(0,page-1);
+      else if(btn.dataset.nav==='next') next=Math.min(total-1,page+1);
+      else if(btn.dataset.nav==='last') next=total-1;
+      else if(btn.dataset.page!=null) next=Number(btn.dataset.page);
+      if(next===page) return;
+      state.page=next; fetchAndRender();
+    });
   });
+}
+
+async function fetchAndRender(){
+  const url = api(`/mypage/myQuestion/page?page=${state.page}&size=${state.size}&filter=${state.filter}`);
+  try{
+    const res = await fetch(url, { headers:{'Accept':'application/json'}, credentials:'same-origin' });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderRows(data.content||[]); renderPager(data);
+  }catch(e){
+    console.error(e);
+    $tbody.innerHTML = `<tr><td colspan="3" class="m-empty">목록을 불러오지 못했습니다.</td></tr>`;
+    $pager.hidden = true;
+  }
+}
+$sortSel.addEventListener('change', ()=>{ state.filter=$sortSel.value; state.page=0; fetchAndRender(); });
+
+const $modal=document.getElementById('questionModal');
+const $t=document.getElementById('qd-title');
+const $created=document.getElementById('qd-created');
+const $content=document.getElementById('qd-content');
+const $answer=document.getElementById('qd-answer');
+const $ansAt=document.getElementById('qd-answeredAt');
+const $rowAnsAt=document.getElementById('row-ansAt');
+
+document.addEventListener('click', async (e) => {
+  const a=e.target.closest('.js-open-question'); if(!a) return;
+  try{
+    const id=a.getAttribute('data-id');
+    const res=await fetch(api(`/mypage/questionDetail/${id}`), { headers:{'Accept':'application/json'}, credentials:'same-origin' });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    $t.textContent=data.title ?? '';
+    $created.textContent=fmt(data.createDate) ?? '';
+    const hasAnswer=!!(data.answer && String(data.answer).trim());
+    setRich($content, data.content ?? '');
+    if(hasAnswer){ setRich($answer, data.answer ?? ''); }
+    else { $answer.innerHTML='<span class="muted">답변 대기 중</span>'; }
+    if(hasAnswer && data.answerCreateDate){ $rowAnsAt.style.display=''; $ansAt.textContent=fmt(data.answerCreateDate); }
+    else { $rowAnsAt.style.display='none'; $ansAt.textContent=''; }
+    openModal($modal);
+  }catch(e1){ console.error(e1); alert('문의 상세를 불러오지 못했습니다.'); }
+});
+
+fetchAndRender();
 </script>
 </html>

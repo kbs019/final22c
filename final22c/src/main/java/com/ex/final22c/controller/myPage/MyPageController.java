@@ -4,6 +4,10 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -25,6 +29,7 @@ import com.ex.final22c.data.product.Product;
 import com.ex.final22c.data.qna.Answer;
 import com.ex.final22c.data.qna.Question;
 import com.ex.final22c.data.qna.QuestionDto;
+import com.ex.final22c.data.user.Row;
 import com.ex.final22c.data.user.Users;
 import com.ex.final22c.form.UsersAddressForm;
 import com.ex.final22c.repository.mypage.UserAddressRepository;
@@ -265,25 +270,69 @@ public class MyPageController {
         return "mypage/myQuestion"; // 내 문의 목록 페이지
     }
 
-    @GetMapping("/questionDetail/{questionId}")
+    /* =========================
+    내 문의: 상세(모달) JSON
+    ========================= */
+    @GetMapping("/mypage/questionDetail/{questionId}")
     @ResponseBody
-    public QuestionDto getQuestionDetail(@PathVariable("questionId") Long questionId) {
-        Question question = questionRepository.findByIdWithAnswer(questionId)
+    public QuestionDto getQuestionDetail(@PathVariable(name = "questionId") Long questionId) {
+        Question q = questionRepository.findByIdWithAnswer(questionId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid question ID"));
-        
-        QuestionDto dto = new QuestionDto();
-        dto.setQId(question.getQId());
-        dto.setStatus(question.getStatus());
-        dto.setTitle(question.getTitle());
-        dto.setContent(question.getContent());
-        dto.setQcId(question.getQc().getQcId());
-        dto.setCreateDate(question.getCreateDate());
 
-        Answer answer = question.getAnswer();
-        if (answer != null) {
-            dto.setAnswer(answer.getContent());
-            dto.setAnswerCreateDate(answer.getCreateDate());
+        QuestionDto dto = new QuestionDto();
+        dto.setQId(q.getQId());
+        dto.setStatus(q.getStatus());
+        dto.setTitle(q.getTitle());
+        dto.setContent(q.getContent());
+        dto.setQcId(q.getQc().getQcId());
+        dto.setCreateDate(q.getCreateDate());
+
+        Answer a = q.getAnswer();
+        if (a != null) {
+            dto.setAnswer(a.getContent());
+            dto.setAnswerCreateDate(a.getCreateDate());
         }
-        return dto;  // JSON 형태로 반환
+        return dto;
     }
+
+        /* =========================
+       내 문의: 페이지네이션 JSON
+       filter: all | pending | answered
+       정렬: createDate DESC(최신순)
+       ========================= */
+    @GetMapping(value = "/mypage/myQuestion/page", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> myQuestionsPage(
+            Principal principal,
+            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(name = "size", required = false, defaultValue = "10") int size,
+            @RequestParam(name = "filter", required = false, defaultValue = "all") String filter) {
+
+        if (principal == null) return ResponseEntity.status(401).build();
+
+        final String userName = principal.getName();
+        final Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createDate"));
+
+        Page<Question> result;
+        switch (filter) {
+            case "pending" -> result = questionRepository.findByWriter_UserNameAndAnswerIsNull(userName, pageable);
+            case "answered" -> result = questionRepository.findByWriter_UserNameAndAnswerIsNotNull(userName, pageable);
+            default -> result = questionRepository.findByWriter_UserName(userName, pageable);
+        }
+
+        // 프론트에서 쓰는 필드만 경량화해서 반환
+        record Row(Long qId, String title, java.time.LocalDateTime createDate, boolean answered) {}
+        List<Row> rows = result.getContent().stream()
+                .map(q -> new Row(q.getQId(), q.getTitle(), q.getCreateDate(), q.getAnswer() != null))
+                .toList();
+
+        return ResponseEntity.ok(Map.of(
+                "content", rows,
+                "page", result.getNumber(),
+                "size", result.getSize(),
+                "totalPages", result.getTotalPages(),
+                "totalElements", result.getTotalElements()
+        ));
+    }
+    
 }
