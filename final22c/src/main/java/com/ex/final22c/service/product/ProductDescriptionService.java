@@ -22,44 +22,59 @@ public class ProductDescriptionService {
 
     // ====== Public API ======
     public String generateEnhancedDescription(Product product) {
+        // 캐시 키 생성: 입력한 향수 정보를 기반으로 고유 키를 만듦
         String key = generateFragranceKey(product);
 
-        // 캐시 비활성(테스트 중이면 주석 유지)
-
+        // 캐시 조회: 이미 생성된 설명문이 있으면 바로 반환 ( 성능 최적화 & 중복 호출 방지 )
         String cached = fragranceCacheMap.get(key);
         if (cached != null) {
             log.debug("향수 캐시 사용: {}", key);
             return cached;
         }
-
-        
+        // 노트 구조 판별
+        // - hasSingle: 싱글노트 존재 여부
         boolean hasSingle = !isEmpty(product.getSingleNote());
+        // - hasComplex: 탑/미들/베이스 노트 중 하나라도 있으면 true
         boolean hasComplex = !isEmpty(product.getTopNote())
                 || !isEmpty(product.getMiddleNote())
                 || !isEmpty(product.getBaseNote());
 
+        // 프롬프트 생성: 싱글/복합 여부에 따라 서로 다른 프롬프트 템플릿을 만듦
         String prompt = buildPromptBasedOnNoteStructure(product, hasSingle, hasComplex);
 
         try {
+            // AI 호출: ChatService를 통해 LLM에 프롬프트 전달 → 설명문 생성
             String result = chatService.generateProductDescription(prompt);
 
-            // 싱글노트: 대표 1개 노트만 보정
+            // 후처리: 결과 보정
             if (hasSingle) {
+                // 싱글노트 → 대표 노트(primary) 추출 후 다른 노트 언급 제거
                 String primary = extractPrimarySingleNote(product.getSingleNote());
                 result = pruneOtherNotesForSingle(result, primary);
+
+                // 스타일 보정: 존댓말, 불릿 개수, 문장 정리 등
                 result = StyleEnforcer.enforce(result, StyleEnforcer.Mode.SINGLE, primary);
             } else {
+                // 복합노트 → 시간대(탑/미들/베이스) 구분, 불릿 정리 등
                 result = StyleEnforcer.enforce(result, StyleEnforcer.Mode.COMPLEX, null);
             }
 
+            // 최종 문자열 정리 - HTML 태그 제거, 공백/개행 정리, 오타 교정 등 저장 안전화
             String clean = cleanTextForStorage(result);
+
+            // 캐시 저장: 성공적으로 정리된 설명문은 캐시에 넣어 재사용
             if (!isEmpty(clean)) {
                 fragranceCacheMap.put(key, clean);
             }
+
+            // 최종 결과 반환
             return clean;
 
         } catch (Exception e) {
+            // 예외 처리 - 네트워크 문제, AI 응답 오류 등 발생 시 로그 기록
             log.error("AI 설명문 생성 실패: {}", e.getMessage(), e);
+
+            // Fallback 설명문 생성 - 기본적인 템플릿으로 브랜드/노트 기반 간단한 설명문 반환
             return generateFallbackDescription(product, hasSingle, hasComplex);
         }
     }

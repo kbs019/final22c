@@ -372,7 +372,10 @@ public class AdminService {
     }
 
     public boolean existsByBrandName(String brandName) {
-        return brandRepository.existsByBrandName(brandName);
+    	boolean result = brandRepository.existsByBrandName(brandName.trim());
+        System.out.println("existsByBrandName('" + brandName + "') = " + result);
+        return result;
+        
     }
     
     // 그레이드 목록

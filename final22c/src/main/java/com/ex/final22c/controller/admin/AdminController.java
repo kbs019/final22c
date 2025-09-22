@@ -178,9 +178,9 @@ public class AdminController {
 		return "redirect:/admin/productForm";
 	}
 
-	@GetMapping("/admin/checkBrandName")
+	@GetMapping("checkBrandName")
 	@ResponseBody
-	public boolean checkBrandName(@RequestParam String brandName) {
+	public boolean checkBrandName(@RequestParam("brandName") String brandName) {
 	    return adminService.existsByBrandName(brandName); // 있으면 true
 	}
 	
@@ -202,31 +202,32 @@ public class AdminController {
 	}
 
 	// 상품 등록/수정
-	@PostMapping("productForm")
-	public String newProduct(@ModelAttribute ProductForm productForm) {
-	    boolean isNewProduct = (productForm.getId() == null);
+	   @PostMapping("productForm")
+	   public String newProduct(@ModelAttribute ProductForm productForm) {
+	       boolean isNewProduct = (productForm.getId() == null);
+	       
+	       Product savedProduct = this.adminService.register(productForm, productForm.getImgName());
+	       
+	       if (isNewProduct) {
+	           // 신규 등록: AI 자동 생성
+	           try {
+	               String aiDescription = productDescriptionService.generateEnhancedDescription(savedProduct);
+	               if (aiDescription != null) {
+	                   this.adminService.updateAiGuide(savedProduct.getId(), aiDescription);
+	               }
+	           } catch (Exception e) {
+	               log.warn("AI 설명문 생성 실패: {}", e.getMessage());
+	           }
+	       } else {
+	           // 수정 모드: AI가이드 일괄 업데이트
+	           if (productForm.getAiGuide() != null) {
+	               this.adminService.updateAiGuideForSimilarProducts(savedProduct.getId(), productForm.getAiGuide());
+	           }
+	       }
+	       
+	       return "redirect:/admin/productList";
+	   }
 	    
-	    Product savedProduct = this.adminService.register(productForm, productForm.getImgName());
-	    
-	    if (isNewProduct) {
-	        // 신규 등록: AI 자동 생성
-	        try {
-	            String aiDescription = productDescriptionService.generateEnhancedDescription(savedProduct);
-	            if (aiDescription != null) {
-	                this.adminService.updateAiGuide(savedProduct.getId(), aiDescription);
-	            }
-	        } catch (Exception e) {
-	            log.warn("AI 설명문 생성 실패: {}", e.getMessage());
-	        }
-	    } else {
-	        // 수정 모드: AI가이드 일괄 업데이트
-	        if (productForm.getAiGuide() != null) {
-	            this.adminService.updateAiGuideForSimilarProducts(savedProduct.getId(), productForm.getAiGuide());
-	        }
-	    }
-	    
-	    return "redirect:/admin/productList";
-	}
 
 	// 관리자 픽
 	@PostMapping("updatePick")
