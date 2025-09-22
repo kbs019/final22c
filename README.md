@@ -63,28 +63,40 @@ AI 향수 가이드: Deepseek API 연동으로 상품별 맞춤 향수 설명 �
 📊 데이터 분석
 
 구매자 통계: 연령대, 성별, 계절별 구매 패턴
+
 판매 분석: 베스트셀러, 트렌드 분석
+
 사용자 행동 분석: 클릭, 체류시간, 구매 전환율
 
 👤 사용자 관리
 
 회원가입/로그인: 소셜 로그인 지원
+
 마이페이지: 주문 내역, 적립금, 쿠폰 관리
+
 고객센터: FAQ, 1:1 문의, 환불 신청
 
 🛠 기술 스택
 Backend
 
 Framework: Spring Boot
+
 Language: Java
+
 ORM: MyBatis, Jpa
+
 Database: Oracle Database
+
 Authentication: Spring Security 
+
 API Integration:
 
 Deepseek (향수 가이드 생성, 자연어 SQL 변환)
+
 카카오페이 결제 API
+
 Solapi API
+
 Gmail SMTP
 
 
