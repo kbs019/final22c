@@ -106,6 +106,3 @@ Template Engine: Thymeleaf
 CSS Framework: Bootstrap 5
 JavaScript: JS + jQuery
 Charts: Chart.js
-
-<strong>야야야야야야양야</strong> <br><br><br>
-<div>야야야야양야야야야</div>
