@@ -4,7 +4,7 @@
 
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://openjdk.java.net/projects/jdk/17/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
+[![Oracle](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.oracle.com/kr/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## 📋 목차
@@ -27,8 +27,7 @@ Final22C는 **22°C의 최적 온도에서 향이 가장 아름답게 피어난�
 ### 핵심 가치
 - 🤖 **AI 기반 개인 맞춤 향수 추천**
 - 📊 **데이터 기반 구매자 통계 제공**
-- 💬 **실시간 챗봇 상담 서비스**
-- 🎨 **직관적이고 세련된 UI/UX**
+- 🎨 **직관적인 UI/UX**
 
 ## ✨ 주요 기능
 
@@ -36,7 +35,6 @@ Final22C는 **22°C의 최적 온도에서 향이 가장 아름답게 피어난�
 - **상품 카탈로그**: 브랜드, 부향률, 노트별 필터링
 - **장바구니 & 위시리스트**: 임시 저장 및 관심 상품 관리
 - **주문 관리**: 결제, 배송 추적, 주문 내역
-- **리뷰 시스템**: 평점, 사진 리뷰, 추천/비추천
 
 ### 🤖 AI 서비스
 - **향수 타입 진단**: 5단계 설문을 통한 개인 취향 분석  
@@ -46,14 +44,13 @@ Final22C는 **22°C의 최적 온도에서 향이 가장 아름답게 피어난�
 - **비즈니스 인텔리전스**: AI가 차트 생성 및 데이터 트렌드 분석 제공
 
 ### 📊 데이터 분석
-- **구매자 통계**: 연령대, 성별, 계절별 구매 패턴
+- **구매자 통계**: 연령대, 성별 구매 패턴
 - **판매 분석**: 베스트셀러, 트렌드 분석
 - **사용자 행동 분석**: 클릭, 체류시간, 구매 전환율
 
 ### 👤 사용자 관리
-- **회원가입/로그인**: 소셜 로그인 지원
-- **마이페이지**: 주문 내역, 적립금, 쿠폰 관리
-- **고객센터**: FAQ, 1:1 문의, 환불 신청
+- **마이페이지**: 주문 내역, 적립금 관리, 환불 신청
+- **고객센터**: FAQ, 1:1 문의
 
 ## 🛠 기술 스택
 
@@ -61,23 +58,23 @@ Final22C는 **22°C의 최적 온도에서 향이 가장 아름답게 피어난�
 - **Framework**: Spring Boot 3.2
 - **Language**: Java 17
 - **ORM**: MyBatis 3.0
-- **Database**: MySQL 8.0
+- **Database**: Oracle DB
 - **Authentication**: Spring Security 6
 - **API Integration**: 
   - **OpenAI GPT-4 API** (향수 가이드 생성, 자연어 SQL 변환)
   - 카카오페이 결제 API
   - CoolSMS API
+  - SMPT Gmail API
 
 ### Frontend
 - **Template Engine**: Thymeleaf
 - **CSS Framework**: Bootstrap 5.3
 - **JavaScript**: Vanilla JS + jQuery
 - **Charts**: Chart.js, Recharts
-- **Icons**: Lucide React
 
 ### Infrastructure
-- **Build Tool**: Maven
-- **Database**: MySQL 8.0
+- **Build Tool**: Gradle
+- **Database**: Oracle DB
 - **Email**: JavaMailSender
 - **SMS**: CoolSMS SDK
 
@@ -87,16 +84,16 @@ Final22C는 **22°C의 최적 온도에서 향이 가장 아름답게 피어난�
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend       │    │   Database      │
 │                 │    │                 │    │                 │
-│ • Thymeleaf     │◄──►│ • Spring Boot   │◄──►│ • MySQL         │
+│ • Thymeleaf     │◄──►│ • Spring Boot   │◄──►│ • Oracle        │
 │ • Bootstrap     │    │ • Spring Sec    │    │ • User Data     │
-│ • JavaScript    │    │ • MyBatis       │    │ • Product Data  │
+│ • JavaScript    │    │ • Oracle        │    │ • Product Data  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
                               ▼
                     ┌─────────────────┐
                     │ External APIs   │
                     │ • OpenAI GPT-4  │
-                    │ • 카카오페이      │
+                    │ • 카카오페이     │
                     │ • CoolSMS       │
                     └─────────────────┘
 ```
@@ -105,8 +102,8 @@ Final22C는 **22°C의 최적 온도에서 향이 가장 아름답게 피어난�
 
 ### 사전 요구사항
 - Java 17 이상
-- MySQL 8.0 이상
-- Maven 3.6 이상
+- Oracle 이상
+- Gradle 이상
 
 ### 1. 프로젝트 클론
 ```bash
@@ -228,7 +225,6 @@ src/
 - 카테고리별 상품 진열
 
 ### 상품 상세 페이지
-- 360도 상품 이미지
 - AI 기반 향수 가이드
 - 구매자 통계 차트
 - 실시간 리뷰 시스템
@@ -240,7 +236,7 @@ src/
 
 ### 마이페이지
 - 주문 내역 및 배송 추적
-- 적립금 및 쿠폰 관리
+- 적립금 관리
 - 찜한 상품 리스트
 
 ## 🌟 핵심 기능 상세
@@ -324,14 +320,5 @@ public ResponseEntity<Map<String, Object>> getPersonaRecommendation(
 ## 📄 라이센스
 
 이 프로젝트는 MIT 라이센스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참고하세요.
-
----
-
-### 📞 문의사항
-
-프로젝트에 대한 질문이나 제안사항이 있으시면 언제든지 연락주세요!
-
-- **이메일**: final22c@example.com
-- **이슈 트래커**: [GitHub Issues](https://github.com/username/final22c/issues)
 
 **22°C에서 피어나는 당신만의 향을 찾아보세요! 🌸**
