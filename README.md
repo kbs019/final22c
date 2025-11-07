@@ -246,10 +246,10 @@ src/
 @Service
 public class ProductDescriptionService {
     
-    // OpenAI GPT-4를 활용한 상품별 향수 가이드 자동 생성
+    // OpenAI DeepSeek를 활용한 상품별 향수 가이드 자동 생성
     public String generateGuideContent(Product product) {
         String prompt = buildPromptBasedOnNoteStructure(product);
-        return chatService.generateDescription(prompt); // GPT-4 API 호출
+        return chatService.generateDescription(prompt); // DeepSeek 호출
     }
 }
 ```
