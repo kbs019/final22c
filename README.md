@@ -4,7 +4,7 @@
 
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://openjdk.java.net/projects/jdk/17/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Oracle][(https://img.shields.io/badge/oracle-blue.svg)](https://www.oracle.com/kr/)
+[![Oracle](https://img.shields.io/badge/oracle-blue.svg)](https://www.oracle.com/kr/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## 📋 목차
